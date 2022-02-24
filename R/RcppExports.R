@@ -8,6 +8,6 @@
 #' @return The inverse preconditioning matrix
 #'
 preCondInv <- function(Rin) {
-    .Call('_nlmixr2extra_preCondInv', PACKAGE = 'nlmixr2extra', Rin)
+    .Call(`_nlmixr2extra_preCondInv`, Rin)
 }
 

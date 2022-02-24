@@ -1,4 +1,5 @@
 #' @importFrom Rcpp evalCpp
+#' @importFrom stats setNames
 #' @useDynLib nlmixr2extra, .registration=TRUE
 
 .getUiFunFromIniAndModel <- function(ui, ini, model) {

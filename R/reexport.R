@@ -10,3 +10,14 @@ rxode2::model
 #' @export
 nlmixr2est::nlmixrWithTiming
 
+
+#' @importFrom nlmixr2est nlmixr
+#' @export
+nlmixr2est::nlmixr
+
+#' @importFrom nlmixr2est nlmixr2
+#' @export
+nlmixr2est::nlmixr2
+
+#' @importFrom nlmixr2est setCov
+nlmixr2est::setCov
