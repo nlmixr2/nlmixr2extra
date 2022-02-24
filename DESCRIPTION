@@ -11,5 +11,13 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.2
 Imports: 
     lotri,
+    Rcpp,
     rxode2,
     symengine
+LinkingTo: 
+    Rcpp,
+    RcppArmadillo
+NeedsCompilation: yes
+Biarch: true
+Config/testthat/edition: 3
+Maintainer: Matthew Fidler <matthew.fidler@gmail.com>

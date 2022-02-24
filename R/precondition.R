@@ -1,3 +1,6 @@
+#' @importFrom Rcpp evalCpp
+#' @useDynLib nlmixr2extra, .registration=TRUE
+
 .getUiFunFromIniAndModel <- function(ui, ini, model) {
   .ls <- ls(ui$meta, all.names=TRUE)
   .ret <- vector("list", length(.ls) + 3)
@@ -35,74 +38,76 @@
 #'
 preconditionFit <- function(fit, estType = c("full", "posthoc", "none"),
                             ntry = 10L) {
-  rxode2::.setWarnIdSort(FALSE)
-  on.exit(rxode2::.setWarnIdSort(TRUE))
-  if (!exists("R", fit$env)) {
-    stop("this assumes a covariance matrix with a R matrix",
-      call. = FALSE
-    )
-i  }
-  .R <- fit$R
-  .covMethod <- ""
-  .i <- 1
-  while (.i < ntry & .covMethod != "r,s") {
-    .i <- .i + 1
-    pre <- preCondInv(.R)
-    P <- symengine::Matrix(pre)
-    d0 <- dimnames(fit$R)[[1]]
-    d <- paste0("nlmixr2Pre_", dimnames(fit$R)[[1]])
-    d2 <- symengine::Matrix(d)
-    modExtra <- paste(paste0(d0, "=", sapply(as.vector(P %*% d2), as.character)), collapse = "\n")
-    preInv <- solve(pre)
+  nlmixrWithTiming("covariance", {
+    rxode2::.setWarnIdSort(FALSE)
+    on.exit(rxode2::.setWarnIdSort(TRUE))
+    if (!exists("R", fit$env)) {
+      stop("this assumes a covariance matrix with a R matrix",
+           call. = FALSE
+           )
+    }
+    .R <- fit$R
+    .covMethod <- ""
+    .i <- 1
+    while (.i < ntry & .covMethod != "r,s") {
+      .i <- .i + 1
+      pre <- preCondInv(.R)
+      P <- symengine::Matrix(pre)
+      d0 <- dimnames(fit$R)[[1]]
+      d <- paste0("nlmixr2Pre_", dimnames(fit$R)[[1]])
+      d2 <- symengine::Matrix(d)
+      modExtra <- paste(paste0(d0, "=", sapply(as.vector(P %*% d2), as.character)), collapse = "\n")
+      preInv <- solve(pre)
 
-    .ini <- as.data.frame(fit$ui$iniDf)
-    newEst <- setNames(as.vector(preInv %*% matrix(fit$theta[d0])), d0)
-    for (v in d0) {
-      .w <- which(.ini$name == v)
-      .ini$lower[.w] <- -Inf
-      .ini$upper[.w] <- Inf
-      .ini$est[.w] <- newEst[v]
-      .ini$name[.w] <- paste0("nlmixr2Pre_", v)
+      .ini <- as.data.frame(fit$ui$iniDf)
+      newEst <- setNames(as.vector(preInv %*% matrix(fit$theta[d0])), d0)
+      for (v in d0) {
+        .w <- which(.ini$name == v)
+        .ini$lower[.w] <- -Inf
+        .ini$upper[.w] <- Inf
+        .ini$est[.w] <- newEst[v]
+        .ini$name[.w] <- paste0("nlmixr2Pre_", v)
+      }
+      .ini <- as.expression(lotri::as.lotri(.ini))
+      .ini[[1]] <- quote(`ini`)
+      .newModel <- eval(parse(text = paste0("quote(model({", modExtra, "\n", fit$ui$fun.txt, "}))")))
+      .newModel <- .getUiFunFromIniAndModel(fit$ui, .ini, .newModel)
+      .newModel <- .newModel()
+      .ctl <- fit$foceiControl
+      estType <- match.arg(estType)
+      if (estType == "none") {
+        .ctl$maxInnerIterations <- 0
+        .ctl$maxOuterIterations <- 0
+        .ctl$boundTol <- 0
+        .ctl$etaMat <- as.matrix(fit$eta[, -1])
+        .ctl$calcTables <- FALSE
+        .ctl$compress <- FALSE
+      } else if (estType == "posthoc") {
+        .ctl$maxOuterIterations <- 0
+        .ctl$boundTol <- 0
+        .ctl$calcTables <- FALSE
+        .ctl$compress <- FALSE
+      } else if (estType == "full") {
+        .ctl$boundTol <- 0
+        .ctl$calcTables <- FALSE
+        .ctl$compress <- FALSE
+      }
+      .ctl$covMethod <- 1L
+      ## FIXME compare objective functions
+      newFit <- suppressWarnings(nlmixr2est::nlmixr2(.newModel, nlme::getData(fit), est = "focei", control = .ctl))
+      .R <- newFit$R
+      .covMethod <- newFit$covMethod
     }
-    .ini <- as.expression(lotri::as.lotri(.ini))
-    .ini[[1]] <- quote(`ini`)
-    .newModel <- eval(parse(text = paste0("quote(model({", modExtra, "\n", fit$ui$fun.txt, "}))")))
-    .newModel <- .getUiFunFromIniAndModel(fit$ui, .ini, .newModel)
-    .newModel <- .newModel()
-    .ctl <- fit$control
-    estType <- match.arg(estType)
-    if (estType == "none") {
-      .ctl$maxInnerIterations <- 0
-      .ctl$maxOuterIterations <- 0
-      .ctl$boundTol <- 0
-      .ctl$etaMat <- as.matrix(fit$eta[, -1])
-      .ctl$calcTables <- FALSE
-      .ctl$compress <- FALSE
-    } else if (estType == "posthoc") {
-      .ctl$maxOuterIterations <- 0
-      .ctl$boundTol <- 0
-      .ctl$calcTables <- FALSE
-      .ctl$compress <- FALSE
-    } else if (estType == "full") {
-      .ctl$boundTol <- 0
-      .ctl$calcTables <- FALSE
-      .ctl$compress <- FALSE
+    if (.covMethod != "r,s") {
+      stop("preconditioning failed after ", ntry, "tries",
+           call. = FALSE
+           )
     }
-    .ctl$covMethod <- 1L
-    ## FIXME compare objective functions
-    newFit <- suppressWarnings(nlmixr2est::nlmixr2(.newModel, nlme::getData(fit), est = "focei", control = .ctl))
-    .R <- newFit$R
-    .covMethod <- newFit$covMethod
-  }
-  if (.covMethod != "r,s") {
-    stop("preconditioning failed after ", ntry, "tries",
-      call. = FALSE
-    )
-  }
-  cov <- pre %*% newFit$cov %*% t(pre)
-  dimnames(cov) <- dimnames(pre)
-  assign("precondition", cov, envir = fit$env)
-  nlmixr2est::.setCov(fit, covMethod = cov)
-  assign("covMethod", "precondition", envir=fit$env)
+    cov <- pre %*% newFit$cov %*% t(pre)
+    dimnames(cov) <- dimnames(pre)
+    assign("precondition", cov, envir = fit$env)
+    .setCov(fit, covMethod = cov)
+    assign("covMethod", "precondition", envir=fit$env)
+  }, envir=fit)
   return(invisible(fit$env$precondition))
 }
