@@ -10,7 +10,10 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.2
 Imports: 
+    checkmate,
+    cli,
     crayon,
+    ggplot2,
     lotri,
     nlme,
     nlmixr2est,
@@ -25,5 +28,9 @@ Biarch: true
 Config/testthat/edition: 3
 Maintainer: Matthew Fidler <matthew.fidler@gmail.com>
 Suggests: 
+    withr,
     nlmixr2data,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    nlmixr2plot,
+    digest,
+    ggtext

@@ -1,7 +1,6 @@
 #' @importFrom Rcpp evalCpp
-#' @importFrom stats setNames
+#' @importFrom stats setNames approxfun cov cov2cor qchisq qnorm quantile
 #' @useDynLib nlmixr2extra, .registration=TRUE
-
 .getUiFunFromIniAndModel <- function(ui, ini, model) {
   .ls <- ls(ui$meta, all.names=TRUE)
   .ret <- vector("list", length(.ls) + 3)
