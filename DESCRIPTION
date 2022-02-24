@@ -13,6 +13,7 @@ Imports:
     checkmate,
     cli,
     crayon,
+    data.table,
     ggplot2,
     lotri,
     nlme,

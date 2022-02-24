@@ -1,5 +1,6 @@
 #' @importFrom Rcpp evalCpp
-#' @importFrom stats setNames approxfun cov cov2cor qchisq qnorm quantile
+#' @importFrom stats setNames approxfun cov cov2cor qchisq qnorm quantile AIC median pchisq sd
+#' @importFrom utils head
 #' @useDynLib nlmixr2extra, .registration=TRUE
 .getUiFunFromIniAndModel <- function(ui, ini, model) {
   .ls <- ls(ui$meta, all.names=TRUE)
