@@ -8,6 +8,7 @@
 [![R-CMD-check](https://github.com/nlmixr2/nlmixr2extra/workflows/R-CMD-check/badge.svg)](https://github.com/nlmixr2/nlmixr2extra/actions)
 [![Codecov test
 coverage](https://codecov.io/gh/nlmixr2/nlmixr2extra/branch/main/graph/badge.svg)](https://app.codecov.io/gh/nlmixr2/nlmixr2extra?branch=main)
+[![CodeFactor](https://www.codefactor.io/repository/github/nlmixr2/nlmixr2extra/badge)](https://www.codefactor.io/repository/github/nlmixr2/nlmixr2extra)
 <!-- badges: end -->
 
 The goal of nlmixr2extra is to provide the tools to help with common
