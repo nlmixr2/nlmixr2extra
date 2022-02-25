@@ -2,8 +2,8 @@ skip_on_cran()
 
 withr::with_tempdir({
   test_that("sampling should return different datasets at each call", {
-    a <- digest::digest(nlmixr2est:::sampling(nlmixr2data::theo_sd))
-    b <- digest::digest(nlmixr2est:::sampling(nlmixr2data::theo_sd))
+    a <- digest::digest(nlmixr2extra:::sampling(nlmixr2data::theo_sd))
+    b <- digest::digest(nlmixr2extra:::sampling(nlmixr2data::theo_sd))
     expect_false(isTRUE(all.equal(a, b)))
   })
 
@@ -133,9 +133,9 @@ withr::with_tempdir({
       table = list(npde = TRUE, cwres = TRUE))))
 
     colsBefore <- colnames(fit$parFixedDf)
-    fitlist <- suppressMessages(nlmixr2est:::modelBootstrap(fit, nboot = 4, restart = TRUE)[[1]])
+    fitlist <- suppressMessages(nlmixr2extra:::modelBootstrap(fit, nboot = 4, restart = TRUE)[[1]])
 
-    bootSummary <- nlmixr2est:::getBootstrapSummary(fitlist, ci = 0.95)
+    bootSummary <- nlmixr2extra:::getBootstrapSummary(fitlist, ci = 0.95)
 
     colsAfter <- colnames(fit$parFixedDf)
 
@@ -176,7 +176,7 @@ withr::with_tempdir({
       control = list(print = 0),
       table = list(npde = TRUE, cwres = TRUE))))
 
-    expect_error(fit1 <- suppressMessages(nlmixr2est:::bootstrapFit(fit, nboot = 2, restart = TRUE)), NA)
+    expect_error(fit1 <- suppressMessages(nlmixr2extra:::bootstrapFit(fit, nboot = 2, restart = TRUE)), NA)
 
     output_dir <-
       paste0("nlmixr2BootstrapCache_", "fit", "_", fit$bootstrapMd5)
