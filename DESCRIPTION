@@ -34,4 +34,5 @@ Suggests:
     testthat (>= 3.0.0),
     nlmixr2plot,
     digest,
-    ggtext
+    ggtext,
+    covr
