@@ -763,9 +763,9 @@ modelBootstrap <- function(fit,
           fit # to return 'fit'
         },
         error = function(error_message) {
-          print("error fitting the model")
-          print(error_message)
-          print("storing the models as NA ...")
+          message("error fitting the model")
+          message(error_message)
+          message("storing the models as NA ...")
           return(NA) # return NA otherwise (instead of NULL)
         })
 
