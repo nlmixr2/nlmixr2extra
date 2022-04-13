@@ -38,6 +38,7 @@ jobs:
       - name: Query dependencies
         run: |
           install.packages('remotes')
+          install.packages('pkgbuild')
           remotes::install_github("nlmixr2/dparser-R")
           remotes::install_cran("stringi")
           remotes::install_github("https://github.com/symengine/symengine.R")
