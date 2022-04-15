@@ -45,3 +45,6 @@ Suggests:
     digest,
     ggtext,
     covr
+BugReports: https://github.com/nlmixr2/nlmixr2extra/issues/
+URL: https://nlmixr2.github.io/nlmixr2extra/, https://github.com/nlmixr2/nlmixr2extra/
+

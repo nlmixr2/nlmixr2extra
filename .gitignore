@@ -1,2 +1,4 @@
 *.o
 *.so
+nlmixr2BootstrapCache_fit_*
+docs
