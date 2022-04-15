@@ -1,72 +1,72 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>/404.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/404.html</loc>
   </url>
   <url>
-    <loc>/LICENSE.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/LICENSE.html</loc>
   </url>
   <url>
-    <loc>/authors.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/authors.html</loc>
   </url>
   <url>
-    <loc>/index.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/index.html</loc>
   </url>
   <url>
-    <loc>/reference/addCovMultiple.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/addCovMultiple.html</loc>
   </url>
   <url>
-    <loc>/reference/addCovVar.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/addCovVar.html</loc>
   </url>
   <url>
-    <loc>/reference/addCovariate.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/addCovariate.html</loc>
   </url>
   <url>
-    <loc>/reference/backwardSearch.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/backwardSearch.html</loc>
   </url>
   <url>
-    <loc>/reference/bootplot.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/bootplot.html</loc>
   </url>
   <url>
-    <loc>/reference/bootstrapFit.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/bootstrapFit.html</loc>
   </url>
   <url>
-    <loc>/reference/covarSearchAuto.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/covarSearchAuto.html</loc>
   </url>
   <url>
-    <loc>/reference/forwardSearch.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/forwardSearch.html</loc>
   </url>
   <url>
-    <loc>/reference/index.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/index.html</loc>
   </url>
   <url>
-    <loc>/reference/initializeCovars.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/initializeCovars.html</loc>
   </url>
   <url>
-    <loc>/reference/makeDummies.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/makeDummies.html</loc>
   </url>
   <url>
-    <loc>/reference/makeHockeyStick.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/makeHockeyStick.html</loc>
   </url>
   <url>
-    <loc>/reference/performNorm.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/performNorm.html</loc>
   </url>
   <url>
-    <loc>/reference/preCondInv.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/preCondInv.html</loc>
   </url>
   <url>
-    <loc>/reference/preconditionFit.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/preconditionFit.html</loc>
   </url>
   <url>
-    <loc>/reference/reexports.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/reexports.html</loc>
   </url>
   <url>
-    <loc>/reference/removeCovMultiple.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/removeCovMultiple.html</loc>
   </url>
   <url>
-    <loc>/reference/removeCovVar.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/removeCovVar.html</loc>
   </url>
   <url>
-    <loc>/reference/removeCovariate.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/removeCovariate.html</loc>
   </url>
 </urlset>
