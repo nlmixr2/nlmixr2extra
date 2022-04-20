@@ -1,7 +1,5 @@
 .setCov <- function(obj, ...) {
   nlmixrWithTiming("covariance", {
-    rxode2::.setWarnIdSort(FALSE)
-    on.exit(rxode2::.setWarnIdSort(TRUE))
     .pt <- proc.time()
     .env <- obj$env
     if (exists("cov", .env)) {

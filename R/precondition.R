@@ -40,8 +40,6 @@
 preconditionFit <- function(fit, estType = c("full", "posthoc", "none"),
                             ntry = 10L) {
   nlmixrWithTiming("covariance", {
-    rxode2::.setWarnIdSort(FALSE)
-    on.exit(rxode2::.setWarnIdSort(TRUE))
     if (!exists("R", fit$env)) {
       stop("this assumes a covariance matrix with a R matrix",
            call. = FALSE
