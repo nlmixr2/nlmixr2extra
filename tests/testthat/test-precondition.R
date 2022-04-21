@@ -1,4 +1,3 @@
-skip_on_cran()
 test_that("precondition tests", {
 
   one.compartment <- function() {
@@ -51,6 +50,8 @@ test_that("precondition tests", {
   expect_false(isTRUE(all.equal(df1$`CI Lower`, df2$`CI Lower`)))
   expect_false(isTRUE(all.equal(df1$`%RSE`, df2$`%RSE`)))
   expect_false(isTRUE(all.equal(cov1, cov2)))
+
+  skip_if_not(any(names(fit2$covList) == "r,s"))
 
   setCov(fit2, "r,s")
 
