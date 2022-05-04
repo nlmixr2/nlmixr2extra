@@ -83,14 +83,18 @@ static inline void getWh(int evid, int *wh, int *cmt, int *wh100, int *whI, int 
   }
 }
 
-static inline int getSs(int wh0) {
+static inline int getSs(int wh0, bool &hasSs, bool &hasSsRate) {
   if (wh0 == EVID0_SS2) {
+    hasSs=true;
     return  2;
   } else if (wh0 == EVID0_SS) {
+    hasSs=true;
     return 1;
   } else if (wh0 == EVID0_SSINF) {
     // corresponds to ss=1, amt=0, ii=0
     // both amt and ii should be 0, and rate should contain the infusion rate
+    hasSsRate=false;
+    hasSs=true;
     return 1;
   }
   return 0;
@@ -128,6 +132,8 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
   bool hasPhantom = false;
   bool hasReplace = false;
   bool hasMult = false;
+  bool hasSs=false;
+  bool hasSsRate=false;
   double curAmt=0.0;
   for (unsigned int i = 0; i < evid.size(); ++i) {
     int curEvid = evid[i];
@@ -163,14 +169,14 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
         switch (whI) {
         case EVIDF_MODEL_RATE_ON: // modeled rate.
           newEvid[i] = 1;
-          newSs[i] =getSs(wh0);
+          newSs[i] =getSs(wh0, hasSs, hasSsRate);
           newRate[i] = -1;
           newAmt[i] = amt[i];
           keepItem[i] = true;
           break;
         case EVIDF_MODEL_DUR_ON: // modeled duration.
           newEvid[i] = 1;
-          newSs[i] = getSs(wh0);
+          newSs[i] = getSs(wh0, hasSs, hasSsRate);
           newRate[i] = -2;
           newAmt[i] = amt[i];
           keepItem[i] = true;
@@ -209,7 +215,7 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
                 hasRate = true;
               }
               newEvid[i] = 1;
-              newSs[i] = getSs(wh0);
+              newSs[i] = getSs(wh0, hasSs, hasSsRate);
               newAmt[i] = curAmt;
               keepItem[i] = true;
             } else {
@@ -224,12 +230,12 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
           hasReplace=true;
         case EVIDF_MULT:
           newEvid[i] = 6;
-          newSs[i] =getSs(wh0);
+          newSs[i] =getSs(wh0, hasSs, hasSsRate);
           keepItem[i] = false;
           hasMult=true;
         case EVIDF_NORMAL:
           newEvid[i] = 1;
-          newSs[i] =getSs(wh0);
+          newSs[i] =getSs(wh0, hasSs, hasSsRate);
           keepItem[i] = true;          
         }
       }
@@ -251,5 +257,7 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
                       _["hasRate"]=hasRate,
                       _["hasPhantom"]=hasPhantom,
                       _["hasReplace"]=hasReplace,
-                      _["hasMult"]=hasMult);
+                      _["hasMult"]=hasMult,
+                      _["hasSs"]=hasSs,
+                      _["hasSsRate"]=hasSsRate);
 }

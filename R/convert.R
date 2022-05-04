@@ -20,5 +20,32 @@ nlmixrDataToMonolix <- function(model, data, table=nlmixr2est::tableControl()) {
                   .env$dataSav$II, .env$dataSav$EVID, .env$dataSav$CMT,
                   model$predDf$cmt, model$predDf$dvid, .flag["ncmt"], .flag["ka"], length(.mv$state),
                   replaceEvid=5L)
-  .conv0
+  if (.conv0$hasTinf && .conv0$hasRate) {
+    stop("monolix does not support a fixed duration (`tinf`) and rate (`rate`) at the same time",
+         call.=FALSE)
+  }
+  if (.conv0$hasTinf) {
+    warning("monolix changes infusion times for `tinf` with bioavailability differently than `nlmixr2`, make sure there is no bioavailibilty changes for this infusion in the model",
+            call.=FALSE)
+  }
+  if (.conv0$turnOffCmt) {
+    stop("monolix cannot turn off compartments like `nlmixr2` can, this dataset will not work with monolix",
+         call.=FALSE)
+  }
+  if (.conv0$hasPhantom) {
+    stop("transit compartment phantom events are not supported in monolix",
+         call.=FALSE)
+  }
+  if (.conv0$hasReplace) {
+    stop("replacement events are not supported in monolix",
+         call.=FALSE)
+  }
+  if (.conv0$hasMult) {
+    stop("multiply events are not supported in monolix",
+         call.=FALSE)
+  }
+  if (.conv0$hasSsRate) {
+    stop("steady state infusions are not supported in monolix",
+         call.=FALSE)
+  }
 }
