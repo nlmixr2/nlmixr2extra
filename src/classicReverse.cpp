@@ -121,7 +121,7 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
   IntegerVector newSs(evid.size());
   IntegerVector newDvid(evid.size());
   LogicalVector keepItem(evid.size());
-  LogicalVector newAmt(evid.size());
+  NumericVector newAmt(evid.size());
   NumericVector newRate(evid.size());
   NumericVector newTinf(evid.size());
   IntegerVector newCmt(evid.size());

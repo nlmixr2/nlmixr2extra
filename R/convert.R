@@ -48,4 +48,20 @@ nlmixrDataToMonolix <- function(model, data, table=nlmixr2est::tableControl()) {
     stop("steady state infusions are not supported in monolix",
          call.=FALSE)
   }
+  .df <- .conv0$df
+  .new <- .env$dataSav
+  .new$EVID <-.df$EVID
+  .new$AMT <- .df$AMT
+  .new$YTYPE <- .df$DVID
+  .new$CMT <- .df$CMT
+  if (.conv0$hasSs) {
+    .new$SS <- .df$SS
+  }
+  if (.conv0$hasRate) {
+    .new$RATE <- .df$RATE
+  }
+  if (.conv0$hasTinf) {
+    .new$TINF <- .df$TINF
+  }
+  .new[.df$.nlmixrKeep, ]
 }
