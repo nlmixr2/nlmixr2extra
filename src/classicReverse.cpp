@@ -1,5 +1,5 @@
 #define STRICT_R_HEADER
-#include <RcppArmadillo.h>
+#include <Rcpp.h>
 
 // EVID = 0; Observations
 // EVID = 1; is illegal, but converted from NONMEM
@@ -98,10 +98,21 @@ static inline int getSs(int wh0) {
 
 using namespace Rcpp;
 
+static inline int getDvid(int &cmt, IntegerVector &dvidDvid, IntegerVector &cmtDvid) {
+  for (int j=cmtDvid.size(); j--;) {
+    if (cmtDvid[j] == cmt) {
+      return(dvidDvid[j]);
+    }
+  }
+  return 0;
+}
+
 //[[Rcpp::export]]
 List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, NumericVector ii,
                      IntegerVector evid, IntegerVector cmt,
-                     int cmtOffset=0, int linNcmt=0, int linKa=0, int neq=0) {
+                     IntegerVector cmtDvid, IntegerVector dvidDvid,
+                     int linNcmt=0, int linKa=0, int neq=0,
+                     int replaceEvid=5) {
   IntegerVector newEvid(evid.size());
   IntegerVector newSs(evid.size());
   IntegerVector newDvid(evid.size());
@@ -115,6 +126,8 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
   bool hasTinf = false;
   bool hasRate = false;
   bool hasPhantom = false;
+  bool hasReplace = false;
+  bool hasMult = false;
   double curAmt=0.0;
   for (unsigned int i = 0; i < evid.size(); ++i) {
     int curEvid = evid[i];
@@ -128,7 +141,7 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
     newCmt[i] = cmt[i];
     if (curEvid == 0 || curEvid==2 || curEvid == 3) {
       // 0, 2 and 3 are preserved
-      newDvid[i] = curEvid == 3 ? 0 : cmt[i]-cmtOffset ;
+      newDvid[i] = curEvid == 3 ? 0 : getDvid(cmt[i], dvidDvid, cmtDvid);
       keepItem[i] = true;
     } else if ((curEvid) >= 9 && (curEvid) <= 99) {
       // mtimes and zero events are ignored
@@ -144,6 +157,7 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
         keepItem[i] = true;
       } else if (wh0 == EVID0_PHANTOM) {
         keepItem[i] = false;
+        newEvid[i] = 7;
         hasPhantom = true;
       } else {
         switch (whI) {
@@ -205,13 +219,17 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
             keepItem[i] = false;
           }
         case EVIDF_REPLACE:
+          newEvid[i] = replaceEvid;
           keepItem[i] = false;
+          hasReplace=true;
         case EVIDF_MULT:
+          newEvid[i] = 6;
+          newSs[i] =getSs(wh0);
           keepItem[i] = false;
+          hasMult=true;
         case EVIDF_NORMAL:
           newEvid[i] = 1;
           newSs[i] =getSs(wh0);
-          newAmt[i] = amt[i];
           keepItem[i] = true;          
         }
       }
@@ -231,5 +249,7 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
                       _["turnOffCmt"]=turnOffCmt,
                       _["hasTinf"]=hasTinf,
                       _["hasRate"]=hasRate,
-                      _["hasPhantom"]=hasPhantom);
+                      _["hasPhantom"]=hasPhantom,
+                      _["hasReplace"]=hasReplace,
+                      _["hasMult"]=hasMult);
 }

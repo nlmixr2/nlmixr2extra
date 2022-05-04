@@ -12,8 +12,8 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // convertDataBack
-List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, NumericVector ii, IntegerVector evid, IntegerVector cmt, int cmtOffset, int linNcmt, int linKa, int neq);
-RcppExport SEXP _nlmixr2extra_convertDataBack(SEXP idSEXP, SEXP timeSEXP, SEXP amtSEXP, SEXP iiSEXP, SEXP evidSEXP, SEXP cmtSEXP, SEXP cmtOffsetSEXP, SEXP linNcmtSEXP, SEXP linKaSEXP, SEXP neqSEXP) {
+List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, NumericVector ii, IntegerVector evid, IntegerVector cmt, IntegerVector cmtDvid, IntegerVector dvidDvid, int linNcmt, int linKa, int neq, int replaceEvid);
+RcppExport SEXP _nlmixr2extra_convertDataBack(SEXP idSEXP, SEXP timeSEXP, SEXP amtSEXP, SEXP iiSEXP, SEXP evidSEXP, SEXP cmtSEXP, SEXP cmtDvidSEXP, SEXP dvidDvidSEXP, SEXP linNcmtSEXP, SEXP linKaSEXP, SEXP neqSEXP, SEXP replaceEvidSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -23,11 +23,13 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type ii(iiSEXP);
     Rcpp::traits::input_parameter< IntegerVector >::type evid(evidSEXP);
     Rcpp::traits::input_parameter< IntegerVector >::type cmt(cmtSEXP);
-    Rcpp::traits::input_parameter< int >::type cmtOffset(cmtOffsetSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type cmtDvid(cmtDvidSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type dvidDvid(dvidDvidSEXP);
     Rcpp::traits::input_parameter< int >::type linNcmt(linNcmtSEXP);
     Rcpp::traits::input_parameter< int >::type linKa(linKaSEXP);
     Rcpp::traits::input_parameter< int >::type neq(neqSEXP);
-    rcpp_result_gen = Rcpp::wrap(convertDataBack(id, time, amt, ii, evid, cmt, cmtOffset, linNcmt, linKa, neq));
+    Rcpp::traits::input_parameter< int >::type replaceEvid(replaceEvidSEXP);
+    rcpp_result_gen = Rcpp::wrap(convertDataBack(id, time, amt, ii, evid, cmt, cmtDvid, dvidDvid, linNcmt, linKa, neq, replaceEvid));
     return rcpp_result_gen;
 END_RCPP
 }
