@@ -2,12 +2,66 @@
 #'
 #' @param model rxode2 model for conversion
 #' @param data Input dataset
-#' @param table is the table control; this is mostly to figure out if there are additional columns to keep.
+#' @param table is the table control; this is mostly to figure out if there are additional columns to keep.
 #' @return Monolix compatible dataset
 #' @author Matthew L. Fidler
 #' @export
 #' @examples
 #'
+#' pk.turnover.emax3 <- function() {
+#'   ini({
+#'     tktr <- log(1)
+#'     tka <- log(1)
+#'     tcl <- log(0.1)
+#'     tv <- log(10)
+#'     ##
+#'     eta.ktr ~ 1
+#'     eta.ka ~ 1
+#'     eta.cl ~ 2
+#'     eta.v ~ 1
+#'     prop.err <- 0.1
+#'     pkadd.err <- 0.1
+#'     ##
+#'     temax <- logit(0.8)
+#'     tec50 <- log(0.5)
+#'     tkout <- log(0.05)
+#'     te0 <- log(100)
+#'     ##
+#'     eta.emax ~ .5
+#'     eta.ec50  ~ .5
+#'     eta.kout ~ .5
+#'     eta.e0 ~ .5
+#'     ##
+#'     pdadd.err <- 10
+#'   })
+#'   model({
+#'     ktr <- exp(tktr + eta.ktr)
+#'     ka <- exp(tka + eta.ka)
+#'     cl <- exp(tcl + eta.cl)
+#'     v <- exp(tv + eta.v)
+#'     emax = expit(temax+eta.emax)
+#'     ec50 =  exp(tec50 + eta.ec50)
+#'     kout = exp(tkout + eta.kout)
+#'     e0 = exp(te0 + eta.e0)
+#'     ##
+#'     DCP = center/v
+#'     PD=1-emax*DCP/(ec50+DCP)
+#'     ##
+#'     effect(0) = e0
+#'     kin = e0*kout
+#'     ##
+#'     d/dt(depot) = -ktr * depot
+#'     d/dt(gut) =  ktr * depot -ka * gut
+#'     d/dt(center) =  ka * gut - cl / v * center
+#'     d/dt(effect) = kin*PD -kout*effect
+#'     ##
+#'     cp = center / v
+#'     cp ~ prop(prop.err) + add(pkadd.err)
+#'     effect ~ add(pdadd.err) | pca
+#'   })
+#' }
+#'
+#' nlmixrDataToMonolix(pk.turnover.emax3, nlmixr2data::warfarin)
 nlmixrDataToMonolix <- function(model, data, table=nlmixr2est::tableControl()) {
   model <- rxode2::assertRxUi(model, extra=" to convert the data with 'nlmixrDataToMonolix'")
   rxode2::assertRxUiPrediction(model, extra=" to convert the data with 'nlmixrDataToMonolix'")
@@ -54,14 +108,15 @@ nlmixrDataToMonolix <- function(model, data, table=nlmixr2est::tableControl()) {
   .new$AMT <- .df$AMT
   .new$YTYPE <- .df$DVID
   .new$CMT <- .df$CMT
-  if (.conv0$hasSs) {
-    .new$SS <- .df$SS
-  }
+  .new$SS <- .df$SS
+  .col0 <- c("ID", "TIME", "EVID", "AMT", "II", "DV", "CMT", "YTYPE", "SS")
   if (.conv0$hasRate) {
     .new$RATE <- .df$RATE
-  }
-  if (.conv0$hasTinf) {
+    .col0 <- c(.col0, "RATE")
+  } else if (.conv0$hasTinf) {
     .new$TINF <- .df$TINF
+    .col0 <- c(.col0, "TINF")
   }
-  .new[.df$.nlmixrKeep, ]
+  .col0 <- c(.col0, model$allCovs, "nlmixrRowNums")
+  .new[.df$.nlmixrKeep, .col0]
 }
