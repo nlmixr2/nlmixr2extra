@@ -117,6 +117,17 @@ nlmixrDataToMonolix <- function(model, data, table=nlmixr2est::tableControl()) {
     .new$TINF <- .df$TINF
     .col0 <- c(.col0, "TINF")
   }
-  .col0 <- c(.col0, model$allCovs, "nlmixrRowNums")
+
+  .censData <- NULL
+  if (any(names(.new) == "CENS")) {
+    .censData <- "CENS"
+  }
+
+  .limitData <- NULL
+  if (any(names(.new) == "LIMIT")) {
+    .limitData <- "LIMIT"
+  }
+
+  .col0 <- c(.col0, model$allCovs, .censData, .limitData, "nlmixrRowNums")
   .new[.df$.nlmixrKeep, .col0]
 }
