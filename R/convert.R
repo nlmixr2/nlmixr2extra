@@ -107,9 +107,9 @@ nlmixrDataToMonolix <- function(model, data, table=nlmixr2est::tableControl()) {
   .new$EVID <-.df$EVID
   .new$AMT <- .df$AMT
   .new$YTYPE <- .df$DVID
-  .new$CMT <- .df$CMT
+  .new$ADM <- .df$CMT
   .new$SS <- .df$SS
-  .col0 <- c("ID", "TIME", "EVID", "AMT", "II", "DV", "CMT", "YTYPE", "SS")
+  .col0 <- c("ID", "TIME", "EVID", "AMT", "II", "DV", "ADM", "YTYPE", "SS")
   if (.conv0$hasRate) {
     .new$RATE <- .df$RATE
     .col0 <- c(.col0, "RATE")
