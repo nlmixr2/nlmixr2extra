@@ -3,7 +3,9 @@
 #' @param model rxode2 model for conversion
 #' @param data Input dataset
 #' @param table is the table control; this is mostly to figure out if there are additional columns to keep.
-#' @return Monolix compatible dataset
+#' @return A list with:
+#'  - Monolix compatible dataset ($monolix)
+#'  - Monolix ADM information ($adm)
 #' @author Matthew L. Fidler
 #' @export
 #' @examples
@@ -83,12 +85,8 @@ nlmixrDataToMonolix <- function(model, data, table=nlmixr2est::tableControl()) {
     warning("monolix changes infusion times for `tinf` with bioavailability differently than `nlmixr2`, make sure there is no bioavailibilty changes for this infusion in the model",
             call.=FALSE)
   }
-  if (.conv0$turnOffCmt) {
-    stop("monolix cannot turn off compartments like `nlmixr2` can, this dataset will not work with monolix",
-         call.=FALSE)
-  }
   if (.conv0$hasPhantom) {
-    stop("transit compartment phantom events are not supported in monolix",
+    stop("transit compartment phantom events are not supported in babelmixr2 to monolix conversion",
          call.=FALSE)
   }
   if (.conv0$hasReplace) {
@@ -103,13 +101,17 @@ nlmixrDataToMonolix <- function(model, data, table=nlmixr2est::tableControl()) {
     stop("steady state infusions are not supported in monolix",
          call.=FALSE)
   }
+  if (.conv0$hasSs2) {
+    stop("complex steady state (ss=2) are not supported in monolix",
+         call.=FALSE)
+  }
   .df <- .conv0$df
   .new <- .env$dataSav
   .new$EVID <-.df$EVID
   .new$AMT <- .df$AMT
   .new$YTYPE <- .df$DVID
-  .new$ADM <- .df$CMT
   .new$SS <- .df$SS
+  .new$ADM <- .df$ADM
   .col0 <- c("ID", "TIME", "EVID", "AMT", "II", "DV", "ADM", "YTYPE", "SS")
   if (.conv0$hasRate) {
     .new$RATE <- .df$RATE
@@ -130,5 +132,6 @@ nlmixrDataToMonolix <- function(model, data, table=nlmixr2est::tableControl()) {
   }
 
   .col0 <- c(.col0, model$allCovs, .censData, .limitData, "nlmixrRowNums")
-  .new[.df$.nlmixrKeep, .col0]
+  list("monolix"=.new[.df$.nlmixrKeep, .col0],
+       "adm"=.conv0$adm)
 }

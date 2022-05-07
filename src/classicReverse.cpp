@@ -118,7 +118,7 @@ static inline int getDvid(int &cmt, IntegerVector &dvidDvid, IntegerVector &cmtD
 #define MONOLIX_INFUSION   4
 #define MONOLIX_BOLUS      5
 
-static int getAdm(int cmt, int type, std::vector<int> &admIds) {
+static inline int getAdm(int cmt, int type, std::vector<int> &admIds) {
   int id = cmt*10+type;
   for (int i = 0; i < admIds.size(); ++i) {
     if (admIds[i] == id) {
@@ -127,6 +127,25 @@ static int getAdm(int cmt, int type, std::vector<int> &admIds) {
   }
   admIds.push_back(id);
   return admIds.size();
+}
+
+static inline DataFrame createAdm(std::vector<int> &admIds) {
+  IntegerVector adm(admIds.size());
+  IntegerVector cmt(admIds.size());
+  IntegerVector type(admIds.size());
+  int c=0, t=0;
+  for (int i = 0; i < admIds.size(); ++i) {
+    adm[i] = i+1;
+    c =admIds[i]/10;
+    t = admIds[i] - c*10;
+    cmt[i] = c;
+    type[i] = t;
+  }
+  type.attr("levels") = CharacterVector::create("empty", "modelRate", "modelDur", "infusion", "bolus");
+  type.attr("class") = "factor";
+  return DataFrame::create(_["adm"]=adm,
+                           _["cmt"]=cmt,
+                           _["type"]=type);
 }
 
 //[[Rcpp::export]]
@@ -283,8 +302,7 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
     }
   }
   // now return the dataset
-  return List::create(_["df"]=DataFrame::create(
-                                                _["EVID"]=newEvid,
+  return List::create(_["df"]=DataFrame::create(_["EVID"]=newEvid,
                                                 _["SS"]=newSs,
                                                 _["DVID"]=newDvid,
                                                 _["AMT"]=newAmt,
@@ -294,6 +312,7 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
                                                 _["ADM"]=newAdm,
                                                 _[".nlmixrKeep"]=keepItem
                                                 ),
+                      _["adm"]=createAdm(admIds),
                       _["turnOffCmt"]=turnOffCmt,
                       _["hasTinf"]=hasTinf,
                       _["hasRate"]=hasRate,
