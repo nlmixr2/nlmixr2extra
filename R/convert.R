@@ -1,11 +1,14 @@
-#' Convert nlmixr compatible data to monolix compatible data (if possible)
+#' Convert nlmixr compatible data to other formats (if possible)
 #'
 #' @param model rxode2 model for conversion
 #' @param data Input dataset
 #' @param table is the table control; this is mostly to figure out if there are additional columns to keep.
-#' @return A list with:
+#' @return
+#'
+#' With the function `nlmixrDataToMonolix` return a list with:
 #'  - Monolix compatible dataset ($monolix)
 #'  - Monolix ADM information ($adm)
+#'
 #' @author Matthew L. Fidler
 #' @export
 #' @examples
@@ -64,6 +67,8 @@
 #' }
 #'
 #' nlmixrDataToMonolix(pk.turnover.emax3, nlmixr2data::warfarin)
+#'
+#' nlmixrDataToNonmem(pk.turnover.emax3, nlmixr2data::warfarin)
 nlmixrDataToMonolix <- function(model, data, table=nlmixr2est::tableControl()) {
   # https://dataset.lixoft.com/faq/translating-your-dataset-from-nonmem-format-to-the-monolix-suite-format/
   model <- rxode2::assertRxUi(model, extra=" to convert the data with 'nlmixrDataToMonolix'")
@@ -134,4 +139,64 @@ nlmixrDataToMonolix <- function(model, data, table=nlmixr2est::tableControl()) {
   .col0 <- c(.col0, model$allCovs, .censData, .limitData, "nlmixrRowNums")
   list("monolix"=.new[.df$.nlmixrKeep, .col0],
        "adm"=.conv0$adm)
+}
+
+#' @rdname nlmixrDataToMonolix
+#' @export
+nlmixrDataToNonmem <- function(model, data, table=nlmixr2est::tableControl()) {
+  model <- rxode2::assertRxUi(model, extra=" to convert the data with 'nlmixrDataToNonmem'")
+  rxode2::assertRxUiPrediction(model, extra=" to convert the data with 'nlmixrDataToNonmem'")
+  .env <- new.env(parent=emptyenv())
+  .env$table <- table
+  nlmixr2est::.foceiPreProcessData(data, .env, model)
+  .mv <- rxode2::rxModelVars(model)
+  .flag <- .mv$flags
+  .conv0 <- .Call(`_nlmixr2extra_convertDataBack`, .env$dataSav$ID, .env$dataSav$TIME, .env$dataSav$AMT,
+                  .env$dataSav$II, .env$dataSav$EVID, .env$dataSav$CMT,
+                  model$predDf$cmt, model$predDf$dvid, .flag["ncmt"], .flag["ka"], length(.mv$state),
+                  replaceEvid=5L)
+  if (.conv0$hasPhantom) {
+    stop("transit compartment phantom events are not supported in babelmixr2 to NONMEM conversion",
+         call.=FALSE)
+  }
+  if (.conv0$hasReplace) {
+    stop("replacement events are not supported in NONMEM",
+         call.=FALSE)
+  }
+  if (.conv0$hasMult) {
+    stop("multiply events are not supported in NONMEM",
+         call.=FALSE)
+  }
+  if (.conv0$hasTinf) {
+    stop("NONMEM does not support a duration/tinf data item",
+         call.=FALSE)
+  }
+  .df <- .conv0$df
+  .new <- .env$dataSav
+  .new$EVID <-.df$EVID
+  .new$AMT <- .df$AMT
+  .new$DVID <- .df$DVID
+  .new$SS <- .df$SS
+  .new$CMT <- .df$CMT
+  .col0 <- c("ID", "TIME", "EVID", "AMT", "II", "DV", "CMT", "DVID", "SS")
+  if (.conv0$hasRate) {
+    .new$RATE <- .df$RATE
+    .col0 <- c(.col0, "RATE")
+  } else if (.conv0$hasTinf) {
+    .new$TINF <- .df$TINF
+    .col0 <- c(.col0, "TINF")
+  }
+
+  .censData <- NULL
+  if (any(names(.new) == "CENS")) {
+    .censData <- "CENS"
+  }
+
+  .limitData <- NULL
+  if (any(names(.new) == "LIMIT")) {
+    .limitData <- "LIMIT"
+  }
+
+  .col0 <- c(.col0, model$allCovs, .censData, .limitData, "nlmixrRowNums")
+  .new[.df$.nlmixrKeep, .col0]
 }

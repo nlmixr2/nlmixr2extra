@@ -2,9 +2,12 @@
 % Please edit documentation in R/convert.R
 \name{nlmixrDataToMonolix}
 \alias{nlmixrDataToMonolix}
-\title{Convert nlmixr compatible data to monolix compatible data (if possible)}
+\alias{nlmixrDataToNonmem}
+\title{Convert nlmixr compatible data to other formats (if possible)}
 \usage{
 nlmixrDataToMonolix(model, data, table = nlmixr2est::tableControl())
+
+nlmixrDataToNonmem(model, data, table = nlmixr2est::tableControl())
 }
 \arguments{
 \item{model}{rxode2 model for conversion}
@@ -14,10 +17,14 @@ nlmixrDataToMonolix(model, data, table = nlmixr2est::tableControl())
 \item{table}{is the table control; this is mostly to figure out if there are additional columns to keep.}
 }
 \value{
-Monolix compatible dataset
+With the function \code{nlmixrDataToMonolix} return a list with:
+\itemize{
+\item Monolix compatible dataset ($monolix)
+\item Monolix ADM information ($adm)
+}
 }
 \description{
-Convert nlmixr compatible data to monolix compatible data (if possible)
+Convert nlmixr compatible data to other formats (if possible)
 }
 \examples{
 
@@ -75,6 +82,8 @@ pk.turnover.emax3 <- function() {
 }
 
 nlmixrDataToMonolix(pk.turnover.emax3, nlmixr2data::warfarin)
+
+nlmixrDataToNonmem(pk.turnover.emax3, nlmixr2data::warfarin)
 }
 \author{
 Matthew L. Fidler
