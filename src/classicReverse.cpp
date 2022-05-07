@@ -83,7 +83,7 @@ static inline void getWh(int evid, int *wh, int *cmt, int *wh100, int *whI, int 
   }
 }
 
-static inline int getSs(int wh0, bool &hasSs, bool &hasSsRate) {
+static inline int getSs(int wh0, bool &hasSs, bool &hasSs2, bool &hasSsRate) {
   if (wh0 == EVID0_SS2) {
     hasSs=true;
     return  2;
@@ -111,6 +111,24 @@ static inline int getDvid(int &cmt, IntegerVector &dvidDvid, IntegerVector &cmtD
   return 0;
 }
 
+
+#define MONOLIX_EMPTY_TYPE 1
+#define MONOLIX_MODEL_RATE 2
+#define MONOLIX_MODEL_DUR  3
+#define MONOLIX_INFUSION   4
+#define MONOLIX_BOLUS      5
+
+static int getAdm(int cmt, int type, std::vector<int> &admIds) {
+  int id = cmt*10+type;
+  for (int i = 0; i < admIds.size(); ++i) {
+    if (admIds[i] == id) {
+      return i+1;
+    }
+  }
+  admIds.push_back(id);
+  return admIds.size();
+}
+
 //[[Rcpp::export]]
 List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, NumericVector ii,
                      IntegerVector evid, IntegerVector cmt,
@@ -125,6 +143,8 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
   NumericVector newRate(evid.size());
   NumericVector newTinf(evid.size());
   IntegerVector newCmt(evid.size());
+  IntegerVector newAdm(evid.size());
+  std::vector<int> admIds;
   int wh=0, cmt0=0, wh100=0, whI=0, wh0=0;
   bool turnOffCmt=false;
   bool hasTinf = false;
@@ -133,6 +153,7 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
   bool hasReplace = false;
   bool hasMult = false;
   bool hasSs=false;
+  bool hasSs2=false;
   bool hasSsRate=false;
   double curAmt=0.0;
   for (unsigned int i = 0; i < evid.size(); ++i) {
@@ -145,6 +166,7 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
     newTinf[i] = 0;
     newAmt[i] = amt[i];
     newCmt[i] = cmt[i];
+    newAdm[i] = 0;
     if (curEvid == 0 || curEvid==2 || curEvid == 3) {
       // 0, 2 and 3 are preserved
       newDvid[i] = curEvid == 3 ? 0 : getDvid(cmt[i], dvidDvid, cmtDvid);
@@ -158,27 +180,42 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
             linNcmt, linKa, neq);
       if (wh0 ==EVID0_OFF) {
         // turn off a compartment; supported in nonmem
+        // In monoix "Turning off compartments should instead be defined in the model file"
+        // This is done by the macro empty(adm=X, target=CmtName)
+        // MONOLIX_EMPTY_TYPE
         newCmt[i] = -cmt[i];
+        newAdm[i] = getAdm(cmt[i], MONOLIX_EMPTY_TYPE, admIds);
         turnOffCmt=true;
         keepItem[i] = true;
       } else if (wh0 == EVID0_PHANTOM) {
+        // In monolix this can be defined by:
+        // depot(type=x, target=cmtName, ka, Ktr, Mtt)
+        
+        // But the ODE structure must be completely change so we will
+        // not support this for now
         keepItem[i] = false;
         newEvid[i] = 7;
         hasPhantom = true;
       } else {
         switch (whI) {
         case EVIDF_MODEL_RATE_ON: // modeled rate.
+          // In monolix this is also done by the macro; rates cannot be -1 
           newEvid[i] = 1;
-          newSs[i] =getSs(wh0, hasSs, hasSsRate);
+          newSs[i] =getSs(wh0, hasSs, hasSs2, hasSsRate);
           newRate[i] = -1;
           newAmt[i] = amt[i];
+          newAdm[i] = getAdm(cmt[i], MONOLIX_MODEL_RATE, admIds);
           keepItem[i] = true;
           break;
         case EVIDF_MODEL_DUR_ON: // modeled duration.
+          // In monolix this is done by macro; rates cannot be -2
+          // Rather you define
+          // depot(type=ADMId, target=Cmt, ModeledDuration)
           newEvid[i] = 1;
-          newSs[i] = getSs(wh0, hasSs, hasSsRate);
+          newSs[i] = getSs(wh0, hasSs, hasSs2, hasSsRate);
           newRate[i] = -2;
           newAmt[i] = amt[i];
+          newAdm[i] = getAdm(cmt[i], MONOLIX_MODEL_DUR, admIds);
           keepItem[i] = true;
           break;
         case EVIDF_MODEL_RATE_OFF: // End modeled rate
@@ -188,6 +225,7 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
         case EVIDF_INF_DUR:
         case EVIDF_INF_RATE:
           // classic rxode2 uses rate instead of amount here
+          // in monolix this can be denfined by iv() macro
           curAmt = amt[i];
           if (amt[i] > 0) {
             bool foundOff=false;
@@ -215,8 +253,9 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
                 hasRate = true;
               }
               newEvid[i] = 1;
-              newSs[i] = getSs(wh0, hasSs, hasSsRate);
+              newSs[i] = getSs(wh0, hasSs, hasSs2, hasSsRate);
               newAmt[i] = curAmt;
+              newAdm[i] = getAdm(cmt[i], MONOLIX_INFUSION, admIds);
               keepItem[i] = true;
             } else {
               keepItem[i] = false;
@@ -230,12 +269,14 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
           hasReplace=true;
         case EVIDF_MULT:
           newEvid[i] = 6;
-          newSs[i] =getSs(wh0, hasSs, hasSsRate);
+          newSs[i] =getSs(wh0, hasSs, hasSs2, hasSsRate);
           keepItem[i] = false;
           hasMult=true;
         case EVIDF_NORMAL:
+          // defined by 
           newEvid[i] = 1;
-          newSs[i] =getSs(wh0, hasSs, hasSsRate);
+          newSs[i] =getSs(wh0, hasSs, hasSs2, hasSsRate);
+          newAdm[i] = getAdm(cmt[i], MONOLIX_BOLUS, admIds);
           keepItem[i] = true;          
         }
       }
@@ -250,6 +291,7 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
                                                 _["RATE"]=newRate,
                                                 _["TINF"]=newTinf,
                                                 _["CMT"]=newCmt,
+                                                _["ADM"]=newAdm,
                                                 _[".nlmixrKeep"]=keepItem
                                                 ),
                       _["turnOffCmt"]=turnOffCmt,
@@ -259,5 +301,6 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
                       _["hasReplace"]=hasReplace,
                       _["hasMult"]=hasMult,
                       _["hasSs"]=hasSs,
+                      _["hasSs2"]=hasSs2,
                       _["hasSsRate"]=hasSsRate);
 }

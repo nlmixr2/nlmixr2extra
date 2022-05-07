@@ -63,6 +63,7 @@
 #'
 #' nlmixrDataToMonolix(pk.turnover.emax3, nlmixr2data::warfarin)
 nlmixrDataToMonolix <- function(model, data, table=nlmixr2est::tableControl()) {
+  # https://dataset.lixoft.com/faq/translating-your-dataset-from-nonmem-format-to-the-monolix-suite-format/
   model <- rxode2::assertRxUi(model, extra=" to convert the data with 'nlmixrDataToMonolix'")
   rxode2::assertRxUiPrediction(model, extra=" to convert the data with 'nlmixrDataToMonolix'")
   .env <- new.env(parent=emptyenv())
