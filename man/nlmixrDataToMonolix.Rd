@@ -3,11 +3,14 @@
 \name{nlmixrDataToMonolix}
 \alias{nlmixrDataToMonolix}
 \alias{nlmixrDataToNonmem}
+\alias{nlmixrDataToMrgsolve}
 \title{Convert nlmixr compatible data to other formats (if possible)}
 \usage{
 nlmixrDataToMonolix(model, data, table = nlmixr2est::tableControl())
 
 nlmixrDataToNonmem(model, data, table = nlmixr2est::tableControl())
+
+nlmixrDataToMrgsolve(model, data, table = nlmixr2est::tableControl())
 }
 \arguments{
 \item{model}{rxode2 model for conversion}

@@ -141,11 +141,13 @@ nlmixrDataToMonolix <- function(model, data, table=nlmixr2est::tableControl()) {
        "adm"=.conv0$adm)
 }
 
-#' @rdname nlmixrDataToMonolix
-#' @export
-nlmixrDataToNonmem <- function(model, data, table=nlmixr2est::tableControl()) {
-  model <- rxode2::assertRxUi(model, extra=" to convert the data with 'nlmixrDataToNonmem'")
-  rxode2::assertRxUiPrediction(model, extra=" to convert the data with 'nlmixrDataToNonmem'")
+
+.nlmixrDataToNonmem <- function(model, data, table=nlmixr2est::tableControl(),
+                                fun="nlmixrDataToNonmem", replaceEvid=5L,
+                                replaceOK=FALSE, software="NONMEM") {
+  .xtra <- paste0(" to convert the data with '", fun, "'")
+  model <- rxode2::assertRxUi(model, extra=.xtra)
+  rxode2::assertRxUiPrediction(model, extra=.xtra)
   .env <- new.env(parent=emptyenv())
   .env$table <- table
   nlmixr2est::.foceiPreProcessData(data, .env, model)
@@ -156,19 +158,21 @@ nlmixrDataToNonmem <- function(model, data, table=nlmixr2est::tableControl()) {
                   model$predDf$cmt, model$predDf$dvid, .flag["ncmt"], .flag["ka"], length(.mv$state),
                   replaceEvid=5L)
   if (.conv0$hasPhantom) {
-    stop("transit compartment phantom events are not supported in babelmixr2 to NONMEM conversion",
+    stop("transit compartment phantom events are not supported in babelmixr2 to ", software, " conversion",
          call.=FALSE)
   }
+  if (replaceOK) {
+  }
   if (.conv0$hasReplace) {
-    stop("replacement events are not supported in NONMEM",
+    stop("replacement events are not supported in ", software,
          call.=FALSE)
   }
   if (.conv0$hasMult) {
-    stop("multiply events are not supported in NONMEM",
+    stop("multiply events are not supported in ", software,
          call.=FALSE)
   }
   if (.conv0$hasTinf) {
-    stop("NONMEM does not support a duration/tinf data item",
+    stop(software, "does not support a duration/tinf data item",
          call.=FALSE)
   }
   .df <- .conv0$df
@@ -199,4 +203,21 @@ nlmixrDataToNonmem <- function(model, data, table=nlmixr2est::tableControl()) {
 
   .col0 <- c(.col0, model$allCovs, .censData, .limitData, "nlmixrRowNums")
   .new[.df$.nlmixrKeep, .col0]
+}
+
+#' @rdname nlmixrDataToMonolix
+#' @export
+nlmixrDataToNonmem <- function(model, data, table=nlmixr2est::tableControl()) {
+  .nlmixrDataToNonmem (model, data, table,
+                       fun="nlmixrDataToNonmem", replaceEvid=5L,
+                       replaceOK=FALSE, software="NONMEM")
+}
+
+
+#' @rdname nlmixrDataToMonolix
+#' @export
+nlmixrDataToMrgsolve <- function(model, data, table=nlmixr2est::tableControl()) {
+  .nlmixrDataToNonmem (model, data, table,
+                       fun="nlmixrDataToMrgsolve", replaceEvid=8L,
+                       replaceOK=TRUE, software="mrgsolve")
 }
