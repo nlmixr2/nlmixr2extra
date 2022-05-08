@@ -1,13 +1,32 @@
 #' Convert nlmixr compatible data to other formats (if possible)
 #'
 #' @param model rxode2 model for conversion
-#' @param data Input dataset
-#' @param table is the table control; this is mostly to figure out if there are additional columns to keep.
+#'
+#' @param data Input dataset.
+#'
+#' @param table is the table control; this is mostly to figure out if
+#'   there are additional columns to keep.
+#'
+#' @param env When `NULL` (default) nothing is done.  When an
+#'   environment, the function `nlmixr2est::.foceiPreProcessData(data,
+#'   env, model)` is called on the provided environment.
+#'
 #' @return
 #'
-#' With the function `nlmixrDataToMonolix` return a list with:
+#' With the function `nlmixrDataToMonolix()` return a list with:
 #'  - Monolix compatible dataset ($monolix)
 #'  - Monolix ADM information ($adm)
+#'
+#' With the function `nlmixrDataToNonmem()` return a dataset that is
+#' compatible with NONMEM.
+#'
+#' With the function `nlmixrDataToMrgsolve()` return a dataset that is
+#' compatible with `mrgsolve`.  Unlike NONMEM, it supports replacement
+#' events with `evid=8` (note with `rxode2` replacement `evid` is `5`).
+#'
+#' With the function `nlmixrDataToRxode()` this will normalize the
+#' dataset to use newer `evid` definitions that are closer to NONMEM
+#' instead of any classic definitions that are used at a lower level
 #'
 #' @author Matthew L. Fidler
 #' @export
@@ -69,11 +88,20 @@
 #' nlmixrDataToMonolix(pk.turnover.emax3, nlmixr2data::warfarin)
 #'
 #' nlmixrDataToNonmem(pk.turnover.emax3, nlmixr2data::warfarin)
-nlmixrDataToMonolix <- function(model, data, table=nlmixr2est::tableControl()) {
+#'
+#' nlmixrDataToMrgsolve(pk.turnover.emax3, nlmixr2data::warfarin)
+#'
+#' nlmixrDataToRxode(pk.turnover.emax3, nlmixr2data::warfarin)
+#'
+nlmixrDataToMonolix <- function(model, data, table=nlmixr2est::tableControl(), env=NULL) {
   # https://dataset.lixoft.com/faq/translating-your-dataset-from-nonmem-format-to-the-monolix-suite-format/
   model <- rxode2::assertRxUi(model, extra=" to convert the data with 'nlmixrDataToMonolix'")
   rxode2::assertRxUiPrediction(model, extra=" to convert the data with 'nlmixrDataToMonolix'")
-  .env <- new.env(parent=emptyenv())
+  if (is.environment(env)) {
+    .env <- env
+  } else {
+    .env <- new.env(parent=emptyenv())
+  }
   .env$table <- table
   nlmixr2est::.foceiPreProcessData(data, .env, model)
   .mv <- rxode2::rxModelVars(model)
@@ -144,11 +172,15 @@ nlmixrDataToMonolix <- function(model, data, table=nlmixr2est::tableControl()) {
 
 .nlmixrDataToNonmem <- function(model, data, table=nlmixr2est::tableControl(),
                                 fun="nlmixrDataToNonmem", replaceEvid=5L,
-                                replaceOK=FALSE, software="NONMEM") {
+                                replaceOK=FALSE, software="NONMEM", env=NULL) {
   .xtra <- paste0(" to convert the data with '", fun, "'")
   model <- rxode2::assertRxUi(model, extra=.xtra)
   rxode2::assertRxUiPrediction(model, extra=.xtra)
-  .env <- new.env(parent=emptyenv())
+  if (is.environment(env)) {
+    .env <- env
+  } else {
+    .env <- new.env(parent=emptyenv())
+  }
   .env$table <- table
   nlmixr2est::.foceiPreProcessData(data, .env, model)
   .mv <- rxode2::rxModelVars(model)
@@ -157,23 +189,24 @@ nlmixrDataToMonolix <- function(model, data, table=nlmixr2est::tableControl()) {
                   .env$dataSav$II, .env$dataSav$EVID, .env$dataSav$CMT,
                   model$predDf$cmt, model$predDf$dvid, .flag["ncmt"], .flag["ka"], length(.mv$state),
                   replaceEvid=5L)
-  if (.conv0$hasPhantom) {
-    stop("transit compartment phantom events are not supported in babelmixr2 to ", software, " conversion",
-         call.=FALSE)
-  }
-  if (replaceOK) {
-  }
-  if (.conv0$hasReplace) {
-    stop("replacement events are not supported in ", software,
-         call.=FALSE)
-  }
-  if (.conv0$hasMult) {
-    stop("multiply events are not supported in ", software,
-         call.=FALSE)
-  }
-  if (.conv0$hasTinf) {
-    stop(software, "does not support a duration/tinf data item",
-         call.=FALSE)
+  if (!is.na(replaceOK)) {
+    if (.conv0$hasPhantom) {
+      stop("transit compartment phantom events are not supported in babelmixr2 to ", software, " conversion",
+           call.=FALSE)
+    }
+    if (replaceOK) {
+    } else if (.conv0$hasReplace) {
+      stop("replacement events are not supported in ", software,
+           call.=FALSE)
+    }
+    if (.conv0$hasMult) {
+      stop("multiply events are not supported in ", software,
+           call.=FALSE)
+    }
+    if (.conv0$hasTinf) {
+      stop(software, "does not support a duration/tinf data item",
+           call.=FALSE)
+    }
   }
   .df <- .conv0$df
   .new <- .env$dataSav
@@ -207,17 +240,25 @@ nlmixrDataToMonolix <- function(model, data, table=nlmixr2est::tableControl()) {
 
 #' @rdname nlmixrDataToMonolix
 #' @export
-nlmixrDataToNonmem <- function(model, data, table=nlmixr2est::tableControl()) {
+nlmixrDataToNonmem <- function(model, data, table=nlmixr2est::tableControl(), env=NULL) {
   .nlmixrDataToNonmem (model, data, table,
                        fun="nlmixrDataToNonmem", replaceEvid=5L,
-                       replaceOK=FALSE, software="NONMEM")
+                       replaceOK=FALSE, software="NONMEM", env=env)
+}
+
+#' @rdname nlmixrDataToMonolix
+#' @export
+nlmixrDataToRxode <- function(model, data, table=nlmixr2est::tableControl(), env=NULL) {
+  .nlmixrDataToNonmem (model, data, table,
+                       fun="nlmixrDataToRxode", replaceEvid=5L,
+                       replaceOK=NA, software="rxode2", env=env)
 }
 
 
 #' @rdname nlmixrDataToMonolix
 #' @export
-nlmixrDataToMrgsolve <- function(model, data, table=nlmixr2est::tableControl()) {
+nlmixrDataToMrgsolve <- function(model, data, table=nlmixr2est::tableControl(), env=NULL) {
   .nlmixrDataToNonmem (model, data, table,
                        fun="nlmixrDataToMrgsolve", replaceEvid=8L,
-                       replaceOK=TRUE, software="mrgsolve")
+                       replaceOK=TRUE, software="mrgsolve", env=env)
 }
