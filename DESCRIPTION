@@ -1,50 +1,52 @@
 Package: nlmixr2extra
-Title: Nonlinear Mixed Effects Models in Population PK/PD, Extra Support Functions
+Title: Nonlinear Mixed Effects Models in Population PK/PD, Extra Support
+    Functions
 Version: 2.0.6
-Authors@R: 
-    c(person("Matthew","Fidler",
-      role = c("aut", "cre"), email = "matthew.fidler@gmail.com",
-      comment=c(ORCID="0000-0001-8538-6691")),
-    person("Vipul", "Mann", role="aut", email="vm2583@columbia.edu"))
-Description: Fit and compare nonlinear mixed-effects models in differential
-    equations with flexible dosing information commonly seen in pharmacokinetics
-    and pharmacodynamics (Almquist, Leander, and Jirstrand 2015 
-    <doi:10.1007/s10928-015-9409-1>). Differential equation solving is 
-    by compiled C code provided in the 'rxode2' package
-    (Wang, Hallow, and James 2015 <doi:10.1002/psp4.12052>). This package is for
-    support functions like preconditioned fits <doi:10.1208/s12248-016-9866-5>, boostrap and
-    stepwise covariate selection.
+Authors@R: c(
+    person("Matthew", "Fidler", , "matthew.fidler@gmail.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0001-8538-6691")),
+    person("Vipul", "Mann", , "vm2583@columbia.edu", role = "aut")
+  )
+Maintainer: Matthew Fidler <matthew.fidler@gmail.com>
+Description: Fit and compare nonlinear mixed-effects models in
+    differential equations with flexible dosing information commonly seen
+    in pharmacokinetics and pharmacodynamics (Almquist, Leander, and
+    Jirstrand 2015 <doi:10.1007/s10928-015-9409-1>). Differential equation
+    solving is by compiled C code provided in the 'rxode2' package (Wang,
+    Hallow, and James 2015 <doi:10.1002/psp4.12052>). This package is for
+    support functions like preconditioned fits
+    <doi:10.1208/s12248-016-9866-5>, boostrap and stepwise covariate
+    selection.
 License: GPL (>= 3)
-Encoding: UTF-8
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.2
+URL: https://nlmixr2.github.io/nlmixr2extra/,
+    https://github.com/nlmixr2/nlmixr2extra/
+BugReports: https://github.com/nlmixr2/nlmixr2extra/issues/
 Imports: 
     checkmate,
     cli,
     crayon,
     data.table,
+    digest,
     ggplot2,
+    ggtext,
     lotri,
     nlme,
     nlmixr2est,
     Rcpp,
     rxode2,
-    symengine
+    stats,
+    symengine,
+    utils
+Suggests: 
+    nlmixr2data,
+    testthat (>= 3.0.0),
+    withr
 LinkingTo: 
     Rcpp,
     RcppArmadillo
-NeedsCompilation: yes
 Biarch: true
 Config/testthat/edition: 3
-Maintainer: Matthew Fidler <matthew.fidler@gmail.com>
-Suggests: 
-    withr,
-    nlmixr2data,
-    testthat (>= 3.0.0),
-    nlmixr2plot,
-    digest,
-    ggtext,
-    covr
-BugReports: https://github.com/nlmixr2/nlmixr2extra/issues/
-URL: https://nlmixr2.github.io/nlmixr2extra/, https://github.com/nlmixr2/nlmixr2extra/
-
+Encoding: UTF-8
+NeedsCompilation: yes
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.2

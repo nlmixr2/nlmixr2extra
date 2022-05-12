@@ -884,13 +884,21 @@ addCovMultiple <- function(covInfo, fitobject, indep = TRUE) {
 #' Stepwise Covariate Model-selection (SCM) method
 #'
 #' @param fit an nlmixr2 'fit' object
-#' @param varsVec a list of candidate variables to which the covariates could be added
-#' @param covarsVec a list of candidate covariates that need to be tested
-#' @param pVal a named list with names 'fwd' and 'bck' for specifying the p-values for the forward and backward searches, respectively
-#' @param covInformation a list containing additionl information on the variables-covariates pairs that should be passed on to addCovMultiple function
-#' @param catCovariates a list of covariates that should be treated as categorical
-#' @param searchType one of 'scm', 'forward' and 'backward' to specify the covariate search method; default is 'scm'
-#' @param restart a boolean that controls if the search should be restarted; default is FALSE
+#' @param varsVec a list of candidate variables to which the
+#'   covariates could be added
+#' @param covarsVec a list of candidate covariates that need to be
+#'   tested
+#' @param pVal a named list with names 'fwd' and 'bck' for specifying
+#'   the p-values for the forward and backward searches, respectively
+#' @param covInformation a list containing additional information on
+#'   the variables-covariates pairs that should be passed on to
+#'   addCovMultiple function
+#' @param catCovariates a list of covariates that should be treated as
+#'   categorical
+#' @param searchType one of 'scm', 'forward' and 'backward' to specify
+#'   the covariate search method; default is 'scm'
+#' @param restart a boolean that controls if the search should be
+#'   restarted; default is FALSE
 #'
 #' @return A list summarizing the covariate selection steps and
 #'   output; This list has the "summaryTable" for the overall summary

@@ -16,7 +16,7 @@ using namespace Rcpp;
 //' @param Rin The R matrix input
 //'
 //' @return The inverse preconditioning matrix
-//'
+//' @noRd
 //[[Rcpp::export]]
 SEXP preCondInv(SEXP Rin) {
   // Assumes Rin is symmetric

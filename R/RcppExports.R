@@ -10,7 +10,7 @@ convertDataBack <- function(id, time, amt, ii, evid, cmt, cmtDvid, dvidDvid, lin
 #' @param Rin The R matrix input
 #'
 #' @return The inverse preconditioning matrix
-#'
+#' @noRd
 preCondInv <- function(Rin) {
     .Call(`_nlmixr2extra_preCondInv`, Rin)
 }
