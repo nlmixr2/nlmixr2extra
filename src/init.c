@@ -4,13 +4,9 @@
 #include <R_ext/Rdynload.h>
 
 SEXP _nlmixr2extra_preCondInv(SEXP Rin);
-SEXP _nlmixr2extra_convertDataBack(SEXP, SEXP, SEXP, SEXP, SEXP,
-                                   SEXP, SEXP, SEXP, SEXP, SEXP,
-                                   SEXP, SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
   {"_nlmixr2extra_preCondInv", (DL_FUNC) &_nlmixr2extra_preCondInv, 1},
-  {"_nlmixr2extra_convertDataBack", (DL_FUNC) &_nlmixr2extra_convertDataBack, 12},
   {NULL, NULL, 0}
 };
 
