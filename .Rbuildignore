@@ -6,3 +6,4 @@ nlmixr2BootstrapCache_fit
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
+^logo.png$
