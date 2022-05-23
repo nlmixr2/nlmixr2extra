@@ -1,24 +1,27 @@
+---
+output: github_document
+---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
+
+
 
 # nlmixr2extra
 
 <!-- badges: start -->
-
 [![R-CMD-check](https://github.com/nlmixr2/nlmixr2extra/workflows/R-CMD-check/badge.svg)](https://github.com/nlmixr2/nlmixr2extra/actions)
-[![Codecov test
-coverage](https://codecov.io/gh/nlmixr2/nlmixr2extra/branch/main/graph/badge.svg)](https://app.codecov.io/gh/nlmixr2/nlmixr2extra?branch=main)
+[![Codecov test coverage](https://codecov.io/gh/nlmixr2/nlmixr2extra/branch/main/graph/badge.svg)](https://app.codecov.io/gh/nlmixr2/nlmixr2extra?branch=main)
+[![CRAN version](http://www.r-pkg.org/badges/version/nlmixr2extra)](https://cran.r-project.org/package=nlmixr2extra)
+[![CRAN total downloads](https://cranlogs.r-pkg.org/badges/grand-total/nlmixr2extra)](https://cran.r-project.org/package=nlmixr2extra)
+[![CRAN total downloads](https://cranlogs.r-pkg.org/badges/nlmixr2extra)](https://cran.r-project.org/package=nlmixr2extra)
 [![CodeFactor](https://www.codefactor.io/repository/github/nlmixr2/nlmixr2extra/badge)](https://www.codefactor.io/repository/github/nlmixr2/nlmixr2extra)
 <!-- badges: end -->
 
-The goal of nlmixr2extra is to provide the tools to help with common
-pharmacometric tasks with nlmixr2 models like bootstrapping, covariate
-selection etc.
+The goal of nlmixr2extra is to provide the tools to help with common pharmacometric tasks with nlmixr2 models like bootstrapping, covariate selection etc.
 
 ## Installation
 
-You can install the development version of nlmixr2extra from
-[GitHub](https://github.com/) with:
+You can install the development version of nlmixr2extra from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("remotes")
@@ -33,7 +36,8 @@ remotes::install_github("nlmixr2/nlmixr2extra")
 
 This is a basic example of bootstrapping provided by this package
 
-``` r
+
+```r
 library(nlmixr2est)
 #> Loading required package: nlmixr2data
 library(nlmixr2extra)
@@ -63,50 +67,48 @@ one.compartment <- function() {
 
 ## The fit is performed by the function nlmixr/nlmix2 specifying the model, data and estimate
 fit <- nlmixr2(one.compartment, theo_sd,  est="saem", saemControl(print=0))
+#> 
+#>  
+#> 
 #> ℹ parameter labels from comments will be replaced by 'label()'
+#> 
 #> → loading into symengine environment...
 #> → pruning branches (`if`/`else`) of saem model...
 #> ✔ done
 #> → finding duplicate expressions in saem model...
-#> [====|====|====|====|====|====|====|====|====|====] 0:00:00
 #> → optimizing duplicate expressions in saem model...
-#> [====|====|====|====|====|====|====|====|====|====] 0:00:00
 #> ✔ done
-#> rxode2 1.0.0 using 4 threads (see ?getRxThreads)
+#> rxode2 2.0.7 using 4 threads (see ?getRxThreads)
 #> Calculating covariance matrix
-#> [====|====|====|====|====|====|====|====|====|====] 0:00:00
 #> → loading into symengine environment...
 #> → pruning branches (`if`/`else`) of saem model...
 #> ✔ done
 #> → finding duplicate expressions in saem predOnly model 0...
-#> [====|====|====|====|====|====|====|====|====|====] 0:00:00
 #> → finding duplicate expressions in saem predOnly model 1...
-#> [====|====|====|====|====|====|====|====|====|====] 0:00:00
 #> → optimizing duplicate expressions in saem predOnly model 1...
-#> [====|====|====|====|====|====|====|====|====|====] 0:00:00
 #> → finding duplicate expressions in saem predOnly model 2...
-#> [====|====|====|====|====|====|====|====|====|====] 0:00:00
 #> ✔ done
+#> 
 #> → Calculating residuals/tables
 #> ✔ done
 #> → compress origData in nlmixr2 object, save 5952
 #> → compress phiM in nlmixr2 object, save 62360
-#> → compress parHist in nlmixr2 object, save 9408
-#> → compress saem0 in nlmixr2 object, save 24472
+#> → compress parHist in nlmixr2 object, save 9560
+#> → compress saem0 in nlmixr2 object, save 24584
 
 fit2 <- suppressMessages(bootstrapFit(fit))
 fit2
-#> ── nlmixr SAEM OBJF by FOCEi approximation ─────────────────────────────────────
+#> ── nlmixr SAEM OBJF by FOCEi approximation ──
 #> 
-#>  Gaussian/Laplacian Likelihoods: AIC(x) or x$objf etc. 
-#>  FOCEi CWRES & Likelihoods: addCwres(x) 
+#>  Gaussian/Laplacian Likelihoods: AIC(fit) or fit$objf etc. 
+#>  FOCEi CWRES & Likelihoods: addCwres(fit) 
 #> 
-#> ── Time (sec x$time): ──────────────────────────────────────────────────────────
+#> ── Time (sec fit$time): ──
 #> 
-#>            setup covariance  saem table compress    other
-#> elapsed 0.001515   0.083003 2.145 0.019    0.016 1.308482
+#>            setup covariance saem table compress    other
+#> elapsed 0.001171   2.069006 2.21  0.02    0.023 1.393823
 #> 
-#> ── Population Parameters (x$parFixed or x$parFixedDf): ─────────────────────────
+#> ── Population Parameters (fit$parFixed or fit$parFixedDf): ──
 #> 
 #>        Parameter  Est.     SE %RSE Back-transformed(95%CI) BSV(CV%) Shrink(SD)%
 #> tka       Log Ka 0.454  0.207 45.7       1.57 (1.05, 2.36)     71.5   -0.0203% 
@@ -114,13 +116,13 @@ fit2
 #> tv         Log V  3.45 0.0453 1.31       31.5 (28.8, 34.4)     13.4      9.89% 
 #> add.sd           0.693                               0.693                     
 #>  
-#>   Covariance Type (x$covMethod): boot200
+#>   Covariance Type (fit$covMethod): boot200
 #>     other calculated covs (setCov()): linFim
 #>   No correlations in between subject variability (BSV) matrix
-#>   Full BSV covariance (x$omega) or correlation (x$omegaR; diagonals=SDs) 
-#>   Distribution stats (mean/skewness/kurtosis/p-value) available in x$shrink 
+#>   Full BSV covariance (fit$omega) or correlation (fit$omegaR; diagonals=SDs) 
+#>   Distribution stats (mean/skewness/kurtosis/p-value) available in fit$shrink 
 #> 
-#> ── Fit Data (object x is a modified tibble): ───────────────────────────────────
+#> ── Fit Data (object fit is a modified tibble): ──
 #> # A tibble: 132 × 19
 #>   ID     TIME    DV  PRED    RES IPRED   IRES  IWRES eta.ka eta.cl   eta.v    cp
 #>   <fct> <dbl> <dbl> <dbl>  <dbl> <dbl>  <dbl>  <dbl>  <dbl>  <dbl>   <dbl> <dbl>
