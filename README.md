@@ -39,7 +39,6 @@ This is a basic example of bootstrapping provided by this package
 
 ```r
 library(nlmixr2est)
-#> Loading required package: nlmixr2data
 library(nlmixr2extra)
 ## basic example code
 ## The basic model consiss of an ini block that has initial estimates
@@ -67,7 +66,7 @@ one.compartment <- function() {
 
 ## The fit is performed by the function nlmixr/nlmix2 specifying the model, data and estimate
 fit <- nlmixr2(one.compartment, theo_sd,  est="saem", saemControl(print=0))
-#> 
+#>  
 #>  
 #> 
 #> ℹ parameter labels from comments will be replaced by 'label()'
@@ -78,7 +77,6 @@ fit <- nlmixr2(one.compartment, theo_sd,  est="saem", saemControl(print=0))
 #> → finding duplicate expressions in saem model...
 #> → optimizing duplicate expressions in saem model...
 #> ✔ done
-#> rxode2 2.0.7 using 4 threads (see ?getRxThreads)
 #> Calculating covariance matrix
 #> → loading into symengine environment...
 #> → pruning branches (`if`/`else`) of saem model...
@@ -105,8 +103,8 @@ fit2
 #> 
 #> ── Time (sec fit$time): ──
 #> 
-#>            setup covariance saem table compress    other
-#> elapsed 0.001171   2.069006 2.21  0.02    0.023 1.393823
+#>            setup table compress    other covariance
+#> elapsed 0.001151 0.024    0.017 3.042849      0.074
 #> 
 #> ── Population Parameters (fit$parFixed or fit$parFixedDf): ──
 #> 
