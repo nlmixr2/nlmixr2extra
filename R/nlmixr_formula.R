@@ -94,7 +94,7 @@ rename_or_overwrite <- function(data, new_name, old_name) {
 }
 
 nlmixr_formula_parser <- function(object) {
-  stopifnot(rlang::is_formula(object))
+  stopifnot(inherits(object, "formula"))
   # Confirm that the formula looks like it should and break it up into its
   # component parts
   stopifnot(length(object) == 3)
@@ -154,7 +154,7 @@ param_expand <- function(param) {
     character()
   } else if (is.list(param)) {
     unlist(lapply(param, param_expand))
-  } else if (rlang::is_formula(param)) {
+  } else if (inherits(param, "formula")) {
     stopifnot(length(param) == 3)
     stopifnot(is.name(param[[3]]))
     varnames <- all.vars(param[[2]])
@@ -253,7 +253,7 @@ nlmixr_formula_setup_ini_random <- function(ranef_definition, base=str2lang("{}"
 }
 
 nlmixr_formula_setup_model <- function(start, predictor, residual_model, predictor_var="value", param, data) {
-  stopifnot(rlang::is_formula(residual_model))
+  stopifnot(inherits(residual_model, "formula"))
   # a one-sided formula
   stopifnot(length(residual_model) == 2)
   
