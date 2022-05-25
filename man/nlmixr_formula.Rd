@@ -22,11 +22,21 @@ nlmixr_formula(
 parameters in the model.  If a single parameter estimate is desired, it can
 be given here.  If a parameter estimate per factor level is desired, either
 a single starting estimate can be given across all factor levels or one
-estimate may be given per factor level.  (Specify the factors with the \code{param} argument.)}
+estimate may be given per factor level.  (Specify the factors with the
+\code{param} argument.)}
 
-\item{...}{Passed to \code{nlmixr()}}
+\item{param}{A formula or list of two-sided formulas giving the model used
+for parameters.  If a parameter is a simple fixed effect, only, then it
+should not be included here.  If a parameter should have a separate
+estimate per level of a factor, give that as the two-sided formula here.}
 
-\item{residual_model}{The residual model formula to use.}
+\item{...}{
+  Arguments passed on to \code{\link[nlmixr2:reexports]{nlmixr2::nlmixr}}
+  \describe{
+    \item{\code{}}{}
+  }}
+
+\item{residual_model}{The residual model formula to use as a one-sided formula.}
 }
 \value{
 The model fit from \code{nlmixr()}
