@@ -7,3 +7,5 @@ nlmixr2BootstrapCache_fit
 ^docs$
 ^pkgdown$
 ^logo.png$
+^.*\.Rproj$
+^\.Rproj\.user$

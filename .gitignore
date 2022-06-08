@@ -2,3 +2,5 @@
 *.so
 nlmixr2BootstrapCache_fit_*
 docs
+.Rproj.user
+nlmixr2extra.Rproj
