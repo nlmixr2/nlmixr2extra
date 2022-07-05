@@ -10,7 +10,7 @@
 #' @param ui compiled rxode2 nlmir2 model or fit  
 #' @param varName  the variable name to which the given covariate is to be added
 #' @param covariate the covariate that needs string to be constructed
-#' @norm  boolean indicating if the covariate that needs to be added is normalized; default is FALSE
+#' @param norm  boolean indicating if the covariate that needs to be added is normalized; default is FALSE
 
 .addCovariate <- function(ui,varName,covariate,norm=FALSE,...) {
   
@@ -76,19 +76,18 @@
 #' @param popParam  population parameter variable
 #' @param murefDf MU referencing data frame
 #' @param covDf covariate referencing data frame
-#' @param addfactor a boolean indicating if the lasso constraint factor needs to be added; default is FALSE
-#' @param factor a int of lasso constraint factor already calculated
+#' @param factor a  lasso constraint factor already calculated
 #'
 #' @return expanded expression
 #' @noRd
-.expandPopExpr <- function(popParam,murefDf,covDf,addfactor = FALSE,factor) {
+.expandPopExpr <- function(popParam,murefDf,covDf,factor=NULL) {
   
   .par1 <- murefDf[murefDf$theta==popParam,]
   .res <- paste0(.par1$theta,"+",.par1$eta)
   .w <- which(covDf$theta==popParam)
   if(length(.w)>0){
-    if (addfactor){
-      checkmate::assert_numeric(factor,len = 1)
+    if (!is.null(factor)){
+      ##checkmate::assert_numeric(factor,len = 1)
       .res <- paste0(c(.res,paste0(covDf[.w,"covariateParameter"],"*",covDf[.w,"covariate"],"*",factor)),
                                   collapse="+")}
     else {
@@ -262,12 +261,175 @@ data
 }
 
 
-## recursive factor string 
 
-#1) var and covar list
-#2) mapply to add covar 
-#3) Intilaize covariates 
-#4) Recursion
+#' Build ui from the covariate 
+#' 
+#' 
+#' @param ui compiled rxode2 nlmir2 model or fit  
+#' @param varName  the variable name to which the given covariate is to be added
+#' @param covariate the covariate that needs string to be constructed
+#' @return ui with added covariate
+#' @noRd
+.builduiCovariate <- function(ui,varName,covariate){
+  
+  if (inherits(ui, "nlmixr2FitCore")) {
+    ui <- ui$ui
+  }
+  ui <- rxode2::assertRxUi(ui)
+  
+  
+  checkmate::assertCharacter(varName,len = 1,any.missing = FALSE )
+  checkmate::assertCharacter(covariate,len = 1,any.missing = FALSE )
+  
+  if (inherits(try(str2lang(varName)),"try-error")){
+    stop("`varName` must be a valid R expression",call. = FALSE)
+  }
+  if (inherits(try(str2lang(covariate)),"try-error")){
+    stop("`varName` must be a valid R expression",call. = FALSE)
+  }
+  
+# Add covariate to model expression 
+lst <- .addCovariate(ui,varName,covariate)
+.newModel <- eval(parse(text = paste0("quote(model({",paste0(as.character(lst),collapse="\n"), "}))")))
+
+# Add covariate to initialization 
+
+nthetaLength <- length(which(!is.na(ui$iniDf$ntheta)))
+.ini <- ui$iniDf
+covName <- paste0("cov_", covariate, "_", varName)
+.ini <- rbind(.ini,data.frame(ntheta=as.integer(nthetaLength+1),neta1=NA_character_,neta2=NA_character_,
+                               name=covName,lower=-Inf,est=0,upper=Inf,fix=FALSE,label=NA_character_,
+                               backTransform=NA_character_,condition=NA_character_,err=NA_character_))  
+
+# build ui
+  .ini <- as.expression(lotri::as.lotri(.ini))
+  .ini[[1]] <- quote(`ini`)
+  return(.getUiFunFromIniAndModel(ui, .ini, .newModel)())  
+
+}
+
+
+
+' Build covInfo list from varsVec and covarsVec
+#' 
+#' 
+#' @param varsVec character vector of variables that need to be added  
+#' @param covarsVec  character vector of covariates that need to be added
+#' @return covInfo list of covariate info
+#' @noRd
+.buildcovInfo <- function(varsVec,covarsVec){
+  checkmate::assert_character(varsVec,min.len = 1)
+  checkmate::assert_character(covarsVec,min.len = 1)
+  possiblePerms <- expand.grid(varsVec, covarsVec)
+  possiblePerms <-
+    list(
+      as.character(possiblePerms[[1]]),
+      as.character(possiblePerms[[2]])
+    )
+  names(possiblePerms) <- c("vars", "covars")
+  covInfo <- list() # reversivle listVarName!!
+  for (item in Map(list, possiblePerms$vars, possiblePerms$covars)) {
+    listVarName <- paste0(item[[2]], item[[1]])
+    covInfo[[listVarName]] <- list(varName = item[[1]], covariate = item[[2]])
+  }
+  
+  return(covInfo)
+}
+
+
+
+#' Build updated from the covariate and variable vector list
+#' 
+#' 
+#' @param ui compiled rxode2 nlmir2 model or fit  
+#' @param varsVec character vector of variables that need to be added  
+#' @param covarsVec  character vector of covariates that need to be added
+#' @return updated ui with added covariates
+#' @noRd
+.buildupatedUI <- function(ui,varsVec,covarsVec){
+  
+  if (inherits(ui, "nlmixr2FitCore")) {
+    ui <- ui$ui
+  }
+  ui <- rxode2::assertRxUi(ui)
+  
+  
+# construct covInfo
+ covInfo <-  .buildcovInfo(varsVec,covarsVec)
+
+# check if the covInfo is a list 
+ checkmate::assert_list(covInfo)
+ 
+ 
+ 
+ # Add covariates to 
+ 
+covSearchRes <- list()
+covsAdded <- list() # to keep track of covariates added and store in a file
+covsAddedIdx <- 1
+for (x in covInfo) {
+  covName <- paste0("cov_", x$covariate, "_", x$varName)
+  
+  
+  if (length(covsAdded) == 0) {
+    # covsAdded[[covsAddedIdx]] <- paste0(x$covariate, x$varName)
+    covsAdded[[covsAddedIdx]] <- c(x$covariate, x$varName)
+    
+    # fit2 <-
+    #   suppressWarnings(nlmixr2(updatedMod, data, est = getFitMethod(fitobject)))
+    
+    ui <- tryCatch(
+      {
+        res <- do.call(.builduiCovariate,c(ui,x))
+        res # to return 'ui'
+      },
+      error = function(error_message) {
+        print("error  while SIMULTANEOUSLY ADDING covariates")
+        print(error_message)
+        print("skipping this covariate")
+        return(res) # return NA otherwise (instead of NULL)
+      }
+    )
+    
+    covSearchRes[[covsAddedIdx]] <- list(ui, covsAdded[[covsAddedIdx]], covName)
+    covsAddedIdx <- covsAddedIdx + 1
+  }
+  else {
+    # covsAdded[[covsAddedIdx]] <-
+    #   paste0(covsAdded[[covsAddedIdx - 1]], "_", x$covariate, x$varName)
+    covsAdded[[covsAddedIdx]] <-
+      c(covsAdded[[covsAddedIdx - 1]], x$covariate, x$varName)
+    
+    # fit2 <-
+    #   suppressWarnings(nlmixr2(updatedMod, data, est = getFitMethod(fitobject)))
+    
+    ui <- tryCatch(
+      {
+        res <- do.call(.builduiCovariate,c(ui,x))
+        res # to return 'ui'
+      },
+      error = function(error_message) {
+        print("error  while SIMULTANEOUSLY ADDING covariates")
+        print(error_message)
+        print("skipping this covariate")
+        return(res) # return NA otherwise (instead of NULL)
+      }
+    )
+    
+    covSearchRes[[covsAddedIdx]] <- list(ui, covsAdded[[covsAddedIdx]], covName)
+    covsAddedIdx <- covsAddedIdx + 1
+  }
+  
+  covSearchRes
+}
+
+
+return(covSearchRes[length(covSearchRes)][[1]][[1]])
+
+}
+
+
+
 
 
 
