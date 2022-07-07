@@ -12,7 +12,7 @@
 #' @param covariate the covariate that needs string to be constructed
 #' @param norm  boolean indicating if the covariate that needs to be added is normalized; default is FALSE
 
-.addCovariate <- function(ui,varName,covariate,norm=FALSE,...) {
+.addCovariate <- function(ui,varName,covariate,norm=FALSE) {
   
   if (inherits(ui, "nlmixr2FitCore")) {
     ui <- ui$ui
@@ -37,12 +37,14 @@
   else {
     .cov <- paste0("cov_", covariate, "_", varName)
   }
+  
+  
   .covdf <- rbind(ui$muRefCovariateDataFrame,
-                  data.frame(theta=.pop,covariate=covariate,covariateParameter=.cov))
+                    data.frame(theta=.pop,covariate=covariate,covariateParameter=.cov))  
   .split <- ui$getSplitMuModel
   .pars <- c(names(.split$pureMuRef),names(.split$taintMuRef))
   .model <- nlmixr2est::.saemDropMuRefFromModel(ui)
-  lapply(.model,.expandRefMu,murefDf=ui$muRefDataFrame,covDf=.covdf,pars=.pars,...)
+  lapply(.model,.expandRefMu,murefDf=ui$muRefDataFrame,covDf=.covdf,pars=.pars)
 }
 
 
@@ -57,14 +59,14 @@
 #'
 #' @return
 #' @noRd
-.expandRefMu <- function(x,murefDf,covDf,pars,...) {
+.expandRefMu <- function(x,murefDf,covDf,pars) {
   if (is.name(x)) {
     currparam <- as.character(x)
     if (currparam %in% pars){
-      return (str2lang(.expandPopExpr(currparam,murefDf,covDf,...)))
+      return (str2lang(.expandPopExpr(currparam,murefDf,covDf)))
     } 
   }else if(is.call(x)) {
-    return(as.call(c(list(x[[1]]), lapply(x[-1], .expandRefMu, murefDf=murefDf, covDf=covDf, pars=pars,...))))
+    return(as.call(c(list(x[[1]]), lapply(x[-1], .expandRefMu, murefDf=murefDf, covDf=covDf, pars=pars))))
   }
   x
 }
@@ -206,7 +208,7 @@
 #' @return data frame with normalized covariate
 #' @noRd
 
-.normalizeDf <- function(data, covariate) {
+.normalizeDf <- function(data, covariate,sub=TRUE) {
   
   checkmate::assertDataFrame(data,col.names = "named")
   checkmate::assertCharacter(covariate,len = 1,any.missing = FALSE )
@@ -225,8 +227,8 @@
 # popStdev 
  .popStd = .popMeanStd(data,covariate)[[2]]
 # add standardized covariate values to the data frame
-  data[,datColNames] <- (data[,covariate]-.popMean)/(.popStd)
-
+ 
+   data[,datColNames] <- (data[,covariate]-.popMean)/(.popStd)
 data
 }
 
@@ -236,12 +238,13 @@ data
 #' 
 #' @param fitobject an nlmixr2 'fit' object
 #' @param covarsVec a list of covariate names (parameters) that need to be estimates
+#' @param replace replace the original covariate data with normalized data for easier updated model.
 #' 
  #' @return data frame with all normalized covariates
 #' @noRd
-.testCovariate <- function(fit,covarsVec) {
+.normalizedData <- function(fit,covarsVec,replace=TRUE) {
   
-  if (!inherits(fitobject, "nlmixr2FitCore")) {
+  if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
   }
   
@@ -249,14 +252,22 @@ data
   checkmate::assert_character(covarsVec)
 
   # get data 
-  data <- nlme::getData(fitobject)
+  data <- nlme::getData(fit)
   
   ## 
   .normalizedDFs <- lapply(covarsVec,.normalizeDf,data=data)
   
   # final data frame of normalized covariates
   
+  if(replace){
+    .dat <- Reduce(merge,.normalizedDFs)
+    dropnormPrefix <- function(x){ colnames(x) <- gsub("normalized_", "", colnames(x)); x }
+    .dat <- .dat[ , !names(.dat) %in% covarsVec]
+    .finalDf <- dropnormPrefix(.dat)
+  }else{
+  
   .finalDf <- Reduce(merge,.normalizedDFs)
+  }
   .finalDf
 }
 
@@ -289,7 +300,7 @@ data
   }
   
 # Add covariate to model expression 
-lst <- .addCovariate(ui,varName,covariate)
+lst <- .addCovariate(ui,varName,covariate,norm=TRUE)
 .newModel <- eval(parse(text = paste0("quote(model({",paste0(as.character(lst),collapse="\n"), "}))")))
 
 # Add covariate to initialization 
@@ -297,9 +308,12 @@ lst <- .addCovariate(ui,varName,covariate)
 nthetaLength <- length(which(!is.na(ui$iniDf$ntheta)))
 .ini <- ui$iniDf
 covName <- paste0("cov_", covariate, "_", varName)
-.ini <- rbind(.ini,data.frame(ntheta=as.integer(nthetaLength+1),neta1=NA_character_,neta2=NA_character_,
-                               name=covName,lower=-Inf,est=0,upper=Inf,fix=FALSE,label=NA_character_,
-                               backTransform=NA_character_,condition=NA_character_,err=NA_character_))  
+
+
+  .ini <- rbind(.ini,data.frame(ntheta=as.integer(nthetaLength+1),neta1=NA_character_,neta2=NA_character_,
+                                name=covName,lower=-Inf,est=0,upper=Inf,fix=FALSE,label=NA_character_,
+                                backTransform=NA_character_,condition=NA_character_,err=NA_character_)) 
+  
 
 # build ui
   .ini <- as.expression(lotri::as.lotri(.ini))
@@ -362,7 +376,7 @@ covName <- paste0("cov_", covariate, "_", varName)
  
  
  
- # Add covariates to 
+ # Add covariates one after other
  
 covSearchRes <- list()
 covsAdded <- list() # to keep track of covariates added and store in a file
@@ -427,6 +441,299 @@ for (x in covInfo) {
 return(covSearchRes[length(covSearchRes)][[1]][[1]])
 
 }
+
+
+
+
+
+#' Add covariates and lasso string to ui  
+#' 
+#' 
+#' @param ui compiled rxode2 nlmir2 model or fit  
+#' @param varsVec character vector of variables that need to be added  
+#' @param covarsVec  character vector of covariates that need to be added
+#' @param tvalue float indicating tvalue to be updated for the lasso string
+#' @return updated ui with added covariates
+#' @noRd
+.lassoUicovariate <- function(ui,varsVec,covarsVec,tvalue=0.05){
+  
+  if (inherits(ui, "nlmixr2FitCore")) {
+    ui <- ui$ui
+  }
+  ui <- rxode2::assertRxUi(ui)
+  
+  # Extract updated ui with added covariates 
+  .ui1 <- .buildupatedUI(ui,varsVec,covarsVec)
+  
+  # Extract all the covariate parameters constructed 
+  .covsparams <- .ui1$muRefCovariateDataFrame$covariateParameter
+  checkmate::assertCharacter(.covsparams,min.len = 1,any.missing = FALSE )
+  
+  # construct a tvalue string 
+  
+  tvalueString <- paste0("tvalue <- ",tvalue,"\n")
+  
+  # construct an abssum string 
+  
+  absString <- paste0("abssum <- sum(",paste0(paste0("abs(",.covsparams,")"),collapse="+"),")","\n")
+  
+  # construct a ratio string 
+  
+  ratioString <- paste0("ratio <- ","abssum","/","tvalue","\n")
+  
+  # construct a factor string 
+  
+  factorString <- paste0("factor <- ","exp","(","1-","ratio",")","\n")
+  
+  # add lasso factor strings from the covparams to the model function
+  
+  .covsfactorString  <- paste0(.covsparams, " * factor")
+  .modelfun <- .ui1$funTxt
+  for ( i in seq_along(.covsparams)){
+    .modelfun  <- gsub(.covsparams[i], .covsfactorString[i], .modelfun)
+  }
+  
+  # construct the final updated model string 
+  
+  .newmodelfun <- paste0(tvalueString,absString,ratioString,factorString,.modelfun,sep="")
+  .newModel <- eval(parse(text = paste0("quote(model({",paste0(as.character(.newmodelfun),collapse="\n"), "}))")))
+  
+  # build ui
+  .ini <- .ui1$iniDf
+  .ini <- as.expression(lotri::as.lotri(.ini))
+  .ini[[1]] <- quote(`ini`)
+  # return the updated model
+  return(.getUiFunFromIniAndModel(.ui1, .ini, .newModel)())  
+}
+
+
+#' Perform cross validation and return predictive-objective-function value
+#'
+#' @param data dataset containing all the required information.
+#' @param ui compiled rxode2 nlmir2 model or fit 
+#' @param varsVec character vector of variables that need to be added  
+#' @param covarsVec  character vector of covariates that need to be added
+#' @param tvalue a desired tvalue for constructing lasso constraint
+#' @param nfold number of folds for cross-validation
+#' @param optcrit criteria for optimization. must be either 'objf' or 'llk'
+#' @param estmethod Estimation method for initial nlmixr fit.  must be either 'focei' or 'saem'
+#' @return predictive-objective-function value
+#' @noRd
+#' @author 
+#'
+
+.crossvalidationLasso <- function(data,ui,varsVec,covarsVec,tvalue=0.10,nfold=5,optcrit='llk',estmethod='focei'){
+  
+  # check if dataframe
+  checkmate::assert_data_frame(data,min.cols = 7)
+  # check if t-value and nfold are valid
+  checkmate::assert_double(tvalue)
+  checkmate::assert_int(nfold)
+  # extract ID column from the data frame 
+  ID <- .idColumn(data)
+  # Extract list of individuals
+  indv <- unique(data[,ID])
+  # Fold splits   
+  foldSplits <- cut(1:length(indv), breaks = nfold, labels = FALSE)
+  # Randomize splits
+  foldSplitsR <- sample(foldSplits, length(foldSplits)) 
+  # data frame of mapping of Indvidual to fold splits
+  foldInddf <- data.frame(ID=indv,fold=foldSplitsR )
+  
+  
+  # List of objective-function values
+  ofvList <- list()
+  
+  # Build updated ui with given covariate info and add lasso strings
+  mod <- .lassoUicovariate(ui,varsVec,covarsVec,tvalue = tvalue)
+  
+  
+  #Perform cross-validation
+  
+  for (f in 1:nfold){
+    # Training dataset 
+    trainIndv  <- (foldInddf[foldInddf$fold!=f,])$ID
+    trainData <- data[data$ID %in% trainIndv, ]
+    # Testing dataset
+    testIndv  <- (foldInddf[foldInddf$fold==f,])$ID
+    testData <- data[data$ID %in% testIndv, ]
+    
+    
+    ## Stop if test data is empty 
+    
+    if (dim(testData)[1] == 0) {
+      
+      cli::cli_alert_danger("the test dataset is empty. probably not enough individuals to do desired n-fold cross-validation")
+      stop("aborting...please re-run by reducing nfold number for the cross-validation", call. = FALSE)
+    }
+    
+    
+    cli::cli_alert_success("Training and Testing data sets successfully created for cross-validation for fold number",f)
+    
+    
+    # Training Estimation   
+    
+    fitTrain <- tryCatch(
+      {
+        fitTrain <-
+          suppressWarnings(nlmixr2(mod,trainData ,estmethod))
+        fitTrain # to return 'fitTrain'
+      },
+      error = function(error_message) {
+        print("error fitting the model for the training dataset ")
+        print(error_message)
+      })
+    
+    
+    # Testing data model fit with estimates from the training. 
+    
+    fitTest <- tryCatch(
+      {
+        fitTest <-
+          suppressWarnings(nlmixr2(mod,trainData ,est = getFitMethod(fitTrain)))
+        fitTest # to return 'fitTrain'
+      },
+      error = function(error_message) {
+        print("error fitting the model for the testing dataset ")
+        print(error_message)
+      })
+    
+    
+    
+    # Extract Predictive Objective function value  
+    if (optcrit=="objf"){
+      
+      if (!is.numeric(fitTest$objDf$OBJF)){
+        
+        cli::cli_alert_danger("the 'fit' object needs to have an objective functions value associated with it")
+        cli::cli_alert_info("try computing 'fit$objDf$OBJF' in console to compute and store the corresponding OBJF value")
+        stop("aborting...objf value not associated with the current 'fit' object", call. = FALSE)
+      }
+      
+      ofvList <- append(ofvList ,fitTest$objDf$OBJF )
+      
+    }
+    
+    else if(optcrit=="llk") {
+      
+      if (!is.numeric(fitTest$objDf$`Log-likelihood`)){
+        
+        cli::cli_alert_danger("the 'fit' object needs to have an objective functions value associated with it")
+        cli::cli_alert_info("try computing 'fit$objDf$$`Log-likelihood`' in console to compute and store the corresponding OBJF value")
+        stop("aborting...objf value not associated with the current 'fit' object", call. = FALSE)
+      }
+    
+    ofvList <- append(ofvList ,-2*fitTest$objDf$`Log-likelihood`)
+  }
+cli::cli_alert_success("Estimation complete for the fold number : {f}")
+}
+  
+# Return the pOFV 
+pOFV <- do.call(sum, ofvList)
+return(pOFV)  
+
+}
+
+
+
+#' Return optimal t-value from the cross validation 
+#'
+#' @param data dataset containing all the required information.
+#' @param ui compiled rxode2 nlmir2 model or fit 
+#' @param varsVec character vector of variables that need to be added  
+#' @param covarsVec  character vector of covariates that need to be added
+#' @param t_start a desired t start value for constructing lasso constraint
+#' @param t_stop a desired t stop value for constructing lasso constraint
+#' @param t_step a desired t step value for constructing lasso constraint
+#' @return Optimal t-value among tvalue range
+#' @noRd
+#' @author 
+#'
+
+.optimalTvaluelasso <- function(data,ui,varsVec,covarsVec,t_start=0.05,t_stop=0.25,t_step=0.05,...){
+  
+  # check if t-start,stop and step values are valid
+  checkmate::assert_double(t_start)
+  checkmate::assert_double(t_stop)
+  checkmate::assert_double(t_step)
+
+  # generate vector of t values
+  tvalues <- seq(t_start,t_stop,by=t_step)    
+  
+  # create a data frame of pOFV values for t values
+  pofvList <- data.frame()
+  for (t in tvalues){
+    pofv <- data.frame(tvalue=t,POFV=suppressWarnings(
+      .crossvalidationLasso(data,ui,varsVec,covarsVec,tvalue=t,nfold=5,optcrit='llk',estmethod='focei')))
+    cli::cli_alert_success("Cross-validation finished for the t-value : {t}")
+    pofvList <- rbind(pofvList,pofv)
+  }
+  
+# Find optimal t-value 
+optimal_t <- pofvList[which.min(pofvList$POFV),]$tvalue
+optimal_t
+}
+
+
+
+#' Return Final lasso coefficients after finding optimal t
+#'
+#' @param fit nlmixr2 fit.
+#' @param varsVec character vector of variables that need to be added  
+#' @param covarsVec  character vector of covariates that need to be added
+#' @return return data frame of final lasso coefficients
+#' @noRd
+#' @author 
+#'
+.lassoCoefficients <- function(fit,varsVec,covarsVec,...) {
+
+  if (!inherits(fit, "nlmixr2FitCore")) {
+    stop("'fit' needs to be a nlmixr2 fit")
+  }
+  else {
+      ui <- fit$ui
+  }
+  
+  checkmate::assert_character(covarsVec)
+  checkmate::assert_character(varsVec)
+  
+  #data
+  data <- .normalizedData(fit,covarsVec)
+  
+  # construct covInfo
+  covInfo <-  .buildcovInfo(varsVec,covarsVec)
+  # construct covNames   
+  covNames <- list()    
+  for ( x in covInfo) {
+    covName <- paste0("cov_", x$covariate, "_", x$varName)
+    covNames <- append(covNames,covName)
+  }
+  
+  # Extract optimal t-value
+  optTvalue <- .optimalTvaluelasso(data,ui,varsVec,covarsVec,...)   
+  
+  # Refit model with the optimal t-value 
+  updatedmod <- .lassoUicovariate(ui,varsVec,covarsVec,tvalue=optTvalue,...)
+  fitobject <- nlmixr2(updatedmod,data,est="focei")
+  
+  # Extract covaraite estimates 
+  covEst <- fitobject$parFixedDf[row.names(fitobject$parFixedDf) %in% covNames,"Estimate"]
+  
+  #absolute sum of  lasso THETAs
+  abssum <- sum(abs(covEst))
+  # ratio 
+  ratio <- abssum/tvalue
+  # factor 
+  factor <- exp(1-ratio)
+  
+  #Multiply by factor 
+  covestFactor <- covEst *factor 
+  # Apply lasso constraint 
+  finalLasso <- as.data.frame(lapply(covEst, function(x) ifelse(abs(x) < constraint , 0, x)))
+  return(FinalLasso)
+}
+
+
 
 
 
