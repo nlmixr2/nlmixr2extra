@@ -522,49 +522,39 @@ return(covSearchRes[length(covSearchRes)][[1]][[1]])
 #' @author 
 #'
 
-.crossvalidationLasso <- function(data,ui,varsVec,covarsVec,tvalue=0.10,nfold=5,optcrit='llk',estmethod="focei",adapcoefs=NULL){
+.crossvalidationLasso <- function(data,ui,varsVec,covarsVec,tvalue=0.10,nfold=5,optcrit='llk',estmethod="focei",adapcoefs=NULL,stratVar=NULL){
   
   # check if dataframe
   checkmate::assert_data_frame(data,min.cols = 7)
   # check if t-value and nfold are valid
   checkmate::assert_double(tvalue)
   checkmate::assert_int(nfold)
-  # extract ID column from the data frame 
-  ID <- .idColumn(data)
-  # Extract list of individuals
-  indv <- unique(data[,ID])
-  # Fold splits   
-  foldSplits <- cut(1:length(indv), breaks = nfold, labels = FALSE)
-  # Randomize splits
-  foldSplitsR <- sample(foldSplits, length(foldSplits)) 
-  # data frame of mapping of Indvidual to fold splits
-  foldInddf <- data.frame(ID=indv,fold=foldSplitsR )
-  
-  
   # List of objective-function values
   ofvList <- list()
-  
   # Build updated ui with given covariate info and add lasso strings
   if(!is.null(adapcoefs)){
     mod <- .adaptivelassoUicovariate(ui,varsVec,covarsVec,tvalue = tvalue,adapcoefs = adapcoefs) 
     
   }
-  
   else{
-  
   mod <- .lassoUicovariate(ui,varsVec,covarsVec,tvalue = tvalue)
-  
+  }
+
+  # Add fold column depending on the stratification
+  if (!is.null(stratVar))
+  {
+    dataF <-    foldgen(data,nfold=5,stratVar = stratVar)
+  } else {
+    dataF <-    foldgen(data,nfold=5)
   }
   
-  #Perform cross-validation
   
+  #Perform cross-validation
   for (f in 1:nfold){
     # Training dataset 
-    trainIndv  <- (foldInddf[foldInddf$fold!=f,])$ID
-    trainData <- data[data$ID %in% trainIndv, ]
+    trainData <- dataF[dataF$fold!=f,]
     # Testing dataset
-    testIndv  <- (foldInddf[foldInddf$fold==f,])$ID
-    testData <- data[data$ID %in% testIndv, ]
+    testData <- dataF[dataF$fold==f,]
     
     
     ## Stop if test data is empty 
@@ -653,12 +643,13 @@ return(pOFV)
 #' @param t_start a desired t start value for constructing lasso constraint
 #' @param t_stop a desired t stop value for constructing lasso constraint
 #' @param t_step a desired t step value for constructing lasso constraint
+#' @param convergence either REACHMAX or FIRSTMIN
 #' @return Optimal t-value among tvalue range
 #' @noRd
 #' @author 
 #'
 
-.optimalTvaluelasso <- function(data,ui,varsVec,covarsVec,t_start=0.05,t_stop=0.25,t_step=0.05,...){
+.optimalTvaluelasso <- function(data,ui,varsVec,covarsVec,t_start=0.05,t_stop=0.25,t_step=0.05,stratVar = NULL,convergence="REACHMAX",...){
   
   # check if t-start,stop and step values are valid
   checkmate::assert_double(t_start)
@@ -669,10 +660,13 @@ return(pOFV)
   tvalues <- seq(t_start,t_stop,by=t_step)    
   
   # create a data frame of pOFV values for t values
+  firstmin <- Inf
   pofvList <- data.frame()
   for (t in tvalues){
-    pofv <- data.frame(tvalue=t,POFV=suppressWarnings(
-      .crossvalidationLasso(data,ui,varsVec,covarsVec,tvalue=t,nfold=5,optcrit='llk',estmethod="focei")))
+    
+    ofValue <- suppressWarnings(.crossvalidationLasso(data,ui,varsVec,covarsVec,tvalue=t,nfold=5,optcrit='llk',estmethod="focei",adapcoefs=NULL,stratVar = NULL))
+    
+    pofv <- data.frame(tvalue=t,POFV=ofValue)
     cli::cli_alert_success("Cross-validation finished for the t-value : {t}")
     pofvList <- rbind(pofvList,pofv)
   }
@@ -694,7 +688,7 @@ optimal_t
 #' @noRd
 #' @author 
 #'
-.lassoCoefficients <- function(fit,varsVec,covarsVec,constraint=1e-08,...) {
+.lassoCoefficients <- function(fit,varsVec,covarsVec,constraint=1e-08,stratVar = NULL,...) {
 
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
@@ -722,7 +716,7 @@ optimal_t
   #Estimated method
   .est <- getFitMethod(fit)
   # Extract optimal t-value
-  optTvalue <- .optimalTvaluelasso(data,ui,varsVec,covarsVec,t_start=0.05,t_stop=0.25,t_step=0.05,estmethod=.est,...)   
+  optTvalue <- .optimalTvaluelasso(data,ui,varsVec,covarsVec,t_start=0.05,t_stop=0.25,t_step=0.05,estmethod=.est,stratVar = NULL,...)   
   
   # Refit model with the optimal t-value 
   assign('debug',list(ui,varsVec,covarsVec,tvalue=optTvalue,...),globalenv())
@@ -835,7 +829,7 @@ optimal_t
 #' @noRd
 #' @author 
 #'
-.adaptivelassoCoefficients <- function(fit,varsVec,covarsVec,constraint=1e-08,...) {
+.adaptivelassoCoefficients <- function(fit,varsVec,covarsVec,constraint=1e-08,stratVar = NULL,...) {
   
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
@@ -850,7 +844,7 @@ optimal_t
   
   
   ## Get initial adaptive coefs from the regular lasso coefficients
-  .adapcoefs=.lassoCoefficients(fit,varsVec,covarsVec,constraint=1e-08,...)
+  .adapcoefs=.lassoCoefficients(fit,varsVec,covarsVec,constraint=1e-08,stratVar = NULL,...)
   
   #data
   data <- .normalizedData(fit,covarsVec)
@@ -867,7 +861,7 @@ optimal_t
   #Estimated method
   .est <- getFitMethod(fit)
   # Extract optimal t-value
-  optTvalue <- .optimalTvaluelasso(data,ui,varsVec,covarsVec,t_start=0.05,t_stop=0.25,t_step=0.05,estmethod=.est,adapcoefs=.adapcoefs,...)   
+  optTvalue <- .optimalTvaluelasso(data,ui,varsVec,covarsVec,t_start=0.05,t_stop=0.25,t_step=0.05,estmethod=.est,adapcoefs=.adapcoefs,stratVar=NULL,...)   
   
   # Refit model with the optimal t-value 
   assign('debug',list(ui,varsVec,covarsVec,tvalue=optTvalue,...),globalenv())
@@ -912,7 +906,7 @@ optimal_t
 #' @noRd
 #' @author 
 #'
-.regularmodel <- function(fit,varsVec,covarsVec,constraint=1e-08,lassotype='regular',...) {
+.regularmodel <- function(fit,varsVec,covarsVec,constraint=1e-08,lassotype='regular',stratVar = NULL,...) {
   
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
@@ -928,12 +922,16 @@ optimal_t
   
   
   if (lassotype=="regular") {
-.coefValues <- .lassoCoefficients(fit,varsVec,covarsVec,constraint=1e-08,...)
+.coefValues <- .lassoCoefficients(fit,varsVec,covarsVec,constraint=1e-08,stratVar = NULL,...)
   }
   else if (lassotype=="adaptive") {
-.coefValues <- .adaptivelassoCoefficients(fit,varsVec,covarsVec,constraint=1e-08,...) 
+.coefValues <- .adaptivelassoCoefficients(fit,varsVec,covarsVec,constraint=1e-08,stratVar = NULL,...) 
   }
   
+  else if (lassotype=="adaptive"){
+    
+  .coefValues <- .adjustedlassoCoefficients(fit,varsVec,covarsVec,constraint=1e-08,stratVar = NULL,...)    
+  }
 
 # Extract updated ui with added covariates 
 .ui1 <- .buildupatedUI(ui,varsVec,covarsVec)
@@ -963,11 +961,192 @@ for ( i in seq_along(.covsparams)){
 .ui2 <- .getUiFunFromIniAndModel(.ui1, .ini, .newModel)()
 #estimation method
 estmethod=getFitMethod(fit)
-
 return(nlmixr2(ui2,data,est=estmethod)) 
+}
+
+
+#' Return Adjusted adaptive lasso coefficients after finding optimal t
+#'
+#' @param fit nlmixr2 fit.
+#' @param varsVec character vector of variables that need to be added  
+#' @param covarsVec  character vector of covariates that need to be added
+#' @param constraint theta cutoff. below cutoff then the theta will be fixed to zero.
+#' @return return data frame of final lasso coefficients
+#' @noRd
+#' @author 
+#'
+.adjustedlassoCoefficients <- function(fit,varsVec,covarsVec,constraint=1e-08,stratVar = NULL,...) {
+  
+  if (!inherits(fit, "nlmixr2FitCore")) {
+    stop("'fit' needs to be a nlmixr2 fit")
+  }
+  else {
+    ui <- fit$ui
+  }
+  
+  checkmate::assert_character(covarsVec)
+  checkmate::assert_character(varsVec)
+  checkmate::assert_double(constraint)
+  
+  
+  ## Get updated ui with covariates and without lasso factor 
+  .mod1 <- .buildupatedUI(ui,varsVec,covarsVec)
+  
+  # construct covInfo
+  covInfo <-  .buildcovInfo(varsVec,covarsVec)
+  # construct covNames   
+  covNames <- list()    
+  for ( x in covInfo) {
+    covName <- paste0("cov_", x$covariate, "_", x$varName)
+    covNames <- append(covNames,covName)
+  }
+  
+  #data
+  data <- .normalizedData(fit,covarsVec)
+  
+  #Fit
+  fit1 <- nlmixr2(.mod1,data,est=getFitMethod(fit))
+  
+  # Construct AL coefficents
+  .adapcoefs=data.frame(as.list(fit1$parFixedDf[row.names(fit1$parFixedDf) %in% covNames,"Estimate"]/fit1$parFixedDf[row.names(fit1$parFixedDf) %in% covNames,"SE"]))
+  
+  # Extract optimal t-value
+  optTvalue <- .optimalTvaluelasso(data,ui,varsVec,covarsVec,t_start=0.05,t_stop=0.25,t_step=0.05,estmethod=getFitMethod(fit),adapcoefs=.adapcoefs,stratVar = NULL,...)   
+  
+  # Refit model with the optimal t-value 
+  assign('debug',list(ui,varsVec,covarsVec,tvalue=optTvalue,...),globalenv())
+  updatedmod <- .adaptivelassoUicovariate(ui,varsVec,covarsVec,tvalue=optTvalue,adapcoefs = .adapcoefs)
+  fitobject <- nlmixr2(updatedmod,data,est=getFitMethod(fit))
+  
+  # Extract covariate estimates 
+  covEst <- fitobject$parFixedDf[row.names(fitobject$parFixedDf) %in% covNames,"Estimate"]
+  
+  # Multiply covariate Estimates with adative coefficients 
+  covestAdap <- covEst*.adapcoefs
+  
+  # Extract covariate std error
+  covStd <- fitobject$parFixedDf[row.names(fitobject$parFixedDf) %in% covNames,"SE"]
+  
+  #absolute sum of  lasso THETAs
+  abssum <- sum(abs(covEst))
+  # ratio 
+  ratio <- abssum/optTvalue
+  # factor 
+  factor <- exp(1-ratio)
+  
+  
+  # Apply lasso constraint 
+  finalLasso <- as.data.frame(lapply(covestAdap, function(x) ifelse(abs(x) <= constraint , 0, x)),row.names = NULL)
+  
+  #Multiply by factor 
+  finalLasso <- finalLasso *factor 
+  return(finalLasso)
+}
+
+
+#' Stratified cross-validation fold generator function inspired from the caret
+#' @param data data frame used in the analysis
+#' @param nfold number of k-fold cross validations. Default is 5 
+#' @param stratVar  Stratification Variable. Default is NULL and ID is used for CV
+#' @return return dataframe with the fold column attached
+#' @noRd
+#' @author 
+
+
+foldgen <-  function(data,nfold=5,stratVar=NULL){
+
+  
+  # check if data frame
+  checkmate::assert_data_frame(data,min.cols = 7)
+
+
+# check if user want to stratify on a variable , if not default is on individual
+
+if(!is.null(stratVar)){
+  checkmate::assertCharacter(stratVar,len = 1,any.missing = FALSE )
+  stratCheck <- intersect(names(data), stratVar)
+  if(!is.null(stratCheck)){
+    y <- data[,stratCheck]
+  }
+  else {
+    stop(paste0(stratVar, "not in the data to stratify"))
+  }
+} else {
+  
+  # extract ID column from the data frame 
+  ID <- .idColumn(data)
+  # Extract list of individuals
+  y <- unique(data[,ID])
+}
+## Group based on magnitudes and sample within groups 
+
+if(is.numeric(y))
+{
+  ## Group the numeric data based on their magnitudes
+  ## and sample within those groups.
+  
+  ## When the number of samples is low, we may have
+  ## issues further slicing the numeric data into
+  ## groups. The number of groups will depend on the
+  ## ratio of the number of folds to the sample size.
+  ## At most, we will use quantiles. If the sample
+  ## is too small, we just do regular unstratified
+  ## CV
+  cuts <- floor(length(y)/nfold)
+  if(cuts < 2) cuts <- 2
+  if(cuts > 5) cuts <- 5
+  y <- cut(
+    y, 
+    unique(
+      quantile(y,
+               probs =
+                 seq(0, 1, length = cuts))), 
+    include.lowest = TRUE)
+}
+
+if(nfold < length(y))
+{
+  ## reset levels so that the possible levels and 
+  ## the levels in the vector are the same
+  y <- factor(as.character(y))
+  numInClass <- table(y)
+  foldVector <- vector(mode = "integer", length(y))
+  
+  ## For each class, balance the fold allocation as far 
+  ## as possible, then resample the remainder.
+  ## The final assignment of folds is also randomized. 
+  for(i in 1:length(numInClass))
+  {
+    ## create a vector of integers from 1:k as many times as possible without 
+    ## going over the number of samples in the class. Note that if the number 
+    ## of samples in a class is less than k, nothing is producd here.
+    seqVector <- rep(1:nfold, numInClass[i] %/% nfold)
+    ## add enough random integers to get  length(seqVector) == numInClass[i]
+    if(numInClass[i] %% nfold > 0) seqVector <- c(seqVector, sample(1:nfold, numInClass[i] %% nfold))
+    ## shuffle the integers for fold assignment and assign to this classes's data
+    foldVector[which(y == dimnames(numInClass)$y[i])] <- sample(seqVector)
+  }
+} else foldVector <- seq(along = y)
+
+
+out <- split(seq(along = y), foldVector)
+names(out) <- paste("Fold", gsub(" ", "0", format(seq(along = out))), sep = "")
+out <- foldVector
+
+if(!is.null(stratVar)){
+out <- cbind(data,fold=out)
+} else {
+indv <- unique(data[,ID])
+out <- merge(data,cbind(ID=indv,fold=out))  
+}
+out
 }
 
 
 
 
+
+
+
+  
 
