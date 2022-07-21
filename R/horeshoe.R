@@ -88,22 +88,21 @@ return(list(priorString,stanvars))
 #' Build Lasso prior
 #' 
 #' 
-#' @param df 	Degrees of freedom of the chi-square prior of the inverse tuning parameter 
-#' @param scale Scale of the lasso prior
+#' @param dfr	Degrees of freedom of the chi-square prior of the inverse tuning parameter 
+#' @param scalep Scale of the lasso prior
 #' @return Prior for the string
 #' @noRd
-.lassoPrior <- function(df = 1, scale = 1){
+.lassoPrior <- function(df = 1,  scale = 1){
   
   # Check if given parameters are valid
   checkmate::assert_double(df)
   checkmate::assert_double(scale)
   
-  priorString <- c(prior(lasso(df = df, scale = scale), class ="b",nlpar = "a"),
+  priorString <- c(prior(lasso(df = 1, scale = 1), class ="b",nlpar = "a"),
                    prior(normal(0, 10), class = "b", nlpar = "b"))
   
   # stan variable for parsing
   stanvars <- stanvar(df, name='df')+stanvar(scale, name='scale')
-  
   return(list(priorString,stanvars))
 }
 
@@ -152,7 +151,7 @@ return(brms_models)
   
   
 
-#' Create Summary dataframe from the BRMS models
+#' Create Summary data frame from the BRMS models
 #' 
 #' @param modelList List of BRMS model fits  
 #' @return Summary data frame of all covariates
@@ -180,13 +179,66 @@ return(summaryDf)
 
 
 
+#' Create Horseshoe summary posterior estimates 
+#' @param fit compiled rxode2 nlmir2 model fit  
+#' @param covarsVec  character vector of covariates that need to be added
+#' @return Horse shoe Summary data frame of all covariates
+#' @noRd
 
 
 
+.horseshoeSummardf <- function(fit,covarsVec,...){
+  
+  if (!inherits(fit, "nlmixr2FitCore")) {
+  stop("'fit' needs to be a nlmixr2 fit")
+}
+checkmate::assert_character(covarsVec)
+
+# Global shrinkage prior estimate
+ tau0 <- .calTau0 (fit,covarsVec,p0=2)
+# Get prior String
+ priorString <- .horseshoePrior(tau0)
+# Fit BRMS models
+
+.horseshoeModels <-.fitbrmsModel(fit,covarsVec,priorVar = priorString,inicovarsVec=NULL,
+                                warmup = 1000, iter = 2000, chains = 4,cores = 4,
+                control = list(adapt_delta = 0.99, max_treedepth = 15),seed=1015)
+
+# Extract Summary of models
+horseshoeSummary <-  .brmSummarydf(.horseshoeModels)
+horseshoeSummary
+}
 
 
 
+#' Create Lasso summary posterior estimates 
+#' @param fit compiled rxode2 nlmir2 model fit  
+#' @param covarsVec  character vector of covariates that need to be added
+#' @return Horse shoe Summary data frame of all covariates
+#' @noRd
 
+
+
+.lassoSummardf <- function(fit,covarsVec,...){
+  
+  if (!inherits(fit, "nlmixr2FitCore")) {
+    stop("'fit' needs to be a nlmixr2 fit")
+  }
+  checkmate::assert_character(covarsVec)
+  
+
+  # Get prior String
+  priorString <- .lassoPrior(df=1,scale=1)
+  # Fit BRMS models
+  
+  .lassoModels <-.fitbrmsModel(fit,covarsVec,priorVar = priorString,inicovarsVec=NULL,
+                                  warmup = 1000, iter = 2000, chains = 4,cores = 4,
+                                  control = list(adapt_delta = 0.99, max_treedepth = 15),seed=1015)
+  
+  # Extract Summary of models
+  lassoSummary <-  .brmSummarydf(.lassoModels)
+  lassoSummary
+}
 
 
 
