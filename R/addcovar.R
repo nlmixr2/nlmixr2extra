@@ -103,6 +103,43 @@
 
 
 
+#' Shrink population expression given the mu reference and covariate reference Data frames
+#'
+#' @param popParam  population parameter variable
+#' @param murefDf MU referencing data frame
+#' @param covDf covariate referencing data frame
+#' @param factor a  lasso constraint factor already calculated
+#'
+#' @return expanded expression
+#' @noRd
+.shrinkPopExpr <- function(popParam,murefDf,covDf,factor=NULL) {
+  
+  .par1 <- murefDf[murefDf$theta==popParam,]
+  .res <- paste0(.par1$theta,"+",.par1$eta)
+  .w <- which(covDf$theta==popParam)
+  if(length(.w)>0){
+    if (!is.null(factor)){
+      ##checkmate::assert_numeric(factor,len = 1)
+      .res <- paste0(c(.res,paste0(covDf[.w,"covariateParameter"],"*",covDf[.w,"covariate"],"*",factor)),
+                     collapse="+")}
+    else {
+      
+      .res <- paste0(c(.res,paste0(covDf[.w,"covariateParameter"],"*",covDf[.w,"covariate"])),
+                     collapse="+") }
+    
+  }
+  .res
+}
+
+
+
+
+
+
+
+
+
+
 
 #' get the population parameter from variable name
 #'
@@ -219,17 +256,19 @@
   .new <- intersect(names(data), covariate)
   if (length(.new) == 0L) stop("covariate specified not in original dataset")
 
-# Column name for the standardized covariate 
-  datColNames <- paste0("normalized_", covariate)
-  
-# popMean 
-  .popMean = .popMeanStd(data,covariate)[[1]]
-# popStdev 
- .popStd = .popMeanStd(data,covariate)[[2]]
-# add standardized covariate values to the data frame
- 
-   data[,datColNames] <- (data[,covariate]-.popMean)/(.popStd)
-data
+  if (is.factor(data[[covariate]]))
+  {return(data)}
+  else{
+    # Column name for the standardized covariate 
+    datColNames <- paste0("normalized_", covariate) 
+    # popMean 
+    .popMean = .popMeanStd(data,covariate)[[1]]
+    # popStdev 
+    .popStd = .popMeanStd(data,covariate)[[2]]
+    # add standardized covariate values to the data frame
+    data[,datColNames] <- (data[,covariate]-.popMean)/(.popStd)
+   return(data)
+  }
 }
 
 
@@ -242,17 +281,13 @@ data
 #' 
  #' @return data frame with all normalized covariates
 #' @noRd
-.normalizedData <- function(fit,covarsVec,replace=TRUE) {
+.normalizedData <- function(data,covarsVec,replace=TRUE) {
   
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
   }
   
-  
   checkmate::assert_character(covarsVec)
-
-  # get data 
-  data <- nlme::getData(fit)
   
   ## 
   .normalizedDFs <- lapply(covarsVec,.normalizeDf,data=data)
@@ -262,7 +297,8 @@ data
   if(replace){
     .dat <- Reduce(merge,.normalizedDFs)
     dropnormPrefix <- function(x){ colnames(x) <- gsub("normalized_", "", colnames(x)); x }
-    .dat <- .dat[ , !names(.dat) %in% covarsVec]
+    catCheck <- intersect(covarsVec,names(Filter(is.factor, data)))
+    .dat <- cbind(.dat[ , !names(.dat) %in% covarsVec],.dat[ , names(.dat) %in% catCheck])
     .finalDf <- dropnormPrefix(.dat)
   }else{
   
@@ -358,9 +394,11 @@ covName <- paste0("cov_", covariate, "_", varName)
 #' @param ui compiled rxode2 nlmir2 model or fit  
 #' @param varsVec character vector of variables that need to be added  
 #' @param covarsVec  character vector of covariates that need to be added
+#' @param indep a boolean indicating if the covariates should be added independently, or
+#'  sequentially (append to the previous model)
 #' @return updated ui with added covariates
 #' @noRd
-.buildupatedUI <- function(ui,varsVec,covarsVec){
+.buildupatedUI <- function(ui,varsVec,covarsVec,indep=FALSE){
   
   if (inherits(ui, "nlmixr2FitCore")) {
     ui <- ui$ui
@@ -374,12 +412,37 @@ covName <- paste0("cov_", covariate, "_", varName)
 # check if the covInfo is a list 
  checkmate::assert_list(covInfo)
  
- 
- 
  # Add covariates one after other
- 
 covSearchRes <- list()
 covsAdded <- list() # to keep track of covariates added and store in a file
+
+if (indep) {
+  for (i in seq_along(covInfo)) {
+     x <- covInfo[[i]]
+    covName <- paste0("cov_", x$covariate, "_", x$varName)
+
+    reassignVars <- rownames(fit$parFixedDf)[fit$parFixedDf$Estimate != fit$parFixedDf[, "Back-transformed"] & fit$parFixedDf[, "Back-transformed"] == 0]
+
+    res <- do.call(.builduiCovariate,c(ui,x))
+    if (length(reassignVars) > 0) {
+      ini2 <- as.data.frame(res$ini)
+      
+      for (r in reassignVars) {
+        ini2[ini2$name == r, "est"] <- 1.0
+        cli::cli_alert_warning("reasssigned initial value for {r} to 1.0")
+      }
+      
+      class(ini2) <- c("nlmixr2Bounds", "data.frame")
+      res$ini <- ini2
+    }
+    
+covSearchRes[[i]] <- list(ui,c(x$covariate, x$varName), covName)
+  }
+return(covSearchRes)
+}
+
+else {
+## Add all at once
 covsAddedIdx <- 1
 for (x in covInfo) {
   covName <- paste0("cov_", x$covariate, "_", x$varName)
@@ -439,7 +502,7 @@ for (x in covInfo) {
 
 
 return(covSearchRes[length(covSearchRes)][[1]][[1]])
-
+}
 }
 
 
@@ -683,12 +746,13 @@ optimal_t
 #' @param fit nlmixr2 fit.
 #' @param varsVec character vector of variables that need to be added  
 #' @param covarsVec  character vector of covariates that need to be added
+#' @param catvarsVec  character vector of categorical covariates that need to be added
 #' @param constraint theta cutoff. below cutoff then the theta will be fixed to zero
 #' @return return data frame of final lasso coefficients
 #' @noRd
 #' @author 
 #'
-.lassoCoefficients <- function(fit,varsVec,covarsVec,constraint=1e-08,stratVar = NULL,...) {
+.lassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...) {
 
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
@@ -701,8 +765,15 @@ optimal_t
   checkmate::assert_character(varsVec)
   checkmate::assert_double(constraint)
   
+  ## Update data and covarsvec if categorical variables are provided
+  if(!is.null(catvarsVec)){
+    covarsVec <- .addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
+    data <- .addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
+  }
+  
+ 
   #data
-  data <- .normalizedData(fit,covarsVec)
+  data <- .normalizedData(data,covarsVec)
   
   # construct covInfo
   covInfo <-  .buildcovInfo(varsVec,covarsVec)
@@ -824,12 +895,13 @@ optimal_t
 #' @param fit nlmixr2 fit.
 #' @param varsVec character vector of variables that need to be added  
 #' @param covarsVec  character vector of covariates that need to be added
+#' @param catvarsVec  character vector of categorical covariates that need to be added
 #' @param constraint theta cutoff. below cutoff then the theta will be fixed to zero.
 #' @return return data frame of final lasso coefficients
 #' @noRd
 #' @author 
 #'
-.adaptivelassoCoefficients <- function(fit,varsVec,covarsVec,constraint=1e-08,stratVar = NULL,...) {
+.adaptivelassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...) {
   
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
@@ -842,12 +914,20 @@ optimal_t
   checkmate::assert_character(varsVec)
   checkmate::assert_double(constraint)
   
+  ## Update data and covarsvec if categorical variables are provided
+  if(!is.null(catvarsVec)){
+    covarsVec <- .addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
+    data <- .addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
+  }
+  
+  
+  
   
   ## Get initial adaptive coefs from the regular lasso coefficients
-  .adapcoefs=.lassoCoefficients(fit,varsVec,covarsVec,constraint=1e-08,stratVar = NULL,...)
+  .adapcoefs=.lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
   
   #data
-  data <- .normalizedData(fit,covarsVec)
+  data <- .normalizedData(data,covarsVec)
   
   # construct covInfo
   covInfo <-  .buildcovInfo(varsVec,covarsVec)
@@ -900,13 +980,14 @@ optimal_t
 #' @param fit nlmixr2 fit.
 #' @param varsVec character vector of variables that need to be added  
 #' @param covarsVec  character vector of covariates that need to be added
+#' @param catvarsVec  character vector of categorical covariates that need to be added
 #' @param constraint theta cutoff. below cutoff then the theta will be fixed to zero.
 #' @param lassotype must be  'regular' , 'adaptive', 'adjusted'
 #' @return return fit of the regular coefficients
 #' @noRd
 #' @author 
 #'
-.regularmodel <- function(fit,varsVec,covarsVec,constraint=1e-08,lassotype='regular',stratVar = NULL,...) {
+.regularmodel <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lassotype='regular',stratVar = NULL,...) {
   
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
@@ -919,18 +1000,25 @@ optimal_t
   checkmate::assert_character(varsVec)
   checkmate::assert_double(constraint)
   
+
+  if(!is.null(catvarsVec)){
+    covarsVec <- .addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
+    data <- .addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
+  }
+  
+  
   
   
   if (lassotype=="regular") {
-.coefValues <- .lassoCoefficients(fit,varsVec,covarsVec,constraint=1e-08,stratVar = NULL,...)
+.coefValues <- .lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
   }
   else if (lassotype=="adaptive") {
-.coefValues <- .adaptivelassoCoefficients(fit,varsVec,covarsVec,constraint=1e-08,stratVar = NULL,...) 
+.coefValues <- .adaptivelassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...) 
   }
   
   else if (lassotype=="adaptive"){
     
-  .coefValues <- .adjustedlassoCoefficients(fit,varsVec,covarsVec,constraint=1e-08,stratVar = NULL,...)    
+  .coefValues <- .adjustedlassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)    
   }
 
 # Extract updated ui with added covariates 
@@ -970,12 +1058,13 @@ return(nlmixr2(ui2,data,est=estmethod))
 #' @param fit nlmixr2 fit.
 #' @param varsVec character vector of variables that need to be added  
 #' @param covarsVec  character vector of covariates that need to be added
+#' @param catvarsVec  character vector of categorical covariates that need to be added
 #' @param constraint theta cutoff. below cutoff then the theta will be fixed to zero.
 #' @return return data frame of final lasso coefficients
 #' @noRd
 #' @author 
 #'
-.adjustedlassoCoefficients <- function(fit,varsVec,covarsVec,constraint=1e-08,stratVar = NULL,...) {
+.adjustedlassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...) {
   
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
@@ -985,8 +1074,15 @@ return(nlmixr2(ui2,data,est=estmethod))
   }
   
   checkmate::assert_character(covarsVec)
+  checkmate::assert_character(catvarsVec)
   checkmate::assert_character(varsVec)
   checkmate::assert_double(constraint)
+  
+  if(!is.null(catvarsVec)){
+  covarsVec <- .addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
+  data <- .addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
+  }
+  
   
   
   ## Get updated ui with covariates and without lasso factor 
@@ -1001,8 +1097,9 @@ return(nlmixr2(ui2,data,est=estmethod))
     covNames <- append(covNames,covName)
   }
   
+  
   #data
-  data <- .normalizedData(fit,covarsVec)
+  data <- .normalizedData(data,covarsVec)
   
   #Fit
   fit1 <- nlmixr2(.mod1,data,est=getFitMethod(fit))
@@ -1143,6 +1240,56 @@ out
 }
 
 
+
+
+
+#' Make dummy variable cols and updated covarsVec
+#' @param data data frame used in the analysis
+#' @param nfold number of k-fold cross validations. Default is 5 
+#' @param stratVar  Stratification Variable. Default is NULL and ID is used for CV
+#' @return return dataframe with the fold column attached
+#' @noRd
+#' @author 
+
+.addCatCovariates <- function(data,covarsVec,catcovarsVec) {
+  
+  # check for valid inputs
+  checkmate::assert_data_frame(data,min.cols = 7)
+  checkmate::assert_character(covarsVec)
+  checkmate::assert_character(catcovarsVec)
+  #create new catcovarsvec
+  newcatvars <- character(0)
+  for (col in catcovarsVec) {
+    if (is.factor(data[[col]])) {
+      uniqueVals <- levels(data[[col]])
+      if (any(is.na(data[[col]]))) {
+        uniqueVals <- c(uniqueVals, NA)
+      }
+      # Else by order values appear.
+    } else {
+      uniqueVals <- unique(data[[col]])
+    }
+    uniqueVals <- as.character(uniqueVals)
+    
+  # Remove NA values and first dummy
+  uniqueVals <- uniqueVals[!is.na(uniqueVals)][-1]
+   
+
+    for (uniqueValue in uniqueVals) {
+      colname= paste0(col,"_",uniqueValue)
+      data[,colname] <- as.factor(match(data[[col]],"0",nomatch=0))
+      newcatvars <- c(newcatvars ,colname)
+    }
+  }
+  
+  # Remove original categorical variables
+  updatedData <- data[ , !(names(data) %in% catcovarsVec)]
+  #Update entire covarsvec with added categorical variables
+  updcovarsVec <- c(covarsVec,newcatvars)
+  
+  return(list(updatedData,updcovarsVec))
+  
+}
 
 
 
