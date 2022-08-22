@@ -124,12 +124,13 @@ return(list(priorString,stanvars))
   
   
   #Normalized covariate data
-  covData <- .normalizedData(fit,covarsVec)
+  data <- nlme::getData(fit)
+  covData <- .normalizedData(data,covarsVec)
   # Extract eta parameters 
   etaData <- fit$eta
   etaVector <- colnames(etaData[grepl('eta', colnames(etaData))])
   # Extract Individual column 
-  uidCol <- .idColumn(nlme::getData(fit))
+  uidCol <- .idColumn(data)
   # Make a combined data set of eta parameters and covariate parameters
   combData <- merge(covData,etaData,by=uidCol)
   
@@ -157,11 +158,11 @@ return(brms_models)
 #' @return Summary data frame of all covariates
 #' @noRd
 
-.brmSummarydf <- function(model){
+.brmSummarydf <- function(all_models){
 
 # Check if the model list is named   
   
-checkmate::assert_list(model,min.len = 1,names = "named")
+checkmate::assert_list(all_models,min.len = 1,names = "named")
   
 # Construct data frame of estimates by adding eta and covariate column 
 

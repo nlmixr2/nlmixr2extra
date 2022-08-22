@@ -8,7 +8,8 @@
 #' @return returns the modified string with the covariate added to function string
 #' @author Vipul Mann, Matthew Fidler
 #' @export
-addCovariate <-
+
+oldaddCovariate <-
   function(funstring,
            varName,
            covariate,
@@ -36,8 +37,8 @@ addCovariate <-
           })), collapse = "\n"))
         }
         else if (identical(x[[1]], quote(`~`)) ||
-          identical(x[[1]], quote(`=`)) ||
-          identical(x[[1]], quote(`<-`))) {
+                 identical(x[[1]], quote(`=`)) ||
+                 identical(x[[1]], quote(`<-`))) {
           if (length(x[[2]]) == 1) {
             if (as.character(x[[2]]) == varName) {
               isCov <- TRUE
@@ -50,16 +51,16 @@ addCovariate <-
         }
       }
     }
-
+    
     f(eval(parse(text = paste0(
       "quote({", funstring, "})"
     ))))
-
+    
     f2 <- function(varName) {
       funstringLhsRhs <- strsplit(funstring, "(<-|=)")[[1]]
       funstringRhs <- funstringLhsRhs[2]
       funstringLhs <- funstringLhsRhs[1]
-
+      
       expr <-
         paste0("(", funstringRhs, ")", "*", "(", covariate, ")")
       expr <-
@@ -68,7 +69,7 @@ addCovariate <-
         gsub(" ", "", funstringLhs, perl = TRUE) # remove white spaces from the above string
       return(paste0(funstringLhs, "<-", expr))
     }
-
+    
     if (!isLog) {
       f2(varName)
     }
@@ -78,6 +79,21 @@ addCovariate <-
       ))))
     }
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #' Remove covariate expression from a function string
@@ -194,7 +210,7 @@ removeCovariate <- function(funstring, varName, covariate, theta) {
 #' @param fitobject an nlmixr2 'fit' object
 #' @param varName a string giving the variable name to which covariate needs to be added
 #' @param covariate a string giving the covariate name; must be present in the data used for 'fit'
-#' @param norm the kind of normalization to be used while normalizing covariates; must be either 'mean' or 'median'
+#' @param norm the kind of normalization to be used while normalizing covariates; para
 #' @param norm_type a string defining operator to be used for transforming covariates using 'norm'; must be one among 'mul', 'div', 'sub', 'add'
 #' @param categorical a boolean indicating if the 'covariate' is categorical
 #' @param isHS a boolean indicating if 'covariate' is of Hockey-stick kind
@@ -359,7 +375,7 @@ addCovVar <- function(fitobject,
     # cli::cli_h1('theta: {names(fitobject$theta)}')
     # cli::cli_h1('previous value: {funstringSplit[[idx]]}')
     funstringSplit[[idx]] <-
-      addCovariate(
+      oldaddCovariate(
         funstringSplit[[idx]],
         varName,
         covNameMod,
