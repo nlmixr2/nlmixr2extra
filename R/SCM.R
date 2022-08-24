@@ -565,7 +565,7 @@ performNorm <- function(data,
   }
 
   if (isLog) {
-    if (varName %in% c("cl")) {
+    if (varName %in% "cl") {
       # with 0.75 prefactor
       for (datColName in datColNames) {
         if (!all(is.finite(log(data[, datColName])))) {
@@ -701,7 +701,7 @@ removeCovMultiple <- function(covInfo, fitobject) {
   # removing multiple covariates (independently)
   .env <- environment()
   .env$covSearchRes <- list()
-  lapply(1:length(covInfo), function(idx) {
+  lapply(1:seq_along(covInfo), function(idx) {
     x <- covInfo[[idx]]
 
     res <- do.call(removeCovVar, c(list(fitobject), x))
@@ -766,7 +766,7 @@ addCovMultiple <- function(covInfo, fitobject, indep = TRUE) {
   .env <- environment()
   .env$covSearchRes <- list()
   if (indep) {
-    lapply(1:length(covInfo), function(idx) {
+    lapply(1:seq_along(covInfo), function(idx) {
       x <- covInfo[[idx]]
       res <- do.call(addCovVar, c(list(fitobject), x))
       updatedMod <- res[[1]]

@@ -183,7 +183,7 @@ foldgen <-  function(data,nfold=5,stratVar=NULL){
     ## For each class, balance the fold allocation as far 
     ## as possible, then resample the remainder.
     ## The final assignment of folds is also randomized. 
-    for(i in 1:length(numInClass))
+    for(i in 1:seq_along(numInClass))
     {
       ## create a vector of integers from 1:k as many times as possible without 
       ## going over the number of samples in the class. Note that if the number 
@@ -1117,7 +1117,7 @@ extractVars <- function(fitlist, id = "method") {
           prev <- status
         }
         if (status == TRUE) {
-          c("")
+          ""
         }
         else {
           # if non-empty 'message'
@@ -1232,7 +1232,7 @@ getBootstrapSummary <-
         }
         colnames(omgVecBoot) <- namesList
         
-        .w <- which(sapply(namesList, function(x) {
+        .w <- which(vapply(namesList, function(x) {
           !all(omgVecBoot[, x] == 0)
         }))
         omgVecBoot <- omgVecBoot[, .w]

@@ -67,7 +67,7 @@ test_that("Add covariates and lasso string to ui ", {
   
   ui2 <- nlmixr(two.compartment)
   ui <- ui2
-  varsVec <- c("ka")
+  varsVec <- "ka"
   covarsVec <- c("WT","BMI")
   expect_error(.lassoUicovariate(ui,varsVec,covarsVec))
   
