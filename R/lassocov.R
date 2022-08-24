@@ -73,7 +73,7 @@
 #' @param estmethod Estimation method for initial nlmixr fit.  must be either 'focei' or 'saem'
 #' @return predictive-objective-function value
 #' @noRd
-#' @author 
+#' @author Vishal Sarsani
 #'
 
 .crossvalidationLasso <- function(data,ui,varsVec,covarsVec,tvalue=0.10,nfold=5,optcrit='llk',estmethod="focei",adapcoefs=NULL,stratVar=NULL){
@@ -200,7 +200,7 @@ return(pOFV)
 #' @param convergence either REACHMAX or FIRSTMIN
 #' @return Optimal t-value among tvalue range
 #' @noRd
-#' @author 
+#' @author Vishal Sarsani
 #'
 
 .optimalTvaluelasso <- function(data,ui,varsVec,covarsVec,t_start=0.01,t_stop=0.99,t_step=0.01,stratVar = NULL,convergence="REACHMAX",...){
@@ -241,7 +241,7 @@ optimal_t
 #' @param constraint theta cutoff. below cutoff then the theta will be fixed to zero
 #' @return return data frame of final lasso coefficients
 #' @noRd
-#' @author 
+#' @author Vishal Sarsani
 #'
 .lassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...) {
 
@@ -396,7 +396,7 @@ optimal_t
 #' @param constraint theta cutoff. below cutoff then the theta will be fixed to zero.
 #' @return return data frame of final lasso coefficients
 #' @noRd
-#' @author 
+#' @author Vishal Sarsani
 #'
 .adaptivelassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...) {
   
@@ -482,7 +482,7 @@ optimal_t
 #' @param lassotype must be  'regular' , 'adaptive', 'adjusted'
 #' @return return fit of the regular coefficients
 #' @noRd
-#' @author 
+#' @author Vishal Sarsani
 #'
 .regularmodel <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lassotype='regular',stratVar = NULL,...) {
   
@@ -559,7 +559,7 @@ return(nlmixr2(ui2,data,est=estmethod))
 #' @param constraint theta cutoff. below cutoff then the theta will be fixed to zero.
 #' @return return data frame of final lasso coefficients
 #' @noRd
-#' @author 
+#' @author Vishal Sarsani
 #'
 .adjustedlassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...) {
   

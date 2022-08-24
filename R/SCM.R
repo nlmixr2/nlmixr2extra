@@ -81,21 +81,6 @@ oldaddCovariate <-
   }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #' Remove covariate expression from a function string
 #'
 #' @param funstring a string giving the expression that needs to be modified

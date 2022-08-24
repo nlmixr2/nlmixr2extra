@@ -118,7 +118,7 @@
 #' @param stratVar  Stratification Variable. Default is NULL and ID is used for CV
 #' @return return dataframe with the fold column attached
 #' @noRd
-#' @author 
+#' @author Vishal Sarsani , caret
 
 
 foldgen <-  function(data,nfold=5,stratVar=NULL){
