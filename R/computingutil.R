@@ -82,13 +82,36 @@
 #' Function to return data of normalized covariates
 #' 
 #' 
-#' @param fitobject an nlmixr2 'fit' object
+#' @param data a dataframe with covariates to normalize
 #' @param covarsVec a list of covariate names (parameters) that need to be estimates
 #' @param replace replace the original covariate data with normalized data for easier updated model.
 #' 
 #' @return data frame with all normalized covariates
-#' @noRd
-.normalizedData <- function(data,covarsVec,replace=TRUE) {
+#' @author Vishal Sarsani
+#' @export
+#' 
+#' @examples
+#'
+#' \donttest{
+#' d <- nlmixr2data::theo_sd
+#' d$SEX <-0
+#' d$SEX[d$ID<=6] <-1
+#'
+#' fit <- nlmixr2(one.cmt, d, "focei")
+#' covarsVec <- c("WT)
+#'
+#'
+#' # Normalized covariate (replaced)
+#' df1 <- normalizedData(data,covarsVec,replace=TRUE)
+#'
+#' # Normalized covariate (without replacement)
+#' df2 <- normalizedData(data,covarsVec,replace=TRUE)
+#'
+#' })
+#'
+#' }
+#'
+normalizedData <- function(data,covarsVec,replace=TRUE) {
   
   
   checkmate::assert_character(covarsVec)
@@ -117,9 +140,30 @@
 #' @param nfold number of k-fold cross validations. Default is 5 
 #' @param stratVar  Stratification Variable. Default is NULL and ID is used for CV
 #' @return return dataframe with the fold column attached
-#' @noRd
 #' @author Vishal Sarsani , caret
-
+#' @export
+#' 
+#' @examples
+#'
+#' \donttest{
+#' d <- nlmixr2data::theo_sd
+#' d$SEX <-0
+#' d$SEX[d$ID<=6] <-1
+#'
+#' fit <- nlmixr2(one.cmt, d, "focei")
+#' covarsVec <- c("WT)
+#'
+#'
+#' # Stratified cross-validation data with CMT
+#' df1 <- foldgen(data,nfold=5,stratVar="CMT")
+#'
+#' # Stratified cross-validation data with ID (individual)
+#' df2 <- foldgen(data,nfold=5,stratVar=NULL)
+#'
+#' })
+#'
+#' }
+#'
 
 foldgen <-  function(data,nfold=5,stratVar=NULL){
   
@@ -217,29 +261,43 @@ foldgen <-  function(data,nfold=5,stratVar=NULL){
 #' @param xvec A vector of min,max values . Ex:c(10,20)
 #' @param N Desired number of values
 #' @param medValue  Desired Median 
+#' @param floorT boolean indicating whether to round up
 #'
 #' @return Samples with approx desired median. 
+#'@author Vishal Sarsani 
+#' @export
+#' 
+#' @examples
+#'
+#' \donttest{
+#' # Simulate 1000 creatine clearance values with median of 71.7 within range of c(6.7,140)
+#' creatCl <- optimUnisampling(xvec=c(6.7,140),N=1000,medValue = 71.7,floorT=FALSE)
+#'
+#' })
+#'
+#' }
+#'
 
-optimUnisampling <- function(xvec,N=1000,medValue,floor=TRUE)
+optimUnisampling <- function(xvec,N=1000,medValue,floorT=TRUE)
 {
   
   #Function to calculate distance between sampling median and desired
   fun <- function(xvec, N=1000) {
     xmin <- xvec[1]
     xmax <- xvec[2]
-    if (floor){
-      x <- floor(runif(N, xmin, xmax))}
+    if (floorT){
+      x <- floor(stats::runif(N, xmin, xmax))}
     else{
-      x <- runif(N, xmin, xmax) 
+      x <- stats::runif(N, xmin, xmax) 
     }
     xdist <- (median(x)-medValue)^2
     xdist
   }
   # Optimization 
-  xr <- optim(xvec, fun) 
+  xr <- stats::optim(xvec, fun) 
   xrmin <- xr$par[[1]]
   xrmax <- xr$par[[2]]
-  sampled <- runif(N, min = xr$par[[1]], max = xr$par[[2]])
+  sampled <- stats::runif(N, min = xr$par[[1]], max = xr$par[[2]])
   if (xrmin==xvec[1] & xrmax==xvec[2] & floor)    return (floor(sampled))
   else if (xrmin==xvec[1] & xrmax==xvec[2])   return (sampled)
   else return (optimUnisampling(xvec,N=1000,medValue))
@@ -1232,7 +1290,7 @@ getBootstrapSummary <-
         }
         colnames(omgVecBoot) <- namesList
         
-        .w <- which(vapply(namesList, function(x) {
+        .w <- which(sapply(namesList, function(x) {
           !all(omgVecBoot[, x] == 0)
         }))
         omgVecBoot <- omgVecBoot[, .w]

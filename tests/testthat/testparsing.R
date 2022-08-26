@@ -1,6 +1,5 @@
 
 
-
 # ==== getThetaName
 
 test_that("get the population parameter from variable name", {
@@ -31,7 +30,7 @@ test_that("get the population parameter from variable name", {
   ui <- ui1
   varName <- "ka"
   
-  funstring1 <- .getThetaName(ui,varName)
+  funstring1 <- nlmixr2extra::.getThetaName(ui,varName)
   funstring2 <- "tka"
   
   expect_equal(funstring1, funstring2)
@@ -66,7 +65,7 @@ test_that("get the population parameter from variable name", {
   ui2 <- nlmixr(two.compartment)
   ui <- ui2
   varName <- "ka"
-  expect_error(.getThetaName(ui,varName))
+  expect_error(nlmixr2extra::.getThetaName(ui,varName))
 })
 
 test_that("get the population parameter from variable name", {
@@ -94,8 +93,8 @@ test_that("get the population parameter from variable name", {
   
   tui <- nlmixr(tainted)
   ui <- tui
-  varName <- "ka"
-  expect_error(getThetaName(ui,varName))
+  varName <- "cl"
+  expect_error(nlmixr2extra::.getThetaName(ui,varName))
 })
 
 
@@ -130,7 +129,7 @@ test_that("Add covariate to the ui", {
   varName <- "ka"
   covariate <- "WT"
   
-  funstring1 <- as.character(.addCovariate(ui,varName,covariate,norm=FALSE)[1])
+  funstring1 <- as.character(addorremoveCovariate(ui,varName,covariate,add = TRUE)[1])
   funstring2 <- "ka <- exp(tka + eta.ka + cov_WT_ka * WT)"
   
   expect_equal(funstring1, funstring2)
@@ -166,7 +165,7 @@ test_that("Add covariate to the ui", {
   varName <- "cl"
   covariate <- "WT"
   
-  funstring1 <- as.character(.addCovariate(ui,varName,covariate,norm=FALSE)[1])
+  funstring1 <- as.character(addorremoveCovariate(ui,varName,covariate,add = TRUE)[1])
   funstring2 <- "cl <- exp(tcl + eta.cl + cov_WT_cl * WT)"
   
   expect_equal(funstring1, funstring2)
@@ -201,7 +200,7 @@ test_that("Add covariate to the ui", {
   varName <- "v"
   covariate <- "WT"
   
-  expect_error(.addCovariate(ui,varName,covariate,norm=FALSE))
+  expect_error(addorremoveCovariate(ui,varName,covariate,add = TRUE))
 })
 
 
@@ -232,7 +231,7 @@ test_that("Add covariate to the ui", {
   ui <- tui
   varName <- "v1"
   covariate <- "WT"
-  expect_error(.addCovariate(ui,varName,covariate,norm=FALSE))
+  expect_error(addorremoveCovariate(ui,varName,covariate,add = TRUE))
 })
 
 
@@ -278,9 +277,9 @@ test_that("Build ui from the covariate", {
   varName <- "ka"
   covariate <- "WT"
   
-  funstring1 <- intersect((.builduiCovariate(ui,varName,covariate))$iniDf$name,"cov_WT_ka")
+  funstring1 <- intersect((.builduiCovariate(ui,varName,covariate,add = TRUE))$iniDf$name,"cov_WT_ka")
   funstring2 <- "cov_WT_ka"
-  funstring3 <- (.builduiCovariate(ui,varName,covariate))$covariates
+  funstring3 <- (.builduiCovariate(ui,varName,covariate,add = TRUE))$covariates
   funstring4 <- "WT"
   expect_equal(funstring1, funstring2)
   expect_equal(funstring3, funstring4)
@@ -315,7 +314,7 @@ test_that("Build ui from the covariate", {
   ui2 <- nlmixr(two.compartment)
   ui <- ui2
   varName <- "ka"
-  expect_error(.builduiCovariate(ui,varName,covariate))
+  expect_error(.builduiCovariate(ui,varName,covariate,add = TRUE))
 
 })
 
@@ -328,8 +327,8 @@ test_that("Build covInfo list from varsVec and covarsVec", {
   varsVec <- c("ka","cl","v")
   covarsVec <- c("WT","BMI")
   
-  funstring1 <- .buildcovInfo(varsVec,covarsVec)
-  funstring2 <- .buildcovInfo(varsVec,covarsVec)[[1]]
+  funstring1 <- buildcovInfo(varsVec,covarsVec)
+  funstring2 <- buildcovInfo(varsVec,covarsVec)[[1]]
   expect_length(funstring1, 6)
   expect_length(funstring2, 2)
   
@@ -340,8 +339,8 @@ test_that("Build covInfo list from varsVec and covarsVec", {
   varsVec <- c("cl","v1","v2","Q")
   covarsVec <- c("WT","BMI")
   
-  funstring1 <- .buildcovInfo(varsVec,covarsVec)
-  expect_error(expect_length(.buildcovInfo(varsVec,covarsVec), 6))
+  funstring1 <- buildcovInfo(varsVec,covarsVec)
+  expect_error(expect_length(buildcovInfo(varsVec,covarsVec), 6))
 
 })
 
@@ -377,12 +376,12 @@ test_that("Build updated from the covariate and variable vector list", {
   varsVec <- c("ka","cl","v")
   covarsVec <- c("WT","BMI")
   
-  funstring1 <- intersect((.buildupatedUI(ui1,varsVec,covarsVec))$iniDf$name,
+  funstring1 <- intersect((buildupatedUI(ui1,varsVec,covarsVec,add = TRUE,indep = FALSE))$iniDf$name,
                           c("cov_WT_ka","cov_WT_cl","cov_WT_v","cov_BMI_ka","cov_BMI_cl","cov_BMI_v"))
   funstring2 <- c("cov_WT_ka","cov_WT_cl","cov_WT_v","cov_BMI_ka","cov_BMI_cl","cov_BMI_v")
-  funstring3 <- .buildupatedUI(ui1,varsVec,covarsVec)$muRefTable$covariates[1]
+  funstring3 <- buildupatedUI(ui1,varsVec,covarsVec,add = TRUE,indep = FALSE)$muRefTable$covariates[1]
   funstring4 <- "BMI*cov_BMI_ka + WT*cov_WT_ka"
-  funstring5 <- .buildupatedUI(ui1,varsVec,covarsVec)$muRefTable$covariates[2]
+  funstring5 <- buildupatedUI(ui1,varsVec,covarsVec,add = TRUE,indep = FALSE)$muRefTable$covariates[2]
   funstring6 <- "WT*cov_WT_cl + BMI*cov_BMI_cl"
   expect_equal(funstring1, funstring2)
   expect_equal(funstring3, funstring4)
@@ -416,12 +415,11 @@ test_that("Build ui from the covariate", {
   
   ui2 <- nlmixr(two.compartment)
   ui <- ui2
-  varsVec <- "ka"
+  varsVec <- c("ka")
   covarsVec <- c("WT","BMI")
-  expect_error(.buildupatedUI(ui,varsVec,covarsVec))
+  expect_error(buildupatedUI(ui,varsVec,covarsVec,add = TRUE,indep = FALSE))
   
 })
-
 
 
 # ==== Make dummy variable cols and updated covarsVec
@@ -431,7 +429,7 @@ test_that("Make dummy variable cols and updated covarsVec", {
   
   covarsVec <- c("WT","BMI")
   catcovarsVec <- "CMT"
-  funstring1 <- .addCatCovariates(nlmixr2data::theo_sd,covarsVec,catcovarsVec)[[2]]
+  funstring1 <- addCatCovariates(nlmixr2data::theo_sd,covarsVec,catcovarsVec)[[2]]
   funstring2 <- intersect(funstring1,"CMT_2")
   funstring3 <- "CMT_2"
   expect_equal(funstring2, funstring3)
@@ -441,7 +439,7 @@ test_that("Make dummy variable cols and updated covarsVec", {
   
   covarsVec <- c("WT","BMI")
   catcovarsVec <- "CMT"
-  funstring1 <- .addCatCovariates(nlmixr2data::theo_sd,covarsVec,catcovarsVec)[[2]]
+  funstring1 <- addCatCovariates(nlmixr2data::theo_sd,covarsVec,catcovarsVec)[[2]]
   funstring2 <- intersect(funstring1,"CMT_1")
   expect_length(funstring2, 0)
 })

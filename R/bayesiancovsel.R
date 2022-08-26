@@ -19,11 +19,11 @@
   checkmate::assert_character(covarsVec)
   
   
-  formula <- bf(as.formula(paste0(eta, " ~ a + b")),
+  formula <- brms::bf(stats::as.formula(paste0(eta, " ~ a + b")),
      
-     as.formula(paste0("a ~ ", paste(c("0", covarsVec), collapse = " + "))),
+     stats::as.formula(paste0("a ~ ", paste(c("0", covarsVec), collapse = " + "))),
      
-     as.formula(paste0("b ~ ", paste(c("1", inicovarsVec), collapse = " + "))),
+     stats::as.formula(paste0("b ~ ", paste(c("1", inicovarsVec), collapse = " + "))),
      
      nl = TRUE)
   
@@ -62,7 +62,8 @@ if (!is.finite(tau0)| tau0 < 0  ){tau0 <- 0.25}
 tau0 
 }
   
-
+normal <- function(...){}
+  
 #' Build Horseshoe prior
 #' 
 #' 
@@ -74,11 +75,11 @@ tau0
 # Check if tau0 is valid 
 checkmate::assert_double(tau0)
 
-priorString <- c(prior(horseshoe(df = 1, scale_global = tau0,df_global = 1), class ="b",nlpar = "a"),
-                              prior(normal(0, 10), class = "b", nlpar = "b"))
+priorString <- c(brms::prior(brms::horseshoe(df = 1, scale_global = tau0,df_global = 1), class ="b",nlpar = "a"),
+                              brms::prior(normal(0, 10), class = "b", nlpar = "b"))
 
 # stan variable for parsing
-stanvars <- stanvar(tau0, name='tau0')
+stanvars <- brms::stanvar(tau0, name='tau0')
 
 return(list(priorString,stanvars))
 }
@@ -98,11 +99,11 @@ return(list(priorString,stanvars))
   checkmate::assert_double(df)
   checkmate::assert_double(scale)
   
-  priorString <- c(prior(lasso(df = 1, scale = 1), class ="b",nlpar = "a"),
-                   prior(normal(0, 10), class = "b", nlpar = "b"))
+  priorString <- c(brms::prior(brms::lasso(df = 1, scale = 1), class ="b",nlpar = "a"),
+                   brms::prior(normal(0, 10), class = "b", nlpar = "b"))
   
   # stan variable for parsing
-  stanvars <- stanvar(df, name='df')+stanvar(scale, name='scale')
+  stanvars <- brms::stanvar(df, name='df')+brms::stanvar(scale, name='scale')
   return(list(priorString,stanvars))
 }
 
@@ -125,7 +126,7 @@ return(list(priorString,stanvars))
   
   #Normalized covariate data
   data <- nlme::getData(fit)
-  covData <- .normalizedData(data,covarsVec)
+  covData <- normalizedData(data,covarsVec)
   # Extract eta parameters 
   etaData <- fit$eta
   etaVector <- colnames(etaData[grepl('eta', colnames(etaData))])
@@ -143,7 +144,7 @@ return(list(priorString,stanvars))
   # Run brms on all eta parameters
   brms_models <- list()
   
-  brms_models <- suppressWarnings(lapply(brms_formulas,brm,data = combData,family = gaussian(),prior =priorVar[[1]],
+  brms_models <- suppressWarnings(lapply(brms_formulas,brms::brm,data = combData,family = stats::gaussian(),prior =priorVar[[1]],
                          stanvars = priorVar[[2]],warmup = warmup, iter = iter, chains = chains,cores = cores,
                          control = control,seed=seed))
    names(brms_models) <- etaVector
@@ -183,12 +184,51 @@ return(summaryDf)
 #' Create Horseshoe summary posterior estimates 
 #' @param fit compiled rxode2 nlmir2 model fit  
 #' @param covarsVec  character vector of covariates that need to be added
+#' @param ...   other parameters passed to brm(): warmup = 1000, iter = 2000, chains = 4, cores = 4,
+#'  control = list(adapt_delta = 0.99, max_treedepth = 15)
 #' @return Horse shoe Summary data frame of all covariates
-#' @noRd
+#' 
+#' @export
+#' @author  Vishal Sarsani, Christian Bartels
+#' 
+#' @examples
+#'
+#' \donttest{
+#'
+#' one.cmt <- function() {
+#'   ini({
+#'     ## You may label each parameter with a comment
+#'     tka <- 0.45 # Log Ka
+#'     tcl <- log(c(0, 2.7, 100)) # Log Cl
+#'     ## This works with interactive models
+#'     ## You may also label the preceding line with label("label text")
+#'     tv <- 3.45; label("log V")
+#'     ## the label("Label name") works with all models
+#'     eta.ka ~ 0.6
+#'     eta.cl ~ 0.3
+#'     eta.v ~ 0.1
+#'     add.sd <- 0.7
+#'   })
+#'   model({
+#'     ka <- exp(tka + eta.ka)
+#'     cl <- exp(tcl + eta.cl)
+#'     v <- exp(tv + eta.v)
+#'     linCmt() ~ add(add.sd)
+#'   })
+#' }
+#'
+#' d <- nlmixr2data::theo_sd
+#' fit <- nlmixr2(one.cmt, d, "focei")
+#' covarsVec <- c("WT)
+#'
+#' # Horseshoe summary posterior estimates:
+#'
+#' hsDf <- horseshoeSummardf(fit,covarsVec)
+#'
+#' }
 
 
-
-.horseshoeSummardf <- function(fit,covarsVec,...){
+horseshoeSummardf <- function(fit,covarsVec,...){
   
   if (!inherits(fit, "nlmixr2FitCore")) {
   stop("'fit' needs to be a nlmixr2 fit")
@@ -215,12 +255,52 @@ horseshoeSummary
 #' Create Lasso summary posterior estimates 
 #' @param fit compiled rxode2 nlmir2 model fit  
 #' @param covarsVec  character vector of covariates that need to be added
+#' @param ...   other parameters passed to brm(): warmup = 1000, iter = 2000, chains = 4, cores = 4,
+#'  control = list(adapt_delta = 0.99, max_treedepth = 15)
 #' @return Horse shoe Summary data frame of all covariates
-#' @noRd
+#' @export
+#' @author  Vishal Sarsani, Christian Bartels
+#' 
+#' @examples
+#'
+#' \donttest{
+#'
+#' one.cmt <- function() {
+#'   ini({
+#'     ## You may label each parameter with a comment
+#'     tka <- 0.45 # Log Ka
+#'     tcl <- log(c(0, 2.7, 100)) # Log Cl
+#'     ## This works with interactive models
+#'     ## You may also label the preceding line with label("label text")
+#'     tv <- 3.45; label("log V")
+#'     ## the label("Label name") works with all models
+#'     eta.ka ~ 0.6
+#'     eta.cl ~ 0.3
+#'     eta.v ~ 0.1
+#'     add.sd <- 0.7
+#'   })
+#'   model({
+#'     ka <- exp(tka + eta.ka)
+#'     cl <- exp(tcl + eta.cl)
+#'     v <- exp(tv + eta.v)
+#'     linCmt() ~ add(add.sd)
+#'   })
+#' }
+#'
+#' d <- nlmixr2data::theo_sd
+#' fit <- nlmixr2(one.cmt, d, "focei")
+#' covarsVec <- c("WT)
+#'
+#' # Horseshoe summary posterior estimates:
+#'
+#' lassoDf <- lassoSummardf(fit,covarsVec,...)
+#'
+#' }
 
 
 
-.lassoSummardf <- function(fit,covarsVec,...){
+
+lassoSummardf <- function(fit,covarsVec,...){
   
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")

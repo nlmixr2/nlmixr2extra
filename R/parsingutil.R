@@ -5,10 +5,11 @@
 #' @param ui compiled rxode2 nlmir2 model or fit  
 #' @param varName  the variable name to which the given covariate is to be added
 #' @param covariate the covariate that needs string to be constructed
+#' @param add  boolean indicating if the covariate needs to be added or removed.
 #' @author Matthew Fidler, Vishal Sarsani
-#' @param norm  boolean indicating if the covariate that needs to be added is normalized; default is FALSE
+#' @export
 
-.addCovariate <- function(ui,varName,covariate,norm=FALSE) {
+addorremoveCovariate <- function(ui,varName,covariate,add=TRUE) {
   
   if (inherits(ui, "nlmixr2FitCore")) {
     ui <- ui$ui
@@ -26,17 +27,15 @@
     stop("`varName` must be a valid R expression",call. = FALSE)
   }
   .pop <- .getThetaName(ui,varName=varName)
+  .cov <- paste0("cov_", covariate, "_", varName)
   
-  if(norm){
-    .cov <- gsub('_normalized', '', paste0("cov_", covariate, "_", varName))
+  if(add){
+    .covdf <- rbind(ui$muRefCovariateDataFrame,
+                    data.frame(theta=.pop,covariate=covariate,covariateParameter=.cov))
   }
   else {
-    .cov <- paste0("cov_", covariate, "_", varName)
+    .covdf <- ui$muRefCovariateDataFrame[ui$muRefCovariateDataFrame$covariateParameter!=.cov,]
   }
-  
-  
-  .covdf <- rbind(ui$muRefCovariateDataFrame,
-                  data.frame(theta=.pop,covariate=covariate,covariateParameter=.cov))  
   .split <- ui$getSplitMuModel
   .pars <- c(names(.split$pureMuRef),names(.split$taintMuRef))
   .model <- nlmixr2est::.saemDropMuRefFromModel(ui)
@@ -54,7 +53,7 @@
 #' @param pars theta parameters
 #'
 #' @noRd
-#' @author Matthew Fidler
+#' @author Matthew Fidler, Vishal Sarsani
 #' @noRd
 .expandRefMu <- function(x,murefDf,covDf,pars) {
   if (is.name(x)) {
@@ -78,7 +77,7 @@
 #' @param factor a  lasso constraint factor already calculated
 #'
 #' @return expanded expression
-#' @author Matthew Fidler
+#' @author Matthew Fidler,Vishal Sarsani
 #' @noRd
 .expandPopExpr <- function(popParam,murefDf,covDf,factor=NULL) {
   
@@ -108,6 +107,7 @@
 #' 
 #' @author Matthew Fidler
 #' @noRd
+
 .getThetaName <- function(ui,varName){
   .split <-  ui$getSplitMuModel
   if (varName %in% names(.split$pureMuRef)){
@@ -130,7 +130,7 @@
 #' 
 #' @return column name of individual
 #' @noRd
-#' @author Matthew Fidler, Vishal Sarsani
+#' @author  Vishal Sarsani
 
 .idColumn <- function(data) {
   #check if it is a dataframe
@@ -148,14 +148,15 @@
 
 #' Build ui from the covariate 
 #' 
-#' 
+#' @import lotri
 #' @param ui compiled rxode2 nlmir2 model or fit  
 #' @param varName  the variable name to which the given covariate is to be added
 #' @param covariate the covariate that needs string to be constructed
+#' @param add boolean indicating if the covariate needs to be added or removed
 #' @return ui with added covariate
 #' @noRd
-#' @author Matthew Fidler, Vishal Sarsani
-.builduiCovariate <- function(ui,varName,covariate){
+#' @author  Vishal Sarsani
+.builduiCovariate <- function(ui,varName,covariate,add=TRUE){
   
   if (inherits(ui, "nlmixr2FitCore")) {
     ui <- ui$ui
@@ -173,20 +174,23 @@
     stop("`varName` must be a valid R expression",call. = FALSE)
   }
   
-  # Add covariate to model expression 
-  lst <- .addCovariate(ui,varName,covariate,norm=TRUE)
-  .newModel <- eval(parse(text = paste0("quote(model({",paste0(as.character(lst),collapse="\n"), "}))")))
-  
-  # Add covariate to initialization 
-  
-  nthetaLength <- length(which(!is.na(ui$iniDf$ntheta)))
-  .ini <- ui$iniDf
   covName <- paste0("cov_", covariate, "_", varName)
-  
-  
+  # add covariate
+  if (add){
+  lst <- addorremoveCovariate(ui,varName,covariate,add=TRUE)   
+  .newModel <- eval(parse(text = paste0("quote(model({",paste0(as.character(lst),collapse="\n"), "}))")))
+  nthetaLength <- length(which(!is.na(ui$iniDf$ntheta))) 
+  .ini <- ui$iniDf  
   .ini <- rbind(.ini,data.frame(ntheta=as.integer(nthetaLength+1),neta1=NA_character_,neta2=NA_character_,
                                 name=covName,lower=-Inf,est=0,upper=Inf,fix=FALSE,label=NA_character_,
-                                backTransform=NA_character_,condition=NA_character_,err=NA_character_)) 
+                                backTransform=NA_character_,condition=NA_character_,err=NA_character_))
+  }
+  #remove covariate
+  else {
+  lst <- addorremoveCovariate(ui,varName,covariate,add=FALSE)  
+  .newModel <- eval(parse(text = paste0("quote(model({",paste0(as.character(lst),collapse="\n"), "}))")))
+  .ini <- ui$iniDf[ui$iniDf$name!=covName,]
+  }
   
   
   # build ui
@@ -198,15 +202,14 @@
 
 
 
-' Build covInfo list from varsVec and covarsVec
-#' 
+#' Build covInfo list from varsVec and covarsVec
 #' 
 #' @param varsVec character vector of variables that need to be added  
 #' @param covarsVec  character vector of covariates that need to be added
 #' @return covInfo list of covariate info
-#' @noRd
-#' @author Matthew Fidler, Vishal Sarsani
-.buildcovInfo <- function(varsVec,covarsVec){
+#' @author  Vishal Sarsani
+#' @export
+buildcovInfo <- function(varsVec,covarsVec){
   checkmate::assert_character(varsVec,min.len = 1)
   checkmate::assert_character(covarsVec,min.len = 1)
   possiblePerms <- expand.grid(varsVec, covarsVec)
@@ -233,12 +236,13 @@
 #' @param ui compiled rxode2 nlmir2 model or fit  
 #' @param varsVec character vector of variables that need to be added  
 #' @param covarsVec  character vector of covariates that need to be added
+#' @param add boolean indicating if the covariate needs to be added or removed
 #' @param indep a boolean indicating if the covariates should be added independently, or
-#'  sequentially (append to the previous model)
+#'  sequentially (append to the previous model). only applicable to adding covariate
 #' @return updated ui with added covariates
-#' @noRd
-#' @author Matthew Fidler, Vishal Sarsani
-.buildupatedUI <- function(ui,varsVec,covarsVec,indep=FALSE){
+#' @author  Vishal Sarsani
+#' @export
+buildupatedUI <- function(ui,varsVec,covarsVec,add=TRUE,indep=FALSE){
   
   if (inherits(ui, "nlmixr2FitCore")) {
     ui <- ui$ui
@@ -247,38 +251,37 @@
   
   
   # construct covInfo
-  covInfo <-  .buildcovInfo(varsVec,covarsVec)
+  covInfo <-  buildcovInfo(varsVec,covarsVec)
   
   # check if the covInfo is a list 
   checkmate::assert_list(covInfo)
   
-  # Add covariates one after other
   covSearchRes <- list()
   covsAdded <- list() # to keep track of covariates added and store in a file
   
-  if (indep) {
+  if (add){
+  
+  # Add covariates one after other
+  if (indep ) {
     for (i in seq_along(covInfo)) {
       x <- covInfo[[i]]
       covName <- paste0("cov_", x$covariate, "_", x$varName)
-      
-      reassignVars <- rownames(fit$parFixedDf)[fit$parFixedDf$Estimate != fit$parFixedDf[, "Back-transformed"] & fit$parFixedDf[, "Back-transformed"] == 0]
-      
-      res <- do.call(.builduiCovariate,c(ui,x))
-      if (length(reassignVars) > 0) {
-        ini2 <- as.data.frame(res$ini)
-        
-        for (r in reassignVars) {
-          ini2[ini2$name == r, "est"] <- 1.0
-          cli::cli_alert_warning("reasssigned initial value for {r} to 1.0")
+      ui <- tryCatch(
+        {
+          res <- do.call(.builduiCovariate,c(ui,x))
+          res # to return 'ui'
+        },
+        error = function(error_message) {
+          print("error  while  ADDING covariate")
+          print(error_message)
+          print("skipping this covariate")
+          return(res) # return NA otherwise (instead of NULL)
         }
-        
-        class(ini2) <- c("nlmixr2Bounds", "data.frame")
-        res$ini <- ini2
-      }
+      )
+  covSearchRes[[i]] <- list(ui, c(x$covariate, x$varName),covName)[[1]]
       
-      covSearchRes[[i]] <- list(ui,c(x$covariate, x$varName), covName)
-    }
-    return(covSearchRes)
+}
+return(covSearchRes)
   }
   
   else {
@@ -343,17 +346,41 @@
     
     return(covSearchRes[length(covSearchRes)][[1]][[1]])
   }
+  }
+else {
+#remove covariate one after other
+    for (i in seq_along(covInfo)) {
+      x <- covInfo[[i]]
+      covName <- paste0("cov_", x$covariate, "_", x$varName)
+      ui <- tryCatch(
+        {
+          res <- do.call(.builduiCovariate,c(ui,x,add=FALSE))
+          res # to return 'ui'
+        },
+        error = function(error_message) {
+          print("error  while  ADDING covariate")
+          print(error_message)
+          print("skipping this covariate")
+          return(res) # return NA otherwise (instead of NULL)
+        }
+      )
+      covSearchRes[[i]] <- list(ui, c(x$covariate, x$varName),covName)[[1]]
+      
+    }
+    return(covSearchRes)
+  }
 }
+
 
 #' Make dummy variable cols and updated covarsVec
 #' @param data data frame used in the analysis
-#' @param nfold number of k-fold cross validations. Default is 5 
-#' @param stratVar  Stratification Variable. Default is NULL and ID is used for CV
-#' @return return dataframe with the fold column attached
-#' @noRd
-#' @author Matthew Fidler, Vishal Sarsani
+#' @param covarsVec  character vector of covariates that need to be added
+#' @param catcovarsVec  character vector of categorical covariates that need to be added
+#' @return return updated Data along with the updated covarsVec
+#' @author Vishal Sarsani
+#' @export
 
-.addCatCovariates <- function(data,covarsVec,catcovarsVec) {
+addCatCovariates <- function(data,covarsVec,catcovarsVec) {
   
   # check for valid inputs
   checkmate::assert_data_frame(data,min.cols = 7)

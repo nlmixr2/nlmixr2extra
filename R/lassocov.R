@@ -9,6 +9,7 @@
 #' @param tvalue float indicating tvalue to be updated for the lasso string
 #' @return updated ui with added covariates
 #' @noRd
+#' @author  Vishal Sarsani
 .lassoUicovariate <- function(ui,varsVec,covarsVec,tvalue=0.05){
   
   if (inherits(ui, "nlmixr2FitCore")) {
@@ -17,7 +18,7 @@
   ui <- rxode2::assertRxUi(ui)
   
   # Extract updated ui with added covariates 
-  .ui1 <- .buildupatedUI(ui,varsVec,covarsVec)
+  .ui1 <- buildupatedUI(ui,varsVec,covarsVec,add = TRUE,indep=FALSE)
   
   # Extract all the covariate parameters constructed 
   .covsparams <- .ui1$muRefCovariateDataFrame$covariateParameter
@@ -239,11 +240,55 @@ optimal_t
 #' @param covarsVec  character vector of covariates that need to be added
 #' @param catvarsVec  character vector of categorical covariates that need to be added
 #' @param constraint theta cutoff. below cutoff then the theta will be fixed to zero
+#' @param stratVar   A variable to stratify on for cross-validation
+#' @param ...  Other parameters to be passed to optimalTvaluelasso
 #' @return return data frame of final lasso coefficients
-#' @noRd
 #' @author Vishal Sarsani
+#' @export
+#' 
+#' @examples
 #'
-.lassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...) {
+#' \donttest{
+#'
+#' one.cmt <- function() {
+#'   ini({
+#'     ## You may label each parameter with a comment
+#'     tka <- 0.45 # Log Ka
+#'     tcl <- log(c(0, 2.7, 100)) # Log Cl
+#'     ## This works with interactive models
+#'     ## You may also label the preceding line with label("label text")
+#'     tv <- 3.45; label("log V")
+#'     ## the label("Label name") works with all models
+#'     eta.ka ~ 0.6
+#'     eta.cl ~ 0.3
+#'     eta.v ~ 0.1
+#'     add.sd <- 0.7
+#'   })
+#'   model({
+#'     ka <- exp(tka + eta.ka)
+#'     cl <- exp(tcl + eta.cl)
+#'     v <- exp(tv + eta.v)
+#'     linCmt() ~ add(add.sd)
+#'   })
+#' }
+#'
+#' d <- nlmixr2data::theo_sd
+#' d$SEX <-0
+#' d$SEX[d$ID<=6] <-1
+#'
+#' fit <- nlmixr2(one.cmt, d, "focei")
+#' varsVec <- c("ka","cl","v")
+#' covarsVec <- c("WT)
+#' catvarsVec <- c("SEX")
+#'
+#'
+#' # Lasso coefficients:
+#'
+#' lassoDf <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
+#'
+#' }
+#'
+lassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...) {
 
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
@@ -258,8 +303,8 @@ optimal_t
   
   ## Update data and covarsvec if categorical variables are provided
   if(!is.null(catvarsVec)){
-    covarsVec <- .addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
-    data <- .addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
+    covarsVec <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
+    data <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
   }
   
  else {
@@ -270,10 +315,10 @@ optimal_t
   
   
   #data
-  data <- .normalizedData(data,covarsVec)
+  data <- normalizedData(data,covarsVec)
   
   # construct covInfo
-  covInfo <-  .buildcovInfo(varsVec,covarsVec)
+  covInfo <-  buildcovInfo(varsVec,covarsVec)
   # construct covNames   
   covNames <- list()    
   for ( x in covInfo) {
@@ -287,7 +332,6 @@ optimal_t
   optTvalue <- .optimalTvaluelasso(data,ui,varsVec,covarsVec,t_start=0.05,t_stop=0.25,t_step=0.05,estmethod=.est,stratVar = NULL,...)   
   
   # Refit model with the optimal t-value 
-  assign('debug',list(ui,varsVec,covarsVec,tvalue=optTvalue,...),globalenv())
   updatedmod <- .lassoUicovariate(ui,varsVec,covarsVec,tvalue=optTvalue)
   fitobject <- nlmixr2(updatedmod,data,est=.est)
   
@@ -327,6 +371,8 @@ optimal_t
 #' @param adapcoefs dataframe with covariates estimates for the adaptive lasso
 #' @return updated ui with added covariates
 #' @noRd
+#' @author Vishal Sarsani
+
 .adaptivelassoUicovariate <- function(ui,varsVec,covarsVec,tvalue=0.05,adapcoefs=NULL){
   
   if (inherits(ui, "nlmixr2FitCore")) {
@@ -335,7 +381,7 @@ optimal_t
   ui <- rxode2::assertRxUi(ui)
   
   # Extract updated ui with added covariates 
-  .ui1 <- .buildupatedUI(ui,varsVec,covarsVec)
+  .ui1 <- buildupatedUI(ui,varsVec,covarsVec)
   
   # Extract all the covariate parameters constructed 
   .covsparams <- .ui1$muRefCovariateDataFrame$covariateParameter
@@ -394,11 +440,55 @@ optimal_t
 #' @param covarsVec  character vector of covariates that need to be added
 #' @param catvarsVec  character vector of categorical covariates that need to be added
 #' @param constraint theta cutoff. below cutoff then the theta will be fixed to zero.
+#' @param stratVar   A variable to stratify on for cross-validation.
+#' @param ...  Other parameters to be passed to optimalTvaluelasso
 #' @return return data frame of final lasso coefficients
-#' @noRd
 #' @author Vishal Sarsani
+#' @export
+#' 
+#' @examples
 #'
-.adaptivelassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...) {
+#' \donttest{
+#'
+#' one.cmt <- function() {
+#'   ini({
+#'     ## You may label each parameter with a comment
+#'     tka <- 0.45 # Log Ka
+#'     tcl <- log(c(0, 2.7, 100)) # Log Cl
+#'     ## This works with interactive models
+#'     ## You may also label the preceding line with label("label text")
+#'     tv <- 3.45; label("log V")
+#'     ## the label("Label name") works with all models
+#'     eta.ka ~ 0.6
+#'     eta.cl ~ 0.3
+#'     eta.v ~ 0.1
+#'     add.sd <- 0.7
+#'   })
+#'   model({
+#'     ka <- exp(tka + eta.ka)
+#'     cl <- exp(tcl + eta.cl)
+#'     v <- exp(tv + eta.v)
+#'     linCmt() ~ add(add.sd)
+#'   })
+#' }
+#'
+#' d <- nlmixr2data::theo_sd
+#' d$SEX <-0
+#' d$SEX[d$ID<=6] <-1
+#'
+#' fit <- nlmixr2(one.cmt, d, "focei")
+#' varsVec <- c("ka","cl","v")
+#' covarsVec <- c("WT)
+#' catvarsVec <- c("SEX")
+#'
+#'
+#' # Adaptive Lasso coefficients:
+#'
+#' lassoDf <- adaptivelassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
+#'
+#' }
+#'
+adaptivelassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...) {
   
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
@@ -413,21 +503,21 @@ optimal_t
   
   ## Update data and covarsvec if categorical variables are provided
   if(!is.null(catvarsVec)){
-    covarsVec <- .addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
-    data <- .addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
+    covarsVec <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
+    data <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
   }
   
   
   
   
   ## Get initial adaptive coefs from the regular lasso coefficients
-  .adapcoefs=.lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
+  .adapcoefs=lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
   
   #data
-  data <- .normalizedData(data,covarsVec)
+  data <- normalizedData(data,covarsVec)
   
   # construct covInfo
-  covInfo <-  .buildcovInfo(varsVec,covarsVec)
+  covInfo <-  buildcovInfo(varsVec,covarsVec)
   # construct covNames   
   covNames <- list()    
   for ( x in covInfo) {
@@ -441,7 +531,7 @@ optimal_t
   optTvalue <- .optimalTvaluelasso(data,ui,varsVec,covarsVec,t_start=0.05,t_stop=0.25,t_step=0.05,estmethod=.est,adapcoefs=.adapcoefs,stratVar=NULL,...)   
   
   # Refit model with the optimal t-value 
-  assign('debug',list(ui,varsVec,covarsVec,tvalue=optTvalue,...),globalenv())
+  
   updatedmod <- .adaptivelassoUicovariate(ui,varsVec,covarsVec,tvalue=optTvalue,adapcoefs = .adapcoefs)
   fitobject <- nlmixr2(updatedmod,data,est=.est)
   
@@ -480,11 +570,61 @@ optimal_t
 #' @param catvarsVec  character vector of categorical covariates that need to be added
 #' @param constraint theta cutoff. below cutoff then the theta will be fixed to zero.
 #' @param lassotype must be  'regular' , 'adaptive', 'adjusted'
+#' @param stratVar   A variable to stratify on for cross-validation.
+#' @param ...  Other parameters to be passed to optimalTvaluelasso
 #' @return return fit of the regular coefficients
-#' @noRd
 #' @author Vishal Sarsani
+#' @export
+#' 
+#' @examples
 #'
-.regularmodel <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lassotype='regular',stratVar = NULL,...) {
+#' \donttest{
+#'
+#' one.cmt <- function() {
+#'   ini({
+#'     ## You may label each parameter with a comment
+#'     tka <- 0.45 # Log Ka
+#'     tcl <- log(c(0, 2.7, 100)) # Log Cl
+#'     ## This works with interactive models
+#'     ## You may also label the preceding line with label("label text")
+#'     tv <- 3.45; label("log V")
+#'     ## the label("Label name") works with all models
+#'     eta.ka ~ 0.6
+#'     eta.cl ~ 0.3
+#'     eta.v ~ 0.1
+#'     add.sd <- 0.7
+#'   })
+#'   model({
+#'     ka <- exp(tka + eta.ka)
+#'     cl <- exp(tcl + eta.cl)
+#'     v <- exp(tv + eta.v)
+#'     linCmt() ~ add(add.sd)
+#'   })
+#' }
+#'
+#' d <- nlmixr2data::theo_sd
+#' d$SEX <-0
+#' d$SEX[d$ID<=6] <-1
+#'
+#' fit <- nlmixr2(one.cmt, d, "focei")
+#' varsVec <- c("ka","cl","v")
+#' covarsVec <- c("WT)
+#' catvarsVec <- c("SEX")
+#'
+#'
+#' # Model fit with regular lasso coefficients:
+#'
+#' lassoDf <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lassotype='regular',stratVar = NULL,...)
+#' # Model fit with adaptive lasso coefficients:
+#'
+#' lassoDf <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lassotype='adaptive',stratVar = NULL,...)
+# # Model fit with adaptive-adjusted lasso coefficients:
+#'
+#' lassoDf <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lassotype='adjusted',stratVar = NULL,...)
+#'
+#' }
+#'
+regularmodel <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lassotype='regular',stratVar = NULL,...) {
   
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
@@ -499,27 +639,27 @@ optimal_t
   
 
   if(!is.null(catvarsVec)){
-    covarsVec <- .addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
-    data <- .addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
+    covarsVec <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
+    data <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
   }
   
   
   
   
   if (lassotype=="regular") {
-.coefValues <- .lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
+.coefValues <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
   }
   else if (lassotype=="adaptive") {
-.coefValues <- .adaptivelassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...) 
+.coefValues <- adaptivelassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...) 
   }
   
-  else if (lassotype=="adaptive"){
+  else if (lassotype=="adjusted"){
     
-  .coefValues <- .adjustedlassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)    
+  .coefValues <- adjustedlassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)    
   }
 
 # Extract updated ui with added covariates 
-.ui1 <- .buildupatedUI(ui,varsVec,covarsVec)
+.ui1 <- buildupatedUI(ui,varsVec,covarsVec,add=TRUE,indep = FALSE)
 
 # Extract all the covariate parameters constructed 
 .covsparams <- .ui1$muRefCovariateDataFrame$covariateParameter
@@ -531,6 +671,29 @@ checkmate::assertCharacter(.covsparams,min.len = 1,any.missing = FALSE )
 for ( i in seq_along(.covsparams)){
   .modelfun  <- gsub(.covsparams[i], .coefValues[[i]], .modelfun)
 }
+
+
+tvalue <- 0.01
+
+# construct a tvalue string 
+
+tvalueString <- paste0("tvalue <- ",tvalue,"\n")
+
+# construct an abssum string 
+
+absString <- paste0("abssum <- sum(",paste0(paste0("abs(",.covsparams,")"),collapse="+"),")","\n")
+
+# construct a ratio string 
+
+ratioString <- paste0("ratio <- ","abssum","/","tvalue","\n")
+
+# construct a factor string 
+
+factorString <- paste0("factor <- ","exp","(","1-","ratio",")","\n")
+
+
+
+
 
 # construct the final updated model string 
 
@@ -546,7 +709,7 @@ for ( i in seq_along(.covsparams)){
 .ui2 <- .getUiFunFromIniAndModel(.ui1, .ini, .newModel)()
 #estimation method
 estmethod=getFitMethod(fit)
-return(nlmixr2(ui2,data,est=estmethod)) 
+return(nlmixr2(.ui2,data,est=estmethod)) 
 }
 
 
@@ -557,11 +720,55 @@ return(nlmixr2(ui2,data,est=estmethod))
 #' @param covarsVec  character vector of covariates that need to be added
 #' @param catvarsVec  character vector of categorical covariates that need to be added
 #' @param constraint theta cutoff. below cutoff then the theta will be fixed to zero.
+#' @param stratVar   A variable to stratify on for cross-validation.
+#' @param ...  Other parameters to be passed to optimalTvaluelasso
 #' @return return data frame of final lasso coefficients
-#' @noRd
 #' @author Vishal Sarsani
 #'
-.adjustedlassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...) {
+#' @export
+#' 
+#' @examples
+#'
+#' \donttest{
+#'
+#' one.cmt <- function() {
+#'   ini({
+#'     ## You may label each parameter with a comment
+#'     tka <- 0.45 # Log Ka
+#'     tcl <- log(c(0, 2.7, 100)) # Log Cl
+#'     ## This works with interactive models
+#'     ## You may also label the preceding line with label("label text")
+#'     tv <- 3.45; label("log V")
+#'     ## the label("Label name") works with all models
+#'     eta.ka ~ 0.6
+#'     eta.cl ~ 0.3
+#'     eta.v ~ 0.1
+#'     add.sd <- 0.7
+#'   })
+#'   model({
+#'     ka <- exp(tka + eta.ka)
+#'     cl <- exp(tcl + eta.cl)
+#'     v <- exp(tv + eta.v)
+#'     linCmt() ~ add(add.sd)
+#'   })
+#' }
+#'
+#' d <- nlmixr2data::theo_sd
+#' d$SEX <-0
+#' d$SEX[d$ID<=6] <-1
+#'
+#' fit <- nlmixr2(one.cmt, d, "focei")
+#' varsVec <- c("ka","cl","v")
+#' covarsVec <- c("WT)
+#' catvarsVec <- c("SEX")
+#'
+#'
+#' # Adaptive Lasso coefficients:
+#'
+#' lassoDf <- adjustedlassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
+#' }
+#'
+adjustedlassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...) {
   
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
@@ -576,17 +783,17 @@ return(nlmixr2(ui2,data,est=estmethod))
   checkmate::assert_double(constraint)
   
   if(!is.null(catvarsVec)){
-  covarsVec <- .addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
-  data <- .addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
+  covarsVec <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
+  data <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
   }
   
   
   
   ## Get updated ui with covariates and without lasso factor 
-  .mod1 <- .buildupatedUI(ui,varsVec,covarsVec)
+  .mod1 <- buildupatedUI(ui,varsVec,covarsVec,add = TRUE,indep = FALSE)
   
   # construct covInfo
-  covInfo <-  .buildcovInfo(varsVec,covarsVec)
+  covInfo <-  buildcovInfo(varsVec,covarsVec)
   # construct covNames   
   covNames <- list()    
   for ( x in covInfo) {
@@ -596,7 +803,7 @@ return(nlmixr2(ui2,data,est=estmethod))
   
   
   #data
-  data <- .normalizedData(data,covarsVec)
+  data <- normalizedData(data,covarsVec)
   
   #Fit
   fit1 <- nlmixr2(.mod1,data,est=getFitMethod(fit))
@@ -608,7 +815,7 @@ return(nlmixr2(ui2,data,est=estmethod))
   optTvalue <- .optimalTvaluelasso(data,ui,varsVec,covarsVec,t_start=0.05,t_stop=0.25,t_step=0.05,estmethod=getFitMethod(fit),adapcoefs=.adapcoefs,stratVar = NULL,...)   
   
   # Refit model with the optimal t-value 
-  assign('debug',list(ui,varsVec,covarsVec,tvalue=optTvalue,...),globalenv())
+
   updatedmod <- .adaptivelassoUicovariate(ui,varsVec,covarsVec,tvalue=optTvalue,adapcoefs = .adapcoefs)
   fitobject <- nlmixr2(updatedmod,data,est=getFitMethod(fit))
   
