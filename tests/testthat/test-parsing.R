@@ -415,7 +415,7 @@ test_that("Build ui from the covariate", {
   
   ui2 <- nlmixr(two.compartment)
   ui <- ui2
-  varsVec <- c("ka")
+  varsVec <- "ka"
   covarsVec <- c("WT","BMI")
   expect_error(buildupatedUI(ui,varsVec,covarsVec,add = TRUE,indep = FALSE))
   
