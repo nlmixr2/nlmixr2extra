@@ -1290,9 +1290,9 @@ getBootstrapSummary <-
         }
         colnames(omgVecBoot) <- namesList
         
-        .w <- which(sapply(namesList, function(x) {
+        .w <- which(vapply(namesList, function(x) {
           !all(omgVecBoot[, x] == 0)
-        }))
+        }, logical(1), USE.NAMES=FALSE))
         omgVecBoot <- omgVecBoot[, .w]
         
         
