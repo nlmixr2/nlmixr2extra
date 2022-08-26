@@ -13,13 +13,16 @@
     <loc>https://nlmixr2.github.io/nlmixr2extra/index.html</loc>
   </url>
   <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/addCovMultiple.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/adaptivelassoCoefficients.html</loc>
   </url>
   <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/addCovVar.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/addCatCovariates.html</loc>
   </url>
   <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/addCovariate.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/addorremoveCovariate.html</loc>
+  </url>
+  <url>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/adjustedlassoCoefficients.html</loc>
   </url>
   <url>
     <loc>https://nlmixr2.github.io/nlmixr2extra/reference/backwardSearch.html</loc>
@@ -31,25 +34,37 @@
     <loc>https://nlmixr2.github.io/nlmixr2extra/reference/bootstrapFit.html</loc>
   </url>
   <url>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/buildcovInfo.html</loc>
+  </url>
+  <url>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/buildupatedUI.html</loc>
+  </url>
+  <url>
     <loc>https://nlmixr2.github.io/nlmixr2extra/reference/covarSearchAuto.html</loc>
+  </url>
+  <url>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/foldgen.html</loc>
   </url>
   <url>
     <loc>https://nlmixr2.github.io/nlmixr2extra/reference/forwardSearch.html</loc>
   </url>
   <url>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/horseshoeSummardf.html</loc>
+  </url>
+  <url>
     <loc>https://nlmixr2.github.io/nlmixr2extra/reference/index.html</loc>
   </url>
   <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/initializeCovars.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/lassoCoefficients.html</loc>
   </url>
   <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/makeDummies.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/lassoSummardf.html</loc>
   </url>
   <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/makeHockeyStick.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/normalizedData.html</loc>
   </url>
   <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/performNorm.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/optimUnisampling.html</loc>
   </url>
   <url>
     <loc>https://nlmixr2.github.io/nlmixr2extra/reference/preconditionFit.html</loc>
@@ -58,12 +73,6 @@
     <loc>https://nlmixr2.github.io/nlmixr2extra/reference/reexports.html</loc>
   </url>
   <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/removeCovMultiple.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/removeCovVar.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/removeCovariate.html</loc>
+    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/regularmodel.html</loc>
   </url>
 </urlset>
