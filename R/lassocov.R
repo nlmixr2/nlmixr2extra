@@ -87,9 +87,9 @@
     
   }
   else{
-  mod <- .lassoUicovariate(ui,varsVec,covarsVec,tvalue = tvalue)
+    mod <- .lassoUicovariate(ui,varsVec,covarsVec,tvalue = tvalue)
   }
-
+  
   # Add fold column depending on the stratification
   if (!is.null(stratVar))
   {
@@ -161,16 +161,15 @@
         cli::cli_alert_info("try computing 'fit$objDf$$`Log-likelihood`' in console to compute and store the corresponding OBJF value")
         stop("aborting...objf value not associated with the current 'fit' object", call. = FALSE)
       }
-    
-    ofvList <- append(ofvList ,-2*fitTest$objDf$`Log-likelihood`[1])
+      
+      ofvList <- append(ofvList ,-2*fitTest$objDf$`Log-likelihood`[1])
+    }
+    cli::cli_alert_success("Estimation complete for the fold number : {f}")
   }
-cli::cli_alert_success("Estimation complete for the fold number : {f}")
-}
   
-# Return the pOFV 
-pOFV <- do.call(sum, ofvList)
-return(pOFV)
-
+  # Return the pOFV 
+  pOFV <- do.call(sum, ofvList)
+  return(pOFV)
 }
 
 
@@ -194,7 +193,7 @@ return(pOFV)
   checkmate::assert_double(t_start)
   checkmate::assert_double(t_stop)
   checkmate::assert_double(t_step)
-
+  
   # generate vector of t values
   tvalues <- seq(t_start,t_stop,by=t_step)    
   
@@ -210,9 +209,9 @@ return(pOFV)
     pofvList <- rbind(pofvList,pofv)
   }
   
-# Find optimal t-value 
-optimal_t <- pofvList[which.min(pofvList$POFV),]$tvalue
-optimal_t
+  # Find optimal t-value 
+  optimal_t <- pofvList[which.min(pofvList$POFV),]$tvalue
+  optimal_t
 }
 
 
@@ -272,12 +271,11 @@ optimal_t
 #'
 #' }
 lassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...) {
-
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
   }
   else {
-      ui <- fit$ui
+    ui <- fit$ui
   }
   
   checkmate::assert_character(covarsVec)
@@ -290,10 +288,10 @@ lassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,
     data <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
   }
   
- else {
-   covarsVec <- covarsVec
-   data <- nlme::getData(fit)
- }
+  else {
+    covarsVec <- covarsVec
+    data <- nlme::getData(fit)
+  }
   
   #data
   data <- normalizedData(data,covarsVec)
@@ -329,7 +327,6 @@ lassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,
   # factor 
   factor <- exp(1-ratio)
   
-
   # Apply lasso constraint 
   finalLasso <- as.data.frame(lapply(covEst, function(x) ifelse(abs(x) < constraint , 0, x)),row.names = NULL)
   
@@ -597,71 +594,65 @@ regularmodel <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lasso
   checkmate::assert_character(covarsVec)
   checkmate::assert_character(varsVec)
   checkmate::assert_double(constraint)
-
+  
   if(!is.null(catvarsVec)){
     covarsVec <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
     data <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
   }
   
   if (lassotype=="regular") {
-.coefValues <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
+    .coefValues <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
   }
   else if (lassotype=="adaptive") {
-.coefValues <- adaptivelassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...) 
+    .coefValues <- adaptivelassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...) 
   }
   
   else if (lassotype=="adjusted"){
     
-  .coefValues <- adjustedlassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)    
+    .coefValues <- adjustedlassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)    
   }
-
-# Extract updated ui with added covariates 
-.ui1 <- buildupatedUI(ui,varsVec,covarsVec,add=TRUE,indep = FALSE)
-
-# Extract all the covariate parameters constructed 
-.covsparams <- .ui1$muRefCovariateDataFrame$covariateParameter
-checkmate::assertCharacter(.covsparams,min.len = 1,any.missing = FALSE)
-
-
-# Fix the covariate parameter values
-.modelfun <- .ui1$funTxt
-for ( i in seq_along(.covsparams)){
-  .modelfun  <- gsub(.covsparams[i], .coefValues[[i]], .modelfun)
-}
-
-tvalue <- 0.01
-
-# construct a tvalue string 
-
-tvalueString <- paste0("tvalue <- ",tvalue,"\n")
-
-# construct an abssum string 
-
-absString <- paste0("abssum <- sum(",paste0(paste0("abs(",.covsparams,")"),collapse="+"),")","\n")
-
-# construct a ratio string 
-
-ratioString <- paste0("ratio <- ","abssum","/","tvalue","\n")
-
-# construct a factor string 
-
-factorString <- paste0("factor <- ","exp","(","1-","ratio",")","\n")
-
-# construct the final updated model string 
-
-.newmodelfun <- paste0(tvalueString,absString,ratioString,factorString,.modelfun,sep="")
-.newModel <- eval(parse(text = paste0("quote(model({",paste0(as.character(.newmodelfun),collapse="\n"), "}))")))
-
-# build ui
-.ini <- .ui1$iniDf
-.ini <- .ini[ ! .ini$name %in% .covsparams, ]
-.ini <- as.expression(lotri::as.lotri(.ini))
-.ini[[1]] <- quote(`ini`)
-# return the updated model
-.ui2 <- .getUiFunFromIniAndModel(.ui1, .ini, .newModel)()
-#estimation method
-estmethod=getFitMethod(fit)
-return(nlmixr2(.ui2,data,est=estmethod)) 
+  
+  # Extract updated ui with added covariates 
+  .ui1 <- buildupatedUI(ui,varsVec,covarsVec,add=TRUE,indep = FALSE)
+  
+  # Extract all the covariate parameters constructed 
+  .covsparams <- .ui1$muRefCovariateDataFrame$covariateParameter
+  checkmate::assertCharacter(.covsparams,min.len = 1,any.missing = FALSE)
+  
+  # Fix the covariate parameter values
+  .modelfun <- .ui1$funTxt
+  for ( i in seq_along(.covsparams)){
+    .modelfun  <- gsub(.covsparams[i], .coefValues[[i]], .modelfun)
+  }
+  
+  tvalue <- 0.01
+  
+  # construct a tvalue string
+  tvalueString <- paste0("tvalue <- ",tvalue,"\n")
+  
+  # construct an abssum string
+  absString <- paste0("abssum <- sum(",paste0(paste0("abs(",.covsparams,")"),collapse="+"),")","\n")
+  
+  # construct a ratio string
+  ratioString <- paste0("ratio <- ","abssum","/","tvalue","\n")
+  
+  # construct a factor string
+  factorString <- paste0("factor <- ","exp","(","1-","ratio",")","\n")
+  
+  # construct the final updated model string
+  .newmodelfun <- paste0(tvalueString,absString,ratioString,factorString,.modelfun,sep="")
+  .newModel <- eval(parse(text = paste0("quote(model({",paste0(as.character(.newmodelfun),collapse="\n"), "}))")))
+  
+  # build ui
+  .ini <- .ui1$iniDf
+  .ini <- .ini[ ! .ini$name %in% .covsparams, ]
+  .ini <- as.expression(lotri::as.lotri(.ini))
+  .ini[[1]] <- quote(`ini`)
+  # return the updated model
+  .ui2 <- .getUiFunFromIniAndModel(.ui1, .ini, .newModel)()
+  #estimation method
+  estmethod=getFitMethod(fit)
+  return(nlmixr2(.ui2,data,est=estmethod)) 
 }
 
 #' Return Adjusted adaptive lasso coefficients after finding optimal t
@@ -713,7 +704,6 @@ return(nlmixr2(.ui2,data,est=estmethod))
 #' covarsVec <- c("WT")
 #' catvarsVec <- c("SEX")
 #'
-#'
 #' # Adaptive Lasso coefficients:
 #'
 #' lassoDf <- adjustedlassoCoefficients(fit,varsVec,covarsVec,catvarsVec)
@@ -733,8 +723,8 @@ adjustedlassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constrain
   checkmate::assert_double(constraint)
   
   if(!is.null(catvarsVec)){
-  covarsVec <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
-  data <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
+    covarsVec <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
+    data <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
   }
   
   ## Get updated ui with covariates and without lasso factor 
@@ -761,15 +751,14 @@ adjustedlassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constrain
   # Extract optimal t-value
   optTvalue <- .optimalTvaluelasso(data,ui,varsVec,covarsVec,t_start=0.05,t_stop=0.25,t_step=0.05,estmethod=getFitMethod(fit),adapcoefs=.adapcoefs,stratVar = NULL,...)   
   
-  # Refit model with the optimal t-value 
-
+  # Refit model with the optimal t-value
   updatedmod <- .adaptivelassoUicovariate(ui,varsVec,covarsVec,tvalue=optTvalue,adapcoefs = .adapcoefs)
   fitobject <- nlmixr2(updatedmod,data,est=getFitMethod(fit))
   
-  # Extract covariate estimates 
+  # Extract covariate estimates
   covEst <- fitobject$parFixedDf[row.names(fitobject$parFixedDf) %in% covNames,"Estimate"]
   
-  # Multiply covariate Estimates with adative coefficients 
+  # Multiply covariate Estimates with adative coefficients
   covestAdap <- covEst*.adapcoefs
   
   # Extract covariate std error

@@ -70,7 +70,6 @@ varsVec <- c("ka","cl","v")
 covarsVec <- c("WT")
 catvarsVec <- c("SEX")
 
-
 # Adaptive Lasso coefficients:
 
 lassoDf <- adjustedlassoCoefficients(fit,varsVec,covarsVec,catvarsVec)
