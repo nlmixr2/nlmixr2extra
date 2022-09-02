@@ -85,6 +85,15 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
   nlmixr2est::nlmixr(object=modelOut, data=data, ...)
 }
 
+#' Rename a column in a dataset, optionally overwriting it if the column does
+#' not exist
+#' 
+#' @param data The dataset to modify
+#' @param newName,oldName The new and old column names
+#' @return data with \code{data[[newName]] <- data[[charOld]]}
+#' @keywords Internal
+#' @examples
+#' .renameOrOverwrite(data.frame(A=1), newName="B", oldName="A")
 .renameOrOverwrite <- function(data, newName, oldName) {
   charOld <- as.character(oldName)
   stopifnot(charOld %in% names(data))
@@ -98,6 +107,15 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
   data
 }
 
+#' Parse the formula to extract the dependent variable, predictor, and random
+#' effects
+#'
+#' @param object The formula to parse
+#' @return A list with names of "DV", "predictor", and "ranef" which are each
+#'   part of the formula broken down into calls
+#' @keywords Internal
+#' @examples
+#' .nlmixrFormulaParser(a~b+c~(c|id))
 .nlmixrFormulaParser <- function(object) {
   stopifnot(inherits(object, "formula"))
   # Confirm that the formula looks like it should and break it up into its
@@ -122,6 +140,17 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
   )
 }
 
+#' Parse the random effects part of a formula
+#'
+#' @param object The formula to parse
+#' @return An unnamed list with one element per random effect.  The elements
+#'   each have names of "ranefVar", "ranefGroup", and "start" indicating the
+#'   variable with the random effect, the grouping variable for the random
+#'   effect, and the starting value for the standard deviation of the random
+#'   effect.
+#' @keywords Internal
+#' @examples
+#' .nlmixrFormulaParserRanef(str2lang("(c|id)+(d|id2)"))
 .nlmixrFormulaParserRanef <- function(object) {
   stopifnot(is.call(object))
   if (object[[1]] == as.name("+")) {
@@ -169,6 +198,35 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
   }
 }
 
+#' Expand parameters to include their factor representations, if applicable.
+#' 
+#' @param start the starting values for the model
+#' @param startName The base name for the parameter
+#' @param startValue The initial value for the base parameter
+#' @param param The parameter in the model
+#' @param data The dataset
+#' @return A list with the ini and model parts needed to use the parameter
+#' @keywords Internal
+.nlmixrFormulaExpandStartParam <- function(start, param, data) {
+  paramExpanded <- .paramExpand(param)
+  stopifnot(all(names(paramExpanded) %in% names(start)))
+  ret <- list()
+  for (currentStart in names(start)) {
+    ret <-
+      append(
+        ret,
+        list(.nlmixrFormulaExpandStartParamSingle(
+          startName=currentStart,
+          startValue=start[[currentStart]],
+          param=paramExpanded[currentStart], # this will be NA if it does not exist
+          data=data
+        ))
+      )
+  }
+  ret
+}
+
+#' @describeIn .nlmixrFormulaExpandStartParam Expand a single parameter in a model using dataset factors, if applicable
 .nlmixrFormulaExpandStartParamSingle <- function(startName, startValue, param, data) {
   stopifnot(is.character(startName))
   stopifnot(is.numeric(startValue))
@@ -218,25 +276,12 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
   ret
 }
 
-.nlmixrFormulaExpandStartParam <- function(start, param, data) {
-  paramExpanded <- .paramExpand(param)
-  stopifnot(all(names(paramExpanded) %in% names(start)))
-  ret <- list()
-  for (currentStart in names(start)) {
-    ret <-
-      append(
-        ret,
-        list(.nlmixrFormulaExpandStartParamSingle(
-          startName=currentStart,
-          startValue=start[[currentStart]],
-          param=paramExpanded[currentStart], # this will be NA if it does not exist
-          data=data
-        ))
-      )
-  }
-  ret
-}
-
+#' Setup the ini() part of the model for fixed effects
+#' 
+#' @param start The starting estimates for the model
+#' @param base The initial basis for the ini definition
+#' @return The inside of the ini() part of the model
+#' @keywords Internal
 .nlmixrFormulaSetupIniFixed <- function(start, base=str2lang("{}")) {
   stopifnot(length(start) > 0)
   stopifnot(is.list(start))
@@ -248,6 +293,8 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
   base
 }
 
+#' @describeIn .nlmixrFormulaSetupIniFixed Setup the ini() part of the model for fixed effects
+#' @param ranefDefinition The random effect definitions
 .nlmixrFormulaSetupIniRandom <- function(ranefDefinition, base=str2lang("{}")) {
   stopifnot(is.list(ranefDefinition))
   for (currentRanef in ranefDefinition) {
@@ -257,6 +304,16 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
   base
 }
 
+#' Setup the model() part of the model
+#' 
+#' @param start The starting estimates (used when fixed effects need more
+#'   defition like for factors)
+#' @param predictor The predictor from the formula
+#' @param residualModel The residual model definition
+#' @param predictorVar The variable in the data for the predictor
+#' @param data The data used in the model
+#' @return the interior of the model()
+#' @keywords Internal
 .nlmixrFormulaSetupModel <- function(start, predictor, residualModel, predictorVar="value", param, data) {
   stopifnot(inherits(residualModel, "formula"))
   # a one-sided formula
