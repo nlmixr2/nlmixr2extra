@@ -42,12 +42,6 @@
 #' @export
 nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~add(addErr)) {
   parsedFormula <- .nlmixrFormulaParser(object)
-  # Add "TIME", if needed to the data
-  if (!("TIME" %in% names(data))) {
-    data$TIME <- seq_len(nrow(data))
-  }
-  # Setup DV
-  data <- .renameOrOverwrite(data, newName="DV", oldName=parsedFormula$DV)
   
   # Setup the random effects
   ranefGroup <- NULL
@@ -59,7 +53,10 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
       stopifnot(currentRanef$ranefGroup == ranefGroup)
     }
   }
-  data <- .renameOrOverwrite(data, newName="ID", oldName=ranefGroup)
+  if (missing(data)) {
+    data <- NULL
+  }
+  data <- .nlmixrFormulaDataPrep(data, dvName=parsedFormula$DV, idName=ranefGroup)
   startAll <- .nlmixrFormulaExpandStartParam(start=start, param=param, data=data)
   iniFixed <- .nlmixrFormulaSetupIniFixed(start=startAll)
   iniComplete <-
@@ -82,7 +79,31 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
   }
   body(modelOut)[[2]][[2]] <- iniComplete
   body(modelOut)[[3]][[2]] <- modelComplete
-  nlmixr2est::nlmixr(object=modelOut, data=data, ...)
+  if (is.null(data)) {
+    nlmixr2est::nlmixr(object=modelOut, ...)
+  } else {
+    nlmixr2est::nlmixr(object=modelOut, data=data, ...)
+  }
+}
+
+#' Perform any required data modifications for the nlmixrFormula interface
+#' 
+#' @inheritParams nlmixr2est nlmixr2
+#' @param dvName,idName The name of the DV and ID columns for the dataset,
+#'   respectively
+#' @return A data frame modified, as needed for nlmixrFormula; if data is NULL,
+#'   return NULL
+.nlmixrFormulaDataPrep <- function(data, dvName, idName) {
+  if (is.null(data)) return(NULL)
+  # Add "TIME", if needed to the data
+  if (!("TIME" %in% names(data))) {
+    data$TIME <- seq_len(nrow(data))
+  }
+  # Setup DV
+  data <- .renameOrOverwrite(data, newName="DV", oldName=dvName)
+  # Setup ID
+  data <- .renameOrOverwrite(data, newName="ID", oldName=idName)
+  data
 }
 
 #' Rename a column in a dataset, optionally overwriting it if the column does
@@ -118,25 +139,42 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
 #' .nlmixrFormulaParser(a~b+c~(c|id))
 .nlmixrFormulaParser <- function(object) {
   stopifnot(inherits(object, "formula"))
-  # Confirm that the formula looks like it should and break it up into its
-  # component parts
+  # Confirm that the formula looks like it should
+
+  # Confirm that it is a two-sided formula
+  if (length(object) == 2) {
+    stop("formula must be two-sided")
+  }
+  
+  # break the formula up into its component parts
   stopifnot(length(object) == 3)
   stopifnot(identical(as.name("~"), object[[1]]))
-  ranefPart <- object[[3]]
-  mainFormulaPart <- object[[2]]
-  stopifnot(length(mainFormulaPart) == 3)
-  stopifnot(identical(as.name("~"), mainFormulaPart[[1]]))
-  dvPart <- mainFormulaPart[[2]]
-  predictorPart <- mainFormulaPart[[3]]
-  
+  # Split out the left and right-hand sides of the formula before determining if
+  # there are random effects
+  lhsFirst <- object[[2]]
+  rhsFirst <- object[[3]]
+  if (length(lhsFirst) == 3 && identical(as.name("~"), lhsFirst[[1]])) {
+    # the model has random effects
+    dvPart <- lhsFirst[[2]]
+    predictorPart <- lhsFirst[[3]]
+    ranefPart <- .nlmixrFormulaParserRanef(rhsFirst)
+  } else {
+    # the model does not have random effects
+    dvPart <- lhsFirst
+    predictorPart <- rhsFirst
+    ranefPart <- NULL
+  }
+
   # We cannot yet handle DV that are not a NAME (no manipulations are done
   # within the data)
-  stopifnot(is.name(dvPart))
-  
+  if (!is.name(dvPart)) {
+    stop("formula left-hand-side must be a single variable, not ", deparse(dvPart))
+  }
+
   list(
     DV=dvPart,
     predictor=list(predictorPart),
-    ranef=.nlmixrFormulaParserRanef(ranefPart)
+    ranef=ranefPart
   )
 }
 
@@ -162,23 +200,24 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
       )
   } else if (object[[1]] == as.name("(")) {
     stopifnot(length(object) == 2)
-    innerRanefSpec <- object[[2]]
-    stopifnot(is.call(innerRanefSpec))
-    stopifnot(length(innerRanefSpec) == 3)
-    stopifnot(innerRanefSpec[[1]] == as.name("|"))
-    stopifnot(is.name(innerRanefSpec[[2]]))
-    stopifnot(is.name(innerRanefSpec[[3]]))
+    # work inside the parentheses
+    ret <- .nlmixrFormulaParserRanef(object[[2]])
+  } else if (object[[1]] == as.name("|")) {
+    stopifnot(is.call(object))
+    stopifnot(length(object) == 3)
+    stopifnot(is.name(object[[2]]))
+    stopifnot(is.name(object[[3]]))
     ret <-
       list(
         list(
-          ranefVar=innerRanefSpec[[2]],
-          ranefGroup=innerRanefSpec[[3]],
+          ranefVar=object[[2]],
+          ranefGroup=object[[3]],
           # Give the user control of start in the future
           start=1
         )
       )
   } else {
-    stop("Invalid random effect") # nocov
+    stop("Invalid random effect: ", deparse(object))
   }
   ret
 }
@@ -237,6 +276,8 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
         ini=list(str2lang(paste(startName, "<-", startValue))),
         model=list(NULL)
       )
+  } else if (is.null(data)) {
+    stop("data must be given when parameters are not single fixed effects")
   } else {
     stopifnot(is.character(param))
     stopifnot(length(param) == 1)
@@ -245,34 +286,53 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
       stop("NA found in data column:", param)
     }
     if (is.factor(data[[param]])) {
-      paramLabel <- levels(data[[param]])
-      stopifnot(length(startValue) %in% c(1, length(paramLabel)))
-      ret <- list(ini=list(), model=list())
-      modelString <- character()
-      for (idx in seq_along(paramLabel)) {
-        currentParamName <- make.names(paste(startName, param, paramLabel[idx]))
-        currentStartValue <-
-          if (length(startValue) == 1) {
-            startValue
-          } else {
-            startValue[idx]
-          }
-        ret$ini <-
-          append(
-            ret$ini,
-            .nlmixrFormulaExpandStartParamSingle(startName=currentParamName, startValue=currentStartValue, param=NA)$ini
-          )
-        modelString <-
-          c(modelString, sprintf("%s*(%s == '%s')", currentParamName, param, paramLabel[idx]))
-      }
-      ret$model <-
-        list(str2lang(sprintf(
-          "%s <- %s", startName, paste(modelString, collapse="+")
-        )))
+      .nlmixrFormulaExpandStartParamFactor(startName, startValue, param, data)
     } else {
       stop("Can only handle factors for fixed effect grouping levels")
     }
   }
+  ret
+}
+
+# Provide start and model setup for factor parameters
+.nlmixrFormulaExpandStartParamFactor <- function(startName, startValue, param, data) {
+  paramLabel <- levels(data[[param]])
+  stopifnot(length(startValue) %in% c(1, length(paramLabel)))
+  if (length(startValue) == 1 && !is.ordered(data[[param]])) {
+    message("ordering the parameters by factor frequency: ", startName, " with parameter ", param)
+    paramLabel <- names(rev(sort(summary(data[[param]]))))
+  }
+  ret <- list(ini=list(), model=list())
+  modelString <- character()
+  for (idx in seq_along(paramLabel)) {
+    currentParamName <- make.names(paste(startName, param, paramLabel[idx]))
+    currentStartValue <-
+      if (length(startValue) == 1 && idx == 1) {
+        startValue
+      } else if (length(startValue) == 1) {
+        0
+      } else {
+        startValue[idx]
+      }
+    ret$ini <-
+      append(
+        ret$ini,
+        .nlmixrFormulaExpandStartParamSingle(startName=currentParamName, startValue=currentStartValue, param=NA)$ini
+      )
+    # Setup for mu-referencing where the base value is estimated for all levels
+    # and other values are estimated as differences from the base
+    modelStringCurrent <-
+      if (idx == 1) {
+        currentParamName
+      } else {
+        sprintf("%s*(%s == '%s')", currentParamName, param, paramLabel[idx])
+      }
+    modelString <- c(modelString, modelStringCurrent)
+  }
+  ret$model <-
+    list(str2lang(sprintf(
+      "%s <- %s", startName, paste(modelString, collapse="+")
+    )))
   ret
 }
 
