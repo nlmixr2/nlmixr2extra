@@ -3,3 +3,4 @@
 nlmixr2BootstrapCache_fit_*
 docs
 *.dll
+.Rhistory
