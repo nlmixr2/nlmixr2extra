@@ -76,13 +76,13 @@ catvarsVec <- c("SEX")
 
 # Model fit with regular lasso coefficients:
 
-lassoDf <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lassotype='regular',stratVar = NULL,...)
+lassoDf <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec)
 # Model fit with adaptive lasso coefficients:
 
-lassoDf <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lassotype='adaptive',stratVar = NULL,...)
+lassoDf <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,lassotype='adaptive')
+# Model fit with adaptive-adjusted lasso coefficients:
 
-lassoDf <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lassotype='adjusted',stratVar = NULL,...)
-
+lassoDf <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec, lassotype='adjusted')
 }
 }
 \author{

@@ -1,7 +1,4 @@
-
-
 #' Add covariates and lasso string to ui  
-#' 
 #' 
 #' @param ui compiled rxode2 nlmir2 model or fit  
 #' @param varsVec character vector of variables that need to be added  
@@ -9,7 +6,7 @@
 #' @param tvalue float indicating tvalue to be updated for the lasso string
 #' @return updated ui with added covariates
 #' @noRd
-#' @author  Vishal Sarsani
+#' @author Vishal Sarsani
 .lassoUicovariate <- function(ui,varsVec,covarsVec,tvalue=0.05){
   
   if (inherits(ui, "nlmixr2FitCore")) {
@@ -75,8 +72,6 @@
 #' @return predictive-objective-function value
 #' @noRd
 #' @author Vishal Sarsani
-#'
-
 .crossvalidationLasso <- function(data,ui,varsVec,covarsVec,tvalue=0.10,nfold=5,optcrit='llk',estmethod="focei",adapcoefs=NULL,stratVar=NULL){
   
   # check if dataframe
@@ -120,9 +115,7 @@
       stop("aborting...please re-run by reducing nfold number for the cross-validation", call. = FALSE)
     }
     
-    
     cli::cli_alert_success("Training and Testing data sets successfully created for cross-validation for fold number {f}")
-    
     
     # Training Estimation   
     
@@ -137,7 +130,6 @@
         print(error_message)
       })
     
-    
     # Testing data model fit with estimates from the training. 
     
     fitTest <- tryCatch(
@@ -151,20 +143,14 @@
         print(error_message)
       })
     
-    
-    
     # Extract Predictive Objective function value  
     if (optcrit=="objf"){
-      
       if (!is.numeric(fitTest$objDf$OBJF)){
-        
         cli::cli_alert_danger("the 'fit' object needs to have an objective functions value associated with it")
         cli::cli_alert_info("try computing 'fit$objDf$OBJF' in console to compute and store the corresponding OBJF value")
         stop("aborting...objf value not associated with the current 'fit' object", call. = FALSE)
       }
-      
-      ofvList <- append(ofvList ,fitTest$objDf$OBJF[1] )
-      
+      ofvList <- append(ofvList, fitTest$objDf$OBJF[1])
     }
     
     else if(optcrit=="llk") {
@@ -183,7 +169,7 @@ cli::cli_alert_success("Estimation complete for the fold number : {f}")
   
 # Return the pOFV 
 pOFV <- do.call(sum, ofvList)
-return(pOFV)  
+return(pOFV)
 
 }
 
@@ -202,8 +188,6 @@ return(pOFV)
 #' @return Optimal t-value among tvalue range
 #' @noRd
 #' @author Vishal Sarsani
-#'
-
 .optimalTvaluelasso <- function(data,ui,varsVec,covarsVec,t_start=0.01,t_stop=0.99,t_step=0.01,stratVar = NULL,convergence="REACHMAX",...){
   
   # check if t-start,stop and step values are valid
@@ -311,8 +295,6 @@ lassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,
    data <- nlme::getData(fit)
  }
   
-  
-  
   #data
   data <- normalizedData(data,covarsVec)
   
@@ -356,12 +338,7 @@ lassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,
   return(finalLasso)
 }
 
-
-
-
-
 #' Add covariates and adaptive lasso string to ui  
-#' 
 #' 
 #' @param ui compiled rxode2 nlmir2 model or fit  
 #' @param varsVec character vector of variables that need to be added  
@@ -371,7 +348,6 @@ lassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,
 #' @return updated ui with added covariates
 #' @noRd
 #' @author Vishal Sarsani
-
 .adaptivelassoUicovariate <- function(ui,varsVec,covarsVec,tvalue=0.05,adapcoefs=NULL){
   
   if (inherits(ui, "nlmixr2FitCore")) {
@@ -404,7 +380,6 @@ lassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,
   
   factorString <- paste0("factor <- ","exp","(","1-","ratio",")","\n")
   
-  
   # construct a Adaptive lasso coefficeints 
   adaptString <- paste0("AL_",colnames(adapcoefs)," <- ",adapcoefs,"\n",collapse='')
   
@@ -428,9 +403,6 @@ lassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,
   # return the updated model
   return(.getUiFunFromIniAndModel(.ui1, .ini, .newModel)())  
 }
-
-
-
 
 #' Return Adaptive lasso coefficients after finding optimal t
 #'
@@ -483,8 +455,7 @@ lassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,
 #'
 #' # Adaptive Lasso coefficients:
 #'
-#' lassoDf <- adaptivelassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
-#'
+#' lassoDf <- adaptivelassoCoefficients(fit, varsVec, covarsVec, catvarsVec)
 #' }
 adaptivelassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...) {
   
@@ -504,9 +475,6 @@ adaptivelassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constrain
     covarsVec <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
     data <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
   }
-  
-  
-  
   
   ## Get initial adaptive coefs from the regular lasso coefficients
   .adapcoefs=lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
@@ -549,7 +517,6 @@ adaptivelassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constrain
   # factor 
   factor <- exp(1-ratio)
   
-  
   # Apply lasso constraint 
   finalLasso <- as.data.frame(lapply(covestAdap, function(x) ifelse(abs(x) <= constraint , 0, x)),row.names = NULL)
   
@@ -557,8 +524,6 @@ adaptivelassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constrain
   finalLasso <- finalLasso *factor 
   return(finalLasso)
 }
-
-
 
 #' Regular lasso model
 #'
@@ -612,14 +577,13 @@ adaptivelassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constrain
 #'
 #' # Model fit with regular lasso coefficients:
 #'
-#' lassoDf <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lassotype='regular',stratVar = NULL,...)
+#' lassoDf <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec)
 #' # Model fit with adaptive lasso coefficients:
 #'
-#' lassoDf <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lassotype='adaptive',stratVar = NULL,...)
-# # Model fit with adaptive-adjusted lasso coefficients:
+#' lassoDf <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,lassotype='adaptive')
+#' # Model fit with adaptive-adjusted lasso coefficients:
 #'
-#' lassoDf <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lassotype='adjusted',stratVar = NULL,...)
-#'
+#' lassoDf <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec, lassotype='adjusted')
 #' }
 regularmodel <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lassotype='regular',stratVar = NULL,...) {
   
@@ -633,15 +597,11 @@ regularmodel <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lasso
   checkmate::assert_character(covarsVec)
   checkmate::assert_character(varsVec)
   checkmate::assert_double(constraint)
-  
 
   if(!is.null(catvarsVec)){
     covarsVec <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
     data <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
   }
-  
-  
-  
   
   if (lassotype=="regular") {
 .coefValues <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
@@ -660,7 +620,7 @@ regularmodel <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lasso
 
 # Extract all the covariate parameters constructed 
 .covsparams <- .ui1$muRefCovariateDataFrame$covariateParameter
-checkmate::assertCharacter(.covsparams,min.len = 1,any.missing = FALSE )
+checkmate::assertCharacter(.covsparams,min.len = 1,any.missing = FALSE)
 
 
 # Fix the covariate parameter values
@@ -668,7 +628,6 @@ checkmate::assertCharacter(.covsparams,min.len = 1,any.missing = FALSE )
 for ( i in seq_along(.covsparams)){
   .modelfun  <- gsub(.covsparams[i], .coefValues[[i]], .modelfun)
 }
-
 
 tvalue <- 0.01
 
@@ -688,10 +647,6 @@ ratioString <- paste0("ratio <- ","abssum","/","tvalue","\n")
 
 factorString <- paste0("factor <- ","exp","(","1-","ratio",")","\n")
 
-
-
-
-
 # construct the final updated model string 
 
 .newmodelfun <- paste0(tvalueString,absString,ratioString,factorString,.modelfun,sep="")
@@ -708,7 +663,6 @@ factorString <- paste0("factor <- ","exp","(","1-","ratio",")","\n")
 estmethod=getFitMethod(fit)
 return(nlmixr2(.ui2,data,est=estmethod)) 
 }
-
 
 #' Return Adjusted adaptive lasso coefficients after finding optimal t
 #'
@@ -762,7 +716,7 @@ return(nlmixr2(.ui2,data,est=estmethod))
 #'
 #' # Adaptive Lasso coefficients:
 #'
-#' lassoDf <- adjustedlassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
+#' lassoDf <- adjustedlassoCoefficients(fit,varsVec,covarsVec,catvarsVec)
 #' }
 adjustedlassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...) {
   
@@ -783,8 +737,6 @@ adjustedlassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constrain
   data <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
   }
   
-  
-  
   ## Get updated ui with covariates and without lasso factor 
   .mod1 <- buildupatedUI(ui,varsVec,covarsVec,add = TRUE,indep = FALSE)
   
@@ -796,7 +748,6 @@ adjustedlassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constrain
     covName <- paste0("cov_", x$covariate, "_", x$varName)
     covNames <- append(covNames,covName)
   }
-  
   
   #data
   data <- normalizedData(data,covarsVec)
@@ -831,7 +782,6 @@ adjustedlassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constrain
   # factor 
   factor <- exp(1-ratio)
   
-  
   # Apply lasso constraint 
   finalLasso <- as.data.frame(lapply(covestAdap, function(x) ifelse(abs(x) <= constraint , 0, x)),row.names = NULL)
   
@@ -839,11 +789,3 @@ adjustedlassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constrain
   finalLasso <- finalLasso *factor 
   return(finalLasso)
 }
-
-
-
-
-
-
-  
-

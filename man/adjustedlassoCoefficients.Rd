@@ -73,7 +73,7 @@ catvarsVec <- c("SEX")
 
 # Adaptive Lasso coefficients:
 
-lassoDf <- adjustedlassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
+lassoDf <- adjustedlassoCoefficients(fit,varsVec,covarsVec,catvarsVec)
 }
 }
 \author{
