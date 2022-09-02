@@ -65,11 +65,14 @@ d <- nlmixr2data::theo_sd
 d$SEX <-0
 d$SEX[d$ID<=6] <-1
 
-fit <- nlmixr2(one.cmt, d, "focei")
+fit <-
+ nlmixr2(
+   one.cmt, d,
+   est = "focei", control = nlmixr2est::foceiControl(print = 0)
+ )
 varsVec <- c("ka","cl","v")
 covarsVec <- c("WT")
 catvarsVec <- c("SEX")
-
 
 # Adaptive Lasso coefficients:
 
