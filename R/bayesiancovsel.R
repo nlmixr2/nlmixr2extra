@@ -219,7 +219,7 @@ return(summaryDf)
 #'
 #' d <- nlmixr2data::theo_sd
 #' fit <- nlmixr2(one.cmt, d, "focei")
-#' covarsVec <- c("WT)
+#' covarsVec <- c("WT")
 #'
 #' # Horseshoe summary posterior estimates:
 #'
@@ -231,23 +231,23 @@ return(summaryDf)
 horseshoeSummardf <- function(fit,covarsVec,...){
   
   if (!inherits(fit, "nlmixr2FitCore")) {
-  stop("'fit' needs to be a nlmixr2 fit")
-}
-checkmate::assert_character(covarsVec)
-
-# Global shrinkage prior estimate
- tau0 <- .calTau0 (fit,covarsVec,p0=2)
-# Get prior String
- priorString <- .horseshoePrior(tau0)
-# Fit BRMS models
-
-.horseshoeModels <-.fitbrmsModel(fit,covarsVec,priorVar = priorString,inicovarsVec=NULL,
-                                warmup = 1000, iter = 2000, chains = 4,cores = 4,
-                control = list(adapt_delta = 0.99, max_treedepth = 15),seed=1015)
-
-# Extract Summary of models
-horseshoeSummary <-  .brmSummarydf(.horseshoeModels)
-horseshoeSummary
+    stop("'fit' needs to be a nlmixr2 fit")
+  }
+  checkmate::assert_character(covarsVec)
+  
+  # Global shrinkage prior estimate
+  tau0 <- .calTau0 (fit,covarsVec,p0=2)
+  # Get prior String
+  priorString <- .horseshoePrior(tau0)
+  # Fit BRMS models
+  
+  .horseshoeModels <-.fitbrmsModel(fit,covarsVec,priorVar = priorString,inicovarsVec=NULL,
+                                   warmup = 1000, iter = 2000, chains = 4,cores = 4,
+                                   control = list(adapt_delta = 0.99, max_treedepth = 15),seed=1015)
+  
+  # Extract Summary of models
+  horseshoeSummary <-  .brmSummarydf(.horseshoeModels)
+  horseshoeSummary
 }
 
 
@@ -289,16 +289,13 @@ horseshoeSummary
 #'
 #' d <- nlmixr2data::theo_sd
 #' fit <- nlmixr2(one.cmt, d, "focei")
-#' covarsVec <- c("WT)
+#' covarsVec <- c("WT")
 #'
 #' # Horseshoe summary posterior estimates:
 #'
 #' lassoDf <- lassoSummardf(fit,covarsVec,...)
 #'
 #' }
-
-
-
 
 lassoSummardf <- function(fit,covarsVec,...){
   
@@ -320,15 +317,3 @@ lassoSummardf <- function(fit,covarsVec,...){
   lassoSummary <-  .brmSummarydf(.lassoModels)
   lassoSummary
 }
-
-
-
-
-
-
-
-
-
-
-
-

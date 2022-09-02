@@ -278,7 +278,7 @@ optimal_t
 #'
 #' fit <- nlmixr2(one.cmt, d, "focei")
 #' varsVec <- c("ka","cl","v")
-#' covarsVec <- c("WT)
+#' covarsVec <- c("WT")
 #' catvarsVec <- c("SEX")
 #'
 #'
@@ -287,7 +287,6 @@ optimal_t
 #' lassoDf <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
 #'
 #' }
-#'
 lassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...) {
 
   if (!inherits(fit, "nlmixr2FitCore")) {
@@ -478,7 +477,7 @@ lassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,
 #'
 #' fit <- nlmixr2(one.cmt, d, "focei")
 #' varsVec <- c("ka","cl","v")
-#' covarsVec <- c("WT)
+#' covarsVec <- c("WT")
 #' catvarsVec <- c("SEX")
 #'
 #'
@@ -487,7 +486,6 @@ lassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,
 #' lassoDf <- adaptivelassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
 #'
 #' }
-#'
 adaptivelassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...) {
   
   if (!inherits(fit, "nlmixr2FitCore")) {
@@ -608,7 +606,7 @@ adaptivelassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constrain
 #'
 #' fit <- nlmixr2(one.cmt, d, "focei")
 #' varsVec <- c("ka","cl","v")
-#' covarsVec <- c("WT)
+#' covarsVec <- c("WT")
 #' catvarsVec <- c("SEX")
 #'
 #'
@@ -623,7 +621,6 @@ adaptivelassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constrain
 #' lassoDf <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lassotype='adjusted',stratVar = NULL,...)
 #'
 #' }
-#'
 regularmodel <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lassotype='regular',stratVar = NULL,...) {
   
   if (!inherits(fit, "nlmixr2FitCore")) {
@@ -759,7 +756,7 @@ return(nlmixr2(.ui2,data,est=estmethod))
 #'
 #' fit <- nlmixr2(one.cmt, d, "focei")
 #' varsVec <- c("ka","cl","v")
-#' covarsVec <- c("WT)
+#' covarsVec <- c("WT")
 #' catvarsVec <- c("SEX")
 #'
 #'
@@ -767,7 +764,6 @@ return(nlmixr2(.ui2,data,est=estmethod))
 #'
 #' lassoDf <- adjustedlassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
 #' }
-#'
 adjustedlassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...) {
   
   if (!inherits(fit, "nlmixr2FitCore")) {

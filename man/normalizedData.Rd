@@ -19,6 +19,24 @@ data frame with all normalized covariates
 \description{
 Function to return data of normalized covariates
 }
+\examples{
+
+\donttest{
+d <- nlmixr2data::theo_sd
+d$SEX <-0
+d$SEX[d$ID<=6] <-1
+
+fit <- nlmixr2(one.cmt, d, "focei")
+covarsVec <- c("WT")
+
+
+# Normalized covariate (replaced)
+df1 <- normalizedData(data,covarsVec,replace=TRUE)
+
+# Normalized covariate (without replacement)
+df2 <- normalizedData(data,covarsVec,replace=TRUE)
+}
+}
 \author{
 Vishal Sarsani
 }
