@@ -1,11 +1,10 @@
-
-
 # Function to calculate population standard deviation from group means
 #' @param x vector of values to calculate standard deviation.
 #' @return population standard deviation
 #' @noRd
-.sd.p=function(x){sd(x)*sqrt((length(x)-1)/length(x))}
-
+.sd.p <- function(x) {
+  sd(x)*sqrt((length(x)-1)/length(x))
+}
 
 #' Function to return pop mean, pop std of a given covariate
 #'
@@ -14,9 +13,7 @@
 #'
 #' @return list containing values of population mean, standard deviation
 #' @noRd
-
 .popMeanStd <- function(data, covariate) {
-  
   checkmate::assertDataFrame(data,col.names = "named")
   checkmate::assertCharacter(covariate,len = 1,any.missing = FALSE )
   
@@ -28,7 +25,6 @@
   if (length(.new) == 0L) stop("covariate specified not in original dataset")
   
   #extract Individual ID from data frame
-  
   uidCol <- .idColumn(data)
   # mean by groups (Individual)
   groupMeans <- with(data, ave(get(covariate),get(uidCol), FUN = function(x) mean(x, na.rm = TRUE)))
@@ -42,8 +38,6 @@
   .meanStd
 }
 
-
-
 #' Function to return normalization column of a covariates
 #'
 #' @param data given a data frame 
@@ -51,9 +45,7 @@
 #'
 #' @return data frame with normalized covariate
 #' @noRd
-
 .normalizeDf <- function(data, covariate,sub=TRUE) {
-  
   checkmate::assertDataFrame(data,col.names = "named")
   checkmate::assertCharacter(covariate,len = 1,any.missing = FALSE )
   
@@ -78,9 +70,7 @@
   }
 }
 
-
 #' Function to return data of normalized covariates
-#' 
 #' 
 #' @param data a dataframe with covariates to normalize
 #' @param covarsVec a list of covariate names (parameters) that need to be estimates
@@ -91,8 +81,6 @@
 #' @export
 #' 
 #' @examples
-#'
-#' \donttest{
 #' d <- nlmixr2data::theo_sd
 #' d$SEX <-0
 #' d$SEX[d$ID<=6] <-1
@@ -106,13 +94,8 @@
 #'
 #' # Normalized covariate (without replacement)
 #' df2 <- normalizedData(data,covarsVec,replace=TRUE)
-#' }
 normalizedData <- function(data,covarsVec,replace=TRUE) {
-  
-  
   checkmate::assert_character(covarsVec)
-  
-  ## 
   .normalizedDFs <- lapply(covarsVec,.normalizeDf,data=data)
   
   # final data frame of normalized covariates
@@ -124,12 +107,10 @@ normalizedData <- function(data,covarsVec,replace=TRUE) {
     .dat <- cbind(.dat[ , !names(.dat) %in% covarsVec],.dat[ , names(.dat) %in% catCheck])
     .finalDf <- dropnormPrefix(.dat)
   }else{
-    
     .finalDf <- Reduce(merge,.normalizedDFs)
   }
   .finalDf
 }
-
 
 #' Stratified cross-validation fold generator function inspired from the caret
 #' @param data data frame used in the analysis
@@ -156,16 +137,11 @@ normalizedData <- function(data,covarsVec,replace=TRUE) {
 #' # Stratified cross-validation data with ID (individual)
 #' df2 <- foldgen(data,nfold=5,stratVar=NULL)
 #' }
-
-foldgen <-  function(data,nfold=5,stratVar=NULL){
-  
-  
+foldgen <- function(data,nfold=5,stratVar=NULL){
   # check if data frame
   checkmate::assert_data_frame(data,min.cols = 7)
-  
-  
+
   # check if user want to stratify on a variable , if not default is on individual
-  
   if(!is.null(stratVar)){
     checkmate::assertCharacter(stratVar,len = 1,any.missing = FALSE )
     stratCheck <- intersect(names(data), stratVar)
@@ -176,7 +152,6 @@ foldgen <-  function(data,nfold=5,stratVar=NULL){
       stop(paste0(stratVar, "not in the data to stratify"))
     }
   } else {
-    
     # extract ID column from the data frame 
     ID <- .idColumn(data)
     # Extract list of individuals
@@ -184,8 +159,7 @@ foldgen <-  function(data,nfold=5,stratVar=NULL){
   }
   ## Group based on magnitudes and sample within groups 
   
-  if(is.numeric(y))
-  {
+  if(is.numeric(y)) {
     ## Group the numeric data based on their magnitudes
     ## and sample within those groups.
     
@@ -208,8 +182,7 @@ foldgen <-  function(data,nfold=5,stratVar=NULL){
       include.lowest = TRUE)
   }
   
-  if(nfold < length(y))
-  {
+  if(nfold < length(y)) {
     ## reset levels so that the possible levels and 
     ## the levels in the vector are the same
     y <- factor(as.character(y))
@@ -230,8 +203,9 @@ foldgen <-  function(data,nfold=5,stratVar=NULL){
       ## shuffle the integers for fold assignment and assign to this classes's data
       foldVector[which(y == dimnames(numInClass)$y[i])] <- sample(seqVector)
     }
-  } else foldVector <- seq(along = y)
-  
+  } else {
+    foldVector <- seq(along = y)
+  }
   
   out <- split(seq(along = y), foldVector)
   names(out) <- paste("Fold", gsub(" ", "0", format(seq(along = out))), sep = "")
@@ -246,8 +220,6 @@ foldgen <-  function(data,nfold=5,stratVar=NULL){
   out
 }
 
-
-
 #' Sample from uniform distribution by optim
 #'
 #' @param xvec A vector of min,max values . Ex:c(10,20)
@@ -260,16 +232,9 @@ foldgen <-  function(data,nfold=5,stratVar=NULL){
 #' @export
 #' 
 #' @examples
-#'
-#' \donttest{
 #' # Simulate 1000 creatine clearance values with median of 71.7 within range of c(6.7,140)
 #' creatCl <- optimUnisampling(xvec=c(6.7,140),N=1000,medValue = 71.7,floorT=FALSE)
-#' }
-#'
-
-optimUnisampling <- function(xvec,N=1000,medValue,floorT=TRUE)
-{
-  
+optimUnisampling <- function(xvec,N=1000,medValue,floorT=TRUE) {
   #Function to calculate distance between sampling median and desired
   fun <- function(xvec, N=1000) {
     xmin <- xvec[1]
@@ -292,7 +257,6 @@ optimUnisampling <- function(xvec,N=1000,medValue,floorT=TRUE)
   else return (optimUnisampling(xvec,N=1000,medValue))
 }
 
-
 #' Format confidence bounds for a variable into bracketed notation using string formatting
 #'
 #' @param var a list of values for the varaible
@@ -303,20 +267,19 @@ optimUnisampling <- function(xvec,N=1000,medValue,floorT=TRUE)
 #' @author Vipul Mann
 #'
 #' @noRd
-addConfboundsToVar <-
-  function(var, confLower, confUpper, sigdig = 3) {
-    res <- lapply(seq_along(var), function(idx) {
-      paste0(
-        signif(var[idx], sigdig),
-        " (",
-        signif(confLower[idx], sigdig),
-        ", ",
-        signif(confUpper[idx], sigdig),
-        ")"
-      )
-    })
-    unlist(res)
-  }
+addConfboundsToVar <- function(var, confLower, confUpper, sigdig = 3) {
+  res <- lapply(seq_along(var), function(idx) {
+    paste0(
+      signif(var[idx], sigdig),
+      " (",
+      signif(confLower[idx], sigdig),
+      ", ",
+      signif(confUpper[idx], sigdig),
+      ")"
+    )
+  })
+  unlist(res)
+}
 
 #' Bootstrap nlmixr2 fit
 #'
@@ -655,7 +618,6 @@ bootstrapFit <- function(fit,
   invisible(fit)
 }
 
-
 #' Perform bootstrap-sampling from a given dataframe
 #'
 #' @param data the original dataframe object to sample from for bootstrapping
@@ -722,7 +684,6 @@ sampling <- function(data,
     checkmate::assert_character(uid_colname)
   }
   
-  
   if (performStrat) {
     stratLevels <-
       as.character(unique(data[, stratVar])) # char to access freq. values
@@ -767,9 +728,7 @@ sampling <- function(data,
     })
     
     do.call("rbind", sampledDataSubsets)
-  }
-  
-  else {
+  } else {
     uids <- unique(data[, uid_colname])
     uids_samp <- sample(uids,
                         size = nsamp,
@@ -797,7 +756,6 @@ sampling <- function(data,
     }))
   }
 }
-
 
 #' Fitting multiple bootstrapped models without aggregaion; called by the function bootstrapFit()
 #'
@@ -1105,9 +1063,6 @@ modelBootstrap <- function(fit,
   fitEnsemble <- lapply(fitFileExists, function(x) {
     readRDS(paste0("./", output_dir, "/", x, sep = ""))
   })
-  
-  
-  
   list(modelsEnsemble, fitEnsemble)
 }
 
@@ -1127,7 +1082,6 @@ getFitMethod <- function(fit) {
     stop("'fit' needs to be a nlmixr2 fit", call. = FALSE)
   }
   fit$est
-  
 }
 
 #' Extract all the relevant variables from a set of bootstrapped models
@@ -1170,18 +1124,14 @@ extractVars <- function(fitlist, id = "method") {
           # if non-empty 'message'
           unlist(res)
         }
-      }
-      
-      else {
+      } else {
         # if id does not equal 'message'
         unlist(res)
       }
-    }
-    else {
+    } else {
       # if id equals 'omega' or 'parFixedDf
       res
     }
-    
   }
 }
 
@@ -1330,9 +1280,7 @@ getBootstrapSummary <-
           confLower = confLower,
           confUpper = confUpper
         )
-      }
-      
-      else {
+      } else {
         # if id equals method, message, or warning
         extractVars(fitList, id)
       }
@@ -1413,13 +1361,11 @@ print.nlmixr2BoostrapSummary <- function(x, ..., sigdig = NULL) {
   invisible(x)
 }
 
-
 #' Assign a set of variables to the nlmixr2 fit environment
 #'
 #' @param namedVars a named list of variables that need to be assigned to the given environment
 #' @param fitobject the nlmixr2 fit object that contains its environment information
 #' @noRd
-#'
 assignToEnv <- function(namedVars, fitobject) {
   if (!inherits(fitobject, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit", call. = FALSE)
@@ -1437,7 +1383,6 @@ assignToEnv <- function(namedVars, fitobject) {
     assign(x, namedVars[[x]], envir = env)
   })
 }
-
 
 #' @title Produce delta objective function for boostrap
 #'
@@ -1514,14 +1459,3 @@ bootplot.nlmixr2FitCore <- function(x, ...) {
     )
   }
 }
-
-
-
-
-
-
-
-
-
-
-

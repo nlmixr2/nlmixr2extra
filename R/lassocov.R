@@ -107,10 +107,8 @@
     testData <- dataF[dataF$fold==f,]
     
     
-    ## Stop if test data is empty 
-    
+    ## Stop if test data is empty
     if (dim(testData)[1] == 0) {
-      
       cli::cli_alert_danger("the test dataset is empty. probably not enough individuals to do desired n-fold cross-validation")
       stop("aborting...please re-run by reducing nfold number for the cross-validation", call. = FALSE)
     }
@@ -118,15 +116,15 @@
     cli::cli_alert_success("Training and Testing data sets successfully created for cross-validation for fold number {f}")
     
     # Training Estimation   
-    
+    browser()
     fitTrain <- tryCatch(
       {
         fitTrain <-
-          suppressWarnings(nlmixr2(mod,trainData ,estmethod))
+          nlmixr2(mod, data = trainData, est = estmethod)
         fitTrain # to return 'fitTrain'
       },
       error = function(error_message) {
-        print("error fitting the model for the training dataset ")
+        print("error fitting the model for the training dataset")
         print(error_message)
       })
     

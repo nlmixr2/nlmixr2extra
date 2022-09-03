@@ -20,8 +20,6 @@ data frame with all normalized covariates
 Function to return data of normalized covariates
 }
 \examples{
-
-\donttest{
 d <- nlmixr2data::theo_sd
 d$SEX <-0
 d$SEX[d$ID<=6] <-1
@@ -35,7 +33,6 @@ df1 <- normalizedData(data,covarsVec,replace=TRUE)
 
 # Normalized covariate (without replacement)
 df2 <- normalizedData(data,covarsVec,replace=TRUE)
-}
 }
 \author{
 Vishal Sarsani
