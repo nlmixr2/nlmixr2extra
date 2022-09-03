@@ -116,26 +116,19 @@
     cli::cli_alert_success("Training and Testing data sets successfully created for cross-validation for fold number {f}")
     
     # Training Estimation   
-    browser()
-    fitTrain <- tryCatch(
-      {
-        fitTrain <-
-          nlmixr2(mod, data = trainData, est = estmethod)
-        fitTrain # to return 'fitTrain'
-      },
-      error = function(error_message) {
-        print("error fitting the model for the training dataset")
-        print(error_message)
-      })
+    fitTrain <-
+      tryCatch(
+        suppressWarnings(nlmixr2(mod, data = trainData, est = estmethod)),
+        error = function(error_message) {
+          print("error fitting the model for the training dataset")
+          print(error_message)
+        }
+      )
     
-    # Testing data model fit with estimates from the training. 
-    
-    fitTest <- tryCatch(
-      {
-        fitTest <-
-          suppressWarnings(nlmixr2(mod,testData ,"posthoc"))
-        fitTest # to return 'fitTest'
-      },
+    # Testing data model fit with estimates from the training.
+    fitTest <-
+      tryCatch(
+      suppressWarnings(nlmixr2(mod,testData ,"posthoc")),
       error = function(error_message) {
         print("error fitting the model for the testing dataset ")
         print(error_message)

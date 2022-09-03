@@ -1,4 +1,3 @@
-
 skip_on_cran()
 
 # ==== Add covariates and lasso string to ui 
@@ -70,8 +69,5 @@ test_that("Add covariates and lasso string to ui ", {
   varsVec <- "ka"
   covarsVec <- c("WT","BMI")
   expect_error(.lassoUicovariate(ui,varsVec,covarsVec))
-  
 })
-
-
 

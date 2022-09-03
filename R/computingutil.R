@@ -31,7 +31,7 @@
   # pop mean
   popMean <- mean(groupMeans)
   # pop std
-  popStd <- .sd.p (groupMeans)
+  popStd <- .sd.p(groupMeans)
   
   .meanStd <-c(popMean,popStd) 
   names(.meanStd) <- c("popmean","popstd")
@@ -55,9 +55,9 @@
   .new <- intersect(names(data), covariate)
   if (length(.new) == 0L) stop("covariate specified not in original dataset")
   
-  if (is.factor(data[[covariate]]))
-  {return(data)}
-  else{
+  if (is.factor(data[[covariate]])) {
+    return(data)
+  } else {
     # Column name for the standardized covariate 
     datColNames <- paste0("normalized_", covariate) 
     # popMean 
@@ -79,7 +79,6 @@
 #' @return data frame with all normalized covariates
 #' @author Vishal Sarsani
 #' @export
-#' 
 #' @examples
 #' d <- nlmixr2data::theo_sd
 #' d$SEX <-0
@@ -87,7 +86,6 @@
 #'
 #' fit <- nlmixr2(one.cmt, d, "focei")
 #' covarsVec <- c("WT")
-#'
 #'
 #' # Normalized covariate (replaced)
 #' df1 <- normalizedData(data,covarsVec,replace=TRUE)
@@ -104,7 +102,11 @@ normalizedData <- function(data,covarsVec,replace=TRUE) {
     .dat <- Reduce(merge,.normalizedDFs)
     dropnormPrefix <- function(x){ colnames(x) <- gsub("normalized_", "", colnames(x)); x }
     catCheck <- intersect(covarsVec,names(Filter(is.factor, data)))
-    .dat <- cbind(.dat[ , !names(.dat) %in% covarsVec],.dat[ , names(.dat) %in% catCheck])
+    .dat <-
+      cbind(
+        .dat[ , !names(.dat) %in% covarsVec, drop = FALSE],
+        .dat[ , names(.dat) %in% catCheck, drop = FALSE]
+      )
     .finalDf <- dropnormPrefix(.dat)
   }else{
     .finalDf <- Reduce(merge,.normalizedDFs)

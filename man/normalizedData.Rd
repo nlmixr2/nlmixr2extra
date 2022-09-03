@@ -27,7 +27,6 @@ d$SEX[d$ID<=6] <-1
 fit <- nlmixr2(one.cmt, d, "focei")
 covarsVec <- c("WT")
 
-
 # Normalized covariate (replaced)
 df1 <- normalizedData(data,covarsVec,replace=TRUE)
 

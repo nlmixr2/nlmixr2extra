@@ -1,8 +1,4 @@
-# ==== .popMeanStd
-
-
 test_that("Function to return pop mean, pop std of a given covariate", {
-  
   funstring1 <- .popMeanStd(nlmixr2data::theo_sd,"WT")[[1]]
   funstring2 <- .popMeanStd(nlmixr2data::theo_sd,"WT")[[2]]
   
@@ -11,14 +7,12 @@ test_that("Function to return pop mean, pop std of a given covariate", {
 })
 
 test_that("Function to return pop mean, pop std of a given covariate", {
-  
   expect_error(.popMeanStd(theo_sd,"BMI"))
 })
 
 # ==== .normalizeDf
 
 test_that("Function to return normalization column of a covariates", {
-  
   funstring1 <- mean(.normalizeDf(nlmixr2data::theo_sd,"WT")$normalized_WT)
   funstring2 <- sd(.normalizeDf(nlmixr2data::theo_sd,"WT")$normalized_WT)
   
@@ -27,8 +21,12 @@ test_that("Function to return normalization column of a covariates", {
 })
 
 test_that("Function to return normalization column of a covariates", {
-  
   expect_error(.normalizeDf(nlmixr2data::theo_sd,"BMI"))
 })
 
-
+test_that("single column covarsVec works (#15)", {
+  expect_equal(
+    normalizedData(data = data.frame(ID=1:3, A=factor(1:3)), covarsVec = "A"),
+    data.frame(ID=1:3, A=factor(1:3))
+  )
+})
