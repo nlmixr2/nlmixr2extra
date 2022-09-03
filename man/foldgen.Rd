@@ -20,22 +20,17 @@ return dataframe with the fold column attached
 Stratified cross-validation fold generator function inspired from the caret
 }
 \examples{
-
-\donttest{
 d <- nlmixr2data::theo_sd
 d$SEX <-0
 d$SEX[d$ID<=6] <-1
 
-fit <- nlmixr2(one.cmt, d, "focei")
 covarsVec <- c("WT")
 
-
 # Stratified cross-validation data with CMT
-df1 <- foldgen(data,nfold=5,stratVar="CMT")
+df1 <- foldgen(d,nfold=5,stratVar="CMT")
 
 # Stratified cross-validation data with ID (individual)
-df2 <- foldgen(data,nfold=5,stratVar=NULL)
-}
+df2 <- foldgen(d,nfold=5)
 }
 \author{
 Vishal Sarsani , caret

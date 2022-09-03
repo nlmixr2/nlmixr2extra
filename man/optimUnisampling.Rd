@@ -4,7 +4,7 @@
 \alias{optimUnisampling}
 \title{Sample from uniform distribution by optim}
 \usage{
-optimUnisampling(xvec, N = 1000, medValue, floorT = TRUE)
+optimUnisampling(xvec, N = 1000, medValue, roundDown = TRUE)
 }
 \arguments{
 \item{xvec}{A vector of min,max values . Ex:c(10,20)}
@@ -13,7 +13,7 @@ optimUnisampling(xvec, N = 1000, medValue, floorT = TRUE)
 
 \item{medValue}{Desired Median}
 
-\item{floorT}{boolean indicating whether to round up}
+\item{roundDown}{boolean indicating whether to round up}
 }
 \value{
 Samples with approx desired median.
@@ -23,7 +23,7 @@ Sample from uniform distribution by optim
 }
 \examples{
 # Simulate 1000 creatine clearance values with median of 71.7 within range of c(6.7,140)
-creatCl <- optimUnisampling(xvec=c(6.7,140),N=1000,medValue = 71.7,floorT=FALSE)
+creatCl <- optimUnisampling(xvec=c(6.7,140),N=1000,medValue = 71.7,roundDown=FALSE)
 }
 \author{
 Vishal Sarsani

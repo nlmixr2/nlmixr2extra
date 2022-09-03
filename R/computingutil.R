@@ -122,22 +122,17 @@ normalizedData <- function(data,covarsVec,replace=TRUE) {
 #' @export
 #' 
 #' @examples
-#'
-#' \donttest{
 #' d <- nlmixr2data::theo_sd
 #' d$SEX <-0
 #' d$SEX[d$ID<=6] <-1
 #'
-#' fit <- nlmixr2(one.cmt, d, "focei")
 #' covarsVec <- c("WT")
 #'
-#'
 #' # Stratified cross-validation data with CMT
-#' df1 <- foldgen(data,nfold=5,stratVar="CMT")
+#' df1 <- foldgen(d,nfold=5,stratVar="CMT")
 #'
 #' # Stratified cross-validation data with ID (individual)
-#' df2 <- foldgen(data,nfold=5,stratVar=NULL)
-#' }
+#' df2 <- foldgen(d,nfold=5)
 foldgen <- function(data,nfold=5,stratVar=NULL){
   # check if data frame
   checkmate::assert_data_frame(data,min.cols = 7)
@@ -226,21 +221,21 @@ foldgen <- function(data,nfold=5,stratVar=NULL){
 #' @param xvec A vector of min,max values . Ex:c(10,20)
 #' @param N Desired number of values
 #' @param medValue  Desired Median 
-#' @param floorT boolean indicating whether to round up
+#' @param roundDown boolean indicating whether to round up
 #'
 #' @return Samples with approx desired median. 
-#'@author Vishal Sarsani 
+#' @author Vishal Sarsani 
 #' @export
 #' 
 #' @examples
 #' # Simulate 1000 creatine clearance values with median of 71.7 within range of c(6.7,140)
-#' creatCl <- optimUnisampling(xvec=c(6.7,140),N=1000,medValue = 71.7,floorT=FALSE)
-optimUnisampling <- function(xvec,N=1000,medValue,floorT=TRUE) {
+#' creatCl <- optimUnisampling(xvec=c(6.7,140),N=1000,medValue = 71.7,roundDown=FALSE)
+optimUnisampling <- function(xvec,N=1000,medValue,roundDown=TRUE) {
   #Function to calculate distance between sampling median and desired
   fun <- function(xvec, N=1000) {
     xmin <- xvec[1]
     xmax <- xvec[2]
-    if (floorT){
+    if (roundDown){
       x <- floor(stats::runif(N, xmin, xmax))}
     else{
       x <- stats::runif(N, xmin, xmax) 
@@ -253,9 +248,13 @@ optimUnisampling <- function(xvec,N=1000,medValue,floorT=TRUE) {
   xrmin <- xr$par[[1]]
   xrmax <- xr$par[[2]]
   sampled <- stats::runif(N, min = xr$par[[1]], max = xr$par[[2]])
-  if (xrmin==xvec[1] & xrmax==xvec[2] & floor)    return (floor(sampled))
-  else if (xrmin==xvec[1] & xrmax==xvec[2])   return (sampled)
-  else return (optimUnisampling(xvec,N=1000,medValue))
+  if (xrmin==xvec[1] & xrmax==xvec[2] & roundDown) {
+    return (floor(sampled))
+  } else if (xrmin==xvec[1] & xrmax==xvec[2]) {
+    return (sampled)
+  } else {
+    return (optimUnisampling(xvec,N=1000,medValue))
+  }
 }
 
 #' Format confidence bounds for a variable into bracketed notation using string formatting
