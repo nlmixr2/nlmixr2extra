@@ -84,14 +84,13 @@
 #' d$SEX <-0
 #' d$SEX[d$ID<=6] <-1
 #'
-#' fit <- nlmixr2(one.cmt, d, "focei")
 #' covarsVec <- c("WT")
 #'
 #' # Normalized covariate (replaced)
-#' df1 <- normalizedData(data,covarsVec,replace=TRUE)
+#' df1 <- normalizedData(d,covarsVec)
 #'
 #' # Normalized covariate (without replacement)
-#' df2 <- normalizedData(data,covarsVec,replace=TRUE)
+#' df2 <- normalizedData(d,covarsVec,replace=FALSE)
 normalizedData <- function(data,covarsVec,replace=TRUE) {
   checkmate::assert_character(covarsVec)
   .normalizedDFs <- lapply(covarsVec,.normalizeDf,data=data)
