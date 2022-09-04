@@ -53,7 +53,6 @@ covarsVec <- c("WT")
 # Horseshoe summary posterior estimates:
 
 lassoDf <- lassoSummardf(fit,covarsVec,...)
-
 }
 }
 \author{

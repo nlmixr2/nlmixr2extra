@@ -61,44 +61,46 @@ if (!is.finite(tau0)| tau0 < 0  ){tau0 <- 0.25}
 
 tau0 
 }
-  
-normal <- function(...){}
-  
+
 #' Build Horseshoe prior
-#' 
 #' 
 #' @param tau0 Global shrinkage parameter  
 #' @return Prior for the string
 #' @noRd
 .horseshoePrior <- function(tau0){
-  
-# Check if tau0 is valid 
-checkmate::assert_double(tau0)
+  # Check if tau0 is valid 
+  checkmate::assert_double(tau0)
 
-priorString <- c(brms::prior(brms::horseshoe(df = 1, scale_global = tau0,df_global = 1), class ="b",nlpar = "a"),
-                              brms::prior(normal(0, 10), class = "b", nlpar = "b"))
+  # fix R CMD check issues
+  normal <- NULL
+  horseshoe <- brms::horseshoe
 
-# stan variable for parsing
-stanvars <- brms::stanvar(tau0, name='tau0')
+  priorString <-
+    c(
+      brms::prior(horseshoe(df = 1, scale_global = tau0, df_global = 1), class ="b",nlpar = "a"),
+      brms::prior(normal(0, 10), class = "b", nlpar = "b")
+    )
 
-return(list(priorString,stanvars))
+  # stan variable for parsing
+  stanvars <- brms::stanvar(tau0, name='tau0')
+
+  return(list(priorString, stanvars))
 }
 
-
-
 #' Build Lasso prior
-#' 
 #' 
 #' @param dfr	Degrees of freedom of the chi-square prior of the inverse tuning parameter 
 #' @param scalep Scale of the lasso prior
 #' @return Prior for the string
 #' @noRd
 .lassoPrior <- function(df = 1,  scale = 1){
-  
   # Check if given parameters are valid
   checkmate::assert_double(df)
   checkmate::assert_double(scale)
   
+  # fix R CMD check issues
+  normal <- NULL
+
   priorString <- c(brms::prior(brms::lasso(df = 1, scale = 1), class ="b",nlpar = "a"),
                    brms::prior(normal(0, 10), class = "b", nlpar = "b"))
   
@@ -106,8 +108,6 @@ return(list(priorString,stanvars))
   stanvars <- brms::stanvar(df, name='df')+brms::stanvar(scale, name='scale')
   return(list(priorString,stanvars))
 }
-
-
 
 #' BRMS model fits for the eta 
 #' 
@@ -119,11 +119,8 @@ return(list(priorString,stanvars))
 #'  control = list(adapt_delta = 0.99, max_treedepth = 15)
 #' @return list of the fitted models
 #' @noRd
-
 .fitbrmsModel <- function(fit,covarsVec,inicovarsVec=NULL,priorVar,warmup = 1000, iter = 2000, chains = 4,cores = 4,
-                        control = list(adapt_delta = 0.99, max_treedepth = 15),seed=1015){
-  
-  
+                          control = list(adapt_delta = 0.99, max_treedepth = 15),seed=1015){
   #Normalized covariate data
   data <- nlme::getData(fit)
   covData <- normalizedData(data,covarsVec)
@@ -135,32 +132,37 @@ return(list(priorString,stanvars))
   # Make a combined data set of eta parameters and covariate parameters
   combData <- merge(covData,etaData,by=uidCol)
   
-  
   brms_formulas <- list()
   # brms formulas for all length of the eta parameters 
 
   brms_formulas <- lapply(etaVector, .buildbrmsFormula,fit=fit,covarsVec=covarsVec,inicovarsVec=inicovarsVec)
   
   # Run brms on all eta parameters
-  brms_models <- list()
-  
-  brms_models <- suppressWarnings(lapply(brms_formulas,brms::brm,data = combData,family = stats::gaussian(),prior =priorVar[[1]],
-                         stanvars = priorVar[[2]],warmup = warmup, iter = iter, chains = chains,cores = cores,
-                         control = control,seed=seed))
-   names(brms_models) <- etaVector
-return(brms_models)    
+  brms_models <-
+    lapply(
+      X = brms_formulas,
+      FUN = brms::brm,
+      data = combData,
+      family = stats::gaussian(),
+      prior = priorVar[[1]],
+      stanvars = priorVar[[2]],
+      warmup = warmup,
+      iter = iter,
+      chains = chains,
+      cores = cores,
+      control = control,
+      seed = seed
+    )
+  names(brms_models) <- etaVector
+  brms_models
 }
-  
-  
 
 #' Create Summary data frame from the BRMS models
 #' 
 #' @param modelList List of BRMS model fits  
 #' @return Summary data frame of all covariates
 #' @noRd
-
 .brmSummarydf <- function(all_models){
-
 # Check if the model list is named   
   
 checkmate::assert_list(all_models,min.len = 1,names = "named")
@@ -178,8 +180,6 @@ summaryDf <- summaryDf[!(summaryDf$covariate=="Intercept"),]
 
 return(summaryDf)
 }
-
-
 
 #' Create Horseshoe summary posterior estimates 
 #' @param fit compiled rxode2 nlmir2 model fit  
@@ -218,18 +218,14 @@ return(summaryDf)
 #' }
 #'
 #' d <- nlmixr2data::theo_sd
-#' fit <- nlmixr2(one.cmt, d, "focei")
-#' covarsVec <- c("WT")
+#' fit <- nlmixr2(one.cmt, d, "focei", control=nlmixr2est::foceiControl(print=0))
+#' covarsVec <- "WT"
 #'
 #' # Horseshoe summary posterior estimates:
 #'
-#' hsDf <- horseshoeSummardf(fit,covarsVec)
-#'
+#' hsDf <- horseshoeSummardf(fit, covarsVec)
 #' }
-
-
-horseshoeSummardf <- function(fit,covarsVec,...){
-  
+horseshoeSummardf <- function(fit, covarsVec, ...){
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
   }
@@ -249,8 +245,6 @@ horseshoeSummardf <- function(fit,covarsVec,...){
   horseshoeSummary <-  .brmSummarydf(.horseshoeModels)
   horseshoeSummary
 }
-
-
 
 #' Create Lasso summary posterior estimates 
 #' @param fit compiled rxode2 nlmir2 model fit  
@@ -294,26 +288,22 @@ horseshoeSummardf <- function(fit,covarsVec,...){
 #' # Horseshoe summary posterior estimates:
 #'
 #' lassoDf <- lassoSummardf(fit,covarsVec,...)
-#'
 #' }
-
 lassoSummardf <- function(fit,covarsVec,...){
-  
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
   }
   checkmate::assert_character(covarsVec)
-  
 
   # Get prior String
   priorString <- .lassoPrior(df=1,scale=1)
   # Fit BRMS models
   
   .lassoModels <-.fitbrmsModel(fit,covarsVec,priorVar = priorString,inicovarsVec=NULL,
-                                  warmup = 1000, iter = 2000, chains = 4,cores = 4,
-                                  control = list(adapt_delta = 0.99, max_treedepth = 15),seed=1015)
+                               warmup = 1000, iter = 2000, chains = 4,cores = 4,
+                               control = list(adapt_delta = 0.99, max_treedepth = 15),seed=1015)
   
   # Extract Summary of models
-  lassoSummary <-  .brmSummarydf(.lassoModels)
+  lassoSummary <- .brmSummarydf(.lassoModels)
   lassoSummary
 }

@@ -47,13 +47,12 @@ one.cmt <- function() {
 }
 
 d <- nlmixr2data::theo_sd
-fit <- nlmixr2(one.cmt, d, "focei")
-covarsVec <- c("WT")
+fit <- nlmixr2(one.cmt, d, "focei", control=nlmixr2est::foceiControl(print=0))
+covarsVec <- "WT"
 
 # Horseshoe summary posterior estimates:
 
-hsDf <- horseshoeSummardf(fit,covarsVec)
-
+hsDf <- horseshoeSummardf(fit, covarsVec)
 }
 }
 \author{
