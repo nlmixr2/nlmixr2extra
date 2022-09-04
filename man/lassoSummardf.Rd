@@ -23,7 +23,6 @@ Create Lasso summary posterior estimates
 \examples{
 
 \donttest{
-
 one.cmt <- function() {
   ini({
     ## You may label each parameter with a comment
@@ -46,13 +45,12 @@ one.cmt <- function() {
   })
 }
 
-d <- nlmixr2data::theo_sd
-fit <- nlmixr2(one.cmt, d, "focei")
-covarsVec <- c("WT")
+fit <- nlmixr2(one.cmt, nlmixr2data::theo_sd, est="focei", control=list(print=0))
+covarsVec <- "WT"
 
-# Horseshoe summary posterior estimates:
+# Lasso summary posterior estimates
 
-lassoDf <- lassoSummardf(fit,covarsVec,...)
+lassoDf <- lassoSummardf(fit, covarsVec)
 }
 }
 \author{

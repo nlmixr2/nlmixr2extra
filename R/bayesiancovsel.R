@@ -100,8 +100,9 @@ tau0
   
   # fix R CMD check issues
   normal <- NULL
+  lasso <- brms::lasso
 
-  priorString <- c(brms::prior(brms::lasso(df = 1, scale = 1), class ="b",nlpar = "a"),
+  priorString <- c(brms::prior(lasso(df = 1, scale = 1), class ="b",nlpar = "a"),
                    brms::prior(normal(0, 10), class = "b", nlpar = "b"))
   
   # stan variable for parsing
@@ -246,7 +247,7 @@ horseshoeSummardf <- function(fit, covarsVec, ...){
   horseshoeSummary
 }
 
-#' Create Lasso summary posterior estimates 
+#' Create Lasso summary posterior estimates
 #' @param fit compiled rxode2 nlmir2 model fit  
 #' @param covarsVec  character vector of covariates that need to be added
 #' @param ...   other parameters passed to brm(): warmup = 1000, iter = 2000, chains = 4, cores = 4,
@@ -258,7 +259,6 @@ horseshoeSummardf <- function(fit, covarsVec, ...){
 #' @examples
 #'
 #' \donttest{
-#'
 #' one.cmt <- function() {
 #'   ini({
 #'     ## You may label each parameter with a comment
@@ -281,13 +281,12 @@ horseshoeSummardf <- function(fit, covarsVec, ...){
 #'   })
 #' }
 #'
-#' d <- nlmixr2data::theo_sd
-#' fit <- nlmixr2(one.cmt, d, "focei")
-#' covarsVec <- c("WT")
+#' fit <- nlmixr2(one.cmt, nlmixr2data::theo_sd, est="focei", control=list(print=0))
+#' covarsVec <- "WT"
 #'
-#' # Horseshoe summary posterior estimates:
+#' # Lasso summary posterior estimates
 #'
-#' lassoDf <- lassoSummardf(fit,covarsVec,...)
+#' lassoDf <- lassoSummardf(fit, covarsVec)
 #' }
 lassoSummardf <- function(fit,covarsVec,...){
   if (!inherits(fit, "nlmixr2FitCore")) {
