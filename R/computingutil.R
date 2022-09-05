@@ -98,7 +98,7 @@
 #' d$SEX[d$ID<=6] <-1
 #'
 #' fit <- nlmixr2(one.cmt, d, "focei")
-#' covarsVec <- c("WT)
+#' covarsVec <- c("WT")
 #'
 #'
 #' # Normalized covariate (replaced)
@@ -106,11 +106,7 @@
 #'
 #' # Normalized covariate (without replacement)
 #' df2 <- normalizedData(data,covarsVec,replace=TRUE)
-#'
-#' })
-#'
 #' }
-#'
 normalizedData <- function(data,covarsVec,replace=TRUE) {
   
   
@@ -151,7 +147,7 @@ normalizedData <- function(data,covarsVec,replace=TRUE) {
 #' d$SEX[d$ID<=6] <-1
 #'
 #' fit <- nlmixr2(one.cmt, d, "focei")
-#' covarsVec <- c("WT)
+#' covarsVec <- c("WT")
 #'
 #'
 #' # Stratified cross-validation data with CMT
@@ -159,11 +155,7 @@ normalizedData <- function(data,covarsVec,replace=TRUE) {
 #'
 #' # Stratified cross-validation data with ID (individual)
 #' df2 <- foldgen(data,nfold=5,stratVar=NULL)
-#'
-#' })
-#'
 #' }
-#'
 
 foldgen <-  function(data,nfold=5,stratVar=NULL){
   
@@ -272,9 +264,6 @@ foldgen <-  function(data,nfold=5,stratVar=NULL){
 #' \donttest{
 #' # Simulate 1000 creatine clearance values with median of 71.7 within range of c(6.7,140)
 #' creatCl <- optimUnisampling(xvec=c(6.7,140),N=1000,medValue = 71.7,floorT=FALSE)
-#'
-#' })
-#'
 #' }
 #'
 
@@ -1290,9 +1279,9 @@ getBootstrapSummary <-
         }
         colnames(omgVecBoot) <- namesList
         
-        .w <- which(sapply(namesList, function(x) {
+        .w <- which(vapply(namesList, function(x) {
           !all(omgVecBoot[, x] == 0)
-        }))
+        }, logical(1), USE.NAMES=FALSE))
         omgVecBoot <- omgVecBoot[, .w]
         
         
