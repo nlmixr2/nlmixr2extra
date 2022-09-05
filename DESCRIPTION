@@ -3,9 +3,11 @@ Title: Nonlinear Mixed Effects Models in Population PK/PD, Extra Support
     Functions
 Version: 2.0.6
 Authors@R: c(
-    person("Matthew", "Fidler", , "matthew.fidler@gmail.com", role = c("aut", "cre"),
+    person("Matthew", "Fidler", email="matthew.fidler@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-8538-6691")),
-    person("Vipul", "Mann", , "vm2583@columbia.edu", role = "aut")
+    person("Vipul", "Mann",email="vm2583@columbia.edu", role = "aut"),
+    person("Vishal", "Sarsani", email="vsarsani@umass.edu", comment=c(ORCID = "0000-0002-9272-3438"), role="aut"),
+    person("Christian", "Bartels", email="christian.bartels@novartis.com", role="aut")
   )
 Maintainer: Matthew Fidler <matthew.fidler@gmail.com>
 Description: Fit and compare nonlinear mixed-effects models in
@@ -50,4 +52,4 @@ Config/testthat/edition: 3
 Encoding: UTF-8
 NeedsCompilation: yes
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.0
+RoxygenNote: 7.2.1
