@@ -219,7 +219,7 @@ return(summaryDf)
 #'
 #' d <- nlmixr2data::theo_sd
 #' fit <- nlmixr2(one.cmt, d, "focei")
-#' covarsVec <- c("WT)
+#' covarsVec <- c("WT")
 #'
 #' # Horseshoe summary posterior estimates:
 #'
