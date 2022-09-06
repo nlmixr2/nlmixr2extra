@@ -65,7 +65,7 @@ tau0
 normal <- function(...){}
 horseshoe <- function(...){}
 #' @import utils 
-utils::globalVariables(c("tau0"))
+utils::globalVariables("tau0")
 
 #' Build Horseshoe prior
 #' 
@@ -184,6 +184,10 @@ return(summaryDf)
 }
 
 
+#' code to avoid global assignment problems
+#' @import utils 
+utils::globalVariables("<<-")
+`<<-` <- NULL 
 
 #' Create Horseshoe summary posterior estimates 
 #' @param fit compiled rxode2 nlmir2 model fit  
@@ -230,7 +234,6 @@ return(summaryDf)
 #' hsDf <- horseshoeSummardf(fit,covarsVec,cores=2)
 #'
 #' }
-
 
 horseshoeSummardf <- function(fit,covarsVec,...){
   

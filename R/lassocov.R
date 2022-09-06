@@ -470,14 +470,18 @@ adaptivelassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constrain
   checkmate::assert_character(varsVec)
   checkmate::assert_double(constraint)
   
+
+  
+  ## Get initial adaptive coefs from the regular lasso coefficients
+  .adapcoefs=lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
+  
+  
   ## Update data and covarsvec if categorical variables are provided
   if(!is.null(catvarsVec)){
     covarsVec <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
     data <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
   }
   
-  ## Get initial adaptive coefs from the regular lasso coefficients
-  .adapcoefs=lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
   
   #data
   data <- normalizedData(data,covarsVec)
@@ -598,11 +602,7 @@ regularmodel <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lasso
   checkmate::assert_character(varsVec)
   checkmate::assert_double(constraint)
   
-  if(!is.null(catvarsVec)){
-    covarsVec <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
-    data <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
-  }
-  
+ 
   if (lassotype=="regular") {
     .coefValues <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
   }
@@ -613,6 +613,12 @@ regularmodel <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lasso
   else if (lassotype=="adjusted"){
     
     .coefValues <- adjustedlassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)    
+  }
+  
+  
+  if(!is.null(catvarsVec)){
+    covarsVec <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
+    data <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
   }
   
   # Extract updated ui with added covariates 
