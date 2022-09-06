@@ -64,7 +64,9 @@ tau0
   
 normal <- function(...){}
 horseshoe <- function(...){}
-  
+#' @import utils 
+utils::globalVariables(c("tau0"))
+
 #' Build Horseshoe prior
 #' 
 #' 
@@ -87,7 +89,7 @@ return(list(priorString,stanvars))
 
 
 lasso <- function(...){}
-tau0 <- NULL
+
 #' Build Lasso prior
 #' 
 #' 
@@ -122,7 +124,7 @@ tau0 <- NULL
 #' @return list of the fitted models
 #' @noRd
 
-.fitbrmsModel <- function(fit,covarsVec,inicovarsVec=NULL,priorVar,warmup = 1000, iter = 2000, chains = 4,cores = 4,
+.fitbrmsModel <- function(fit,covarsVec,inicovarsVec=NULL,priorVar,warmup = 1000, iter = 2000, chains = 4,cores = 2,
                         control = list(adapt_delta = 0.99, max_treedepth = 15),seed=1015){
   
   
@@ -225,7 +227,7 @@ return(summaryDf)
 #'
 #' # Horseshoe summary posterior estimates:
 #'
-#' hsDf <- horseshoeSummardf(fit,covarsVec)
+#' hsDf <- horseshoeSummardf(fit,covarsVec,cores=2)
 #'
 #' }
 
@@ -243,7 +245,7 @@ horseshoeSummardf <- function(fit,covarsVec,...){
   # Fit BRMS models
   
   .horseshoeModels <-.fitbrmsModel(fit,covarsVec,priorVar = priorString,inicovarsVec=NULL,
-                                   warmup = 1000, iter = 2000, chains = 4,cores = 4,
+                                   warmup = 1000, iter = 2000, chains = 4,cores = 2,
                                    control = list(adapt_delta = 0.99, max_treedepth = 15),seed=1015)
   
   # Extract Summary of models
@@ -294,7 +296,7 @@ horseshoeSummardf <- function(fit,covarsVec,...){
 #'
 #' # Horseshoe summary posterior estimates:
 #'
-#' lassoDf <- lassoSummardf(fit,covarsVec)
+#' lassoDf <- lassoSummardf(fit,covarsVec,cores=2)
 #'
 #' }
 
@@ -311,7 +313,7 @@ lassoSummardf <- function(fit,covarsVec,...){
   # Fit BRMS models
   
   .lassoModels <-.fitbrmsModel(fit,covarsVec,priorVar = priorString,inicovarsVec=NULL,
-                                  warmup = 1000, iter = 2000, chains = 4,cores = 4,
+                                  warmup = 1000, iter = 2000, chains = 4,cores = 2,
                                   control = list(adapt_delta = 0.99, max_treedepth = 15),seed=1015)
   
   # Extract Summary of models
