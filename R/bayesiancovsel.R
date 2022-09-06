@@ -231,7 +231,9 @@ utils::globalVariables("<<-")
 #'
 #' # Horseshoe summary posterior estimates:
 #'
-#' hsDf <- horseshoeSummardf(fit,covarsVec,cores=2)
+#' #hsDf <- horseshoeSummardf(fit,covarsVec,cores=2)
+#' #brms sometimes may throw a Error in sink(type = “output”)
+#' #Issue Should be fixed by uninstalling and re-installing rstan
 #'
 #' }
 
@@ -299,8 +301,9 @@ horseshoeSummardf <- function(fit,covarsVec,...){
 #'
 #' # Horseshoe summary posterior estimates:
 #'
-#' lassoDf <- lassoSummardf(fit,covarsVec,cores=2)
-#'
+#' #lassoDf <- lassoSummardf(fit,covarsVec,cores=2)
+#' #brms sometimes may throw a Error in sink(type = “output”)
+#' #Issue Should be fixed by uninstalling and re-installing rstan
 #' }
 
 lassoSummardf <- function(fit,covarsVec,...){
