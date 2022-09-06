@@ -90,6 +90,7 @@
 #' @author Vishal Sarsani
 #' @export
 #' 
+#' 
 #' @examples
 #'
 #' \donttest{
@@ -97,15 +98,14 @@
 #' d$SEX <-0
 #' d$SEX[d$ID<=6] <-1
 #'
-#' fit <- nlmixr2(one.cmt, d, "focei")
 #' covarsVec <- c("WT")
 #'
 #'
 #' # Normalized covariate (replaced)
-#' df1 <- normalizedData(data,covarsVec,replace=TRUE)
+#' df1 <- normalizedData(d,covarsVec,replace=TRUE)
 #'
 #' # Normalized covariate (without replacement)
-#' df2 <- normalizedData(data,covarsVec,replace=TRUE)
+#' df2 <- normalizedData(d,covarsVec,replace=FALSE)
 #' }
 normalizedData <- function(data,covarsVec,replace=TRUE) {
   
@@ -121,7 +121,7 @@ normalizedData <- function(data,covarsVec,replace=TRUE) {
     .dat <- Reduce(merge,.normalizedDFs)
     dropnormPrefix <- function(x){ colnames(x) <- gsub("normalized_", "", colnames(x)); x }
     catCheck <- intersect(covarsVec,names(Filter(is.factor, data)))
-    .dat <- cbind(.dat[ , !names(.dat) %in% covarsVec],.dat[ , names(.dat) %in% catCheck])
+    .dat <- cbind(.dat[ , !names(.dat) %in% covarsVec],subset(.dat,select=catCheck))
     .finalDf <- dropnormPrefix(.dat)
   }else{
     
@@ -146,15 +146,15 @@ normalizedData <- function(data,covarsVec,replace=TRUE) {
 #' d$SEX <-0
 #' d$SEX[d$ID<=6] <-1
 #'
-#' fit <- nlmixr2(one.cmt, d, "focei")
+#' 
 #' covarsVec <- c("WT")
 #'
 #'
 #' # Stratified cross-validation data with CMT
-#' df1 <- foldgen(data,nfold=5,stratVar="CMT")
+#' df1 <- foldgen(d,nfold=5,stratVar="CMT")
 #'
 #' # Stratified cross-validation data with ID (individual)
-#' df2 <- foldgen(data,nfold=5,stratVar=NULL)
+#' df2 <- foldgen(d,nfold=5,stratVar=NULL)
 #' }
 
 foldgen <-  function(data,nfold=5,stratVar=NULL){
@@ -287,7 +287,7 @@ optimUnisampling <- function(xvec,N=1000,medValue,floorT=TRUE)
   xrmin <- xr$par[[1]]
   xrmax <- xr$par[[2]]
   sampled <- stats::runif(N, min = xr$par[[1]], max = xr$par[[2]])
-  if (xrmin==xvec[1] & xrmax==xvec[2] & floor)    return (floor(sampled))
+  if (xrmin==xvec[1] & xrmax==xvec[2] & floorT)    return (floor(sampled))
   else if (xrmin==xvec[1] & xrmax==xvec[2])   return (sampled)
   else return (optimUnisampling(xvec,N=1000,medValue))
 }
