@@ -63,11 +63,12 @@ tau0
 }
   
 normal <- function(...){}
+horseshoe <- function(...){}
   
 #' Build Horseshoe prior
 #' 
 #' 
-#' @param tau0 Global shrinkage parameter  
+#' @param tauZero Global shrinkage parameter  
 #' @return Prior for the string
 #' @noRd
 .horseshoePrior <- function(tau0){
@@ -75,7 +76,7 @@ normal <- function(...){}
 # Check if tau0 is valid 
 checkmate::assert_double(tau0)
 
-priorString <- c(brms::prior(brms::horseshoe(df = 1, scale_global = tau0,df_global = 1), class ="b",nlpar = "a"),
+priorString <- c(brms::prior(horseshoe(df = 1, scale_global = tau0,df_global = 1), class ="b",nlpar = "a"),
                               brms::prior(normal(0, 10), class = "b", nlpar = "b"))
 
 # stan variable for parsing
@@ -85,7 +86,8 @@ return(list(priorString,stanvars))
 }
 
 
-
+lasso <- function(...){}
+tau0 <- NULL
 #' Build Lasso prior
 #' 
 #' 
@@ -99,7 +101,7 @@ return(list(priorString,stanvars))
   checkmate::assert_double(df)
   checkmate::assert_double(scale)
   
-  priorString <- c(brms::prior(brms::lasso(df = 1, scale = 1), class ="b",nlpar = "a"),
+  priorString <- c(brms::prior(lasso(df = 1, scale = 1), class ="b",nlpar = "a"),
                    brms::prior(normal(0, 10), class = "b", nlpar = "b"))
   
   # stan variable for parsing
@@ -234,9 +236,8 @@ horseshoeSummardf <- function(fit,covarsVec,...){
     stop("'fit' needs to be a nlmixr2 fit")
   }
   checkmate::assert_character(covarsVec)
-  
   # Global shrinkage prior estimate
-  tau0 <- .calTau0 (fit,covarsVec,p0=2)
+  tau0 <<- .calTau0 (fit,covarsVec,p0=2)
   # Get prior String
   priorString <- .horseshoePrior(tau0)
   # Fit BRMS models
@@ -293,7 +294,7 @@ horseshoeSummardf <- function(fit,covarsVec,...){
 #'
 #' # Horseshoe summary posterior estimates:
 #'
-#' lassoDf <- lassoSummardf(fit,covarsVec,...)
+#' lassoDf <- lassoSummardf(fit,covarsVec)
 #'
 #' }
 
