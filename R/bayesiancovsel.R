@@ -184,8 +184,6 @@ return(summaryDf)
 }
 
 
-#' code to avoid global assignment problems
-#' @import utils 
 utils::globalVariables("<<-")
 `<<-` <- NULL 
 
