@@ -100,6 +100,444 @@
     <p>Vishal Sarsani</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># \donttest{</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">one.cmt</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://nlmixr2.github.io/rxode2/reference/ini.html" class="external-link">ini</a></span><span class="op">(</span><span class="op">{</span></span></span>
+<span class="r-in"><span>    <span class="co">## You may label each parameter with a comment</span></span></span>
+<span class="r-in"><span>    <span class="va">tka</span> <span class="op">&lt;-</span> <span class="fl">0.45</span> <span class="co"># Log Ka</span></span></span>
+<span class="r-in"><span>    <span class="va">tcl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">2.7</span>, <span class="fl">100</span><span class="op">)</span><span class="op">)</span> <span class="co"># Log Cl</span></span></span>
+<span class="r-in"><span>    <span class="co">## This works with interactive models</span></span></span>
+<span class="r-in"><span>    <span class="co">## You may also label the preceding line with label("label text")</span></span></span>
+<span class="r-in"><span>    <span class="va">tv</span> <span class="op">&lt;-</span> <span class="fl">3.45</span>; <span class="fu">label</span><span class="op">(</span><span class="st">"log V"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="co">## the label("Label name") works with all models</span></span></span>
+<span class="r-in"><span>    <span class="va">eta.ka</span> <span class="op">~</span> <span class="fl">0.6</span></span></span>
+<span class="r-in"><span>    <span class="va">eta.cl</span> <span class="op">~</span> <span class="fl">0.3</span></span></span>
+<span class="r-in"><span>    <span class="va">eta.v</span> <span class="op">~</span> <span class="fl">0.1</span></span></span>
+<span class="r-in"><span>    <span class="va">add.sd</span> <span class="op">&lt;-</span> <span class="fl">0.7</span></span></span>
+<span class="r-in"><span>  <span class="op">}</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://nlmixr2.github.io/rxode2/reference/model.html" class="external-link">model</a></span><span class="op">(</span><span class="op">{</span></span></span>
+<span class="r-in"><span>    <span class="va">ka</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">tka</span> <span class="op">+</span> <span class="va">eta.ka</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="va">cl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">tcl</span> <span class="op">+</span> <span class="va">eta.cl</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="va">v</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">tv</span> <span class="op">+</span> <span class="va">eta.v</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="fu">linCmt</span><span class="op">(</span><span class="op">)</span> <span class="op">~</span> <span class="fu">add</span><span class="op">(</span><span class="va">add.sd</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="op">}</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu">nlmixr2data</span><span class="fu">::</span><span class="va"><a href="https://nlmixr2.github.io/nlmixr2data/reference/theo_sd.html" class="external-link">theo_sd</a></span></span></span>
+<span class="r-in"><span><span class="va">d</span><span class="op">$</span><span class="va">SEX</span> <span class="op">&lt;-</span><span class="fl">0</span></span></span>
+<span class="r-in"><span><span class="va">d</span><span class="op">$</span><span class="va">SEX</span><span class="op">[</span><span class="va">d</span><span class="op">$</span><span class="va">ID</span><span class="op">&lt;=</span><span class="fl">6</span><span class="op">]</span> <span class="op">&lt;-</span><span class="fl">1</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nlmixr2est/man/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">one.cmt</span>, <span class="va">d</span>, <span class="st">"focei"</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> parameter labels from comments will be replaced by 'label()'</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 7184</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 2048</span>
+<span class="r-in"><span><span class="va">varsVec</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ka"</span>,<span class="st">"cl"</span>,<span class="st">"v"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">covarsVec</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"WT"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">catvarsVec</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"SEX"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Lasso coefficients:</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">lassoDf</span> <span class="op">&lt;-</span> <span class="fu">lassoCoefficients</span><span class="op">(</span><span class="va">fit</span>,<span class="va">varsVec</span>,<span class="va">covarsVec</span>,<span class="va">catvarsVec</span>,constraint<span class="op">=</span><span class="fl">1e-08</span>,stratVar <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 1</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 6640</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 3232</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3496</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 1</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 2</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 7144</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 3440</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3200</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 2</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 3</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 7120</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 4112</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3224</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 3</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 4</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 7104</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 3504</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3208</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 4</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 5</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 6600</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 4080</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3512</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 5</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Cross-validation finished for the t-value : 0.05</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 1</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 6624</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 3328</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3488</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 1</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 2</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 7144</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 3448</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3184</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 2</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 3</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 7136</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 3608</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3224</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 3</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 4</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 6592</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 3456</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3552</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 4</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 5</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 7136</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 4064</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3192</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 5</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Cross-validation finished for the t-value : 0.1</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 1</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 7144</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 3680</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3200</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 1</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 2</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 6608</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 3928</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3520</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 2</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 3</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 7104</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 7072</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3208</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 3</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 4</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 6600</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 4088</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3512</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 4</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 5</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 7136</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 5096</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3208</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 5</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Cross-validation finished for the t-value : 0.15</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 1</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 7112</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 4000</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3240</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 1</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 2</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 7128</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 4160</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3184</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 2</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 3</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 7128</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 3944</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3200</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 3</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 4</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 6568</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 3560</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3528</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 4</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 5</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 6624</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 5200</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3496</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 5</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Cross-validation finished for the t-value : 0.2</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 1</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 6600</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 3688</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3520</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 1</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 2</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 7136</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 3632</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3208</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 2</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 3</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 7128</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 4200</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3208</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 3</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 4</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 7120</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 3872</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3216</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 4</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Training and Testing data sets successfully created for cross-validation for fold number 5</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 6640</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 4200</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 3488</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Estimation complete for the fold number : 5</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Cross-validation finished for the t-value : 0.25</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 6984</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 3360</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># }</span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
     </nav></aside></div>
 

@@ -77,6 +77,54 @@ control = list(adapt_delta = 0.99, max_treedepth = 15)</p></dd>
     <p>Vishal Sarsani, Christian Bartels</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># \donttest{</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">one.cmt</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://nlmixr2.github.io/rxode2/reference/ini.html" class="external-link">ini</a></span><span class="op">(</span><span class="op">{</span></span></span>
+<span class="r-in"><span>    <span class="co">## You may label each parameter with a comment</span></span></span>
+<span class="r-in"><span>    <span class="va">tka</span> <span class="op">&lt;-</span> <span class="fl">0.45</span> <span class="co"># Log Ka</span></span></span>
+<span class="r-in"><span>    <span class="va">tcl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">2.7</span>, <span class="fl">100</span><span class="op">)</span><span class="op">)</span> <span class="co"># Log Cl</span></span></span>
+<span class="r-in"><span>    <span class="co">## This works with interactive models</span></span></span>
+<span class="r-in"><span>    <span class="co">## You may also label the preceding line with label("label text")</span></span></span>
+<span class="r-in"><span>    <span class="va">tv</span> <span class="op">&lt;-</span> <span class="fl">3.45</span>; <span class="fu">label</span><span class="op">(</span><span class="st">"log V"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="co">## the label("Label name") works with all models</span></span></span>
+<span class="r-in"><span>    <span class="va">eta.ka</span> <span class="op">~</span> <span class="fl">0.6</span></span></span>
+<span class="r-in"><span>    <span class="va">eta.cl</span> <span class="op">~</span> <span class="fl">0.3</span></span></span>
+<span class="r-in"><span>    <span class="va">eta.v</span> <span class="op">~</span> <span class="fl">0.1</span></span></span>
+<span class="r-in"><span>    <span class="va">add.sd</span> <span class="op">&lt;-</span> <span class="fl">0.7</span></span></span>
+<span class="r-in"><span>  <span class="op">}</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://nlmixr2.github.io/rxode2/reference/model.html" class="external-link">model</a></span><span class="op">(</span><span class="op">{</span></span></span>
+<span class="r-in"><span>    <span class="va">ka</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">tka</span> <span class="op">+</span> <span class="va">eta.ka</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="va">cl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">tcl</span> <span class="op">+</span> <span class="va">eta.cl</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="va">v</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">tv</span> <span class="op">+</span> <span class="va">eta.v</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="fu">linCmt</span><span class="op">(</span><span class="op">)</span> <span class="op">~</span> <span class="fu">add</span><span class="op">(</span><span class="va">add.sd</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="op">}</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu">nlmixr2data</span><span class="fu">::</span><span class="va"><a href="https://nlmixr2.github.io/nlmixr2data/reference/theo_sd.html" class="external-link">theo_sd</a></span></span></span>
+<span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nlmixr2est/man/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">one.cmt</span>, <span class="va">d</span>, <span class="st">"focei"</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> parameter labels from comments will be replaced by 'label()'</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → Calculating residuals/tables</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> done</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 5952</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> → compress parHist in nlmixr2 object, save 2048</span>
+<span class="r-in"><span><span class="va">covarsVec</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"WT"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Horseshoe summary posterior estimates:</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">#hsDf &lt;- horseshoeSummardf(fit,covarsVec,cores=2)</span></span></span>
+<span class="r-in"><span><span class="co">#brms sometimes may throw a Error in sink(type = “output”)</span></span></span>
+<span class="r-in"><span><span class="co">#Issue Should be fixed by uninstalling and re-installing rstan</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># }</span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
     </nav></aside></div>
 
