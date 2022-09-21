@@ -1049,7 +1049,8 @@ modelBootstrap <- function(fit,
   
   modelsEnsemble <-
     lapply(bootData[.env$mod_idx:nboot], function(boot_data) {
-      cli::cli_h1("Running nlmixr2 for model index: {.env$mod_idx}")
+      modIdx <- .env$mod_idx
+      cli::cli_h1("Running nlmixr2 for model index: {modIdx}")
       
       fit <- tryCatch(
         {

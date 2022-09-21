@@ -693,9 +693,10 @@ modelBootstrap <- function(fit,
       currNumModels <- .env$mod_idx - 1
 
       if (currNumModels > nboot) {
+        modIdx <- .env$mod_idx-1
         cli::cli_alert_danger(
           cli::col_red(
-            "the model file already has {.env$mod_idx-1} models when max models is {nboot}; using only the first {nboot} model(s)"
+            "the model file already has {modIdx} models when max models is {nboot}; using only the first {nboot} model(s)"
           )
         )
         return(list(modelsEnsembleLoaded[1:nboot], fitEnsembleLoaded[1:nboot]))
@@ -704,8 +705,9 @@ modelBootstrap <- function(fit,
       }
 
       else if (currNumModels == nboot) {
+        modIdx <- .env$mod_idx-1
         cli::col_red(
-          "the model file already has {.env$mod_idx-1} models when max models is {nboot}; loading from {nboot} models already saved on disk"
+          "the model file already has {modIdx-1} models when max models is {nboot}; loading from {nboot} models already saved on disk"
         )
         return(list(modelsEnsembleLoaded, fitEnsembleLoaded))
 
@@ -743,7 +745,8 @@ modelBootstrap <- function(fit,
 
   modelsEnsemble <-
     lapply(bootData[.env$mod_idx:nboot], function(boot_data) {
-      cli::cli_h1("Running nlmixr2 for model index: {.env$mod_idx}")
+      modIdx <- .env$mod_idx
+      cli::cli_h1("Running nlmixr2 for model index: modIdx")
 
       fit <- tryCatch(
         {
@@ -788,7 +791,6 @@ modelBootstrap <- function(fit,
           ".rds"
         )
       )
-
       assign("mod_idx", .env$mod_idx + 1, .env)
     })
 
