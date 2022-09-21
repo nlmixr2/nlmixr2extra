@@ -1,7 +1,7 @@
 
 # ==== getThetaName
 
-.cur <- loadNamespace("nlmixr2est")
+.cur <- loadNamespace("nlmixr2extra")
 
 test_that("get the population parameter from variable name", {
   ## Compartment specifications to test 
