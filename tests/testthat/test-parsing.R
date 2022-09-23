@@ -1,4 +1,4 @@
-
+skip_on_cran()
 # ==== getThetaName
 
 .cur <- loadNamespace("nlmixr2extra")

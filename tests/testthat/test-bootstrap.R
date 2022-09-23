@@ -9,7 +9,7 @@ withr::with_tempdir({
   })
 
   test_that("resuming the fit should not return the same datasets as before", {
-
+    skip_on_cran()
     one.cmt <- function() {
       ini({
         tka <- 0.45 ; label("Log Ka")
