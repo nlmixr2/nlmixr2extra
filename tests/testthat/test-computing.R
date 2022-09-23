@@ -1,5 +1,5 @@
 # ==== .popMeanStd
-
+skip_on_cran()
 
 test_that("Function to return pop mean, pop std of a given covariate", {
   
