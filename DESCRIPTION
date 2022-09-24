@@ -27,7 +27,7 @@ URL: https://nlmixr2.github.io/nlmixr2extra/,
 BugReports: https://github.com/nlmixr2/nlmixr2extra/issues/
 Imports: 
     checkmate,
-    cli,
+    cli (>= 3.4.0),
     crayon,
     data.table,
     digest,
@@ -45,7 +45,8 @@ Suggests:
     brms,
     nlmixr2data,
     testthat (>= 3.0.0),
-    withr
+    withr,
+    dplyr
 LinkingTo: 
     Rcpp,
     RcppArmadillo
