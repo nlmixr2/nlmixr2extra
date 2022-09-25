@@ -37,7 +37,7 @@ Imports:
     nlme,
     nlmixr2est (>= 2.1.0),
     Rcpp,
-    rxode2 (>= 2.0.8),
+    rxode2 (>= 2.0.7),
     stats,
     symengine,
     utils
