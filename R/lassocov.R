@@ -10,12 +10,12 @@
 .lassoUicovariate <- function(ui,varsVec,covarsVec,tvalue=0.05){
   
   if (inherits(ui, "nlmixr2FitCore")) {
-    ui <- ui$ui
+    ui <- ui$finalUiEnv
   }
   ui <- rxode2::assertRxUi(ui)
   
   # Extract updated ui with added covariates 
-  .ui1 <- buildupatedUI(ui,varsVec,covarsVec,add = TRUE,indep=FALSE)
+  .ui1 <- rxode2::rxUiDecompress(buildupatedUI(ui,varsVec,covarsVec,add = TRUE,indep=FALSE))
   
   # Extract all the covariate parameters constructed 
   .covsparams <- .ui1$muRefCovariateDataFrame$covariateParameter
@@ -275,7 +275,7 @@ lassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,
     stop("'fit' needs to be a nlmixr2 fit")
   }
   else {
-    ui <- fit$ui
+    ui <- fit$finalUiEnv
   }
   
   checkmate::assert_character(covarsVec)
@@ -348,7 +348,7 @@ lassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,
 .adaptivelassoUicovariate <- function(ui,varsVec,covarsVec,tvalue=0.05,adapcoefs=NULL){
   
   if (inherits(ui, "nlmixr2FitCore")) {
-    ui <- ui$ui
+    ui <- ui$finalUiEnv
   }
   ui <- rxode2::assertRxUi(ui)
   
@@ -463,7 +463,7 @@ adaptivelassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constrain
     stop("'fit' needs to be a nlmixr2 fit")
   }
   else {
-    ui <- fit$ui
+    ui <- fit$finalUiEnv
   }
   
   checkmate::assert_character(covarsVec)
@@ -473,11 +473,11 @@ adaptivelassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constrain
 
   
   ## Get initial adaptive coefs from the regular lasso coefficients
-  .adapcoefs=lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
+  .adapcoefs <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
   
   
   ## Update data and covarsvec if categorical variables are provided
-  if(!is.null(catvarsVec)){
+  if(!is.null(catvarsVec)) {
     covarsVec <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
     data <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
   }
@@ -595,7 +595,7 @@ regularmodel <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lasso
     stop("'fit' needs to be a nlmixr2 fit")
   }
   else {
-    ui <- fit$ui
+    ui <- fit$finalUiEnv
   }
   
   checkmate::assert_character(covarsVec)
@@ -661,7 +661,7 @@ regularmodel <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lasso
   .ini <- as.expression(lotri::as.lotri(.ini))
   .ini[[1]] <- quote(`ini`)
   # return the updated model
-  .ui2 <- .getUiFunFromIniAndModel(.ui1, .ini, .newModel)()
+  .ui2 <- rxode2::rxUiDecompress(.getUiFunFromIniAndModel(.ui1, .ini, .newModel)())
   #estimation method
   estmethod=getFitMethod(fit)
   return(nlmixr2(.ui2,data,est=estmethod)) 
@@ -726,7 +726,7 @@ adjustedlassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constrain
     stop("'fit' needs to be a nlmixr2 fit")
   }
   else {
-    ui <- fit$ui
+    ui <- fit$finalUiEnv
   }
   
   checkmate::assert_character(covarsVec)
@@ -734,7 +734,7 @@ adjustedlassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constrain
   checkmate::assert_character(varsVec)
   checkmate::assert_double(constraint)
   
-  if(!is.null(catvarsVec)){
+  if(!is.null(catvarsVec)) {
     covarsVec <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
     data <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
   }

@@ -13,7 +13,7 @@
     stop("'fit' needs to be a nlmixr2 fit")
   }
   else {
-    ui <- fit$ui
+    ui <- fit$finalUiEnv
   }
   
   checkmate::assert_character(covarsVec)
@@ -48,7 +48,7 @@
     stop("'fit' needs to be a nlmixr2 fit")
   }
   else {
-    ui <- fit$ui
+    ui <- fit$finalUiEnv
   }
   
 checkmate::assert_character(covarsVec)

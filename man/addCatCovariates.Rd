@@ -9,9 +9,11 @@ addCatCovariates(data, covarsVec, catcovarsVec)
 \arguments{
 \item{data}{data frame used in the analysis}
 
-\item{covarsVec}{character vector of covariates that need to be added}
+\item{covarsVec}{character vector of covariates that need to be
+added}
 
-\item{catcovarsVec}{character vector of categorical covariates that need to be added}
+\item{catcovarsVec}{character vector of categorical covariates that
+need to be added}
 }
 \value{
 return updated Data along with the updated covarsVec

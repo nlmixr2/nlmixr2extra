@@ -862,7 +862,7 @@ modelBootstrap <- function(fit,
     stop("cannot find the 'ID' column! aborting ...", call. = FALSE)
   }
   
-  ui <- fit$ui
+  ui <- fit$finalUiEnv
   fitMeth <- getFitMethod(fit)
   
   bootData <- vector(mode = "list", length = nboot)
