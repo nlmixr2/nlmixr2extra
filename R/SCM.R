@@ -175,7 +175,7 @@ forwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL,fit, pVal = 0.05, ou
     stop("'fit' needs to be a nlmixr2 fit")
   }
   else {
-    ui <- fit$ui
+    ui <- fit$finalUiEnv
   }
   if(!is.null(catvarsVec)){
     covarsVec <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
@@ -275,7 +275,7 @@ forwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL,fit, pVal = 0.05, ou
       # bck: if deltObjf >0: pchisq=1-pchisq(deltObjf, dof), else pchisq=1
 
       dObjf <- fit$objf - x$objf
-      dof <- length(x$ui$ini$est) - length(fit$ui$ini$est)
+      dof <- length(x$finalUiEnv$ini$est) - length(fit$finalUiEnv$ini$est)
       if (dObjf < 0) {
         pchisqr <- 1 - pchisq(-dObjf, df = dof)
       }
@@ -283,7 +283,7 @@ forwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL,fit, pVal = 0.05, ou
         pchisqr <- 1
       }
 
-      l1 <- list(step = stepIdx, covar = nam_covar, var = nam_var, objf = x$objf, deltObjf = dObjf, AIC = x$AIC, BIC = x$BIC, numParams = length(x$ui$ini$est), qchisqr = qchisq(1 - pVal, dof), pchisqr = pchisqr, included = "no", searchType = "forward")
+      l1 <- list(step = stepIdx, covar = nam_covar, var = nam_var, objf = x$objf, deltObjf = dObjf, AIC = x$AIC, BIC = x$BIC, numParams = length(x$finalUiEnv$ini$est), qchisqr = qchisq(1 - pVal, dof), pchisqr = pchisqr, included = "no", searchType = "forward")
       l2 <- list(covNames = covNames, covarEffect = x$parFixedDf[covNames, "Estimate"])
 
       c(l1, l2)
@@ -356,7 +356,7 @@ backwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL, fitorig, fitupdate
     stop("'fit' needs to be a nlmixr2 fit")
   }
   else {
-    ui <- fit$ui
+    ui <- fit$finalUiEnv
   }
   if(!is.null(catvarsVec)){
     covarsVec <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
@@ -482,7 +482,7 @@ backwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL, fitorig, fitupdate
       # bck: if deltObjf >0: pchisq=1-pchisq(deltObjf, dof), else pchisq=1
 
       dObjf <- x$objf - fit$objf
-      dof <- length(fit$ui$ini$est) - length(x$ui$ini$est)
+      dof <- length(fit$finalUiEnv$ini$est) - length(x$finalUiEnv$ini$est)
 
       if (dObjf > 0) {
         pchisqr <- 1 - pchisq(dObjf, df = dof)
@@ -491,7 +491,7 @@ backwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL, fitorig, fitupdate
         pchisqr <- 1
       }
 
-      l1 <- list(step = stepIdx, covar = nam_covar, var = nam_var, objf = x$objf, deltObjf = dObjf, AIC = x$AIC, BIC = x$BIC, numParams = length(x$ui$ini$est), qchisqr = qchisq(1 - pVal, dof), pchisqr = pchisqr, included = "", searchType = "backward")
+      l1 <- list(step = stepIdx, covar = nam_covar, var = nam_var, objf = x$objf, deltObjf = dObjf, AIC = x$AIC, BIC = x$BIC, numParams = length(x$finalUiEnv$ini$est), qchisqr = qchisq(1 - pVal, dof), pchisqr = pchisqr, included = "", searchType = "backward")
       l2 <- list(covNames = covNames, covarEffect = fit$parFixedDf[covNames, "Estimate"])
 
       c(l1, l2)
