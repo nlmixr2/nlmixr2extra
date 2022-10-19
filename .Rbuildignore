@@ -8,3 +8,4 @@ nlmixr2BootstrapCache_fit
 ^pkgdown$
 ^logo.png$
 ^cran-comments\.md$
+^CRAN-SUBMISSION$
