@@ -1,3 +1,8 @@
+# nlmixr2extra (development version)
+
+* Use `assignInMyNamespace()` instead of using the global assignment
+  operator for the horseshoe prior
+
 # nlmixr2extra 2.0.7
 
 * Fix `cli` issues with the new `cli` 3.4+ release that will allow

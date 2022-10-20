@@ -1,7 +1,7 @@
 Package: nlmixr2extra
 Title: Nonlinear Mixed Effects Models in Population PK/PD, Extra Support
     Functions
-Version: 2.0.7
+Version: 2.0.7.9000
 Authors@R: c(
     person("Matthew", "Fidler", email="matthew.fidler@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-8538-6691")),
@@ -57,4 +57,3 @@ NeedsCompilation: yes
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.1
 LazyData: true
-

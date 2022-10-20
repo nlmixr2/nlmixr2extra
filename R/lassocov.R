@@ -589,7 +589,9 @@ adaptivelassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constrain
 #'
 #' lassoDf <- regularmodel(fit,varsVec,covarsVec,catvarsVec, lassotype='adjusted')
 #' }
-regularmodel <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lassotype='regular',stratVar = NULL,...) {
+regularmodel <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,
+                         lassotype=c("regular", "adaptive", "adjusted"),
+                         stratVar = NULL,...) {
   
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
@@ -601,7 +603,7 @@ regularmodel <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,lasso
   checkmate::assert_character(covarsVec)
   checkmate::assert_character(varsVec)
   checkmate::assert_double(constraint)
-  
+  lassotype <- match.arg(lassotype)
  
   if (lassotype=="regular") {
     .coefValues <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...)
