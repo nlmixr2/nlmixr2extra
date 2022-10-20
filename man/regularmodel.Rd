@@ -10,7 +10,7 @@ regularmodel(
   covarsVec,
   catvarsVec,
   constraint = 1e-08,
-  lassotype = "regular",
+  lassotype = c("regular", "adaptive", "adjusted"),
   stratVar = NULL,
   ...
 )

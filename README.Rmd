@@ -22,6 +22,7 @@ knitr::opts_chunk$set(
 [![CRAN total downloads](https://cranlogs.r-pkg.org/badges/grand-total/nlmixr2extra)](https://cran.r-project.org/package=nlmixr2extra)
 [![CRAN total downloads](https://cranlogs.r-pkg.org/badges/nlmixr2extra)](https://cran.r-project.org/package=nlmixr2extra)
 [![CodeFactor](https://www.codefactor.io/repository/github/nlmixr2/nlmixr2extra/badge)](https://www.codefactor.io/repository/github/nlmixr2/nlmixr2extra)
+![r-universe](https://nlmixr2.r-universe.dev/badges/nlmixr2extra)
 <!-- badges: end -->
 
 The goal of nlmixr2extra is to provide the tools to help with common pharmacometric tasks with nlmixr2 models like bootstrapping, covariate selection etc.
