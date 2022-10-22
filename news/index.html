@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">nlmixr2extra</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.7.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.8</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,8 +45,11 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="development version" id="nlmixr2extra-development-version">nlmixr2extra (development version)<a class="anchor" aria-label="anchor" href="#nlmixr2extra-development-version"></a></h2>
-<ul><li>Use <code><a href="https://rdrr.io/r/utils/getFromNamespace.html" class="external-link">assignInMyNamespace()</a></code> instead of using the global assignment operator for the horseshoe prior</li></ul></div>
+<h2 class="pkg-version" data-toc-text="2.0.8" id="nlmixr2extra-208">nlmixr2extra 2.0.8<a class="anchor" aria-label="anchor" href="#nlmixr2extra-208"></a></h2>
+<ul><li><p>Use <code><a href="https://rdrr.io/r/utils/getFromNamespace.html" class="external-link">assignInMyNamespace()</a></code> instead of using the global assignment operator for the horseshoe prior</p></li>
+<li><p>Be specific in version requirements (as requested by CRAN checks)</p></li>
+<li><p>Move the <code>theoFitOde.rda</code> data build to <code><a href="https://devtools.r-lib.org/reference/document.html" class="external-link">devtools::document()</a></code> to reduce CRAN build time (could add more standard models like warfarin for package developers which takes way too much time for CRAN)</p></li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2.0.7" id="nlmixr2extra-207">nlmixr2extra 2.0.7<a class="anchor" aria-label="anchor" href="#nlmixr2extra-207"></a></h2><p class="text-muted">CRAN release: 2022-10-19</p>
 <ul><li><p>Fix <code>cli</code> issues with the new <code>cli</code> 3.4+ release that will allow bootstrapping to run again (before <code>cli</code> would error, this fixes the <code>donttest</code> issues on CRAN).</p></li>
