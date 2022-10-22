@@ -1,11 +1,5 @@
 # Notes
 
-This release fixes/adds:
+This adds a version dependency fix to stop an CRAN machine errors (and
+errors on other machines)
 
-- The `donttest` issues listed on CRAN due to `cli` 3.4 incompatibility.
-
-- The stepwise covariate selection was updated with bug fixes.
-
-- The lasso covariate selection was added.
-
-- The horseshoe prior covariate selection was added.

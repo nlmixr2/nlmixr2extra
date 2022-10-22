@@ -1,7 +1,9 @@
-# nlmixr2extra (development version)
+# nlmixr2extra 2.0.8
 
 * Use `assignInMyNamespace()` instead of using the global assignment
   operator for the horseshoe prior
+  
+* Be specific in version requirements (as requested by CRAN checks)
 
 # nlmixr2extra 2.0.7
 
