@@ -46,7 +46,8 @@ Suggests:
     nlmixr2data,
     testthat (>= 3.0.0),
     withr,
-    dplyr
+    dplyr,
+    devtools
 LinkingTo: 
     Rcpp,
     RcppArmadillo

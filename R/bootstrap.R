@@ -23,6 +23,13 @@ addConfboundsToVar <-
     unlist(res)
   }
 
+.buildModel <- function() {
+  .owd <- getwd()
+  on.exit(setwd(.owd))
+  try(source(file.path(devtools::package_file(), "build", "build.R")))
+  ""
+}
+
 #' Bootstrap nlmixr2 fit
 #'
 #' Bootstrap input dataset and rerun the model to get confidence bounds and aggregated parameters
@@ -78,6 +85,8 @@ addConfboundsToVar <-
 #'
 #' @return Nothing, called for the side effects; The original fit is
 #'   updated with the bootstrap confidence bands
+#'
+#' @eval .buildModel()
 #'
 #' @export
 #'
