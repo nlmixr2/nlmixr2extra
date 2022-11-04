@@ -10,7 +10,7 @@ regularmodel(
   covarsVec,
   catvarsVec,
   constraint = 1e-08,
-  lassotype = "regular",
+  lassotype = c("regular", "adaptive", "adjusted"),
   stratVar = NULL,
   ...
 )
@@ -33,7 +33,7 @@ regularmodel(
 \item{...}{Other parameters to be passed to optimalTvaluelasso}
 }
 \value{
-return fit of the regular coefficients
+return fit of the selected lasso coefficients
 }
 \description{
 Regular lasso model
@@ -76,13 +76,13 @@ catvarsVec <- c("SEX")
 
 # Model fit with regular lasso coefficients:
 
-lassoDf <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec)
+lassoDf <- regularmodel(fit,varsVec,covarsVec,catvarsVec)
 # Model fit with adaptive lasso coefficients:
 
-lassoDf <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,lassotype='adaptive')
+lassoDf <- regularmodel(fit,varsVec,covarsVec,catvarsVec,lassotype='adaptive')
 # Model fit with adaptive-adjusted lasso coefficients:
 
-lassoDf <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec, lassotype='adjusted')
+lassoDf <- regularmodel(fit,varsVec,covarsVec,catvarsVec, lassotype='adjusted')
 }
 }
 \author{

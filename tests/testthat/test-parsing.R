@@ -1,6 +1,7 @@
-
-
+skip_on_cran()
 # ==== getThetaName
+
+.cur <- loadNamespace("nlmixr2extra")
 
 test_that("get the population parameter from variable name", {
   ## Compartment specifications to test 
@@ -30,7 +31,7 @@ test_that("get the population parameter from variable name", {
   ui <- ui1
   varName <- "ka"
   
-  funstring1 <- nlmixr2extra::.getThetaName(ui,varName)
+  funstring1 <- .cur$.getThetaName(ui,varName)
   funstring2 <- "tka"
   
   expect_equal(funstring1, funstring2)
@@ -65,7 +66,7 @@ test_that("get the population parameter from variable name", {
   ui2 <- nlmixr(two.compartment)
   ui <- ui2
   varName <- "ka"
-  expect_error(nlmixr2extra::.getThetaName(ui,varName))
+  expect_error(.cur$.getThetaName(ui,varName))
 })
 
 test_that("get the population parameter from variable name", {
@@ -94,7 +95,7 @@ test_that("get the population parameter from variable name", {
   tui <- nlmixr(tainted)
   ui <- tui
   varName <- "cl"
-  expect_error(nlmixr2extra::.getThetaName(ui,varName))
+  expect_error(.cur$.getThetaName(ui,varName))
 })
 
 

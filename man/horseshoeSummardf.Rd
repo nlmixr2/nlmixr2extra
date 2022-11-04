@@ -52,7 +52,9 @@ covarsVec <- c("WT")
 
 # Horseshoe summary posterior estimates:
 
-hsDf <- horseshoeSummardf(fit,covarsVec)
+#hsDf <- horseshoeSummardf(fit,covarsVec,cores=2)
+#brms sometimes may throw a Error in sink(type = “output”)
+#Issue Should be fixed by uninstalling and re-installing rstan
 
 }
 }

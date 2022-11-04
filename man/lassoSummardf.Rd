@@ -52,8 +52,9 @@ covarsVec <- c("WT")
 
 # Horseshoe summary posterior estimates:
 
-lassoDf <- lassoSummardf(fit,covarsVec,...)
-
+#lassoDf <- lassoSummardf(fit,covarsVec,cores=2)
+#brms sometimes may throw a Error in sink(type = “output”)
+#Issue Should be fixed by uninstalling and re-installing rstan
 }
 }
 \author{

@@ -1,4 +1,3 @@
-
 #' Build formula for the brms from the fit 
 #' 
 #' 
@@ -13,25 +12,25 @@
     stop("'fit' needs to be a nlmixr2 fit")
   }
   else {
-    ui <- fit$ui
+    ui <- fit$finalUiEnv
   }
   
   checkmate::assert_character(covarsVec)
   
   
   formula <- brms::bf(stats::as.formula(paste0(eta, " ~ a + b")),
-     
-     stats::as.formula(paste0("a ~ ", paste(c("0", covarsVec), collapse = " + "))),
-     
-     stats::as.formula(paste0("b ~ ", paste(c("1", inicovarsVec), collapse = " + "))),
-     
-     nl = TRUE)
+                      
+                      stats::as.formula(paste0("a ~ ", paste(c("0", covarsVec), collapse = " + "))),
+                      
+                      stats::as.formula(paste0("b ~ ", paste(c("1", inicovarsVec), collapse = " + "))),
+                      
+                      nl = TRUE)
   
   
   if (!inherits(formula, c("brmsformula" ,"bform"))) {
     stop("BRMS Formula construction fails ")
   } else {
-  return(formula)  
+    return(formula)  
   }
   
 }
@@ -42,49 +41,52 @@
 #' @param p0 expected number of covariate terms, default 2
 #' @return Global shrinkage parameter
 #' @noRd 
-
 .calTau0 <- function(fit,covarsVec,p0=2){
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
   }
   else {
-    ui <- fit$ui
+    ui <- fit$finalUiEnv
   }
   
-checkmate::assert_character(covarsVec)
-D <- length(covarsVec)-1
-n <- nrow(nlme::getData(fit))
-# Global shrinkage parameter, equation 
-tau0 <- p0/(D-p0) / sqrt(n)
+  checkmate::assert_character(covarsVec)
+  D <- length(covarsVec)-1
+  n <- nrow(nlme::getData(fit))
+  # Global shrinkage parameter, equation 
+  tau0 <- p0/(D-p0) / sqrt(n)
 
-if (!is.finite(tau0)| tau0 < 0  ){tau0 <- 0.25}
+  if (!is.finite(tau0)| tau0 < 0  ){tau0 <- 0.25}
 
-tau0 
+  tau0 
 }
-  
+
 normal <- function(...){}
-  
+horseshoe <- function(...){}
+#' @import utils 
+utils::globalVariables("tau0")
+
 #' Build Horseshoe prior
 #' 
 #' 
-#' @param tau0 Global shrinkage parameter  
+#' @param tauZero Global shrinkage parameter  
 #' @return Prior for the string
 #' @noRd
 .horseshoePrior <- function(tau0){
   
-# Check if tau0 is valid 
-checkmate::assert_double(tau0)
+  # Check if tau0 is valid 
+  checkmate::assert_double(tau0)
 
-priorString <- c(brms::prior(brms::horseshoe(df = 1, scale_global = tau0,df_global = 1), class ="b",nlpar = "a"),
-                              brms::prior(normal(0, 10), class = "b", nlpar = "b"))
+  priorString <- c(brms::prior(horseshoe(df = 1, scale_global = tau0,df_global = 1), class ="b",nlpar = "a"),
+                   brms::prior(normal(0, 10), class = "b", nlpar = "b"))
 
-# stan variable for parsing
-stanvars <- brms::stanvar(tau0, name='tau0')
+  # stan variable for parsing
+  stanvars <- brms::stanvar(tau0, name='tau0')
 
-return(list(priorString,stanvars))
+  return(list(priorString,stanvars))
 }
 
 
+lasso <- function(...){}
 
 #' Build Lasso prior
 #' 
@@ -99,7 +101,7 @@ return(list(priorString,stanvars))
   checkmate::assert_double(df)
   checkmate::assert_double(scale)
   
-  priorString <- c(brms::prior(brms::lasso(df = 1, scale = 1), class ="b",nlpar = "a"),
+  priorString <- c(brms::prior(lasso(df = 1, scale = 1), class ="b",nlpar = "a"),
                    brms::prior(normal(0, 10), class = "b", nlpar = "b"))
   
   # stan variable for parsing
@@ -120,8 +122,8 @@ return(list(priorString,stanvars))
 #' @return list of the fitted models
 #' @noRd
 
-.fitbrmsModel <- function(fit,covarsVec,inicovarsVec=NULL,priorVar,warmup = 1000, iter = 2000, chains = 4,cores = 4,
-                        control = list(adapt_delta = 0.99, max_treedepth = 15),seed=1015){
+.fitbrmsModel <- function(fit,covarsVec,inicovarsVec=NULL,priorVar,warmup = 1000, iter = 2000, chains = 4,cores = 2,
+                          control = list(adapt_delta = 0.99, max_treedepth = 15),seed=1015){
   
   
   #Normalized covariate data
@@ -145,13 +147,13 @@ return(list(priorString,stanvars))
   brms_models <- list()
   
   brms_models <- suppressWarnings(lapply(brms_formulas,brms::brm,data = combData,family = stats::gaussian(),prior =priorVar[[1]],
-                         stanvars = priorVar[[2]],warmup = warmup, iter = iter, chains = chains,cores = cores,
-                         control = control,seed=seed))
-   names(brms_models) <- etaVector
-return(brms_models)    
+                                         stanvars = priorVar[[2]],warmup = warmup, iter = iter, chains = chains,cores = cores,
+                                         control = control,seed=seed))
+  names(brms_models) <- etaVector
+  return(brms_models)    
 }
-  
-  
+
+
 
 #' Create Summary data frame from the BRMS models
 #' 
@@ -161,25 +163,25 @@ return(brms_models)
 
 .brmSummarydf <- function(all_models){
 
-# Check if the model list is named   
+  # Check if the model list is named   
   
-checkmate::assert_list(all_models,min.len = 1,names = "named")
+  checkmate::assert_list(all_models,min.len = 1,names = "named")
   
-# Construct data frame of estimates by adding eta and covariate column 
+  # Construct data frame of estimates by adding eta and covariate column 
 
-dfsList <- a <- lapply(names(all_models),function(x) {
-  data.frame(eta=x,covariate= gsub("a_|b_","",rownames(summary(all_models[[x]])$fixed)),
-             summary(all_models[[x]])$fixed,row.names = NULL)})
+  dfsList <- a <- lapply(names(all_models),function(x) {
+    data.frame(eta=x,covariate= gsub("a_|b_","",rownames(summary(all_models[[x]])$fixed)),
+               summary(all_models[[x]])$fixed,row.names = NULL)})
 
-# Merge Estimates for all eta parameters
+  # Merge Estimates for all eta parameters
 
-summaryDf <- do.call("rbind", dfsList)
-summaryDf <- summaryDf[!(summaryDf$covariate=="Intercept"),]
+  summaryDf <- do.call("rbind", dfsList)
+  summaryDf <- summaryDf[!(summaryDf$covariate=="Intercept"),]
 
-return(summaryDf)
+  return(summaryDf)
 }
 
-
+tau0 <- NULL
 
 #' Create Horseshoe summary posterior estimates 
 #' @param fit compiled rxode2 nlmir2 model fit  
@@ -223,26 +225,25 @@ return(summaryDf)
 #'
 #' # Horseshoe summary posterior estimates:
 #'
-#' hsDf <- horseshoeSummardf(fit,covarsVec)
+#' #hsDf <- horseshoeSummardf(fit,covarsVec,cores=2)
+#' #brms sometimes may throw a Error in sink(type = “output”)
+#' #Issue Should be fixed by uninstalling and re-installing rstan
 #'
 #' }
-
-
 horseshoeSummardf <- function(fit,covarsVec,...){
   
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
   }
   checkmate::assert_character(covarsVec)
-  
   # Global shrinkage prior estimate
-  tau0 <- .calTau0 (fit,covarsVec,p0=2)
+  assignInMyNamespace("tau0", .calTau0 (fit,covarsVec,p0=2))
   # Get prior String
   priorString <- .horseshoePrior(tau0)
   # Fit BRMS models
   
   .horseshoeModels <-.fitbrmsModel(fit,covarsVec,priorVar = priorString,inicovarsVec=NULL,
-                                   warmup = 1000, iter = 2000, chains = 4,cores = 4,
+                                   warmup = 1000, iter = 2000, chains = 4,cores = 2,
                                    control = list(adapt_delta = 0.99, max_treedepth = 15),seed=1015)
   
   # Extract Summary of models
@@ -293,10 +294,10 @@ horseshoeSummardf <- function(fit,covarsVec,...){
 #'
 #' # Horseshoe summary posterior estimates:
 #'
-#' lassoDf <- lassoSummardf(fit,covarsVec,...)
-#'
+#' #lassoDf <- lassoSummardf(fit,covarsVec,cores=2)
+#' #brms sometimes may throw a Error in sink(type = “output”)
+#' #Issue Should be fixed by uninstalling and re-installing rstan
 #' }
-
 lassoSummardf <- function(fit,covarsVec,...){
   
   if (!inherits(fit, "nlmixr2FitCore")) {
@@ -310,8 +311,8 @@ lassoSummardf <- function(fit,covarsVec,...){
   # Fit BRMS models
   
   .lassoModels <-.fitbrmsModel(fit,covarsVec,priorVar = priorString,inicovarsVec=NULL,
-                                  warmup = 1000, iter = 2000, chains = 4,cores = 4,
-                                  control = list(adapt_delta = 0.99, max_treedepth = 15),seed=1015)
+                               warmup = 1000, iter = 2000, chains = 4,cores = 2,
+                               control = list(adapt_delta = 0.99, max_treedepth = 15),seed=1015)
   
   # Extract Summary of models
   lassoSummary <-  .brmSummarydf(.lassoModels)

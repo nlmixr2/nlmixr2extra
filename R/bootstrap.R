@@ -23,6 +23,13 @@ addConfboundsToVar <-
     unlist(res)
   }
 
+.buildModel <- function() {
+  .owd <- getwd()
+  on.exit(setwd(.owd))
+  try(source(file.path(devtools::package_file(), "build", "build.R")))
+  ""
+}
+
 #' Bootstrap nlmixr2 fit
 #'
 #' Bootstrap input dataset and rerun the model to get confidence bounds and aggregated parameters
@@ -78,6 +85,8 @@ addConfboundsToVar <-
 #'
 #' @return Nothing, called for the side effects; The original fit is
 #'   updated with the bootstrap confidence bands
+#'
+#' @eval .buildModel()
 #'
 #' @export
 #'
@@ -567,7 +576,7 @@ modelBootstrap <- function(fit,
     stop("cannot find the 'ID' column! aborting ...", call. = FALSE)
   }
 
-  ui <- fit$ui
+  ui <- fit$finalUiEnv
   fitMeth <- getFitMethod(fit)
 
   bootData <- vector(mode = "list", length = nboot)
@@ -693,10 +702,14 @@ modelBootstrap <- function(fit,
       currNumModels <- .env$mod_idx - 1
 
       if (currNumModels > nboot) {
+        modIdx <- .env$mod_idx-1
         cli::cli_alert_danger(
           cli::col_red(
-            "the model file already has {.env$mod_idx-1} models when max models is {nboot}; using only the first {nboot} model(s)"
-          )
+            paste0("the model file already has ", modIdx,
+                   " models when max models is ", nboot,
+                   "; using only the first ", nboot,
+                   "model(s)"
+          ))
         )
         return(list(modelsEnsembleLoaded[1:nboot], fitEnsembleLoaded[1:nboot]))
 
@@ -704,8 +717,13 @@ modelBootstrap <- function(fit,
       }
 
       else if (currNumModels == nboot) {
+        modIdx <- .env$mod_idx-1
         cli::col_red(
-          "the model file already has {.env$mod_idx-1} models when max models is {nboot}; loading from {nboot} models already saved on disk"
+          paste0("the model file already has ",
+                 modIdx-1,
+                 " models when max models is ",
+                 nboot, "; loading from ",
+                 nboot, " models already saved on disk")
         )
         return(list(modelsEnsembleLoaded, fitEnsembleLoaded))
 
@@ -743,7 +761,8 @@ modelBootstrap <- function(fit,
 
   modelsEnsemble <-
     lapply(bootData[.env$mod_idx:nboot], function(boot_data) {
-      cli::cli_h1("Running nlmixr2 for model index: {.env$mod_idx}")
+      modIdx <- .env$mod_idx
+      cli::cli_h1(paste0("Running nlmixr2 for model index: ", modIdx))
 
       fit <- tryCatch(
         {
@@ -788,7 +807,6 @@ modelBootstrap <- function(fit,
           ".rds"
         )
       )
-
       assign("mod_idx", .env$mod_idx + 1, .env)
     })
 
@@ -857,7 +875,6 @@ extractVars <- function(fitlist, id = "method") {
     res <- lapply(fitlist, function(x) {
       x[[id]]
     })
-
 
     if (!(id == "omega" ||
       id == "parFixedDf")) {
