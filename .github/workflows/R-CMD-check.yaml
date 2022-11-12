@@ -29,6 +29,7 @@ jobs:
       RSPM: ${{ matrix.config.rspm }}
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       _R_CHECK_FORCE_SUGGESTS_: false
+      R_KEEP_PKG_SOURCE: yes
 
     steps:
       - uses: actions/checkout@v3

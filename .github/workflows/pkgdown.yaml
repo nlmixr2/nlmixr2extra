@@ -7,6 +7,7 @@ on:
     branches: [main, master]
   release:
     types: [published]
+  workflow_dispatch:
 
 name: pkgdown
 
@@ -39,6 +40,7 @@ jobs:
             nlmixr2/rxode2
             nlmixr2/nlmixr2est
             nlmixr2/nlmixr2plot
+            local::.
           needs: website
 
       - name: Build site
