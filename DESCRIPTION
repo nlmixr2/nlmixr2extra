@@ -35,6 +35,7 @@ Imports:
     ggplot2,
     ggtext,
     lotri,
+    methods,
     nlme,
     nlmixr2est (>= 2.1.1),
     Rcpp,

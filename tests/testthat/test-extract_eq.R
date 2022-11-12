@@ -22,7 +22,7 @@ test_that("extract_eq, simple version", {
   )
 
   suppressMessages(
-    fit <- nlmixr2est::nlmixr(mod, data = nlmixr2data::theo_sd, est = "focei", control = nlmixr2::foceiControl(eval.max = 1, print = 0))
+    fit <- nlmixr2est::nlmixr(mod, data = nlmixr2data::theo_sd, est = "focei", control = nlmixr2est::foceiControl(eval.max = 1, print = 0))
   )
   expect_equal(
     extract_eq(fit),
@@ -86,27 +86,27 @@ test_that("extractEqHelper.(", {
   )
 })
 
-test_that("extractEqHelper.= and extractEqHelper.<-", {
+test_that("extractEqHelperAssign", {
   # ODE, space with multiple-character state ("abc")
   expect_equal(
-    `extractEqHelper.=`(str2lang("d/dt(abc) = d"), inModel = TRUE),
+    extractEqHelperAssign(str2lang("d/dt(abc) = d"), inModel = TRUE),
     "\\frac{d \\: abc}{dt} & = d"
   )
   # ODE, no space with single-character state ("a")
   expect_equal(
-    `extractEqHelper.=`(str2lang("d/dt(a) = b"), inModel = TRUE),
+    extractEqHelperAssign(str2lang("d/dt(a) = b"), inModel = TRUE),
     "\\frac{da}{dt} & = b"
   )
   expect_equal(
-    `extractEqHelper.=`(str2lang("a = b"), inModel = TRUE),
+    extractEqHelperAssign(str2lang("a = b"), inModel = TRUE),
     "a & = b"
   )
   expect_equal(
-    `extractEqHelper.<-`(str2lang("a <- b"), inModel = TRUE),
+    extractEqHelperAssign(str2lang("a <- b"), inModel = TRUE),
     "a & = b"
   )
   expect_equal(
-    `extractEqHelper.<-`(str2lang("a <- b"), inModel = FALSE),
+    extractEqHelperAssign(str2lang("a <- b"), inModel = FALSE),
     character()
   )
 })

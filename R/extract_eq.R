@@ -186,7 +186,10 @@ isOdeAssign <- function(x) {
 
 # @param alignment gives the text to provide before the equal sign to align on
 #   the sign
-"extractEqHelper.<-" <- function(x, ..., inModel, alignment = "&", name) {
+# This function is named `extractEqHelperAssign` instead of `extractEqHelper.<-`
+# to fix an R CMD check issue.  It is used via the `extractEqHelper.default`
+# function.
+extractEqHelperAssign <- function(x, ..., inModel, alignment = "&", name) {
   if (inModel) {
     lhsForce <- NULL
     rhsForce <- NULL
@@ -214,10 +217,6 @@ isOdeAssign <- function(x) {
     ret <- character()
   }
   ret
-}
-
-"extractEqHelper.=" <- function(x, ..., inModel, name) {
-  `extractEqHelper.<-`(x, ..., inModel = inModel)
 }
 
 latexOpMap <-
@@ -449,5 +448,15 @@ extractEqHelper.if <- function(x, ..., inModel, alignment, indent = 0L, firstIf 
 }
 
 extractEqHelper.default <- function(x, ..., inModel) {
-  stop("cannot handle class, please report a bug: ", class(x)[1]) # nocov
+  if (inherits(x, "<-") | inherits(x, "=")) {
+    # The assignment classes go via extractEqHelper.default to fix an R CMD
+    # check issue:
+    #   Warning:     'extractEqHelper.<-'
+    #     The argument of a replacement function which corresponds to the right
+    #     hand side must be named 'value'.
+    ret <- extractEqHelperAssign(x, ..., inModel = inModel)
+  } else {
+    stop("cannot handle class, please report a bug: ", class(x)[1]) # nocov
+  }
+  ret
 }
