@@ -77,4 +77,5 @@ fit <- nlmixr2(one.compartment, data = nlmixr2data::theo_sd,  est = "saem", cont
 # In a real example, nboot would likely be 500 or more.
 fitBoot <- suppressMessages(bootstrapFit(fit, nboot = 5))
 fitBoot
+
 ```
