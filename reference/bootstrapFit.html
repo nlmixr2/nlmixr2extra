@@ -184,7 +184,7 @@ updated with the bootstrap confidence bands</p>
 <span class="r-in"><span>  <span class="op">}</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nlmixr2est/man/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">one.cmt</span>, <span class="fu">nlmixr2data</span><span class="fu">::</span><span class="va"><a href="https://nlmixr2.github.io/nlmixr2data/reference/theo_sd.html" class="external-link">theo_sd</a></span>, <span class="st">"focei"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">one.cmt</span>, <span class="fu">nlmixr2data</span><span class="fu">::</span><span class="va"><a href="https://nlmixr2.github.io/nlmixr2data/reference/theo_sd.html" class="external-link">theo_sd</a></span>, <span class="st">"focei"</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
@@ -207,11 +207,11 @@ updated with the bootstrap confidence bands</p>
 <span class="r-in"><span><span class="co"># Note the boostrap standard error and variance/covariance matrix is retained.</span></span></span>
 <span class="r-in"><span><span class="co"># If you wish to switch back you can change the covariance matrix by</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="fu">nlmixr2est</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/nlmixr2est/man/setCov.html" class="external-link">setCov</a></span><span class="op">(</span><span class="va">fit</span>,<span class="st">"r,s"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">nlmixr2est</span><span class="fu">::</span><span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/setCov.html" class="external-link">setCov</a></span><span class="op">(</span><span class="va">fit</span>,<span class="st">"r,s"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># And change it back again</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="fu">nlmixr2est</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/nlmixr2est/man/setCov.html" class="external-link">setCov</a></span><span class="op">(</span><span class="va">fit</span>,<span class="st">"boot50"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">nlmixr2est</span><span class="fu">::</span><span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/setCov.html" class="external-link">setCov</a></span><span class="op">(</span><span class="va">fit</span>,<span class="st">"boot50"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># This change will affect any simulations with uncertainty in their parameters</span></span></span>
 <span class="r-in"><span></span></span>
@@ -265,7 +265,7 @@ updated with the bootstrap confidence bands</p>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 5952</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Updated original fit object <span style="color: #BBBB00;">fit</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> resuming bootstrap data sampling using data at ./nlmixr2BootstrapCache_fit_1c9f8c0b9a48e11bf7de1ef5ea2bb675</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> resuming bootstrap model fitting using data and models stored at /tmp/RtmpW1Apbk/file3084567de3a8/nlmixr2BootstrapCache_fit_1c9f8c0b9a48e11bf7de1ef5ea2bb675</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> resuming bootstrap model fitting using data and models stored at /tmp/RtmpH9rbQS/file40c4316c7182/nlmixr2BootstrapCache_fit_1c9f8c0b9a48e11bf7de1ef5ea2bb675</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Running nlmixr2 for model index: 6</span> <span style="color: #00BBBB;">──────────────────────────────────────────</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
@@ -277,7 +277,7 @@ updated with the bootstrap confidence bands</p>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 5952</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Updated original fit object <span style="color: #BBBB00;">fit</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> resuming bootstrap data sampling using data at ./nlmixr2BootstrapCache_fit_1c9f8c0b9a48e11bf7de1ef5ea2bb675</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> resuming bootstrap model fitting using data and models stored at /tmp/RtmpW1Apbk/file3084567de3a8/nlmixr2BootstrapCache_fit_1c9f8c0b9a48e11bf7de1ef5ea2bb675</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> resuming bootstrap model fitting using data and models stored at /tmp/RtmpH9rbQS/file40c4316c7182/nlmixr2BootstrapCache_fit_1c9f8c0b9a48e11bf7de1ef5ea2bb675</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Running nlmixr2 for model index: 8</span> <span style="color: #00BBBB;">──────────────────────────────────────────</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
@@ -457,7 +457,7 @@ updated with the bootstrap confidence bands</p>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 5952</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Updated original fit object <span style="color: #BBBB00;">fit</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> resuming bootstrap data sampling using data at ./nlmixr2BootstrapCache_fit_1c9f8c0b9a48e11bf7de1ef5ea2bb675</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> resuming bootstrap model fitting using data and models stored at /tmp/RtmpW1Apbk/file3084567de3a8/nlmixr2BootstrapCache_fit_1c9f8c0b9a48e11bf7de1ef5ea2bb675</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> resuming bootstrap model fitting using data and models stored at /tmp/RtmpH9rbQS/file40c4316c7182/nlmixr2BootstrapCache_fit_1c9f8c0b9a48e11bf7de1ef5ea2bb675</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Loading/Calculating Δ Objective function</span> <span style="color: #00BBBB;">────────────────────────────────────</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
@@ -691,7 +691,7 @@ updated with the bootstrap confidence bands</p>
 <span class="r-in"><span>  <span class="op">}</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nlmixr2est/man/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">one.cmt</span>, <span class="fu">nlmixr2data</span><span class="fu">::</span><span class="va"><a href="https://nlmixr2.github.io/nlmixr2data/reference/theo_sd.html" class="external-link">theo_sd</a></span>, <span class="st">"focei"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">one.cmt</span>, <span class="fu">nlmixr2data</span><span class="fu">::</span><span class="va"><a href="https://nlmixr2.github.io/nlmixr2data/reference/theo_sd.html" class="external-link">theo_sd</a></span>, <span class="st">"focei"</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
@@ -714,11 +714,11 @@ updated with the bootstrap confidence bands</p>
 <span class="r-in"><span><span class="co"># Note the boostrap standard error and variance/covariance matrix is retained.</span></span></span>
 <span class="r-in"><span><span class="co"># If you wish to switch back you can change the covariance matrix by</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="fu">nlmixr2est</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/nlmixr2est/man/setCov.html" class="external-link">setCov</a></span><span class="op">(</span><span class="va">fit</span>,<span class="st">"r,s"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">nlmixr2est</span><span class="fu">::</span><span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/setCov.html" class="external-link">setCov</a></span><span class="op">(</span><span class="va">fit</span>,<span class="st">"r,s"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># And change it back again</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="fu">nlmixr2est</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/nlmixr2est/man/setCov.html" class="external-link">setCov</a></span><span class="op">(</span><span class="va">fit</span>,<span class="st">"boot50"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">nlmixr2est</span><span class="fu">::</span><span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/setCov.html" class="external-link">setCov</a></span><span class="op">(</span><span class="va">fit</span>,<span class="st">"boot50"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># This change will affect any simulations with uncertainty in their parameters</span></span></span>
 <span class="r-in"><span></span></span>
@@ -750,7 +750,7 @@ updated with the bootstrap confidence bands</p>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 5952</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Updated original fit object <span style="color: #BBBB00;">fit</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> resuming bootstrap data sampling using data at ./nlmixr2BootstrapCache_fit_1c9f8c0b9a48e11bf7de1ef5ea2bb675</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> resuming bootstrap model fitting using data and models stored at /tmp/RtmpW1Apbk/file30843a32bf53/nlmixr2BootstrapCache_fit_1c9f8c0b9a48e11bf7de1ef5ea2bb675</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> resuming bootstrap model fitting using data and models stored at /tmp/RtmpH9rbQS/file40c467d73cbe/nlmixr2BootstrapCache_fit_1c9f8c0b9a48e11bf7de1ef5ea2bb675</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Running nlmixr2 for model index: 6</span> <span style="color: #00BBBB;">──────────────────────────────────────────</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
@@ -762,7 +762,7 @@ updated with the bootstrap confidence bands</p>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 5952</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Updated original fit object <span style="color: #BBBB00;">fit</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> resuming bootstrap data sampling using data at ./nlmixr2BootstrapCache_fit_1c9f8c0b9a48e11bf7de1ef5ea2bb675</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> resuming bootstrap model fitting using data and models stored at /tmp/RtmpW1Apbk/file30843a32bf53/nlmixr2BootstrapCache_fit_1c9f8c0b9a48e11bf7de1ef5ea2bb675</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> resuming bootstrap model fitting using data and models stored at /tmp/RtmpH9rbQS/file40c467d73cbe/nlmixr2BootstrapCache_fit_1c9f8c0b9a48e11bf7de1ef5ea2bb675</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Running nlmixr2 for model index: 8</span> <span style="color: #00BBBB;">──────────────────────────────────────────</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>  </span>
@@ -942,7 +942,7 @@ updated with the bootstrap confidence bands</p>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> → compress origData in nlmixr2 object, save 5952</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Updated original fit object <span style="color: #BBBB00;">fit</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> resuming bootstrap data sampling using data at ./nlmixr2BootstrapCache_fit_1c9f8c0b9a48e11bf7de1ef5ea2bb675</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> resuming bootstrap model fitting using data and models stored at /tmp/RtmpW1Apbk/file30843a32bf53/nlmixr2BootstrapCache_fit_1c9f8c0b9a48e11bf7de1ef5ea2bb675</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> resuming bootstrap model fitting using data and models stored at /tmp/RtmpH9rbQS/file40c467d73cbe/nlmixr2BootstrapCache_fit_1c9f8c0b9a48e11bf7de1ef5ea2bb675</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Loading/Calculating Δ Objective function</span> <span style="color: #00BBBB;">────────────────────────────────────</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
