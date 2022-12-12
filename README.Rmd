@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 # nlmixr2extra
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/nlmixr2/nlmixr2extra/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/nlmixr2/nlmixr2extra/actions/workflows/R-CMD-check.yaml)
+[![R-CMD-check](https://github.com/nlmixr2/nlmixr2extra/workflows/R-CMD-check/badge.svg)](https://github.com/nlmixr2/nlmixr2extra/actions)
 [![Codecov test coverage](https://codecov.io/gh/nlmixr2/nlmixr2extra/branch/main/graph/badge.svg)](https://app.codecov.io/gh/nlmixr2/nlmixr2extra?branch=main)
 [![CRAN version](http://www.r-pkg.org/badges/version/nlmixr2extra)](https://cran.r-project.org/package=nlmixr2extra)
 [![CRAN total downloads](https://cranlogs.r-pkg.org/badges/grand-total/nlmixr2extra)](https://cran.r-project.org/package=nlmixr2extra)
@@ -51,9 +51,9 @@ library(nlmixr2extra)
 # The basic model consists of an ini block that has initial estimates
 one.compartment <- function() {
   ini({
-    tka <- log(1.6) ; label("log Ka")
-    tcl <- log(2.7) ; label("Log Cl")
-    tv <- log(32) ; label("Log V")
+    tka <- 0.45 # Log Ka
+    tcl <- 1 # Log Cl
+    tv <- 3.45    # Log V
     eta.ka ~ 0.6
     eta.cl ~ 0.3
     eta.v ~ 0.1
@@ -64,17 +64,18 @@ one.compartment <- function() {
     ka <- exp(tka + eta.ka)
     cl <- exp(tcl + eta.cl)
     v <- exp(tv + eta.v)
-    d/dt(depot) <- -ka * depot
-    d/dt(center) <- ka * depot - cl / v * center
-    cp <- center / v
+    d/dt(depot) = -ka * depot
+    d/dt(center) = ka * depot - cl / v * center
+    cp = center / v
     cp ~ add(add.sd)
   })
 }
 
-# The fit is performed by the function nlmixr/nlmix2 specifying the model, data and estimate
-fit <- nlmixr2(one.compartment, data = nlmixr2data::theo_sd,  est = "saem", control = saemControl(print=0))
+# The fit is performed by the function nlmixr/nlmixr2 specifying the model, data
+# and estimate (in a real estimate, nBurn and nEm would be much higher.)
+fit <- nlmixr2(one.compartment, theo_sd,  est="saem", saemControl(print=0, nBurn = 10, nEm = 20))
 
-# In a real example, nboot would likely be 500 or more.
-fitBoot <- suppressMessages(bootstrapFit(fit, nboot = 5))
-fitBoot
+# In a real bootstrap, nboot would be much higher.
+fit2 <- suppressMessages(bootstrapFit(fit, nboot = 5))
+fit2
 ```
