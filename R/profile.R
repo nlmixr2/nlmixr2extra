@@ -1,5 +1,4 @@
 profile.nlmixr2FitData <- function(fitted, ..., which = NULL, maxpts = 10, ofvIncrease = 3.84, normQuantile = 1.96, rse_theta, tol = 0.001, ignoreBounds = FALSE, quiet = TRUE) {
-  browser()
   if (is.null(which)) {
     which <- names(fixef(fitted))
   } else {
@@ -70,10 +69,11 @@ profile.nlmixr2FitData <- function(fitted, ..., which = NULL, maxpts = 10, ofvIn
         # than focei?
         newFit <- try(nlmixr(ini(fittedFix, newEst), est = "focei", control = list(print = 0)))
         if (inherits(newFit, "try-error")) {
-          # TODO: Work around failed fits
-          stop("Fit failed")
+          # Stop trying with failed fits
+          cli::cli_alert_danger(sprintf("Stopping search for %s in %s direction because the fit failed at an estimate of %g", which, boundCol, currentEst))
+          found <- TRUE
         } else {
-          ret <- rbind(ret, profileNlmixr2FitDataRet(fitted = newFit, which = which, rowname = nrow(ret) + 1))
+          ret <- rbind(ret, profileNlmixr2FitDataRet(fitted = newFit, which = which, rowname = nrow(ret)))
           ret <- ret[order(ret[[which]]), ]
           currentEstList <- profileNlmixr2FitDataNewEst(estimates = ret, which = which, direction = direction, bound = bound, ofvIncrease = ofvIncrease, tol = tol)
           if (is.character(currentEstList$found)) {
@@ -84,6 +84,7 @@ profile.nlmixr2FitData <- function(fitted, ..., which = NULL, maxpts = 10, ofvIn
             found <- currentEstList$found
           }
         }
+        browser()
       }
     }
   }
@@ -115,31 +116,76 @@ profileNlmixr2FitDataRet <- function(fitted, which, rowname = 0) {
 #'
 #' @param estimates A data.frame with the parameter estimates
 profileNlmixr2FitDataNewEst <- function(estimates, which, direction, bound, ofvIncrease, tol, method = "linapprox") {
-  minOFV <- min(estimates$OFV, na.rm = TRUE)
-  minRow <- which(estimates$OFV %in% minOFV)
-  maskDirection <- !is.na(estimates$OFV) & estimates[[which]] <= estimates[[which]][minRow]
-  dOFV <- estimates$OFV[maskDirection] - minOFV
-  # Estimates in the correct direction
-  estDir <- estimates[[which]][maskDirection]
-  if (all(dOFV < ofvIncrease)) {
-    # Expand the search
-    newEst <- estimates[[which]][minRow] + direction*2*abs(diff(range(estDir)))
-    found <- FALSE
+  if (nrow(estimates) == 1) {
+    newEst <- estimates[[which]][1] + direction*normQuantile*rse_theta[which]/100*abs(estimates[[which]][1])
   } else {
-    # Check that the OFV is monotonic
-    monotonic <- length(unique(sign(diff(dOFV)/diff(estDir)))) == 1
-    if (!monotonic) {
-      newEst <- NA
-      found <- "OFV is not monotonic"
-    } else if (method == "linapprox") {
-      newEst <- approx(x = dOFV, y = estDir, xout = ofvIncrease)$y
+    minOFV <- min(estimates$OFV, na.rm = TRUE)
+    # [1] is required on which in case there are equal OFVs in some scenarios
+    minRow <- which(estimates$OFV %in% minOFV)[1]
+    maskDirection <- !is.na(estimates$OFV) & estimates[[which]] <= estimates[[which]][minRow]
+    dOFV <- estimates$OFV[maskDirection] - minOFV
+    # Estimates in the correct direction
+    estDir <- estimates[[which]][maskDirection]
+    if (all(dOFV < ofvIncrease)) {
+      # Expand the search
+      if (length(estDir) == 1) {
+        distance <- abs(estimates[[which]][which(rownames(estimates) == "0")] - estimates[[which]][minRow])
+      } else {
+        distance <- abs(diff(range(estDir)))
+      }
+      newEst <- estimates[[which]][minRow] + direction*2*distance
+      found <- FALSE
     } else {
-      cli::cli_abort(sprintf("method %s is not implemented", method))
+      # Check that the OFV is monotonic
+      monotonic <- length(unique(sign(diff(dOFV)/diff(estDir)))) == 1
+      if (!monotonic) {
+        newEst <- NA
+        found <- "OFV is not monotonic"
+      } else if (method == "linapprox") {
+        newEst <- approx(x = dOFV, y = estDir, xout = ofvIncrease)$y
+      } else {
+        cli::cli_abort(sprintf("method %s is not implemented", method))
+      }
     }
-    if (!is.na(newEst)) {
-      estAbove <- min(estimates[[which]][estimates[[which]] > newEst])
-      estBelow <- min(estimates[[which]][estimates[[which]] < newEst])
-      found <- abs((estAbove - estBelow)/estBelow) < tol
+  }
+
+  # Check if the estimation is complete
+  if (!is.na(newEst)) {
+    maskEstAbove <- estimates[[which]] > newEst
+    maskEstBelow <- estimates[[which]] < newEst
+    # Ensure that the bounds are not exceeded
+    if (direction < 0 & newEst < bound) {
+      newEst <- bound
+      maskEstBelow <- estimates[[which]] <= newEst
+    } else if (direction > 0 & newEst > bound) {
+      newEst <- bound
+      maskEstAbove <- estimates[[which]] >= newEst
+    }
+
+    if (bound %in% estimates[[which]] & newEst == bound) {
+      # Avoid the bound, if we've already tried it
+      newEst <- bound - direction*(bound*tol)/2
+    }
+    if (any(estimates[[which]] %in% newEst)) {
+      found <- TRUE
+    } else if (any(maskEstAbove) & any(maskEstBelow)) {
+      # If we're interpolating, check the tolerance
+      estAbove <- min(estimates[[which]][maskEstAbove])
+      estBelow <- min(estimates[[which]][maskEstBelow])
+
+      estCloserToZero <- ifelse(abs(estAbove) < abs(estBelow), estAbove, estBelow)
+      if (estAbove == 0 | estBelow == 0) {
+        stop("TODO: Handle absolute tolerance when values are at or near zero")
+      } else {
+        found <- abs((estAbove - estBelow)/estCloserToZero) < tol
+      }
+    } else {
+      # If we're extrapolating, no need to check the tolerance
+      found <- FALSE
+    }
+    if (!found) {
+      # TODO: Make the minimum step size half the tolerance
+      browser()
     }
   }
   list(
