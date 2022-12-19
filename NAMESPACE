@@ -2,6 +2,7 @@
 
 S3method(bootplot,nlmixr2FitCore)
 S3method(print,nlmixr2BoostrapSummary)
+S3method(profile,nlmixr2FitData)
 export(adaptivelassoCoefficients)
 export(addCatCovariates)
 export(addorremoveCovariate)
