@@ -36,9 +36,7 @@ return data frame of final lasso coefficients
 Return Final lasso coefficients after finding optimal t
 }
 \examples{
-
 \donttest{
-
 one.cmt <- function() {
   ini({
     ## You may label each parameter with a comment

@@ -21,9 +21,7 @@ Horse shoe Summary data frame of all covariates
 Create Lasso summary posterior estimates
 }
 \examples{
-
 \donttest{
-
 one.cmt <- function() {
   ini({
     ## You may label each parameter with a comment

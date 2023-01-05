@@ -44,7 +44,6 @@ selection method and "resBck" for the backward selection method.
 Stepwise Covariate Model-selection (SCM) method
 }
 \examples{
-
 \donttest{
 
 one.cmt <- function() {
@@ -97,9 +96,7 @@ auto3 <- covarSearchAuto(fit, varsVec = c("ka", "cl"), covarsVec = c("WT"),
                 catvarsVec=  c("SEX"), restart = TRUE,
                 searchType = "forward")
 })
-
 }
-
 }
 \author{
 Vipul Mann, Matthew Fidler, Vishal Sarsani
