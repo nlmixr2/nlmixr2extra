@@ -28,7 +28,6 @@ d$SEX[d$ID<=6] <-1
 
 covarsVec <- c("WT")
 
-
 # Normalized covariate (replaced)
 df1 <- normalizedData(d,covarsVec,replace=TRUE)
 

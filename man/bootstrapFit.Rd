@@ -112,11 +112,8 @@ nlmixr2est::setCov(fit,"boot50")
 # This change will affect any simulations with uncertainty in their parameters
 
 # You may also do a chi-square diagnostic plot check for the bootstrap with
-
 bootplot(fit)
-
 })
-
 }
 }
 \author{

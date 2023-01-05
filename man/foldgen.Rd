@@ -14,21 +14,18 @@ foldgen(data, nfold = 5, stratVar = NULL)
 \item{stratVar}{Stratification Variable. Default is NULL and ID is used for CV}
 }
 \value{
-return dataframe with the fold column attached
+return data.frame with the fold column attached
 }
 \description{
 Stratified cross-validation fold generator function inspired from the caret
 }
 \examples{
-
 \donttest{
 d <- nlmixr2data::theo_sd
 d$SEX <-0
 d$SEX[d$ID<=6] <-1
 
-
 covarsVec <- c("WT")
-
 
 # Stratified cross-validation data with CMT
 df1 <- foldgen(d,nfold=5,stratVar="CMT")
@@ -38,5 +35,5 @@ df2 <- foldgen(d,nfold=5,stratVar=NULL)
 }
 }
 \author{
-Vishal Sarsani , caret
+Vishal Sarsani, caret
 }
