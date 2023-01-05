@@ -283,73 +283,49 @@ addConfboundsToVar <- function(var, confLower, confUpper, sigdig = 3) {
 #' Bootstrap input dataset and rerun the model to get confidence bounds and aggregated parameters
 #'
 #' @param fit the nlmixr2 fit object
-#'
 #' @param nboot an integer giving the number of bootstrapped models to
 #'   be fit; default value is 200
-#'
 #' @param nSampIndiv an integer specifying the number of samples in
 #'   each bootstrapped sample; default is the number of unique
 #'   subjects in the original dataset
-#'
 #' @param stratVar Variable in the original dataset to stratify on;
 #'   This is useful to distinguish between sparse and full sampling
 #'   and other features you may wish to keep distinct in your
 #'   bootstrap
-#'
 #' @param pvalues a vector of pvalues indicating the probability of
 #'   each subject to get selected; default value is NULL implying that
 #'   probability of each subject is the same
-#'
 #' @param restart a boolean that indicates if a previous session has
 #'   to be restarted; default value is FALSE
-#'
 #' @param fitName Name of fit to be saved (by default the variable name supplied to fit)
-#'
 #' @param stdErrType This gives the standard error type for the
 #'   updated standard errors; The current possibilities are:
 #'   `"perc"` which gives the standard errors by percentiles
 #'   (default) or `"se"` which gives the standard errors by the
 #'   traditional formula.
-#'
 #' @param ci Confidence interval level to calculate.  Default is 0.95
 #'   for a 95 percent confidence interval
-#'
 #' @param plotHist A boolean indicating if a histogram plot to assess
 #'   how well the bootstrap is doing.  By default this is turned off (`FALSE`)
-#'
 #' @param pvalues a vector of pvalues indicating the probability of
 #'   each subject to get selected; default value is `NULL` implying that
 #'   probability of each subject is the same
-#'
 #' @param restart A boolean to try to restart an interrupted or
 #'   incomplete boostrap.  By default this is `FALSE`
-#'
 #' @param fitName is the fit name that is used for the name of the
 #'   boostrap files.  By default it is the fit provided though it
 #'   could be something else.
-#'
-#'
 #' @author Vipul Mann, Matthew Fidler
-#'
 #' @return Nothing, called for the side effects; The original fit is
 #'   updated with the bootstrap confidence bands
-#'
 #' @export
-#'
 #' @examples
-#'
 #' \donttest{
-#'
 #' one.cmt <- function() {
 #'   ini({
-#'     ## You may label each parameter with a comment
-#'     tka <- 0.45 # Log Ka
-#'     tcl <- 1 # Log Cl
-#'     ## This works with interactive models
-#'     ## You may also label the preceding line with label("label text")
-#'     tv <- 3.45
-#'     label("log V")
-#'     ## the label("Label name") works with all models
+#'     tka <- 0.45; label("Ka")
+#'     tcl <- 1; label("Cl")
+#'     tv <- 3.45; label("log V")
 #'     eta.ka ~ 0.6
 #'     eta.cl ~ 0.3
 #'     eta.v ~ 0.1
@@ -370,9 +346,9 @@ addConfboundsToVar <- function(var, confLower, confUpper, sigdig = 3) {
 #' bootstrapFit(fit, nboot = 5, restart = TRUE) # overwrites any of the existing data or model files
 #' bootstrapFit(fit, nboot = 7) # resumes fitting using the stored data and model files
 #'
-#' # Note this resumes because the total number of bootstrap samples is not 50
+#' # Note this resumes because the total number of bootstrap samples is not 10
 #'
-#' bootstrapFit(fit, nboot=50)
+#' bootstrapFit(fit, nboot=10)
 #'
 #' # Note the boostrap standard error and variance/covariance matrix is retained.
 #' # If you wish to switch back you can change the covariance matrix by
@@ -381,7 +357,7 @@ addConfboundsToVar <- function(var, confLower, confUpper, sigdig = 3) {
 #'
 #' # And change it back again
 #'
-#' nlmixr2est::setCov(fit,"boot50")
+#' nlmixr2est::setCov(fit,"boot10")
 #'
 #' # This change will affect any simulations with uncertainty in their parameters
 #'

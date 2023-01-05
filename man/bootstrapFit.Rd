@@ -63,19 +63,12 @@ updated with the bootstrap confidence bands
 Bootstrap input dataset and rerun the model to get confidence bounds and aggregated parameters
 }
 \examples{
-
 \donttest{
-
 one.cmt <- function() {
   ini({
-    ## You may label each parameter with a comment
-    tka <- 0.45 # Log Ka
-    tcl <- 1 # Log Cl
-    ## This works with interactive models
-    ## You may also label the preceding line with label("label text")
-    tv <- 3.45
-    label("log V")
-    ## the label("Label name") works with all models
+    tka <- 0.45; label("Ka")
+    tcl <- 1; label("Cl")
+    tv <- 3.45; label("log V")
     eta.ka ~ 0.6
     eta.cl ~ 0.3
     eta.v ~ 0.1
@@ -96,9 +89,9 @@ withr::with_tempdir({ # Run example in temp dir
 bootstrapFit(fit, nboot = 5, restart = TRUE) # overwrites any of the existing data or model files
 bootstrapFit(fit, nboot = 7) # resumes fitting using the stored data and model files
 
-# Note this resumes because the total number of bootstrap samples is not 50
+# Note this resumes because the total number of bootstrap samples is not 10
 
-bootstrapFit(fit, nboot=50)
+bootstrapFit(fit, nboot=10)
 
 # Note the boostrap standard error and variance/covariance matrix is retained.
 # If you wish to switch back you can change the covariance matrix by
@@ -107,7 +100,7 @@ nlmixr2est::setCov(fit,"r,s")
 
 # And change it back again
 
-nlmixr2est::setCov(fit,"boot50")
+nlmixr2est::setCov(fit,"boot10")
 
 # This change will affect any simulations with uncertainty in their parameters
 
