@@ -22,7 +22,7 @@ Create Horseshoe summary posterior estimates
 }
 \examples{
 
-\donttest{
+\dontrun{
 
 one.cmt <- function() {
   ini({

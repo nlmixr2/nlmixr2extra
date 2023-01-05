@@ -204,7 +204,7 @@
 #' @export
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' one.cmt <- function() {
 #'   ini({
 #'     ## You may label each parameter with a comment
@@ -377,7 +377,7 @@ lassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,
 #' @export
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' one.cmt <- function() {
 #'   ini({
 #'     ## You may label each parameter with a comment
@@ -499,7 +499,7 @@ adaptivelassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constrain
 #' @export
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' one.cmt <- function() {
 #'   ini({
 #'     ## You may label each parameter with a comment
@@ -630,7 +630,7 @@ regularmodel <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,
 #' @export
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' one.cmt <- function() {
 #'   ini({
 #'     ## You may label each parameter with a comment

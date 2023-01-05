@@ -164,7 +164,7 @@ tau0 <- NULL
 #'
 #' @examples
 #'
-#' \donttest{
+#' \dontrun{
 #'
 #' one.cmt <- function() {
 #'   ini({
@@ -229,7 +229,7 @@ horseshoeSummardf <- function(fit,covarsVec,...){
 #' @author  Vishal Sarsani, Christian Bartels
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' one.cmt <- function() {
 #'   ini({
 #'     ## You may label each parameter with a comment

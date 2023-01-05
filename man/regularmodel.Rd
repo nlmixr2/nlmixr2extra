@@ -39,7 +39,7 @@ return fit of the selected lasso coefficients
 Regular lasso model
 }
 \examples{
-\donttest{
+\dontrun{
 one.cmt <- function() {
   ini({
     ## You may label each parameter with a comment
