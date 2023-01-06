@@ -153,28 +153,21 @@ lasso <- function(...){}
 tau0 <- NULL
 
 #' Create Horseshoe summary posterior estimates
+#'
 #' @param fit compiled rxode2 nlmir2 model fit
 #' @param covarsVec  character vector of covariates that need to be added
 #' @param ...   other parameters passed to brm(): warmup = 1000, iter = 2000, chains = 4, cores = 4,
 #'  control = list(adapt_delta = 0.99, max_treedepth = 15)
 #' @return Horse shoe Summary data frame of all covariates
-#'
 #' @export
 #' @author  Vishal Sarsani, Christian Bartels
-#'
 #' @examples
-#'
 #' \dontrun{
-#'
 #' one.cmt <- function() {
 #'   ini({
-#'     ## You may label each parameter with a comment
-#'     tka <- 0.45 # Log Ka
-#'     tcl <- log(c(0, 2.7, 100)) # Log Cl
-#'     ## This works with interactive models
-#'     ## You may also label the preceding line with label("label text")
-#'     tv <- 3.45; label("log V")
-#'     ## the label("Label name") works with all models
+#'     tka <- 0.45; label("Ka")
+#'     tcl <- log(c(0, 2.7, 100)); label("Cl")
+#'     tv <- 3.45; label("V")
 #'     eta.ka ~ 0.6
 #'     eta.cl ~ 0.3
 #'     eta.v ~ 0.1
@@ -197,7 +190,6 @@ tau0 <- NULL
 #' #hsDf <- horseshoeSummardf(fit,covarsVec,cores=2)
 #' #brms sometimes may throw a Error in sink(type = “output”)
 #' #Issue Should be fixed by uninstalling and re-installing rstan
-#'
 #' }
 horseshoeSummardf <- function(fit,covarsVec,...){
   if (!inherits(fit, "nlmixr2FitCore")) {
@@ -232,13 +224,9 @@ horseshoeSummardf <- function(fit,covarsVec,...){
 #' \dontrun{
 #' one.cmt <- function() {
 #'   ini({
-#'     ## You may label each parameter with a comment
-#'     tka <- 0.45 # Log Ka
-#'     tcl <- log(c(0, 2.7, 100)) # Log Cl
-#'     ## This works with interactive models
-#'     ## You may also label the preceding line with label("label text")
-#'     tv <- 3.45; label("log V")
-#'     ## the label("Label name") works with all models
+#'     tka <- 0.45; label("Ka")
+#'     tcl <- log(c(0, 2.7, 100)); label("Cl")
+#'     tv <- 3.45; label("V")
 #'     eta.ka ~ 0.6
 #'     eta.cl ~ 0.3
 #'     eta.v ~ 0.1
@@ -263,7 +251,6 @@ horseshoeSummardf <- function(fit,covarsVec,...){
 #' #Issue Should be fixed by uninstalling and re-installing rstan
 #' }
 lassoSummardf <- function(fit,covarsVec,...){
-
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
   }

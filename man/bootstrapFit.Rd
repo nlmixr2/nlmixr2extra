@@ -68,7 +68,7 @@ one.cmt <- function() {
   ini({
     tka <- 0.45; label("Ka")
     tcl <- 1; label("Cl")
-    tv <- 3.45; label("log V")
+    tv <- 3.45; label("V")
     eta.ka ~ 0.6
     eta.cl ~ 0.3
     eta.v ~ 0.1
