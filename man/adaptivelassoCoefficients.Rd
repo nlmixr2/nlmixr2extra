@@ -36,7 +36,7 @@ return data frame of final lasso coefficients
 Return Adaptive lasso coefficients after finding optimal t
 }
 \examples{
-\dontrun{
+\donttest{
 one.cmt <- function() {
   ini({
     tka <- 0.45; label("Ka")
@@ -62,7 +62,8 @@ d$SEX[d$ID<=6] <-1
 fit <-
  nlmixr2(
    one.cmt, d,
-   est = "focei", control = nlmixr2est::foceiControl(print = 0)
+   est = "saem",
+   control = list(print = 0)
  )
 varsVec <- c("ka","cl","v")
 covarsVec <- c("WT")

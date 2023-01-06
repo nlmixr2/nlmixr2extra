@@ -39,7 +39,7 @@ return fit of the selected lasso coefficients
 Regular lasso model
 }
 \examples{
-\dontrun{
+\donttest{
 one.cmt <- function() {
   ini({
     tka <- 0.45; label("Ka")
@@ -62,11 +62,10 @@ d <- nlmixr2data::theo_sd
 d$SEX <-0
 d$SEX[d$ID<=6] <-1
 
-fit <- nlmixr2(one.cmt, d, "focei")
+fit <- nlmixr2(one.cmt, d, est = "saem", control = list(print = 0))
 varsVec <- c("ka","cl","v")
 covarsVec <- c("WT")
 catvarsVec <- c("SEX")
-
 
 # Model fit with regular lasso coefficients:
 

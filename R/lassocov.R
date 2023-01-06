@@ -204,7 +204,7 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' one.cmt <- function() {
 #'   ini({
 #'     tka <- 0.45; label("Ka")
@@ -227,7 +227,7 @@
 #' d$SEX <-0
 #' d$SEX[d$ID<=6] <-1
 #'
-#' fit <- nlmixr2(one.cmt, d, "focei")
+#' fit <- nlmixr2(one.cmt, d, est = "saem", control = list(print = 0))
 #' varsVec <- c("ka","cl","v")
 #' covarsVec <- c("WT")
 #' catvarsVec <- c("SEX")
@@ -373,7 +373,7 @@ lassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' one.cmt <- function() {
 #'   ini({
 #'     tka <- 0.45; label("Ka")
@@ -399,7 +399,8 @@ lassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,
 #' fit <-
 #'  nlmixr2(
 #'    one.cmt, d,
-#'    est = "focei", control = nlmixr2est::foceiControl(print = 0)
+#'    est = "saem",
+#'    control = list(print = 0)
 #'  )
 #' varsVec <- c("ka","cl","v")
 #' covarsVec <- c("WT")
@@ -491,7 +492,7 @@ adaptivelassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constrain
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' one.cmt <- function() {
 #'   ini({
 #'     tka <- 0.45; label("Ka")
@@ -514,11 +515,10 @@ adaptivelassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constrain
 #' d$SEX <-0
 #' d$SEX[d$ID<=6] <-1
 #'
-#' fit <- nlmixr2(one.cmt, d, "focei")
+#' fit <- nlmixr2(one.cmt, d, est = "saem", control = list(print = 0))
 #' varsVec <- c("ka","cl","v")
 #' covarsVec <- c("WT")
 #' catvarsVec <- c("SEX")
-#'
 #'
 #' # Model fit with regular lasso coefficients:
 #'
@@ -618,7 +618,7 @@ regularmodel <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' one.cmt <- function() {
 #'   ini({
 #'     tka <- 0.45; label("Ka")
@@ -641,7 +641,7 @@ regularmodel <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,
 #' d$SEX <-0
 #' d$SEX[d$ID<=6] <-1
 #'
-#' fit <- nlmixr2(one.cmt, d, "focei")
+#' fit <- nlmixr2(one.cmt, d, est = "saem", control = list(print = 0))
 #' varsVec <- c("ka","cl","v")
 #' covarsVec <- c("WT")
 #' catvarsVec <- c("SEX")

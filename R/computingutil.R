@@ -82,7 +82,7 @@
 #'
 #' @examples
 #'
-#' \dontrun{
+#' \donttest{
 #' d <- nlmixr2data::theo_sd
 #' d$SEX <-0
 #' d$SEX[d$ID<=6] <-1
@@ -121,7 +121,7 @@ normalizedData <- function(data,covarsVec,replace=TRUE) {
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' d <- nlmixr2data::theo_sd
 #' d$SEX <-0
 #' d$SEX[d$ID<=6] <-1
@@ -229,7 +229,7 @@ foldgen <-  function(data,nfold=5,stratVar=NULL){
 #'
 #' @examples
 #'
-#' \dontrun{
+#' \donttest{
 #' # Simulate 1000 creatine clearance values with median of 71.7 within range of c(6.7,140)
 #' creatCl <- optimUnisampling(xvec=c(6.7,140),N=1000,medValue = 71.7,floorT=FALSE)
 #' }
@@ -320,7 +320,7 @@ addConfboundsToVar <- function(var, confLower, confUpper, sigdig = 3) {
 #'   updated with the bootstrap confidence bands
 #' @export
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' one.cmt <- function() {
 #'   ini({
 #'     tka <- 0.45; label("Ka")
@@ -339,7 +339,7 @@ addConfboundsToVar <- function(var, confLower, confUpper, sigdig = 3) {
 #'   })
 #' }
 #'
-#' fit <- nlmixr2(one.cmt, nlmixr2data::theo_sd, "focei")
+#' fit <- nlmixr2(one.cmt, nlmixr2data::theo_sd, est = "saem", control = list(print = 0))
 #'
 #' withr::with_tempdir({ # Run example in temp dir
 #'
