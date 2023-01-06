@@ -36,7 +36,7 @@ return data frame of final lasso coefficients
 Return Adaptive lasso coefficients after finding optimal t
 }
 \examples{
-\dontrun{
+\donttest{
 one.cmt <- function() {
   ini({
     tka <- 0.45; label("Ka")

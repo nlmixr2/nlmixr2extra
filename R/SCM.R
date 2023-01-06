@@ -22,7 +22,7 @@
 #' @author Vipul Mann, Matthew Fidler, Vishal Sarsani
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' one.cmt <- function() {
 #'   ini({
 #'     tka <- 0.45; label("Ka")
