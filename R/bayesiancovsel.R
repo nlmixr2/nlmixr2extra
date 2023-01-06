@@ -162,7 +162,7 @@ tau0 <- NULL
 #' @export
 #' @author  Vishal Sarsani, Christian Bartels
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' one.cmt <- function() {
 #'   ini({
 #'     tka <- 0.45; label("Ka")
@@ -182,7 +182,7 @@ tau0 <- NULL
 #' }
 #'
 #' d <- nlmixr2data::theo_sd
-#' fit <- nlmixr2(one.cmt, d, "focei")
+#' fit <- nlmixr2(one.cmt, d, est = "saem", control = list(print = 0))
 #' covarsVec <- c("WT")
 #'
 #' # Horseshoe summary posterior estimates:
@@ -221,7 +221,7 @@ horseshoeSummardf <- function(fit,covarsVec,...){
 #' @author  Vishal Sarsani, Christian Bartels
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' one.cmt <- function() {
 #'   ini({
 #'     tka <- 0.45; label("Ka")
@@ -241,7 +241,7 @@ horseshoeSummardf <- function(fit,covarsVec,...){
 #' }
 #'
 #' d <- nlmixr2data::theo_sd
-#' fit <- nlmixr2(one.cmt, d, "focei")
+#' fit <- nlmixr2(one.cmt, d, est = "saem", control = list(print = 0))
 #' covarsVec <- c("WT")
 #'
 #' # Horseshoe summary posterior estimates:

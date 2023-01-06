@@ -21,7 +21,7 @@ Horse shoe Summary data frame of all covariates
 Create Lasso summary posterior estimates
 }
 \examples{
-\dontrun{
+\donttest{
 one.cmt <- function() {
   ini({
     tka <- 0.45; label("Ka")
@@ -41,7 +41,7 @@ one.cmt <- function() {
 }
 
 d <- nlmixr2data::theo_sd
-fit <- nlmixr2(one.cmt, d, "focei")
+fit <- nlmixr2(one.cmt, d, est = "saem", control = list(print = 0))
 covarsVec <- c("WT")
 
 # Horseshoe summary posterior estimates:
