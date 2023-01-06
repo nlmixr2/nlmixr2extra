@@ -21,7 +21,7 @@ Function to return data of normalized covariates
 }
 \examples{
 
-\dontrun{
+\donttest{
 d <- nlmixr2data::theo_sd
 d$SEX <-0
 d$SEX[d$ID<=6] <-1

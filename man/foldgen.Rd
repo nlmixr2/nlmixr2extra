@@ -20,7 +20,7 @@ return data.frame with the fold column attached
 Stratified cross-validation fold generator function inspired from the caret
 }
 \examples{
-\dontrun{
+\donttest{
 d <- nlmixr2data::theo_sd
 d$SEX <-0
 d$SEX[d$ID<=6] <-1
