@@ -63,7 +63,7 @@ one.cmt <- function() {
   })
 }
 
-fit <- nlmixr2(one.cmt, nlmixr2data::theo_sd,"focei")
+fit <- nlmixr2(one.cmt, nlmixr2data::theo_sd, est = "saem", control = list(print = 0))
 rxode2::.rxWithWd(tempdir(), {# with temporary directory
 
 auto1 <- covarSearchAuto(fit, varsVec = c("ka", "cl"),
@@ -78,7 +78,7 @@ d <- nlmixr2data::theo_sd
 d$SEX <-0
 d$SEX[d$ID<=6] <-1
 
-fit <- nlmixr2(one.cmt, d, "focei")
+fit <- nlmixr2(one.cmt, d, est = "saem", control = list(print = 0))
 
 # This would restart if for some reason the search crashed:
 
