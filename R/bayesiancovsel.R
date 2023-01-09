@@ -221,7 +221,7 @@ horseshoeSummardf <- function(fit,covarsVec,...){
 #' @author  Vishal Sarsani, Christian Bartels
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' one.cmt <- function() {
 #'   ini({
 #'     tka <- 0.45; label("Ka")

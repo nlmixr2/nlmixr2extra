@@ -21,7 +21,7 @@ Horse shoe Summary data frame of all covariates
 Create Lasso summary posterior estimates
 }
 \examples{
-\dontrun{
+\donttest{
 one.cmt <- function() {
   ini({
     tka <- 0.45; label("Ka")
