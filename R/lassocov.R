@@ -204,7 +204,7 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' one.cmt <- function() {
 #'   ini({
 #'     tka <- 0.45; label("Ka")
@@ -232,13 +232,11 @@
 #' covarsVec <- c("WT")
 #' catvarsVec <- c("SEX")
 #'
-#'
 #' # Lasso coefficients:
 #'
-#' lassoDf <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL)
-#'
+#' lassoDf <- lassoCoefficients(fit, varsVec, covarsVec, catvarsVec, constraint=1e-08, stratVar = NULL)
 #' }
-lassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL,...) {
+lassoCoefficients <- function(fit, varsVec, covarsVec, catvarsVec, constraint=1e-08, stratVar = NULL, ...) {
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
   } else {

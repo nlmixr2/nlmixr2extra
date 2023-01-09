@@ -314,7 +314,7 @@ addConfboundsToVar <- function(var, confLower, confUpper, sigdig = 3) {
 #'   updated with the bootstrap confidence bands
 #' @export
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' one.cmt <- function() {
 #'   ini({
 #'     tka <- 0.45; label("Ka")

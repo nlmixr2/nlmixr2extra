@@ -36,7 +36,7 @@ return data frame of final lasso coefficients
 Return Final lasso coefficients after finding optimal t
 }
 \examples{
-\dontrun{
+\donttest{
 one.cmt <- function() {
   ini({
     tka <- 0.45; label("Ka")
@@ -64,11 +64,9 @@ varsVec <- c("ka","cl","v")
 covarsVec <- c("WT")
 catvarsVec <- c("SEX")
 
-
 # Lasso coefficients:
 
-lassoDf <- lassoCoefficients(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,stratVar = NULL)
-
+lassoDf <- lassoCoefficients(fit, varsVec, covarsVec, catvarsVec, constraint=1e-08, stratVar = NULL)
 }
 }
 \author{
