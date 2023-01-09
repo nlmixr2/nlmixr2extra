@@ -221,15 +221,12 @@ foldgen <-  function(data,nfold=5,stratVar=NULL){
 #' @param floorT boolean indicating whether to round up
 #'
 #' @return Samples with approx desired median.
-#'@author Vishal Sarsani
+#' @author Vishal Sarsani
 #' @export
 #'
 #' @examples
-#'
-#' \dontrun{
 #' # Simulate 1000 creatine clearance values with median of 71.7 within range of c(6.7,140)
-#' creatCl <- optimUnisampling(xvec=c(6.7,140),N=1000,medValue = 71.7,floorT=FALSE)
-#' }
+#' creatCl <- optimUnisampling(xvec=c(6.7,140), N=1000, medValue = 71.7, floorT=FALSE)
 optimUnisampling <- function(xvec,N=1000,medValue,floorT=TRUE) {
   #Function to calculate distance between sampling median and desired
   fun <- function(xvec, N=1000) {
