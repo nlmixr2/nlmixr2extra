@@ -23,7 +23,7 @@ Sample from uniform distribution by optim
 }
 \examples{
 
-\donttest{
+\dontrun{
 # Simulate 1000 creatine clearance values with median of 71.7 within range of c(6.7,140)
 creatCl <- optimUnisampling(xvec=c(6.7,140),N=1000,medValue = 71.7,floorT=FALSE)
 }

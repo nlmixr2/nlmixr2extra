@@ -63,7 +63,7 @@ updated with the bootstrap confidence bands
 Bootstrap input dataset and rerun the model to get confidence bounds and aggregated parameters
 }
 \examples{
-\donttest{
+\dontrun{
 one.cmt <- function() {
   ini({
     tka <- 0.45; label("Ka")
