@@ -353,11 +353,11 @@ addConfboundsToVar <- function(var, confLower, confUpper, sigdig = 3) {
 #' # Note the boostrap standard error and variance/covariance matrix is retained.
 #' # If you wish to switch back you can change the covariance matrix by
 #'
-#' nlmixr2est::setCov(fit,"r,s")
+#' nlmixr2est::setCov(fit, "linFim")
 #'
 #' # And change it back again
 #'
-#' nlmixr2est::setCov(fit,"boot10")
+#' nlmixr2est::setCov(fit, "boot10")
 #'
 #' # This change will affect any simulations with uncertainty in their parameters
 #'
