@@ -110,7 +110,8 @@ normalizedData <- function(data,covarsVec,replace=TRUE) {
   .finalDf
 }
 
-#' Stratified cross-validation fold generator function inspired from the caret
+#' Stratified cross-validation fold generator function, inspired from the caret
+#'
 #' @param data data frame used in the analysis
 #' @param nfold number of k-fold cross validations. Default is 5
 #' @param stratVar  Stratification Variable. Default is NULL and ID is used for CV
@@ -119,7 +120,6 @@ normalizedData <- function(data,covarsVec,replace=TRUE) {
 #' @export
 #'
 #' @examples
-#' \dontrun{
 #' d <- nlmixr2data::theo_sd
 #' d$SEX <-0
 #' d$SEX[d$ID<=6] <-1
@@ -127,11 +127,10 @@ normalizedData <- function(data,covarsVec,replace=TRUE) {
 #' covarsVec <- c("WT")
 #'
 #' # Stratified cross-validation data with CMT
-#' df1 <- foldgen(d,nfold=5,stratVar="CMT")
+#' df1 <- foldgen(d, nfold=5, stratVar="CMT")
 #'
 #' # Stratified cross-validation data with ID (individual)
-#' df2 <- foldgen(d,nfold=5,stratVar=NULL)
-#' }
+#' df2 <- foldgen(d, nfold=5, stratVar=NULL)
 foldgen <-  function(data,nfold=5,stratVar=NULL){
   # check if data frame
   checkmate::assert_data_frame(data,min.cols = 7)
