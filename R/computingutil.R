@@ -82,7 +82,6 @@
 #'
 #' @examples
 #'
-#' \dontrun{
 #' d <- nlmixr2data::theo_sd
 #' d$SEX <-0
 #' d$SEX[d$ID<=6] <-1
@@ -94,7 +93,6 @@
 #'
 #' # Normalized covariate (without replacement)
 #' df2 <- normalizedData(d,covarsVec,replace=FALSE)
-#' }
 normalizedData <- function(data,covarsVec,replace=TRUE) {
   checkmate::assert_character(covarsVec)
   .normalizedDFs <- lapply(covarsVec,.normalizeDf,data=data)
