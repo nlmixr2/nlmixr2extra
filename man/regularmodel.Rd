@@ -39,7 +39,7 @@ return fit of the selected lasso coefficients
 Regular lasso model
 }
 \examples{
-\dontrun{
+\donttest{
 one.cmt <- function() {
   ini({
     tka <- 0.45; label("Ka")
