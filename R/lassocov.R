@@ -204,7 +204,7 @@
 #' @export
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' one.cmt <- function() {
 #'   ini({
 #'     tka <- 0.45; label("Ka")
@@ -371,7 +371,7 @@ lassoCoefficients <- function(fit, varsVec, covarsVec, catvarsVec, constraint=1e
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' one.cmt <- function() {
 #'   ini({
 #'     tka <- 0.45; label("Ka")
