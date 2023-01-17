@@ -1,4 +1,3 @@
-
 #' Stepwise Covariate Model-selection (SCM) method
 #'
 #' @param fit an nlmixr2 'fit' object
@@ -23,18 +22,12 @@
 #' @author Vipul Mann, Matthew Fidler, Vishal Sarsani
 #'
 #' @examples
-#'
-#' \donttest{
-#'
+#' \dontrun{
 #' one.cmt <- function() {
 #'   ini({
-#'     ## You may label each parameter with a comment
-#'     tka <- 0.45 # Log Ka
-#'     tcl <- log(c(0, 2.7, 100)) # Log Cl
-#'     ## This works with interactive models
-#'     ## You may also label the preceding line with label("label text")
-#'     tv <- 3.45; label("log V")
-#'     ## the label("Label name") works with all models
+#'     tka <- 0.45; label("Ka")
+#'     tcl <- log(c(0, 2.7, 100)); label("Cl")
+#'     tv <- 3.45; label("V")
 #'     eta.ka ~ 0.6
 #'     eta.cl ~ 0.3
 #'     eta.v ~ 0.1
@@ -48,7 +41,7 @@
 #'   })
 #' }
 #'
-#' fit <- nlmixr2(one.cmt, nlmixr2data::theo_sd,"focei")
+#' fit <- nlmixr2(one.cmt, nlmixr2data::theo_sd, est = "saem", control = list(print = 0))
 #' rxode2::.rxWithWd(tempdir(), {# with temporary directory
 #'
 #' auto1 <- covarSearchAuto(fit, varsVec = c("ka", "cl"),
@@ -63,7 +56,7 @@
 #' d$SEX <-0
 #' d$SEX[d$ID<=6] <-1
 #'
-#' fit <- nlmixr2(one.cmt, d, "focei")
+#' fit <- nlmixr2(one.cmt, d, est = "saem", control = list(print = 0))
 #'
 #' # This would restart if for some reason the search crashed:
 #'
@@ -76,87 +69,74 @@
 #'                 catvarsVec=  c("SEX"), restart = TRUE,
 #'                 searchType = "forward")
 #' })
-#'
 #' }
-#'
-covarSearchAuto <- # unsuccessful runs info store; check for covInformation before resuming
-  function(fit,
-           varsVec,
-           covarsVec,
-           pVal = list(fwd = 0.05, bck = 0.01), # diff default vals for fwd and backward
-           catvarsVec=NULL ,#character vector of categorical covariates that need to be added
-           searchType = c("scm", "forward", "backward"),
-           restart = FALSE) {
-    if (!is.numeric(AIC(fit))) {
-      cli::cli_alert_danger("the 'fit' object needs to have an objective functions value associated with it")
-      cli::cli_alert_info("try computing 'AIC(fitobject)' in console to compute and store the corresponding OBJF value")
-      stop("aborting...objf value not associated with the current 'fit' object", call. = FALSE)
-    }
 
-    ## Update data and covarsvec if categorical variables are provided
-    if(!is.null(catvarsVec)){
-      covarsVec <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
-      data <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
-    }
-    
-    else {
-      covarsVec <- covarsVec
-      data <- nlme::getData(fit)
-    }
-    
-
-    searchType <- match.arg(searchType)
-
-    if (missing(searchType)) {
-      searchType <- "scm"
-    }
-
-    if (!all((names(pVal) %in% c("fwd", "bck")))) {
-      stop("pVal should be list of two with names  'fwd' and 'bck' ")
-    }
-
-    outputDir <-
-      paste0("nlmixr2CovariateSearchCache_", as.character(substitute(fit)), "_", digest::digest(fit)) # a new directory with this name will be created
-
-    # outputDir <-
-    #   paste0("nlmixr2CovariateSearchCache_", as.character(substitute(fit)), "_", 'dbdf08b8c1b4cb9cb021c52008d3c343') # a new directory with this name will be created
-
-    if (!dir.exists(outputDir)) {
-      dir.create(outputDir)
-    }
-    else if (dir.exists(outputDir) && restart == TRUE) {
-      unlink(outputDir, recursive = TRUE, force = TRUE) # unlink any of the previous directories
-      dir.create(outputDir) # create a fresh directory
-    }
-
-
-    if (searchType %in% "scm") {
-      resFwd <- forwardSearch(varsVec,covarsVec,catvarsVec, fit, pVal$fwd, outputDir = outputDir, restart = restart)
-      resBck <- backwardSearch(varsVec,covarsVec,catvarsVec, fitorig = fit, fitupdated = resFwd[[1]], pVal = pVal$bck, reFitCovars = FALSE, outputDir = outputDir, restart = restart)
-      summaryTable <- Reduce(rbind, list(resFwd[[2]], resBck[[2]]))
-
-      return(list(summaryTable = summaryTable, resFwd = resFwd, resBck = resBck))
-    }
-
-    else if (searchType %in% "forward") {
-      resFwd <- forwardSearch(varsVec,covarsVec,catvarsVec, fit, pVal = pVal$fwd, outputDir = outputDir, restart = restart)
-      summaryTable <- Reduce(rbind, list(resFwd[[2]], NULL))
-
-      return(list(summaryTable = summaryTable, resFwd = resFwd, resBck = NULL))
-    }
-
-    else {
-      resBck <- backwardSearch(varsVec,covarsVec,catvarsVec, fitorig = fit, pVal = pVal$bck, reFitCovars = TRUE, outputDir = outputDir, restart = restart)
-      summaryTable <- Reduce(rbind, list(NULL, resBck[[2]]))
-
-      return(list(summaryTable = summaryTable, resFwd = NULL, resBck = resBck))
-    }
+# unsuccessful runs info store; check for covInformation before resuming
+covarSearchAuto <- function(fit,
+                            varsVec,
+                            covarsVec,
+                            pVal = list(fwd = 0.05, bck = 0.01), # diff default vals for fwd and backward
+                            catvarsVec=NULL ,#character vector of categorical covariates that need to be added
+                            searchType = c("scm", "forward", "backward"),
+                            restart = FALSE) {
+  if (!is.numeric(AIC(fit))) {
+    cli::cli_alert_danger("the 'fit' object needs to have an objective functions value associated with it")
+    cli::cli_alert_info("try computing 'AIC(fitobject)' in console to compute and store the corresponding OBJF value")
+    stop("aborting...objf value not associated with the current 'fit' object", call. = FALSE)
   }
 
+  ## Update data and covarsvec if categorical variables are provided
+  if(!is.null(catvarsVec)){
+    covarsVec <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]]
+    data <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]]
+  } else {
+    covarsVec <- covarsVec
+    data <- nlme::getData(fit)
+  }
+
+  searchType <- match.arg(searchType)
+
+  if (missing(searchType)) {
+    searchType <- "scm"
+  }
+
+  if (!all((names(pVal) %in% c("fwd", "bck")))) {
+    stop("pVal should be list of two with names  'fwd' and 'bck' ")
+  }
+
+  outputDir <-
+    paste0("nlmixr2CovariateSearchCache_", as.character(substitute(fit)), "_", digest::digest(fit)) # a new directory with this name will be created
+
+  if (!dir.exists(outputDir)) {
+    dir.create(outputDir)
+  }
+  else if (dir.exists(outputDir) && restart == TRUE) {
+    unlink(outputDir, recursive = TRUE, force = TRUE) # unlink any of the previous directories
+    dir.create(outputDir) # create a fresh directory
+  }
+
+  if (searchType %in% "scm") {
+    resFwd <- forwardSearch(varsVec,covarsVec,catvarsVec, fit, pVal$fwd, outputDir = outputDir, restart = restart)
+    resBck <- backwardSearch(varsVec,covarsVec,catvarsVec, fitorig = fit, fitupdated = resFwd[[1]], pVal = pVal$bck, reFitCovars = FALSE, outputDir = outputDir, restart = restart)
+    summaryTable <- Reduce(rbind, list(resFwd[[2]], resBck[[2]]))
+
+    return(list(summaryTable = summaryTable, resFwd = resFwd, resBck = resBck))
+  } else if (searchType %in% "forward") {
+    resFwd <- forwardSearch(varsVec,covarsVec,catvarsVec, fit, pVal = pVal$fwd, outputDir = outputDir, restart = restart)
+    summaryTable <- Reduce(rbind, list(resFwd[[2]], NULL))
+
+    return(list(summaryTable = summaryTable, resFwd = resFwd, resBck = NULL))
+  } else {
+    resBck <- backwardSearch(varsVec,covarsVec,catvarsVec, fitorig = fit, pVal = pVal$bck, reFitCovars = TRUE, outputDir = outputDir, restart = restart)
+    summaryTable <- Reduce(rbind, list(NULL, resBck[[2]]))
+
+    return(list(summaryTable = summaryTable, resFwd = NULL, resBck = resBck))
+  }
+}
 
 #' Forward covariate search
 #'
-#' @param varsVec character vector of variables that need to be added  
+#' @param varsVec character vector of variables that need to be added
 #' @param covarsVec  character vector of covariates that need to be added
 #' @param catvarsVec  character vector of categorical covariates that need to be added
 #' @param fit  an nlmixr2 'fit' object
@@ -165,40 +145,33 @@ covarSearchAuto <- # unsuccessful runs info store; check for covInformation befo
 #' @param restart a boolean that controls if the search should be restarted; default is FALSE
 #'
 #' @return returns the updated 'fit' object at the end of the forward search and a table of information for all the covariates tested
-#' @export
 #' @author Vipul Mann, Matthew Fidler, Vishal Sarsani
-#'
+#' @export
 forwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL,fit, pVal = 0.05, outputDir, restart = FALSE) {
-  
   ## Update data and covarsvec if categorical variables are provided
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
-  }
-  else {
+  } else {
     ui <- fit$finalUiEnv
   }
   if(!is.null(catvarsVec)){
-    covarsVec <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
-    data <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
-  }
-  
-  else {
+    covarsVec <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]]
+    data <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]]
+  } else {
     covarsVec <- covarsVec
     data <- nlme::getData(fit)
   }
-  
-  
+
   if (missing(outputDir)) {
     stop("please specify output directory to store the results for forward search. aborting ...")
   }
-  
+
   # construct covInfo
   covInfo <-  buildcovInfo(varsVec,covarsVec)
-  
+
   resTableComplete <- data.frame(matrix(ncol = 14, nrow = 0))
   cli::cli_h1("starting forward search...")
   stepIdx <- 1
-
 
   fnameTablePatternForward <-
     paste0("forward_step_", "[0-9]+", "_table_", "[a-zA-Z0-9]+", ".RData",
@@ -248,8 +221,6 @@ forwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL,fit, pVal = 0.05, ou
     cli::cli_alert_success("resuming forward search ...")
   }
 
-
-  
   while (length(covInfo) > 0) {
     # forward covariate search
     covSearchRes <- buildupatedUI(ui,varsVec,covarsVec,indep = TRUE,add=TRUE)
@@ -266,11 +237,11 @@ forwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL,fit, pVal = 0.05, ou
            print("error fitting the model for the covariate ")
            print(error_message)
          })
-  
+
       covNames <- utils::tail(res$muRefCovariateDataFrame$covariateParameter,n=1)
       nam_var <- strsplit(covNames,split='_', fixed=TRUE)[[1]][3]
       nam_covar <- strsplit(covNames,split='_', fixed=TRUE)[[1]][2]
-      
+
       # fwd: if deltObjf <0: pchisq=1-pchisq(-deltObjf, dof), else pchisq=1
       # bck: if deltObjf >0: pchisq=1-pchisq(deltObjf, dof), else pchisq=1
 
@@ -317,14 +288,11 @@ forwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL,fit, pVal = 0.05, ou
       saveRDS(resTableComplete, file = paste0(outputDir, "/", "forward_", "step_", stepIdx, "_", "completetable", "_", as.character(bestRow$covar), as.character(bestRow$var), ".RData"))
 
       stepIdx <- stepIdx + 1
-    }
-    else {
+    } else {
       # objf function value did not improve
       cli::cli_h1("objf value did not improve, exiting the search ...")
 
       resTableComplete <- rbind(resTableComplete, resTable)
-      #saveRDS(resTableComplete, file = paste0(outputDir, "/", "forward_", "step_", stepIdx, "_", "completetable", "_", as.character(bestRow$covar), as.character(bestRow$var), ".RData"))
-      #resTableComplete
       break
     }
   }
@@ -336,7 +304,7 @@ forwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL,fit, pVal = 0.05, ou
 
 #' Backward covariate search
 #'
-#' @param varsVec character vector of variables that need to be added  
+#' @param varsVec character vector of variables that need to be added
 #' @param covarsVec  character vector of covariates that need to be added
 #' @param catvarsVec  character vector of categorical covariates that need to be added
 #' @param fitorig the original 'fit' object before forward search
@@ -351,24 +319,20 @@ forwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL,fit, pVal = 0.05, ou
 #'
 #' @author Vipul Mann, Matthew Fidler, Vishal Sarsani
 backwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL, fitorig, fitupdated, pVal = 0.01, reFitCovars = FALSE, outputDir, restart = FALSE) {
-  
+
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
-  }
-  else {
+  } else {
     ui <- fit$finalUiEnv
   }
   if(!is.null(catvarsVec)){
-    covarsVec <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]] 
-    data <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]] 
-  }
-  
-  else {
+    covarsVec <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]]
+    data <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]]
+  } else {
     covarsVec <- covarsVec
     data <- nlme::getData(fit)
   }
-  
-  
+
   if (missing(outputDir)) {
     stop("please specify output directory to store the results for backward search. aborting ...")
   }
@@ -381,8 +345,7 @@ backwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL, fitorig, fitupdate
     if (all(names(fitupdated$ini$theta) %in% names(fitorig$ini$theta))) {
       cli::cli_alert_warning("no covariates added in the forward search, skipping backward search")
       return(list(fitorig, NULL))
-    }
-    else {
+    } else {
       fit <- fitupdated
     }
   }
@@ -406,7 +369,6 @@ backwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL, fitorig, fitupdate
     paste0("forward_step_", "[0-9]+", "_completetable_", "[a-zA-Z0-9]+", ".RData",
       sep = ""
     )
-
 
   fileExistsTab <-
     list.files(paste0("./", outputDir), pattern = fnameTablePatternBackward)
@@ -435,7 +397,7 @@ backwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL, fitorig, fitupdate
 
     # construct covInfo
     covInfo <-  buildcovInfo(varsVec,covarsVec)
-    
+
     for (x in testedCovarVars) {
       covInfo[[x]] <- NULL
     }
@@ -446,15 +408,13 @@ backwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL, fitorig, fitupdate
     cli::cli_alert_success("resuming backward search ...")
   }
 
-
   cli::cli_h2(cli::col_blue("initial function text to remove from:"))
   cli::cli_text(cli::col_red("{fit$fun.txt}"))
 
   # check if covInfo vars in fit; abort if none of the covariates added in the forward search step
 
   covSearchRes <- buildupatedUI(ui,varsVec,covarsVec,indep = TRUE,add=TRUE)
-  
- 
+
   # Now remove covars step by step until the objf fun value...?
   while (length(covInfo) > 0) {
     # Remove covars on by one: if objf val increases retain covar; otherwise (objf val decreases), remove the covar
@@ -474,7 +434,7 @@ backwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL, fitorig, fitupdate
           print("error fitting the model for the covariate ")
           print(error_message)
         })
-      
+
       covNames <- utils::tail(res$muRefCovariateDataFrame$covariateParameter,n=1)
       nam_var <- strsplit(covNames,split='_', fixed=TRUE)[[1]][3]
       nam_covar <- strsplit(covNames,split='_', fixed=TRUE)[[1]][2]
@@ -526,8 +486,7 @@ backwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL, fitorig, fitupdate
       saveRDS(resTableComplete, file = paste0(outputDir, "/", "backward_", "step_", stepIdx, "_", "completetable", "_", as.character(bestRow$covar), as.character(bestRow$var), ".RData"))
 
       stepIdx <- stepIdx + 1
-    }
-    else {
+    } else {
       # objf function value did not improve
       cli::cli_h1("objf value did not improve, exiting the search ...")
       resTableComplete <- rbind(resTableComplete, resTable)
@@ -541,13 +500,3 @@ backwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL, fitorig, fitupdate
 
   list(fit, resTableComplete)
 }
-
-
-# fitDapto <- readRDS("daptomycin.Rds")
-# covarSearchAuto(fitDapto, c("v1"), c("SEX"), catCovariates = "SEX", restart = TRUE, pVal = list(fwd = 1, bck = 1))
-
-# covarSearchAuto(fitDapto, c('v1', 'v2'), c('WT', 'SEX'), catCovariates = 'SEX', restart = FALSE, pVal=list(fwd=1, bck=1))
-
-
-# fun.txt: "    cl = exp(tcl+eta.cl)\n    q = exp(tq+eta.q)\n    v1 = exp(tv1+eta.v1)\n    v2=exp(tv2+eta.v2)\n    cp = linCmt()\n    cp ~ add(add.err)"
-# data colnames: "id"    "time"  "CL"    "V1"    "Q"     "V2"    "A1"    "A2"    "Cp"    "centr" "peri"  "CRCL"  "WT"    "SEX"   "AGE"   "DV"
