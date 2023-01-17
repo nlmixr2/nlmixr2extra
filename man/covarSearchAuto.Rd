@@ -44,7 +44,7 @@ selection method and "resBck" for the backward selection method.
 Stepwise Covariate Model-selection (SCM) method
 }
 \examples{
-\donttest{
+\dontrun{
 one.cmt <- function() {
   ini({
     tka <- 0.45; label("Ka")
