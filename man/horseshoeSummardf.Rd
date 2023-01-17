@@ -21,7 +21,7 @@ Horse shoe Summary data frame of all covariates
 Create Horseshoe summary posterior estimates
 }
 \examples{
-\donttest{
+\dontrun{
 one.cmt <- function() {
   ini({
     tka <- 0.45; label("Ka")
