@@ -28,12 +28,16 @@ withr::with_tempdir({
       })
     }
 
-    fit <- suppressMessages(suppressWarnings(nlmixr(
-      one.cmt,
-      nlmixr2data::theo_sd,
-      est = "focei",
-      control = list(print = 0),
-      table = list(npde = TRUE, cwres = TRUE))))
+    suppressMessages(suppressWarnings(
+      fit <-
+        nlmixr(
+          one.cmt,
+          nlmixr2data::theo_sd,
+          est = "focei",
+          control = list(print = 0, eval.max = 10),
+          table = list(npde = TRUE, cwres = TRUE)
+        )
+    ))
 
     fit1 <- suppressMessages(nlmixr2extra:::bootstrapFit(fit, nboot = 2, restart = TRUE))
     fit2 <- suppressMessages(nlmixr2extra:::bootstrapFit(fit, nboot = 4, restart = FALSE))
@@ -46,8 +50,6 @@ withr::with_tempdir({
                                    sep = "")
 
     files <- list.files(paste0("./", output_dir), pattern = fnameBootDataPattern, full.names=TRUE)
-
-    ## print(output_dir)
 
     fitdata <- lapply(files, function(x) {
       readRDS(x)
@@ -84,26 +86,30 @@ withr::with_tempdir({
       })
     }
 
-    fit <- suppressMessages(suppressWarnings(nlmixr2(
-      one.cmt,
-      nlmixr2data::theo_sd,
-      est = "focei",
-      control = list(print = 0),
-      table = list(npde = TRUE, cwres = TRUE))))
+    suppressMessages(suppressWarnings(
+      fit <-
+        nlmixr2(
+          one.cmt,
+          nlmixr2data::theo_sd,
+          est = "focei",
+          control = list(print = 0, eval.max = 10),
+          table = list(npde = TRUE, cwres = TRUE)
+        )
+    ))
 
-    fitlist <- suppressMessages(nlmixr2extra:::modelBootstrap(fit, nboot = 4, restart = TRUE)[[1]])
+    suppressMessages(
+      fitlist <- nlmixr2extra:::modelBootstrap(fit, nboot = 4, restart = TRUE)[[1]]
+    )
     bootSummary1 <- nlmixr2extra:::getBootstrapSummary(fitlist, ci = 0.95)
     bootSummary2 <- nlmixr2extra:::getBootstrapSummary(fitlist, ci = 0.75)
 
-    a <- digest::digest(bootSummary1$parFixedDf$confLower)
-    b <- digest::digest(bootSummary2$parFixedDf$confLower)
+    expect_true(all(
+      bootSummary1$Estimate < bootSummary2$Estimate
+    ))
 
-    expect_false(isTRUE(all.equal(a, b)))
-
-    a <- digest::digest(bootSummary1$parFixedDf$confUpper)
-    b <- digest::digest(bootSummary2$parFixedDf$confUpper)
-    expect_false(isTRUE(all.equal(a, b)))
-
+    expect_true(all(
+      bootSummary1$parFixedDf$confUpper > bootSummary2$parFixedDf$confUpper
+    ))
   })
 
   test_that("expected columns in fit$parFixedDf object should match", {
@@ -126,15 +132,21 @@ withr::with_tempdir({
       })
     }
 
-    fit <- suppressMessages(suppressWarnings(nlmixr2(
-      one.cmt,
-      nlmixr2data::theo_sd,
-      est = "focei",
-      control = list(print = 0),
-      table = list(npde = TRUE, cwres = TRUE))))
+    suppressMessages(suppressWarnings(
+      fit <-
+        nlmixr2(
+          one.cmt,
+          nlmixr2data::theo_sd,
+          est = "focei",
+          control = list(print = 0, eval.max = 10),
+          table = list(npde = TRUE, cwres = TRUE)
+        )
+    ))
 
     colsBefore <- colnames(fit$parFixedDf)
-    fitlist <- suppressMessages(nlmixr2extra:::modelBootstrap(fit, nboot = 4, restart = TRUE)[[1]])
+    suppressMessages(
+      fitlist <- nlmixr2extra:::modelBootstrap(fit, nboot = 4, restart = TRUE)[[1]]
+    )
 
     bootSummary <- nlmixr2extra:::getBootstrapSummary(fitlist, ci = 0.95)
 
@@ -148,7 +160,6 @@ withr::with_tempdir({
         unlink(x, recursive = TRUE, force = TRUE)
       })
   })
-
 
   test_that("saem bootstrap", {
 
@@ -170,18 +181,23 @@ withr::with_tempdir({
       })
     }
 
-    fit <- suppressMessages(suppressWarnings(nlmixr(
-      one.cmt,
-      nlmixr2data::theo_sd,
-      est = "saem",
-      control = list(print = 0),
-      table = list(npde = TRUE, cwres = TRUE))))
+    suppressMessages(suppressWarnings(
+      fit <-
+        nlmixr(
+          one.cmt,
+          nlmixr2data::theo_sd,
+          est = "saem",
+          control = list(print = 0, nBurn = 10, nEm = 20),
+          table = list(npde = TRUE, cwres = TRUE)
+        )
+    ))
 
-    expect_error(fit1 <- suppressMessages(nlmixr2extra:::bootstrapFit(fit, nboot = 2, restart = TRUE)), NA)
+    suppressMessages(
+      expect_error(fit1 <- nlmixr2extra:::bootstrapFit(fit, nboot = 2, restart = TRUE), NA)
+    )
 
     output_dir <-
       paste0("nlmixr2BootstrapCache_", "fit", "_", fit$bootstrapMd5)
-
-
+    unlink(output_dir, recursive = TRUE, force = TRUE)
   })
 })

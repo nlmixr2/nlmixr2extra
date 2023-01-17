@@ -2,7 +2,7 @@
 % Please edit documentation in R/computingutil.R
 \name{foldgen}
 \alias{foldgen}
-\title{Stratified cross-validation fold generator function inspired from the caret}
+\title{Stratified cross-validation fold generator function, inspired from the caret}
 \usage{
 foldgen(data, nfold = 5, stratVar = NULL)
 }
@@ -14,29 +14,24 @@ foldgen(data, nfold = 5, stratVar = NULL)
 \item{stratVar}{Stratification Variable. Default is NULL and ID is used for CV}
 }
 \value{
-return dataframe with the fold column attached
+return data.frame with the fold column attached
 }
 \description{
-Stratified cross-validation fold generator function inspired from the caret
+Stratified cross-validation fold generator function, inspired from the caret
 }
 \examples{
-
-\donttest{
 d <- nlmixr2data::theo_sd
 d$SEX <-0
 d$SEX[d$ID<=6] <-1
 
-
 covarsVec <- c("WT")
 
-
 # Stratified cross-validation data with CMT
-df1 <- foldgen(d,nfold=5,stratVar="CMT")
+df1 <- foldgen(d, nfold=5, stratVar="CMT")
 
 # Stratified cross-validation data with ID (individual)
-df2 <- foldgen(d,nfold=5,stratVar=NULL)
-}
+df2 <- foldgen(d, nfold=5, stratVar=NULL)
 }
 \author{
-Vishal Sarsani , caret
+Vishal Sarsani, caret
 }
