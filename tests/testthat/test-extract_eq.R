@@ -70,6 +70,35 @@ test_that("extract_eq, less common models", {
   )
 })
 
+test_that("extract_eq, model with 'if' and a character string", {
+  mod <- function() {
+    ini({
+      lka <- 0.45
+      lcl <- 1
+      lvc  <- 3.45
+    })
+    model({
+      ka <- exp(lka) < 1
+      cl <- exp(lcl) <= 2
+      vc  <- exp(lvc) == 3
+      if (vc == "a") {
+        cl <- 12
+      } else {
+        cl <- 16
+      }
+
+      cp <- linCmt()
+      # ordinal model
+      cp ~ c(p0=0, p1=1, p2=2, 3)
+    })
+  }
+  ui <- rxode2::rxode(mod)
+  expect_equal(
+    extract_eq(ui),
+    knitr::asis_output("\\begin{align*}\nka & = \\exp\\left(lka\\right)<1 \\\\\ncl & = \\exp\\left(lcl\\right)\\leq2 \\\\\nvc & = \\exp\\left(lvc\\right)\\equiv3 \\\\\n\\mathrm{if} & \\left(vc\\equiv\\text{\"a\"}\\right) \\{ \\\\\n & cl  = 12 \\\\\n\\}  \\quad & \\mathrm{else} \\: cl  = 16 \\\\\ncp & = linCmt() \\\\\ncp & \\sim c(p0=0, p1=1, p2=2, 3)\n\\end{align*}\n")
+  )
+})
+
 expect_equal(
   extractEqHelper.function(function() {ini({a <- 1});model({log(foo)+exp(bar)})}, inModel = FALSE),
   "\\log\\left(foo\\right)+\\exp\\left(bar\\right)"
