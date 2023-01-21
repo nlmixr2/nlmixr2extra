@@ -1,3 +1,8 @@
+# nlmixr2extra 2.0.9
+
+* New function `extract_eq()` will generate model equations for LaTeX reporting
+  automatically.
+
 # nlmixr2extra 2.0.8
 
 * Use `assignInMyNamespace()` instead of using the global assignment

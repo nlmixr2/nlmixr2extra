@@ -1,11 +1,8 @@
-
-
 # Function to calculate population standard deviation from group means
 #' @param x vector of values to calculate standard deviation.
 #' @return population standard deviation
 #' @noRd
 .sd.p=function(x){sd(x)*sqrt((length(x)-1)/length(x))}
-
 
 #' Function to return pop mean, pop std of a given covariate
 #'
@@ -14,7 +11,6 @@
 #'
 #' @return list containing values of population mean, standard deviation
 #' @noRd
-
 .popMeanStd <- function(data, covariate) {
 
   checkmate::assertDataFrame(data,col.names = "named")
@@ -42,8 +38,6 @@
   .meanStd
 }
 
-
-
 #' Function to return normalization column of a covariates
 #'
 #' @param data given a data frame
@@ -51,9 +45,7 @@
 #'
 #' @return data frame with normalized covariate
 #' @noRd
-
 .normalizeDf <- function(data, covariate,sub=TRUE) {
-
   checkmate::assertDataFrame(data,col.names = "named")
   checkmate::assertCharacter(covariate,len = 1,any.missing = FALSE )
 
@@ -78,9 +70,7 @@
   }
 }
 
-
 #' Function to return data of normalized covariates
-#'
 #'
 #' @param data a dataframe with covariates to normalize
 #' @param covarsVec a list of covariate names (parameters) that need to be estimates
@@ -90,33 +80,24 @@
 #' @author Vishal Sarsani
 #' @export
 #'
-#'
 #' @examples
 #'
-#' \donttest{
 #' d <- nlmixr2data::theo_sd
 #' d$SEX <-0
 #' d$SEX[d$ID<=6] <-1
 #'
 #' covarsVec <- c("WT")
 #'
-#'
 #' # Normalized covariate (replaced)
 #' df1 <- normalizedData(d,covarsVec,replace=TRUE)
 #'
 #' # Normalized covariate (without replacement)
 #' df2 <- normalizedData(d,covarsVec,replace=FALSE)
-#' }
 normalizedData <- function(data,covarsVec,replace=TRUE) {
-
-
   checkmate::assert_character(covarsVec)
-
-  ##
   .normalizedDFs <- lapply(covarsVec,.normalizeDf,data=data)
 
   # final data frame of normalized covariates
-
   if(replace){
     .dat <- Reduce(merge,.normalizedDFs)
     dropnormPrefix <- function(x){ colnames(x) <- gsub("normalized_", "", colnames(x)); x }
@@ -124,48 +105,37 @@ normalizedData <- function(data,covarsVec,replace=TRUE) {
     .dat <- cbind(.dat[ , !names(.dat) %in% covarsVec],subset(.dat,select=catCheck))
     .finalDf <- dropnormPrefix(.dat)
   }else{
-
     .finalDf <- Reduce(merge,.normalizedDFs)
   }
   .finalDf
 }
 
-
-#' Stratified cross-validation fold generator function inspired from the caret
+#' Stratified cross-validation fold generator function, inspired from the caret
+#'
 #' @param data data frame used in the analysis
 #' @param nfold number of k-fold cross validations. Default is 5
 #' @param stratVar  Stratification Variable. Default is NULL and ID is used for CV
-#' @return return dataframe with the fold column attached
-#' @author Vishal Sarsani , caret
+#' @return return data.frame with the fold column attached
+#' @author Vishal Sarsani, caret
 #' @export
 #'
 #' @examples
-#'
-#' \donttest{
 #' d <- nlmixr2data::theo_sd
 #' d$SEX <-0
 #' d$SEX[d$ID<=6] <-1
 #'
-#'
 #' covarsVec <- c("WT")
 #'
-#'
 #' # Stratified cross-validation data with CMT
-#' df1 <- foldgen(d,nfold=5,stratVar="CMT")
+#' df1 <- foldgen(d, nfold=5, stratVar="CMT")
 #'
 #' # Stratified cross-validation data with ID (individual)
-#' df2 <- foldgen(d,nfold=5,stratVar=NULL)
-#' }
-
+#' df2 <- foldgen(d, nfold=5, stratVar=NULL)
 foldgen <-  function(data,nfold=5,stratVar=NULL){
-
-
   # check if data frame
   checkmate::assert_data_frame(data,min.cols = 7)
 
-
   # check if user want to stratify on a variable , if not default is on individual
-
   if(!is.null(stratVar)){
     checkmate::assertCharacter(stratVar,len = 1,any.missing = FALSE )
     stratCheck <- intersect(names(data), stratVar)
@@ -176,16 +146,13 @@ foldgen <-  function(data,nfold=5,stratVar=NULL){
       stop(paste0(stratVar, "not in the data to stratify"))
     }
   } else {
-
     # extract ID column from the data frame
     ID <- .idColumn(data)
     # Extract list of individuals
     y <- unique(data[,ID])
   }
   ## Group based on magnitudes and sample within groups
-
-  if(is.numeric(y))
-  {
+  if(is.numeric(y)) {
     ## Group the numeric data based on their magnitudes
     ## and sample within those groups.
 
@@ -208,8 +175,7 @@ foldgen <-  function(data,nfold=5,stratVar=NULL){
       include.lowest = TRUE)
   }
 
-  if(nfold < length(y))
-  {
+  if(nfold < length(y)) {
     ## reset levels so that the possible levels and
     ## the levels in the vector are the same
     y <- factor(as.character(y))
@@ -230,8 +196,9 @@ foldgen <-  function(data,nfold=5,stratVar=NULL){
       ## shuffle the integers for fold assignment and assign to this classes's data
       foldVector[which(y == dimnames(numInClass)$y[i])] <- sample(seqVector)
     }
-  } else foldVector <- seq(along = y)
-
+  } else {
+    foldVector <- seq(along = y)
+  }
 
   out <- split(seq(along = y), foldVector)
   names(out) <- paste("Fold", gsub(" ", "0", format(seq(along = out))), sep = "")
@@ -246,8 +213,6 @@ foldgen <-  function(data,nfold=5,stratVar=NULL){
   out
 }
 
-
-
 #' Sample from uniform distribution by optim
 #'
 #' @param xvec A vector of min,max values . Ex:c(10,20)
@@ -256,20 +221,13 @@ foldgen <-  function(data,nfold=5,stratVar=NULL){
 #' @param floorT boolean indicating whether to round up
 #'
 #' @return Samples with approx desired median.
-#'@author Vishal Sarsani
+#' @author Vishal Sarsani
 #' @export
 #'
 #' @examples
-#'
-#' \donttest{
 #' # Simulate 1000 creatine clearance values with median of 71.7 within range of c(6.7,140)
-#' creatCl <- optimUnisampling(xvec=c(6.7,140),N=1000,medValue = 71.7,floorT=FALSE)
-#' }
-#'
-
-optimUnisampling <- function(xvec,N=1000,medValue,floorT=TRUE)
-{
-
+#' creatCl <- optimUnisampling(xvec=c(6.7,140), N=1000, medValue = 71.7, floorT=FALSE)
+optimUnisampling <- function(xvec,N=1000,medValue,floorT=TRUE) {
   #Function to calculate distance between sampling median and desired
   fun <- function(xvec, N=1000) {
     xmin <- xvec[1]
@@ -292,104 +250,76 @@ optimUnisampling <- function(xvec,N=1000,medValue,floorT=TRUE)
   else return (optimUnisampling(xvec,N=1000,medValue))
 }
 
-
 #' Format confidence bounds for a variable into bracketed notation using string formatting
 #'
 #' @param var a list of values for the varaible
 #' @param confLower the lower bounds for each of the values
 #' @param confUpper the upper bounds for each of the values
 #' @param sigdig the number of significant digits
-#'
 #' @author Vipul Mann
-#'
 #' @noRd
-addConfboundsToVar <-
-  function(var, confLower, confUpper, sigdig = 3) {
-    res <- lapply(seq_along(var), function(idx) {
-      paste0(
-        signif(var[idx], sigdig),
-        " (",
-        signif(confLower[idx], sigdig),
-        ", ",
-        signif(confUpper[idx], sigdig),
-        ")"
-      )
-    })
-    unlist(res)
-  }
+addConfboundsToVar <- function(var, confLower, confUpper, sigdig = 3) {
+  res <- lapply(seq_along(var), function(idx) {
+    paste0(
+      signif(var[idx], sigdig),
+      " (",
+      signif(confLower[idx], sigdig),
+      ", ",
+      signif(confUpper[idx], sigdig),
+      ")"
+    )
+  })
+  unlist(res)
+}
 
 #' Bootstrap nlmixr2 fit
 #'
 #' Bootstrap input dataset and rerun the model to get confidence bounds and aggregated parameters
 #'
 #' @param fit the nlmixr2 fit object
-#'
 #' @param nboot an integer giving the number of bootstrapped models to
 #'   be fit; default value is 200
-#'
 #' @param nSampIndiv an integer specifying the number of samples in
 #'   each bootstrapped sample; default is the number of unique
 #'   subjects in the original dataset
-#'
 #' @param stratVar Variable in the original dataset to stratify on;
 #'   This is useful to distinguish between sparse and full sampling
 #'   and other features you may wish to keep distinct in your
 #'   bootstrap
-#'
 #' @param pvalues a vector of pvalues indicating the probability of
 #'   each subject to get selected; default value is NULL implying that
 #'   probability of each subject is the same
-#'
 #' @param restart a boolean that indicates if a previous session has
 #'   to be restarted; default value is FALSE
-#'
 #' @param fitName Name of fit to be saved (by default the variable name supplied to fit)
-#'
 #' @param stdErrType This gives the standard error type for the
 #'   updated standard errors; The current possibilities are:
 #'   `"perc"` which gives the standard errors by percentiles
 #'   (default) or `"se"` which gives the standard errors by the
 #'   traditional formula.
-#'
 #' @param ci Confidence interval level to calculate.  Default is 0.95
 #'   for a 95 percent confidence interval
-#'
 #' @param plotHist A boolean indicating if a histogram plot to assess
 #'   how well the bootstrap is doing.  By default this is turned off (`FALSE`)
-#'
 #' @param pvalues a vector of pvalues indicating the probability of
 #'   each subject to get selected; default value is `NULL` implying that
 #'   probability of each subject is the same
-#'
 #' @param restart A boolean to try to restart an interrupted or
 #'   incomplete boostrap.  By default this is `FALSE`
-#'
 #' @param fitName is the fit name that is used for the name of the
 #'   boostrap files.  By default it is the fit provided though it
 #'   could be something else.
-#'
-#'
 #' @author Vipul Mann, Matthew Fidler
-#'
 #' @return Nothing, called for the side effects; The original fit is
 #'   updated with the bootstrap confidence bands
-#'
 #' @export
-#'
 #' @examples
-#'
-#' \donttest{
-#'
+#' \dontrun{
 #' one.cmt <- function() {
 #'   ini({
-#'     ## You may label each parameter with a comment
-#'     tka <- 0.45 # Log Ka
-#'     tcl <- 1 # Log Cl
-#'     ## This works with interactive models
-#'     ## You may also label the preceding line with label("label text")
-#'     tv <- 3.45
-#'     label("log V")
-#'     ## the label("Label name") works with all models
+#'     tka <- 0.45; label("Ka")
+#'     tcl <- 1; label("Cl")
+#'     tv <- 3.45; label("V")
 #'     eta.ka ~ 0.6
 #'     eta.cl ~ 0.3
 #'     eta.v ~ 0.1
@@ -403,34 +333,31 @@ addConfboundsToVar <-
 #'   })
 #' }
 #'
-#' fit <- nlmixr2(one.cmt, nlmixr2data::theo_sd, "focei")
+#' fit <- nlmixr2(one.cmt, nlmixr2data::theo_sd, est = "saem", control = list(print = 0))
 #'
 #' withr::with_tempdir({ # Run example in temp dir
 #'
 #' bootstrapFit(fit, nboot = 5, restart = TRUE) # overwrites any of the existing data or model files
 #' bootstrapFit(fit, nboot = 7) # resumes fitting using the stored data and model files
 #'
-#' # Note this resumes because the total number of bootstrap samples is not 50
+#' # Note this resumes because the total number of bootstrap samples is not 10
 #'
-#' bootstrapFit(fit, nboot=50)
+#' bootstrapFit(fit, nboot=10)
 #'
 #' # Note the boostrap standard error and variance/covariance matrix is retained.
 #' # If you wish to switch back you can change the covariance matrix by
 #'
-#' nlmixr2est::setCov(fit,"r,s")
+#' nlmixr2est::setCov(fit, "linFim")
 #'
 #' # And change it back again
 #'
-#' nlmixr2est::setCov(fit,"boot50")
+#' nlmixr2est::setCov(fit, "boot10")
 #'
 #' # This change will affect any simulations with uncertainty in their parameters
 #'
 #' # You may also do a chi-square diagnostic plot check for the bootstrap with
-#'
 #' bootplot(fit)
-#'
 #' })
-#'
 #' }
 bootstrapFit <- function(fit,
                          nboot = 200,
@@ -496,7 +423,6 @@ bootstrapFit <- function(fit,
     fitList <- resBootstrap[[2]]
   }
 
-
   bootSummary <-
     getBootstrapSummary(modelsList, ci, stdErrType) # aggregate values/summary
 
@@ -525,7 +451,6 @@ bootstrapFit <- function(fit,
   backTransformed <-
     addConfboundsToVar(est, cLowerBT, cUpperBT, sigdig)
   estBT <- est
-
 
   newParFixedDf["Bootstrap Estimate"] <- estEst
   newParFixedDf["Bootstrap SE"] <- seBoot
@@ -655,7 +580,6 @@ bootstrapFit <- function(fit,
   invisible(fit)
 }
 
-
 #' Perform bootstrap-sampling from a given dataframe
 #'
 #' @param data the original dataframe object to sample from for bootstrapping
@@ -722,7 +646,6 @@ sampling <- function(data,
     checkmate::assert_character(uid_colname)
   }
 
-
   if (performStrat) {
     stratLevels <-
       as.character(unique(data[, stratVar])) # char to access freq. values
@@ -765,17 +688,18 @@ sampling <- function(data,
         data_slice
       }))
     })
-
     do.call("rbind", sampledDataSubsets)
   }
 
   else {
     uids <- unique(data[, uid_colname])
-    uids_samp <- sample(uids,
-                        size = nsamp,
-                        replace = TRUE,
-                        prob = pvalues
-    )
+    uids_samp <-
+      sample(
+        uids,
+        size = nsamp,
+        replace = TRUE,
+        prob = pvalues
+      )
 
     sampled_df <-
       data.frame(data)[0, ] # initialize an empty dataframe with the same col names
@@ -797,7 +721,6 @@ sampling <- function(data,
     }))
   }
 }
-
 
 #' Fitting multiple bootstrapped models without aggregaion; called by the function bootstrapFit()
 #'
@@ -842,8 +765,7 @@ modelBootstrap <- function(fit,
 
   if (missing(nSampIndiv)) {
     nSampIndiv <- length(unique(data[, uidCol]))
-  }
-  else {
+  } else {
     checkmate::assert_integerish(
       nSampIndiv,
       len = 1,
@@ -857,8 +779,7 @@ modelBootstrap <- function(fit,
   colNamesLower <- tolower(colNames)
   if ("id" %in% colNamesLower) {
     uid_colname <- colNames[which("id" %in% colNamesLower)]
-  }
-  else {
+  } else {
     stop("cannot find the 'ID' column! aborting ...", call. = FALSE)
   }
 
@@ -1021,18 +942,12 @@ modelBootstrap <- function(fit,
         call. = FALSE
       )
     }
-  }
-
-  else {
+  } else {
     .env$mod_idx <- 1
   }
 
   # get control settings for the 'fit' object and save computation effort by not computing the tables
-  .ctl <- fit$control
-  .ctl$print <- 0L
-  .ctl$covMethod <- 0L
-  .ctl$calcTables <- FALSE
-  .ctl$compress <- FALSE
+  .ctl <- setQuietFastControl(fit$control)
 
   modelsEnsemble <-
     lapply(bootData[.env$mod_idx:nboot], function(boot_data) {
@@ -1106,8 +1021,6 @@ modelBootstrap <- function(fit,
     readRDS(paste0("./", output_dir, "/", x, sep = ""))
   })
 
-
-
   list(modelsEnsemble, fitEnsemble)
 }
 
@@ -1118,7 +1031,6 @@ modelBootstrap <- function(fit,
 #' @return returns a string representing the method used by nlmixr2 for fitting the given model
 #'
 #' @author Vipul Mann, Matthew Fidler
-#'
 #' @examples
 #' getFitMethod(fit)
 #' @noRd
@@ -1127,7 +1039,6 @@ getFitMethod <- function(fit) {
     stop("'fit' needs to be a nlmixr2 fit", call. = FALSE)
   }
   fit$est
-
 }
 
 #' Extract all the relevant variables from a set of bootstrapped models
@@ -1181,7 +1092,6 @@ extractVars <- function(fitlist, id = "method") {
       # if id equals 'omega' or 'parFixedDf
       res
     }
-
   }
 }
 
@@ -1193,162 +1103,157 @@ extractVars <- function(fitlist, id = "method") {
 #' @examples
 #' getBootstrapSummary(fitlist)
 #' @noRd
-getBootstrapSummary <-
-  function(fitList,
-           ci = 0.95,
-           stdErrType = "perc") {
-    if (!(ci < 1 && ci > 0)) {
-      stop("'ci' needs to be between 0 and 1", call. = FALSE)
-    }
+getBootstrapSummary <- function(fitList,
+                                ci = 0.95,
+                                stdErrType = "perc") {
+  if (!(ci < 1 && ci > 0)) {
+    stop("'ci' needs to be between 0 and 1", call. = FALSE)
+  }
 
-    quantLevels <-
-      c(0.5, (1 - ci) / 2, 1 - (1 - ci) / 2) # median, (1-ci)/2, 1-(1-ci)/2
+  quantLevels <-
+    c(0.5, (1 - ci) / 2, 1 - (1 - ci) / 2) # median, (1-ci)/2, 1-(1-ci)/2
 
-    varIds <-
-      names(fitList[[1]]) # number of different variables present in fitlist
-    summaryList <- lapply(varIds, function(id) {
-      # if (!(id %in% c("omega", "parFixedDf", "method", "message", "warnings"))) {
-      #   varVec <- extractVars(fitList, id)
-      #   mn <- mean(varVec)
-      #   median <- median(varVec)
-      #   sd <- sd(varVec)
-      #
-      #   c(
-      #     mean = mn,
-      #     median = median,
-      #     stdDev = sd
-      #   )
-      # }
-      if (id == "omega") {
-        # omega estimates
-        omegaMatlist <- extractVars(fitList, id)
-        varVec <- simplify2array(omegaMatlist)
-        mn <- apply(varVec, 1:2, mean)
-        sd <- apply(varVec, 1:2, sd)
+  varIds <-
+    names(fitList[[1]]) # number of different variables present in fitlist
+  summaryList <- lapply(varIds, function(id) {
+    # if (!(id %in% c("omega", "parFixedDf", "method", "message", "warnings"))) {
+    #   varVec <- extractVars(fitList, id)
+    #   mn <- mean(varVec)
+    #   median <- median(varVec)
+    #   sd <- sd(varVec)
+    #
+    #   c(
+    #     mean = mn,
+    #     median = median,
+    #     stdDev = sd
+    #   )
+    # }
+    if (id == "omega") {
+      # omega estimates
+      omegaMatlist <- extractVars(fitList, id)
+      varVec <- simplify2array(omegaMatlist)
+      mn <- apply(varVec, 1:2, mean)
+      sd <- apply(varVec, 1:2, sd)
 
-        quants <- apply(varVec, 1:2, function(x) {
-          unname(quantile(x, quantLevels))
-        })
-        median <- quants[1, , ]
-        confLower <- quants[2, , ]
-        confUpper <- quants[3, , ]
+      quants <- apply(varVec, 1:2, function(x) {
+        unname(quantile(x, quantLevels))
+      })
+      median <- quants[1, , ]
+      confLower <- quants[2, , ]
+      confUpper <- quants[3, , ]
 
-        if (stdErrType != "perc") {
-          confLower <- mn - qnorm(quantLevels[[2]]) * sd
-          confUpper <- mn + qnorm(quantLevels[[3]]) * sd
-        }
+      if (stdErrType != "perc") {
+        confLower <- mn - qnorm(quantLevels[[2]]) * sd
+        confUpper <- mn + qnorm(quantLevels[[3]]) * sd
+      }
 
-        # computing the covariance and correlation matrices
-        # =======================================================
-        parFixedOmegaBootVec <- list()
+      # computing the covariance and correlation matrices
+      # =======================================================
+      parFixedOmegaBootVec <- list()
 
-        parFixedlist <- extractVars(fitList, id = "parFixedDf")
-        parFixedlistVec <- lapply(parFixedlist, function(x) {
-          x$Estimate
-        })
-        parFixedlistVec <- do.call("rbind", parFixedlistVec)
+      parFixedlist <- extractVars(fitList, id = "parFixedDf")
+      parFixedlistVec <- lapply(parFixedlist, function(x) {
+        x$Estimate
+      })
+      parFixedlistVec <- do.call("rbind", parFixedlistVec)
 
-        omgVecBoot <- list()
-        omegaIdx <- seq(length(omegaMatlist))
+      omgVecBoot <- list()
+      omegaIdx <- seq(length(omegaMatlist))
 
-        omgVecBoot <- lapply(omegaIdx, function(idx) {
-          omgMat <- omegaMatlist[[idx]]
-          omgVec <- omgMat[lower.tri(omgMat, TRUE)]
-          omgVecBoot[[idx]] <- omgVec
-        })
-        omgVecBoot <- do.call("rbind", omgVecBoot)
+      omgVecBoot <- lapply(omegaIdx, function(idx) {
+        omgMat <- omegaMatlist[[idx]]
+        omgVec <- omgMat[lower.tri(omgMat, TRUE)]
+        omgVecBoot[[idx]] <- omgVec
+      })
+      omgVecBoot <- do.call("rbind", omgVecBoot)
 
-        idxName <- 1
-        namesList <- list()
-        for (nam1 in colnames(omegaMatlist[[1]])) {
-          for (nam2 in colnames(omegaMatlist[[1]])) {
-            if (nam1 == nam2) {
-              if (!(nam1 %in% namesList)) {
-                namesList[idxName] <- nam1
-                idxName <- idxName + 1
-              }
-            } else {
-              nam <- paste0("(", nam1, ",", nam2, ")")
-              namRev <- paste0("(", nam2, ",", nam1, ")")
-              if (!(nam %in% namesList | namRev %in% namesList)) {
-                namesList[idxName] <- nam
-                idxName <- idxName + 1
-              }
+      idxName <- 1
+      namesList <- list()
+      for (nam1 in colnames(omegaMatlist[[1]])) {
+        for (nam2 in colnames(omegaMatlist[[1]])) {
+          if (nam1 == nam2) {
+            if (!(nam1 %in% namesList)) {
+              namesList[idxName] <- nam1
+              idxName <- idxName + 1
+            }
+          } else {
+            nam <- paste0("(", nam1, ",", nam2, ")")
+            namRev <- paste0("(", nam2, ",", nam1, ")")
+            if (!(nam %in% namesList | namRev %in% namesList)) {
+              namesList[idxName] <- nam
+              idxName <- idxName + 1
             }
           }
         }
-        colnames(omgVecBoot) <- namesList
+      }
+      colnames(omgVecBoot) <- namesList
 
-        .w <- which(vapply(namesList, function(x) {
-          !all(omgVecBoot[, x] == 0)
-        }, logical(1), USE.NAMES=FALSE))
-        omgVecBoot <- omgVecBoot[, .w]
+      .w <- which(vapply(namesList, function(x) {
+        !all(omgVecBoot[, x] == 0)
+      }, logical(1), USE.NAMES=FALSE))
+      omgVecBoot <- omgVecBoot[, .w]
 
 
-        parFixedOmegaCombined <- cbind(parFixedlistVec, omgVecBoot)
+      parFixedOmegaCombined <- cbind(parFixedlistVec, omgVecBoot)
 
-        covMatrix <- cov(parFixedOmegaCombined)
-        corMatrix <- cov2cor(covMatrix)
-        diag(corMatrix) <- sqrt(diag(covMatrix))
-        lst <- list(
-          mean = mn,
-          median = median,
-          stdDev = sd,
-          confLower = confLower,
-          confUpper = confUpper,
-          covMatrixCombined = covMatrix,
-          corMatrixCombined = corMatrix
-        )
+      covMatrix <- cov(parFixedOmegaCombined)
+      corMatrix <- cov2cor(covMatrix)
+      diag(corMatrix) <- sqrt(diag(covMatrix))
+      lst <- list(
+        mean = mn,
+        median = median,
+        stdDev = sd,
+        confLower = confLower,
+        confUpper = confUpper,
+        covMatrixCombined = covMatrix,
+        corMatrixCombined = corMatrix
+      )
+    }
+
+    else if (id == "parFixedDf") {
+      # parameter estimates (dataframe)
+      varVec <- extractVars(fitList, id)
+      mn <-
+        apply(simplify2array(lapply(varVec, as.matrix)), 1:2, mean, na.rm = TRUE)
+      sd <-
+        apply(simplify2array(lapply(varVec, as.matrix)), 1:2, sd, na.rm = TRUE)
+
+      quants <-
+        apply(simplify2array(lapply(varVec, as.matrix)), 1:2, function(x) {
+          unname(quantile(x, quantLevels, na.rm = TRUE))
+        })
+
+      median <- quants[1, , ]
+      confLower <- quants[2, , ]
+      confUpper <- quants[3, , ]
+
+      if (stdErrType != "perc") {
+        confLower <- mn - qnorm(quantLevels[[2]]) * sd
+        confUpper <- mn + qnorm(quantLevels[[3]]) * sd
       }
 
-      else if (id == "parFixedDf") {
-        # parameter estimates (dataframe)
-        varVec <- extractVars(fitList, id)
-        mn <-
-          apply(simplify2array(lapply(varVec, as.matrix)), 1:2, mean, na.rm = TRUE)
-        sd <-
-          apply(simplify2array(lapply(varVec, as.matrix)), 1:2, sd, na.rm = TRUE)
+      lst <- list(
+        mean = mn,
+        median = median,
+        stdDev = sd,
+        confLower = confLower,
+        confUpper = confUpper
+      )
+    }
 
-        quants <-
-          apply(simplify2array(lapply(varVec, as.matrix)), 1:2, function(x) {
-            unname(quantile(x, quantLevels, na.rm = TRUE))
-          })
+    else {
+      # if id equals method, message, or warning
+      extractVars(fitList, id)
+    }
+  })
 
-        median <- quants[1, , ]
-        confLower <- quants[2, , ]
-        confUpper <- quants[3, , ]
-
-        if (stdErrType != "perc") {
-          confLower <- mn - qnorm(quantLevels[[2]]) * sd
-          confUpper <- mn + qnorm(quantLevels[[3]]) * sd
-        }
-
-        lst <- list(
-          mean = mn,
-          median = median,
-          stdDev = sd,
-          confLower = confLower,
-          confUpper = confUpper
-        )
-      }
-
-      else {
-        # if id equals method, message, or warning
-        extractVars(fitList, id)
-      }
-    })
-
-    names(summaryList) <- varIds
-
-    summaryList$nboot <- length(fitList)
-
-    summaryList$warnings <- unique(summaryList$warnings)
-
-    summaryList$message <- unique(summaryList$message)
-
-    class(summaryList) <- "nlmixr2BoostrapSummary"
-    summaryList
-  }
+  names(summaryList) <- varIds
+  summaryList$nboot <- length(fitList)
+  summaryList$warnings <- unique(summaryList$warnings)
+  summaryList$message <- unique(summaryList$message)
+  class(summaryList) <- "nlmixr2BoostrapSummary"
+  summaryList
+}
 
 #' @export
 print.nlmixr2BoostrapSummary <- function(x, ..., sigdig = NULL) {
@@ -1413,7 +1318,6 @@ print.nlmixr2BoostrapSummary <- function(x, ..., sigdig = NULL) {
   invisible(x)
 }
 
-
 #' Assign a set of variables to the nlmixr2 fit environment
 #'
 #' @param namedVars a named list of variables that need to be assigned to the given environment
@@ -1438,7 +1342,6 @@ assignToEnv <- function(namedVars, fitobject) {
   })
 }
 
-
 #' @title Produce delta objective function for boostrap
 #'
 #' @param x fit object
@@ -1446,16 +1349,15 @@ assignToEnv <- function(namedVars, fitobject) {
 #' @return Fit traceplot or nothing.
 #' @author Vipul Mann,  Matthew L. Fidler
 #' @references
-#'
 #' R Niebecker,  MO Karlsson. (2013)
 #' *Are datasets for NLME models large enough for a bootstrap to provide reliable parameter uncertainty distributions?*
 #' PAGE 2013.
 #' <https://www.page-meeting.org/?abstract=2899>
-#'
 #' @export
 bootplot <- function(x, ...) {
   UseMethod("bootplot")
 }
+
 #' @rdname bootplot
 #' @export
 #' @importFrom ggplot2 .data
@@ -1514,14 +1416,3 @@ bootplot.nlmixr2FitCore <- function(x, ...) {
     )
   }
 }
-
-
-
-
-
-
-
-
-
-
-
