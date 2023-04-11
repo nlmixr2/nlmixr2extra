@@ -1,4 +1,4 @@
-test_that("extract_eq, simple version", {
+test_that("knit_print, simple version", {
   mod <- function() {
     ini({
       lka <- 0.45
@@ -17,7 +17,7 @@ test_that("extract_eq, simple version", {
   }
   ui <- rxode2::rxode(mod)
   expect_equal(
-    extract_eq(ui),
+    knit_print(ui),
     knitr::asis_output("\\begin{align*}\nka & = \\exp\\left(lka\\right) \\\\\ncl & = \\exp\\left(lcl\\right) \\\\\nvc & = \\exp\\left(lvc\\right) \\\\\ncp & = linCmt() \\\\\ncp & \\sim prop(propSd)\n\\end{align*}\n")
   )
 
@@ -25,12 +25,12 @@ test_that("extract_eq, simple version", {
     fit <- nlmixr2est::nlmixr(mod, data = nlmixr2data::theo_sd, est = "focei", control = nlmixr2est::foceiControl(eval.max = 1, print = 0))
   )
   expect_equal(
-    extract_eq(fit),
+    knit_print(fit),
     knitr::asis_output("\\begin{align*}\nka & = \\exp\\left(lka\\right) \\\\\ncl & = \\exp\\left(lcl\\right) \\\\\nvc & = \\exp\\left(lvc\\right) \\\\\ncp & = linCmt() \\\\\ncp & \\sim prop(propSd)\n\\end{align*}\n")
   )
 })
 
-test_that("extract_eq, less common models", {
+test_that("knit_print, less common models", {
   mod <- function() {
     ini({
       lka <- 0.45
@@ -65,12 +65,12 @@ test_that("extract_eq, less common models", {
   }
   ui <- rxode2::rxode(mod)
   expect_equal(
-    extract_eq(ui),
+    knit_print(ui),
     knitr::asis_output("\\begin{align*}\nka & = \\exp\\left(lka\\right)<1 \\\\\ncl & = \\exp\\left(lcl\\right)\\leq2 \\\\\nvc & = \\exp\\left(lvc\\right)\\equiv3 \\\\\nvc4 & = vc\\geq4 \\\\\nvc5 & = vc>5 \\\\\nvc6 & = vc\\land6 \\\\\nvc7 & = vc\\land7 \\\\\nvc8 & = vc\\lor8 \\\\\nvc9 & = vc\\lor9 \\\\\nvc10 & = vc\\ne10 \\\\\nvc11 & = \\lnot vc \\\\\n\\mathrm{if} & \\left(vc>11\\right) \\{ \\\\\n & cl  = 12 \\\\\n\\}  \\quad & \\mathrm{else} \\: \\mathrm{if}  \\left(vc>13\\right) \\{ \\\\\n & cl  = 14 \\\\\n & cl  = 15 \\\\\n\\}  \\quad & \\mathrm{else} \\: cl  = 16 \\\\\ncp & = linCmt() \\\\\ncp & \\sim c(p0=0, p1=1, p2=2, 3)\n\\end{align*}\n")
   )
 })
 
-test_that("extract_eq, model with 'if' and a character string", {
+test_that("knit_print, model with 'if' and a character string", {
   mod <- function() {
     ini({
       lka <- 0.45
@@ -94,7 +94,7 @@ test_that("extract_eq, model with 'if' and a character string", {
   }
   ui <- rxode2::rxode(mod)
   expect_equal(
-    extract_eq(ui),
+    knit_print(ui),
     knitr::asis_output("\\begin{align*}\nka & = \\exp\\left(lka\\right)<1 \\\\\ncl & = \\exp\\left(lcl\\right)\\leq2 \\\\\nvc & = \\exp\\left(lvc\\right)\\equiv3 \\\\\n\\mathrm{if} & \\left(vc\\equiv\\text{\"a\"}\\right) \\{ \\\\\n & cl  = 12 \\\\\n\\}  \\quad & \\mathrm{else} \\: cl  = 16 \\\\\ncp & = linCmt() \\\\\ncp & \\sim c(p0=0, p1=1, p2=2, 3)\n\\end{align*}\n")
   )
 })

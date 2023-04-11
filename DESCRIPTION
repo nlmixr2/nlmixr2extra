@@ -31,9 +31,9 @@ Imports:
     crayon,
     data.table,
     digest,
-    equatiomatic,
     ggplot2,
     ggtext,
+    knitr,
     lotri,
     methods,
     nlme,
@@ -45,7 +45,6 @@ Imports:
     utils
 Suggests: 
     brms,
-    knitr,
     nlmixr2data,
     testthat (>= 3.0.0),
     withr,
