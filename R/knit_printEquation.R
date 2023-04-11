@@ -400,7 +400,6 @@ extractEqHelper.default <- function(x, ..., inModel) {
     #     hand side must be named 'value'.
     ret <- extractEqHelperAssign(x, ..., inModel = inModel)
   } else {
-    browser()
     stop("cannot handle class, please report a bug: ", class(x)[1]) # nocov
   }
   ret
