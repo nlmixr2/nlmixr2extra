@@ -166,16 +166,16 @@ extractEqHelperAssign <- function(x, ..., inModel, alignment = "&", name) {
 latexOpMap <-
   list(
     "<"="<",
-    "<="="\\leq",
-    "=="="\\equiv",
-    ">="="\\geq",
+    "<="="{\\leq}",
+    "=="="{\\equiv}",
+    ">="="{\\geq}",
     ">"=">",
-    "&"="\\land",
-    "&&"="\\land",
-    "|"="\\lor",
-    "||"="\\lor",
-    "!="="\\ne",
-    "!"="\\lnot"
+    "&"="{\\land}",
+    "&&"="{\\land}",
+    "|"="{\\lor}",
+    "||"="{\\lor}",
+    "!="="{\\ne}",
+    "!"="{\\lnot}"
   )
 
 extractEqHelper.call <- function(x, ..., inModel, name) {
@@ -285,6 +285,7 @@ extractEqHelper.name <- function(x, ..., inModel, underscoreToSubscript = FALSE,
       # Otherwise underscores are protected from LaTeX interpretation
       ret <- gsub(x = ret, pattern = "_", replacement = "\\_", fixed = TRUE)
     }
+    ret <- paste0("{", ret, "}")
   } else {
     ret <- character()
   }
@@ -300,12 +301,14 @@ extractEqHelper.numeric <- function(x, ..., inModel, name = NULL) {
       base <- gsub(x = ret, pattern = patternSi, replacement = "\\1")
       # as.numeric will remove the leading zeros
       exponent <- as.numeric(gsub(x = ret, pattern = patternSi, replacement = "\\2"))
-      ret <- sprintf("{%s \\times 10^{%d}}", base, exponent)
+      ret <- sprintf("%s \\times 10^{%d}", base, exponent)
     }
     if (!is.null(name) && !(name == "")) {
       # Hopefully this is right; it occurs in named arguments to calls
       ret <- sprintf("%s=%s", name, ret)
     }
+    # Add braces to protect from combination with the prior command
+    ret <- paste0("{", ret, "}")
   } else {
     ret <- character()
   }
