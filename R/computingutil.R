@@ -1202,8 +1202,16 @@ getBootstrapSummary <- function(fitList,
       parFixedOmegaCombined <- cbind(parFixedlistVec, omgVecBoot)
 
       covMatrix <- cov(parFixedOmegaCombined)
-      corMatrix <- cov2cor(covMatrix)
+      w <- which(diag(covMatrix) == 0)
+      if (length(w) > 0) {
+        d <- dim(covMatrix)[1]
+        corMatrix <- matrix(rep(0,d * d), d, d)
+        corMatrix[-w, -w] <- cov2cor(covMatrix[-w, -w])
+      } else {
+        corMatrix <- cov2cor(covMatrix)
+      }
       diag(corMatrix) <- sqrt(diag(covMatrix))
+      dimnames(corMatrix) <- dimnames(covMatrix)
       lst <- list(
         mean = mn,
         median = median,
