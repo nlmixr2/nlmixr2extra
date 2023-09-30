@@ -1163,7 +1163,7 @@ getBootstrapSummary <- function(fitList,
       parFixedlistVec <- do.call("rbind", parFixedlistVec)
 
       omgVecBoot <- list()
-      omegaIdx <- seq(length(omegaMatlist))
+      omegaIdx <- seq_along(omegaMatlist)
 
       omgVecBoot <- lapply(omegaIdx, function(idx) {
         omgMat <- omegaMatlist[[idx]]
