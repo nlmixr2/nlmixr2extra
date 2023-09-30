@@ -29,7 +29,7 @@
   # mean by groups (Individual)
   groupMeans <- with(data, ave(get(covariate),get(uidCol), FUN = function(x) mean(x, na.rm = TRUE)))
   # pop mean
-  popMean <- mean(groupMeans)
+  popMean <- mean(groupMeans, na.rm=TRUE)
   # pop std
   popStd <- .sd.p (groupMeans)
 
@@ -171,7 +171,8 @@ foldgen <-  function(data,nfold=5,stratVar=NULL){
       unique(
         quantile(y,
                  probs =
-                   seq(0, 1, length = cuts))),
+                   seq(0, 1, length = cuts),
+                 na.rm=TRUE)),
       include.lowest = TRUE)
   }
 
@@ -235,8 +236,8 @@ optimUnisampling <- function(xvec,N=1000,medValue,floorT=TRUE) {
     if (floorT){
       x <- floor(stats::runif(N, xmin, xmax))}
     else{
-      x <- stats::runif(N, xmin, xmax)
-    }
+        x <- stats::runif(N, xmin, xmax)
+      }
     xdist <- (median(x)-medValue)^2
     xdist
   }
@@ -518,7 +519,7 @@ bootstrapFit <- function(fit,
         xPosthoc <- nlmixr2(x,
                             data = origData, est = "posthoc",
                             control = list(calcTables = FALSE, print = 1, compress=FALSE)
-        )
+                            )
         saveRDS(xPosthoc, .path)
       }
       xPosthoc$objf - fit$objf
@@ -617,7 +618,7 @@ sampling <- function(data,
                                  len = 1,
                                  any.missing = FALSE,
                                  lower = 2
-    )
+                                 )
   }
 
   if (performStrat && missing(stratVar)) {
@@ -629,7 +630,7 @@ sampling <- function(data,
                                lower = 2,
                                len = 1,
                                any.missing = FALSE
-  )
+                               )
 
   if (missing(uid_colname)) {
     # search the dataframe for a column name of 'ID'
@@ -761,7 +762,7 @@ modelBootstrap <- function(fit,
                                len = 1,
                                any.missing = FALSE,
                                lower = 1
-  )
+                               )
 
   if (missing(nSampIndiv)) {
     nSampIndiv <- length(unique(data[, uidCol]))
@@ -806,7 +807,7 @@ modelBootstrap <- function(fit,
   fnameBootDataPattern <-
     paste0("boot_data_", "[0-9]+", ".rds",
            sep = ""
-    )
+           )
   fileExists <-
     list.files(paste0("./", output_dir), pattern = fnameBootDataPattern)
 
@@ -886,7 +887,7 @@ modelBootstrap <- function(fit,
 
   if (!restart) {
     if (length(modFileExists) > 0 &&
-        (length(fileExists) > 0)) {
+          (length(fileExists) > 0)) {
 
       # read bootData and modelsEnsemble files from disk
       cli::cli_alert_success(
@@ -960,28 +961,28 @@ modelBootstrap <- function(fit,
                          modIdx))
 
       fit <- tryCatch(
-        {
-          fit <- suppressWarnings(nlmixr2(ui,
-                                          boot_data,
-                                          est = fitMeth,
-                                          control = .ctl))
+      {
+        fit <- suppressWarnings(nlmixr2(ui,
+                                        boot_data,
+                                        est = fitMeth,
+                                        control = .ctl))
 
-          .env$multipleFits <- list(
-            # objf = fit$OBJF,
-            # aic = fit$AIC,
-            omega = fit$omega,
-            parFixedDf = fit$parFixedDf[, c("Estimate", "Back-transformed")],
-            message = fit$message,
-            warnings = fit$warnings)
+        .env$multipleFits <- list(
+          # objf = fit$OBJF,
+          # aic = fit$AIC,
+          omega = fit$omega,
+          parFixedDf = fit$parFixedDf[, c("Estimate", "Back-transformed")],
+          message = fit$message,
+          warnings = fit$warnings)
 
-          fit # to return 'fit'
-        },
-        error = function(error_message) {
-          message("error fitting the model")
-          message(error_message)
-          message("storing the models as NA ...")
-          return(NA) # return NA otherwise (instead of NULL)
-        })
+        fit # to return 'fit'
+      },
+      error = function(error_message) {
+        message("error fitting the model")
+        message(error_message)
+        message("storing the models as NA ...")
+        return(NA) # return NA otherwise (instead of NULL)
+      })
 
       saveRDS(
         .env$multipleFits,
@@ -1070,7 +1071,7 @@ extractVars <- function(fitlist, id = "method") {
 
 
     if (!(id == "omega" ||
-          id == "parFixedDf")) {
+            id == "parFixedDf")) {
       # check if all message strings are empty
       if (id == "message") {
         prev <- TRUE
@@ -1136,11 +1137,11 @@ getBootstrapSummary <- function(fitList,
       # omega estimates
       omegaMatlist <- extractVars(fitList, id)
       varVec <- simplify2array(omegaMatlist)
-      mn <- apply(varVec, 1:2, mean)
-      sd <- apply(varVec, 1:2, sd)
+      mn <- apply(varVec, 1:2, mean, na.rm=TRUE)
+      sd <- apply(varVec, 1:2, sd, na.rm=TRUE)
 
       quants <- apply(varVec, 1:2, function(x) {
-        unname(quantile(x, quantLevels))
+        unname(quantile(x, quantLevels, na.rm=TRUE))
       })
       median <- quants[1, , ]
       confLower <- quants[2, , ]
@@ -1162,7 +1163,7 @@ getBootstrapSummary <- function(fitList,
       parFixedlistVec <- do.call("rbind", parFixedlistVec)
 
       omgVecBoot <- list()
-      omegaIdx <- seq(length(omegaMatlist))
+      omegaIdx <- seq_along(omegaMatlist)
 
       omgVecBoot <- lapply(omegaIdx, function(idx) {
         omgMat <- omegaMatlist[[idx]]
@@ -1201,8 +1202,16 @@ getBootstrapSummary <- function(fitList,
       parFixedOmegaCombined <- cbind(parFixedlistVec, omgVecBoot)
 
       covMatrix <- cov(parFixedOmegaCombined)
-      corMatrix <- cov2cor(covMatrix)
+      w <- which(diag(covMatrix) == 0)
+      if (length(w) > 0) {
+        d <- dim(covMatrix)[1]
+        corMatrix <- matrix(rep(0,d * d), d, d)
+        corMatrix[-w, -w] <- cov2cor(covMatrix[-w, -w])
+      } else {
+        corMatrix <- cov2cor(covMatrix)
+      }
       diag(corMatrix) <- sqrt(diag(covMatrix))
+      dimnames(corMatrix) <- dimnames(covMatrix)
       lst <- list(
         mean = mn,
         median = median,
@@ -1412,11 +1421,11 @@ bootplot.nlmixr2FitCore <- function(x, ...) {
     } else {
       stop("this nlmixr2 object does not include boostrap distribution statics for comparison",
            call. = FALSE
-      )
+           )
     }
   } else {
     stop("this is not a nlmixr2 object",
          call. = FALSE
-    )
+         )
   }
 }
