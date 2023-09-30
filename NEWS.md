@@ -3,6 +3,9 @@
 * `bootstrapFit()` now will be more careful handling `NA` values so
   they do not completely affect results (Issue #59)
 
+* `bootstrapFit()` will now only take the correlation of the non-zero
+  diagonals (Issue #59).
+
 # nlmixr2extra 2.0.9
 
 * New method for `knit_print()` will generate model equations for LaTeX
