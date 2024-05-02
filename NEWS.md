@@ -1,6 +1,6 @@
 # nlmixr2extra 2.0.10
 
-* `bootstrapFit()` now adds `sd` and `se` options (Issue #66)
+* `bootstrapFit()` fixes `se` option (Issue #66)
 
 # nlmixr2extra 2.0.9
 
