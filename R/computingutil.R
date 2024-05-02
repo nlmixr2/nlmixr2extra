@@ -2,7 +2,12 @@
 #' @param x vector of values to calculate standard deviation.
 #' @return population standard deviation
 #' @noRd
-.sd.p=function(x){sd(x)*sqrt((length(x)-1)/length(x))}
+.sd.p <- function(x) {
+  sd(x)*sqrt((length(x)-1)/length(x))
+}
+
+.bootstrapEnv <- new.env(parent=emptyenv())
+.bootstrapEnv$nSampIndiv <- 0L
 
 #' Function to return pop mean, pop std of a given covariate
 #'
@@ -21,7 +26,7 @@
   }
 
   .new <- intersect(names(data), covariate)
-  if (length(.new) == 0L) stop("covariate specified not in original dataset")
+  if (length(.new) == 0L) stop("covariate specified not in original dataset", call.=FALSE)
 
   #extract Individual ID from data frame
 
@@ -175,7 +180,7 @@ foldgen <-  function(data,nfold=5,stratVar=NULL) {
              include.lowest = TRUE)
   }
 
-  if(nfold < length(y)) {
+  if (nfold < length(y)) {
     ## reset levels so that the possible levels and
     ## the levels in the vector are the same
     y <- factor(as.character(y))
@@ -370,7 +375,7 @@ addConfboundsToVar <- function(var, confLower, confUpper, sigdig = 3) {
 #' }
 bootstrapFit <- function(fit,
                          nboot = 200,
-                         nSampIndiv,
+                         nSampIndiv=NULL,
                          stratVar,
                          stdErrType = c("perc", "sd", "se"),
                          ci = 0.95,
@@ -381,6 +386,7 @@ bootstrapFit <- function(fit,
 
   stdErrType <- match.arg(stdErrType)
   checkmate::assertNumeric(ci, lower=0, upper=1, len=1, any.missing=FALSE, null.ok = FALSE)
+  checkmate::assertIntegerish(nSampIndiv, lower=2, any.missing=FALSE, len=1, null.ok=TRUE)
 
   if (missing(stratVar)) {
     performStrat <- FALSE
@@ -469,7 +475,9 @@ bootstrapFit <- function(fit,
   newParFixed["Bootstrap %RSE"] <-
     signif(seBoot / estEst * 100, sigdig)
   .w <- which(regexpr("^Bootstrap +Back[-]transformed", names(newParFixed)) != -1)
-  if (length(.w) >= 1) newParFixed <- newParFixed[, -.w]
+  if (length(.w) >= 1) {
+    newParFixed <- newParFixed[, -.w]
+  }
   newParFixed[sprintf("Bootstrap Back-transformed(%s%%CI)", ci * 100)] <-
     backTransformed
 
@@ -608,13 +616,13 @@ bootstrapFit <- function(fit,
 #' sampling(data, 10)
 #' @noRd
 sampling <- function(data,
-                     nsamp,
+                     nsamp=NULL,
                      uid_colname,
                      pvalues = NULL,
                      performStrat = FALSE,
                      stratVar) {
   checkmate::assert_data_frame(data)
-  if (missing(nsamp)) {
+  if (is.null(nsamp)) {
     nsamp <- length(unique(data[, uid_colname]))
   }
   else {
@@ -744,7 +752,7 @@ sampling <- function(data,
 #' @noRd
 modelBootstrap <- function(fit,
                            nboot = 100,
-                           nSampIndiv,
+                           nSampIndiv=NULL,
                            stratVar,
                            pvalues = NULL,
                            restart = FALSE,
@@ -765,11 +773,11 @@ modelBootstrap <- function(fit,
   checkmate::assert_integerish(nboot,
                                len = 1,
                                any.missing = FALSE,
-                               lower = 1
-                               )
+                               lower = 1)
 
-  if (missing(nSampIndiv)) {
+  if (is.null(nSampIndiv)) {
     nSampIndiv <- length(unique(data[, uidCol]))
+    .bootstrapEnv$nSampIndiv <- nSampIndiv
   } else {
     checkmate::assert_integerish(
       nSampIndiv,
@@ -1114,9 +1122,12 @@ extractVars <- function(fitlist, id = "method") {
 #' getBootstrapSummary(fitlist)
 #' @noRd
 getBootstrapSummary <- function(fitList,
-                                nSampIndiv,
+                                nSampIndiv=NULL,
                                 ci = 0.95,
                                 stdErrType = "perc") {
+  if (is.null(nSampIndiv)) {
+    nSampIndiv <- .bootstrapEnv$nSampIndiv
+  }
   checkmate::assertNumeric(ci, len=1, lower=0, upper=1, any.missing=FALSE, null.ok=FALSE)
 
   quantLevels <-
@@ -1250,8 +1261,13 @@ getBootstrapSummary <- function(fitList,
       confUpper <- quants[3, , ]
 
       if (stdErrType != "perc") {
-        confLower <- mn - qnorm(quantLevels[[2]]) * sd
-        confUpper <- mn + qnorm(quantLevels[[3]]) * sd
+        if (stdErrType == "sd") {
+          confLower <- mn + qnorm(quantLevels[[2]]) * sd
+          confUpper <- mn + qnorm(quantLevels[[3]]) * sd
+        } else {
+          confLower <- mn + qnorm(quantLevels[[2]]) * sd / sqrt(nSampIndiv)
+          confUpper <- mn + qnorm(quantLevels[[3]]) * sd / sqrt(nSampIndiv)
+        }
       }
 
       lst <- list(
