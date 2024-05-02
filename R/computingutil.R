@@ -991,7 +991,7 @@ modelBootstrap <- function(fit,
         message("error fitting the model")
         message(error_message)
         message("storing the models as NA ...")
-        return(NA) # return NA otherwise (instead of NULL)
+        NA # return NA otherwise (instead of NULL)
       })
 
       saveRDS(
