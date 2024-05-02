@@ -292,19 +292,23 @@ addConfboundsToVar <- function(var, confLower, confUpper, sigdig = 3) {
 #'   probability of each subject is the same
 #' @param restart a boolean that indicates if a previous session has
 #'   to be restarted; default value is FALSE
-#' @param fitName Name of fit to be saved (by default the variable name supplied to fit)
+#' @param fitName Name of fit to be saved (by default the variable
+#'   name supplied to fit)
 #' @param stdErrType This gives the standard error type for the
-#'   updated standard errors; The current possibilities are:
-#'   `"perc"` which gives the standard errors by percentiles
-#'   (default) or `"se"` which gives the standard errors by the
-#'   traditional formula.
+#'   updated standard errors; The current possibilities are: `"perc"`
+#'   which gives the standard errors by percentiles (default), `"sd"`
+#'   which gives the standard errors by the using the normal
+#'   approximation of the mean with standard devaition, or `"se"`
+#'   which uses the normal approximation with standard errors
+#'   calculated with `nSampIndiv`
 #' @param ci Confidence interval level to calculate.  Default is 0.95
 #'   for a 95 percent confidence interval
 #' @param plotHist A boolean indicating if a histogram plot to assess
-#'   how well the bootstrap is doing.  By default this is turned off (`FALSE`)
+#'   how well the bootstrap is doing.  By default this is turned off
+#'   (`FALSE`)
 #' @param pvalues a vector of pvalues indicating the probability of
-#'   each subject to get selected; default value is `NULL` implying that
-#'   probability of each subject is the same
+#'   each subject to get selected; default value is `NULL` implying
+#'   that probability of each subject is the same
 #' @param restart A boolean to try to restart an interrupted or
 #'   incomplete boostrap.  By default this is `FALSE`
 #' @param fitName is the fit name that is used for the name of the
@@ -364,17 +368,14 @@ bootstrapFit <- function(fit,
                          nboot = 200,
                          nSampIndiv,
                          stratVar,
-                         stdErrType = c("perc", "se"),
+                         stdErrType = c("perc", "sd", "se"),
                          ci = 0.95,
                          pvalues = NULL,
                          restart = FALSE,
                          plotHist = FALSE,
                          fitName = as.character(substitute(fit))) {
-  stdErrType <- match.arg(stdErrType)
-  if (missing(stdErrType)) {
-    stdErrType <- "perc"
-  }
 
+  stdErrType <- match.arg(stdErrType)
   if (!(ci < 1 && ci > 0)) {
     stop("'ci' needs to be between 0 and 1", call. = FALSE)
   }
@@ -1105,10 +1106,12 @@ extractVars <- function(fitlist, id = "method") {
 #' @param fitList a list of lists containing information on the multiple bootstrapped models; similar to the output of modelsBootstrap() function
 #' @return returns aggregated quantities (mean, median, standard deviation, and variance) as a list for all the quantities
 #' @author Vipul Mann, Matthew Fidler
+#' @inheritParams bootstrapFit
 #' @examples
 #' getBootstrapSummary(fitlist)
 #' @noRd
 getBootstrapSummary <- function(fitList,
+                                nSampIndiv,
                                 ci = 0.95,
                                 stdErrType = "perc") {
   if (!(ci < 1 && ci > 0)) {
@@ -1116,7 +1119,7 @@ getBootstrapSummary <- function(fitList,
   }
 
   quantLevels <-
-    c(0.5, (1 - ci) / 2, 1 - (1 - ci) / 2) # median, (1-ci)/2, 1-(1-ci)/2
+    c(0.5, (1 - ci)/2, 1 - (1 - ci)/2) # median, (1-ci)/2, 1-(1-ci)/2
 
   varIds <-
     names(fitList[[1]]) # number of different variables present in fitlist
@@ -1148,8 +1151,13 @@ getBootstrapSummary <- function(fitList,
       confUpper <- quants[3, , ]
 
       if (stdErrType != "perc") {
-        confLower <- mn - qnorm(quantLevels[[2]]) * sd
-        confUpper <- mn + qnorm(quantLevels[[3]]) * sd
+        if (stdErrType == "sd") {
+          confLower <- mn + qnorm(quantLevels[[2]]) * sd
+          confUpper <- mn + qnorm(quantLevels[[3]]) * sd
+        } else {
+          confLower <- mn + qnorm(quantLevels[[2]]) * sd / sqrt(nSampIndiv)
+          confUpper <- mn + qnorm(quantLevels[[3]]) * sd / sqrt(nSampIndiv)
+        }
       }
 
       # computing the covariance and correlation matrices

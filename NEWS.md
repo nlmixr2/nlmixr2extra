@@ -1,3 +1,7 @@
+# nlmixr2extra 2.0.10
+
+* `bootstrapFit()` now adds `sd` and `se` options (Issue #66)
+
 # nlmixr2extra 2.0.9
 
 * `bootstrapFit()` now will be more careful handling `NA` values so
