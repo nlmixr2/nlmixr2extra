@@ -16,7 +16,7 @@
   checkmate::assertDataFrame(data,col.names = "named")
   checkmate::assertCharacter(covariate,len = 1,any.missing = FALSE )
 
-  if (inherits(try(str2lang(covariate)),"try-error")){
+  if (inherits(try(str2lang(covariate)),"try-error")) {
     stop("`varName` must be a valid R expression",call. = FALSE)
   }
 
@@ -49,15 +49,15 @@
   checkmate::assertDataFrame(data,col.names = "named")
   checkmate::assertCharacter(covariate,len = 1,any.missing = FALSE )
 
-  if (inherits(try(str2lang(covariate)),"try-error")){
+  if (inherits(try(str2lang(covariate)),"try-error")) {
     stop("`varName` must be a valid R expression",call. = FALSE)
   }
   .new <- intersect(names(data), covariate)
   if (length(.new) == 0L) stop("covariate specified not in original dataset")
 
-  if (is.factor(data[[covariate]]))
-  {return(data)}
-  else{
+  if (is.factor(data[[covariate]])) {
+    return(data)
+  } else {
     # Column name for the standardized covariate
     datColNames <- paste0("normalized_", covariate)
     # popMean
@@ -98,13 +98,16 @@ normalizedData <- function(data,covarsVec,replace=TRUE) {
   .normalizedDFs <- lapply(covarsVec,.normalizeDf,data=data)
 
   # final data frame of normalized covariates
-  if(replace){
+  if(replace) {
     .dat <- Reduce(merge,.normalizedDFs)
-    dropnormPrefix <- function(x){ colnames(x) <- gsub("normalized_", "", colnames(x)); x }
+    dropnormPrefix <- function(x) {
+      colnames(x) <- gsub("normalized_", "", colnames(x))
+      x
+    }
     catCheck <- intersect(covarsVec,names(Filter(is.factor, data)))
     .dat <- cbind(.dat[ , !names(.dat) %in% covarsVec],subset(.dat,select=catCheck))
     .finalDf <- dropnormPrefix(.dat)
-  }else{
+  } else {
     .finalDf <- Reduce(merge,.normalizedDFs)
   }
   .finalDf
@@ -131,19 +134,18 @@ normalizedData <- function(data,covarsVec,replace=TRUE) {
 #'
 #' # Stratified cross-validation data with ID (individual)
 #' df2 <- foldgen(d, nfold=5, stratVar=NULL)
-foldgen <-  function(data,nfold=5,stratVar=NULL){
+foldgen <-  function(data,nfold=5,stratVar=NULL) {
   # check if data frame
   checkmate::assert_data_frame(data,min.cols = 7)
-
   # check if user want to stratify on a variable , if not default is on individual
-  if(!is.null(stratVar)){
-    checkmate::assertCharacter(stratVar,len = 1,any.missing = FALSE )
+  if(!is.null(stratVar)) {
+    checkmate::assertCharacter(stratVar,len = 1,any.missing = FALSE)
     stratCheck <- intersect(names(data), stratVar)
-    if(!is.null(stratCheck)){
+    if(!is.null(stratCheck)) {
       y <- data[,stratCheck]
-    }
-    else {
-      stop(paste0(stratVar, "not in the data to stratify"))
+    } else {
+      stop(paste0(stratVar, "not in the data to stratify"),
+           call.=FALSE)
     }
   } else {
     # extract ID column from the data frame
@@ -166,14 +168,11 @@ foldgen <-  function(data,nfold=5,stratVar=NULL){
     cuts <- floor(length(y)/nfold)
     if(cuts < 2) cuts <- 2
     if(cuts > 5) cuts <- 5
-    y <- cut(
-      y,
-      unique(
-        quantile(y,
-                 probs =
-                   seq(0, 1, length = cuts),
-                 na.rm=TRUE)),
-      include.lowest = TRUE)
+    y <- cut(y,
+             unique(quantile(y,
+                             probs = seq(0, 1, length = cuts),
+                             na.rm=TRUE)),
+             include.lowest = TRUE)
   }
 
   if(nfold < length(y)) {
@@ -186,14 +185,15 @@ foldgen <-  function(data,nfold=5,stratVar=NULL){
     ## For each class, balance the fold allocation as far
     ## as possible, then resample the remainder.
     ## The final assignment of folds is also randomized.
-    for(i in 1:seq_along(numInClass))
-    {
+    for(i in 1:seq_along(numInClass)) {
       ## create a vector of integers from 1:k as many times as possible without
       ## going over the number of samples in the class. Note that if the number
       ## of samples in a class is less than k, nothing is producd here.
       seqVector <- rep(1:nfold, numInClass[i] %/% nfold)
       ## add enough random integers to get  length(seqVector) == numInClass[i]
-      if(numInClass[i] %% nfold > 0) seqVector <- c(seqVector, sample(1:nfold, numInClass[i] %% nfold))
+      if(numInClass[i] %% nfold > 0) {
+        seqVector <- c(seqVector, sample(1:nfold, numInClass[i] %% nfold))
+      }
       ## shuffle the integers for fold assignment and assign to this classes's data
       foldVector[which(y == dimnames(numInClass)$y[i])] <- sample(seqVector)
     }
@@ -205,7 +205,7 @@ foldgen <-  function(data,nfold=5,stratVar=NULL){
   names(out) <- paste("Fold", gsub(" ", "0", format(seq(along = out))), sep = "")
   out <- foldVector
 
-  if(!is.null(stratVar)){
+  if(!is.null(stratVar)) {
     out <- cbind(data,fold=out)
   } else {
     indv <- unique(data[,ID])
@@ -233,11 +233,11 @@ optimUnisampling <- function(xvec,N=1000,medValue,floorT=TRUE) {
   fun <- function(xvec, N=1000) {
     xmin <- xvec[1]
     xmax <- xvec[2]
-    if (floorT){
-      x <- floor(stats::runif(N, xmin, xmax))}
-    else{
-        x <- stats::runif(N, xmin, xmax)
-      }
+    if (floorT) {
+      x <- floor(stats::runif(N, xmin, xmax))
+    } else {
+      x <- stats::runif(N, xmin, xmax)
+    }
     xdist <- (median(x)-medValue)^2
     xdist
   }
@@ -246,9 +246,13 @@ optimUnisampling <- function(xvec,N=1000,medValue,floorT=TRUE) {
   xrmin <- xr$par[[1]]
   xrmax <- xr$par[[2]]
   sampled <- stats::runif(N, min = xr$par[[1]], max = xr$par[[2]])
-  if (xrmin==xvec[1] & xrmax==xvec[2] & floorT)    return (floor(sampled))
-  else if (xrmin==xvec[1] & xrmax==xvec[2])   return (sampled)
-  else return (optimUnisampling(xvec,N=1000,medValue))
+  if (xrmin==xvec[1] && xrmax==xvec[2] && floorT) {
+    return(floor(sampled))
+  }
+  else if (xrmin==xvec[1] && xrmax==xvec[2]) {
+    return(sampled)
+  }
+  return(optimUnisampling(xvec,N=1000,medValue))
 }
 
 #' Format confidence bounds for a variable into bracketed notation using string formatting
@@ -376,9 +380,7 @@ bootstrapFit <- function(fit,
                          fitName = as.character(substitute(fit))) {
 
   stdErrType <- match.arg(stdErrType)
-  if (!(ci < 1 && ci > 0)) {
-    stop("'ci' needs to be between 0 and 1", call. = FALSE)
-  }
+  checkmate::assertNumeric(ci, lower=0, upper=1, len=1, any.missing=FALSE, null.ok = FALSE)
 
   if (missing(stratVar)) {
     performStrat <- FALSE
@@ -426,7 +428,8 @@ bootstrapFit <- function(fit,
   }
 
   bootSummary <-
-    getBootstrapSummary(modelsList, ci, stdErrType) # aggregate values/summary
+    getBootstrapSummary(modelsList, ci=ci, stdErrType=stdErrType,
+                        nSampIndiv=nSampIndiv) # aggregate values/summary
 
   # modify the fit object
   nrws <- nrow(bootSummary$parFixedDf$mean)
@@ -1114,9 +1117,7 @@ getBootstrapSummary <- function(fitList,
                                 nSampIndiv,
                                 ci = 0.95,
                                 stdErrType = "perc") {
-  if (!(ci < 1 && ci > 0)) {
-    stop("'ci' needs to be between 0 and 1", call. = FALSE)
-  }
+  checkmate::assertNumeric(ci, len=1, lower=0, upper=1, any.missing=FALSE, null.ok=FALSE)
 
   quantLevels <-
     c(0.5, (1 - ci)/2, 1 - (1 - ci)/2) # median, (1-ci)/2, 1-(1-ci)/2
