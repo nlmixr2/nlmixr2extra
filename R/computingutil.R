@@ -375,7 +375,7 @@ addConfboundsToVar <- function(var, confLower, confUpper, sigdig = 3) {
 #' }
 bootstrapFit <- function(fit,
                          nboot = 200,
-                         nSampIndiv=NULL,
+                         nSampIndiv,
                          stratVar,
                          stdErrType = c("perc", "sd", "se"),
                          ci = 0.95,
@@ -386,7 +386,6 @@ bootstrapFit <- function(fit,
 
   stdErrType <- match.arg(stdErrType)
   checkmate::assertNumeric(ci, lower=0, upper=1, len=1, any.missing=FALSE, null.ok = FALSE)
-  checkmate::assertIntegerish(nSampIndiv, lower=2, any.missing=FALSE, len=1, null.ok=TRUE)
 
   if (missing(stratVar)) {
     performStrat <- FALSE
@@ -434,8 +433,7 @@ bootstrapFit <- function(fit,
   }
 
   bootSummary <-
-    getBootstrapSummary(modelsList, ci=ci, stdErrType=stdErrType,
-                        nSampIndiv=nSampIndiv) # aggregate values/summary
+    getBootstrapSummary(modelsList, ci=ci, stdErrType=stdErrType) # aggregate values/summary
 
   # modify the fit object
   nrws <- nrow(bootSummary$parFixedDf$mean)
@@ -773,11 +771,11 @@ modelBootstrap <- function(fit,
   checkmate::assert_integerish(nboot,
                                len = 1,
                                any.missing = FALSE,
-                               lower = 1)
+                               lower = 1
+                               )
 
-  if (is.null(nSampIndiv)) {
+  if (missing(nSampIndiv)) {
     nSampIndiv <- length(unique(data[, uidCol]))
-    .bootstrapEnv$nSampIndiv <- nSampIndiv
   } else {
     checkmate::assert_integerish(
       nSampIndiv,
@@ -1122,12 +1120,8 @@ extractVars <- function(fitlist, id = "method") {
 #' getBootstrapSummary(fitlist)
 #' @noRd
 getBootstrapSummary <- function(fitList,
-                                nSampIndiv=NULL,
                                 ci = 0.95,
                                 stdErrType = "perc") {
-  if (is.null(nSampIndiv)) {
-    nSampIndiv <- .bootstrapEnv$nSampIndiv
-  }
   checkmate::assertNumeric(ci, len=1, lower=0, upper=1, any.missing=FALSE, null.ok=FALSE)
 
   quantLevels <-
@@ -1163,13 +1157,8 @@ getBootstrapSummary <- function(fitList,
       confUpper <- quants[3, , ]
 
       if (stdErrType != "perc") {
-        if (stdErrType == "sd") {
-          confLower <- mn + qnorm(quantLevels[[2]]) * sd
-          confUpper <- mn + qnorm(quantLevels[[3]]) * sd
-        } else {
-          confLower <- mn + qnorm(quantLevels[[2]]) * sd / sqrt(nSampIndiv)
-          confUpper <- mn + qnorm(quantLevels[[3]]) * sd / sqrt(nSampIndiv)
-        }
+        confLower <- mn + qnorm(quantLevels[[2]]) * sd
+        confUpper <- mn + qnorm(quantLevels[[3]]) * sd
       }
 
       # computing the covariance and correlation matrices
@@ -1261,13 +1250,8 @@ getBootstrapSummary <- function(fitList,
       confUpper <- quants[3, , ]
 
       if (stdErrType != "perc") {
-        if (stdErrType == "sd") {
-          confLower <- mn + qnorm(quantLevels[[2]]) * sd
-          confUpper <- mn + qnorm(quantLevels[[3]]) * sd
-        } else {
-          confLower <- mn + qnorm(quantLevels[[2]]) * sd / sqrt(nSampIndiv)
-          confUpper <- mn + qnorm(quantLevels[[3]]) * sd / sqrt(nSampIndiv)
-        }
+        confLower <- mn + qnorm(quantLevels[[2]]) * sd
+        confUpper <- mn + qnorm(quantLevels[[3]]) * sd
       }
 
       lst <- list(
