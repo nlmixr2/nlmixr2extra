@@ -6,6 +6,9 @@
   sd(x)*sqrt((length(x)-1)/length(x))
 }
 
+.bootstrapEnv <- new.env(parent=emptyenv())
+.bootstrapEnv$nSampIndiv <- 0L
+
 #' Function to return pop mean, pop std of a given covariate
 #'
 #' @param data given data frame
@@ -302,9 +305,11 @@ addConfboundsToVar <- function(var, confLower, confUpper, sigdig = 3) {
 #'   name supplied to fit)
 #' @param stdErrType This gives the standard error type for the
 #'   updated standard errors; The current possibilities are: `"perc"`
-#'   which gives the standard errors by percentiles (default), `"se"`
-#'   which gives the standard errors (which in the case of
-#'   bootstrapping is the standard deviation)
+#'   which gives the standard errors by percentiles (default), `"sd"`
+#'   which gives the standard errors by the using the normal
+#'   approximation of the mean with standard devaition, or `"se"`
+#'   which uses the normal approximation with standard errors
+#'   calculated with `nSampIndiv`
 #' @param ci Confidence interval level to calculate.  Default is 0.95
 #'   for a 95 percent confidence interval
 #' @param plotHist A boolean indicating if a histogram plot to assess
@@ -372,7 +377,7 @@ bootstrapFit <- function(fit,
                          nboot = 200,
                          nSampIndiv=NULL,
                          stratVar,
-                         stdErrType = c("perc", "se"),
+                         stdErrType = c("perc", "sd", "se"),
                          ci = 0.95,
                          pvalues = NULL,
                          restart = FALSE,
@@ -429,7 +434,8 @@ bootstrapFit <- function(fit,
   }
 
   bootSummary <-
-    getBootstrapSummary(modelsList, ci=ci, stdErrType=stdErrType) # aggregate values/summary
+    getBootstrapSummary(modelsList, ci=ci, stdErrType=stdErrType,
+                        nSampIndiv=nSampIndiv) # aggregate values/summary
 
   # modify the fit object
   nrws <- nrow(bootSummary$parFixedDf$mean)
@@ -771,6 +777,7 @@ modelBootstrap <- function(fit,
 
   if (is.null(nSampIndiv)) {
     nSampIndiv <- length(unique(data[, uidCol]))
+    .bootstrapEnv$nSampIndiv <- nSampIndiv
   } else {
     checkmate::assert_integerish(
       nSampIndiv,
@@ -1115,8 +1122,12 @@ extractVars <- function(fitlist, id = "method") {
 #' getBootstrapSummary(fitlist)
 #' @noRd
 getBootstrapSummary <- function(fitList,
+                                nSampIndiv=NULL,
                                 ci = 0.95,
                                 stdErrType = "perc") {
+  if (is.null(nSampIndiv)) {
+    nSampIndiv <- .bootstrapEnv$nSampIndiv
+  }
   checkmate::assertNumeric(ci, len=1, lower=0, upper=1, any.missing=FALSE, null.ok=FALSE)
 
   quantLevels <-
@@ -1152,8 +1163,13 @@ getBootstrapSummary <- function(fitList,
       confUpper <- quants[3, , ]
 
       if (stdErrType != "perc") {
-        confLower <- mn + qnorm(quantLevels[[2]]) * sd
-        confUpper <- mn + qnorm(quantLevels[[3]]) * sd
+        if (stdErrType == "sd") {
+          confLower <- mn + qnorm(quantLevels[[2]]) * sd
+          confUpper <- mn + qnorm(quantLevels[[3]]) * sd
+        } else {
+          confLower <- mn + qnorm(quantLevels[[2]]) * sd / sqrt(nSampIndiv)
+          confUpper <- mn + qnorm(quantLevels[[3]]) * sd / sqrt(nSampIndiv)
+        }
       }
 
       # computing the covariance and correlation matrices
@@ -1245,8 +1261,13 @@ getBootstrapSummary <- function(fitList,
       confUpper <- quants[3, , ]
 
       if (stdErrType != "perc") {
-        confLower <- mn + qnorm(quantLevels[[2]]) * sd
-        confUpper <- mn + qnorm(quantLevels[[3]]) * sd
+        if (stdErrType == "sd") {
+          confLower <- mn + qnorm(quantLevels[[2]]) * sd
+          confUpper <- mn + qnorm(quantLevels[[3]]) * sd
+        } else {
+          confLower <- mn + qnorm(quantLevels[[2]]) * sd / sqrt(nSampIndiv)
+          confUpper <- mn + qnorm(quantLevels[[3]]) * sd / sqrt(nSampIndiv)
+        }
       }
 
       lst <- list(
