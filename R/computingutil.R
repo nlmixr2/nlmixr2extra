@@ -2,7 +2,12 @@
 #' @param x vector of values to calculate standard deviation.
 #' @return population standard deviation
 #' @noRd
-.sd.p=function(x){sd(x)*sqrt((length(x)-1)/length(x))}
+.sd.p <- function(x) {
+  sd(x)*sqrt((length(x)-1)/length(x))
+}
+
+.bootstrapEnv <- new.env(parent=emptyenv())
+.bootstrapEnv$nSampIndiv <- 0L
 
 #' Function to return pop mean, pop std of a given covariate
 #'
@@ -16,12 +21,12 @@
   checkmate::assertDataFrame(data,col.names = "named")
   checkmate::assertCharacter(covariate,len = 1,any.missing = FALSE )
 
-  if (inherits(try(str2lang(covariate)),"try-error")){
+  if (inherits(try(str2lang(covariate)),"try-error")) {
     stop("`varName` must be a valid R expression",call. = FALSE)
   }
 
   .new <- intersect(names(data), covariate)
-  if (length(.new) == 0L) stop("covariate specified not in original dataset")
+  if (length(.new) == 0L) stop("covariate specified not in original dataset", call.=FALSE)
 
   #extract Individual ID from data frame
 
@@ -49,15 +54,15 @@
   checkmate::assertDataFrame(data,col.names = "named")
   checkmate::assertCharacter(covariate,len = 1,any.missing = FALSE )
 
-  if (inherits(try(str2lang(covariate)),"try-error")){
+  if (inherits(try(str2lang(covariate)),"try-error")) {
     stop("`varName` must be a valid R expression",call. = FALSE)
   }
   .new <- intersect(names(data), covariate)
   if (length(.new) == 0L) stop("covariate specified not in original dataset")
 
-  if (is.factor(data[[covariate]]))
-  {return(data)}
-  else{
+  if (is.factor(data[[covariate]])) {
+    return(data)
+  } else {
     # Column name for the standardized covariate
     datColNames <- paste0("normalized_", covariate)
     # popMean
@@ -98,13 +103,16 @@ normalizedData <- function(data,covarsVec,replace=TRUE) {
   .normalizedDFs <- lapply(covarsVec,.normalizeDf,data=data)
 
   # final data frame of normalized covariates
-  if(replace){
+  if(replace) {
     .dat <- Reduce(merge,.normalizedDFs)
-    dropnormPrefix <- function(x){ colnames(x) <- gsub("normalized_", "", colnames(x)); x }
+    dropnormPrefix <- function(x) {
+      colnames(x) <- gsub("normalized_", "", colnames(x))
+      x
+    }
     catCheck <- intersect(covarsVec,names(Filter(is.factor, data)))
     .dat <- cbind(.dat[ , !names(.dat) %in% covarsVec],subset(.dat,select=catCheck))
     .finalDf <- dropnormPrefix(.dat)
-  }else{
+  } else {
     .finalDf <- Reduce(merge,.normalizedDFs)
   }
   .finalDf
@@ -131,19 +139,18 @@ normalizedData <- function(data,covarsVec,replace=TRUE) {
 #'
 #' # Stratified cross-validation data with ID (individual)
 #' df2 <- foldgen(d, nfold=5, stratVar=NULL)
-foldgen <-  function(data,nfold=5,stratVar=NULL){
+foldgen <-  function(data,nfold=5,stratVar=NULL) {
   # check if data frame
   checkmate::assert_data_frame(data,min.cols = 7)
-
   # check if user want to stratify on a variable , if not default is on individual
-  if(!is.null(stratVar)){
-    checkmate::assertCharacter(stratVar,len = 1,any.missing = FALSE )
+  if(!is.null(stratVar)) {
+    checkmate::assertCharacter(stratVar,len = 1,any.missing = FALSE)
     stratCheck <- intersect(names(data), stratVar)
-    if(!is.null(stratCheck)){
+    if(!is.null(stratCheck)) {
       y <- data[,stratCheck]
-    }
-    else {
-      stop(paste0(stratVar, "not in the data to stratify"))
+    } else {
+      stop(paste0(stratVar, "not in the data to stratify"),
+           call.=FALSE)
     }
   } else {
     # extract ID column from the data frame
@@ -166,17 +173,14 @@ foldgen <-  function(data,nfold=5,stratVar=NULL){
     cuts <- floor(length(y)/nfold)
     if(cuts < 2) cuts <- 2
     if(cuts > 5) cuts <- 5
-    y <- cut(
-      y,
-      unique(
-        quantile(y,
-                 probs =
-                   seq(0, 1, length = cuts),
-                 na.rm=TRUE)),
-      include.lowest = TRUE)
+    y <- cut(y,
+             unique(quantile(y,
+                             probs = seq(0, 1, length = cuts),
+                             na.rm=TRUE)),
+             include.lowest = TRUE)
   }
 
-  if(nfold < length(y)) {
+  if (nfold < length(y)) {
     ## reset levels so that the possible levels and
     ## the levels in the vector are the same
     y <- factor(as.character(y))
@@ -186,14 +190,15 @@ foldgen <-  function(data,nfold=5,stratVar=NULL){
     ## For each class, balance the fold allocation as far
     ## as possible, then resample the remainder.
     ## The final assignment of folds is also randomized.
-    for(i in 1:seq_along(numInClass))
-    {
+    for(i in 1:seq_along(numInClass)) {
       ## create a vector of integers from 1:k as many times as possible without
       ## going over the number of samples in the class. Note that if the number
       ## of samples in a class is less than k, nothing is producd here.
       seqVector <- rep(1:nfold, numInClass[i] %/% nfold)
       ## add enough random integers to get  length(seqVector) == numInClass[i]
-      if(numInClass[i] %% nfold > 0) seqVector <- c(seqVector, sample(1:nfold, numInClass[i] %% nfold))
+      if(numInClass[i] %% nfold > 0) {
+        seqVector <- c(seqVector, sample(1:nfold, numInClass[i] %% nfold))
+      }
       ## shuffle the integers for fold assignment and assign to this classes's data
       foldVector[which(y == dimnames(numInClass)$y[i])] <- sample(seqVector)
     }
@@ -205,7 +210,7 @@ foldgen <-  function(data,nfold=5,stratVar=NULL){
   names(out) <- paste("Fold", gsub(" ", "0", format(seq(along = out))), sep = "")
   out <- foldVector
 
-  if(!is.null(stratVar)){
+  if(!is.null(stratVar)) {
     out <- cbind(data,fold=out)
   } else {
     indv <- unique(data[,ID])
@@ -233,11 +238,11 @@ optimUnisampling <- function(xvec,N=1000,medValue,floorT=TRUE) {
   fun <- function(xvec, N=1000) {
     xmin <- xvec[1]
     xmax <- xvec[2]
-    if (floorT){
-      x <- floor(stats::runif(N, xmin, xmax))}
-    else{
-        x <- stats::runif(N, xmin, xmax)
-      }
+    if (floorT) {
+      x <- floor(stats::runif(N, xmin, xmax))
+    } else {
+      x <- stats::runif(N, xmin, xmax)
+    }
     xdist <- (median(x)-medValue)^2
     xdist
   }
@@ -246,9 +251,13 @@ optimUnisampling <- function(xvec,N=1000,medValue,floorT=TRUE) {
   xrmin <- xr$par[[1]]
   xrmax <- xr$par[[2]]
   sampled <- stats::runif(N, min = xr$par[[1]], max = xr$par[[2]])
-  if (xrmin==xvec[1] & xrmax==xvec[2] & floorT)    return (floor(sampled))
-  else if (xrmin==xvec[1] & xrmax==xvec[2])   return (sampled)
-  else return (optimUnisampling(xvec,N=1000,medValue))
+  if (xrmin==xvec[1] && xrmax==xvec[2] && floorT) {
+    return(floor(sampled))
+  }
+  else if (xrmin==xvec[1] && xrmax==xvec[2]) {
+    return(sampled)
+  }
+  return(optimUnisampling(xvec,N=1000,medValue))
 }
 
 #' Format confidence bounds for a variable into bracketed notation using string formatting
@@ -292,19 +301,23 @@ addConfboundsToVar <- function(var, confLower, confUpper, sigdig = 3) {
 #'   probability of each subject is the same
 #' @param restart a boolean that indicates if a previous session has
 #'   to be restarted; default value is FALSE
-#' @param fitName Name of fit to be saved (by default the variable name supplied to fit)
+#' @param fitName Name of fit to be saved (by default the variable
+#'   name supplied to fit)
 #' @param stdErrType This gives the standard error type for the
-#'   updated standard errors; The current possibilities are:
-#'   `"perc"` which gives the standard errors by percentiles
-#'   (default) or `"se"` which gives the standard errors by the
-#'   traditional formula.
+#'   updated standard errors; The current possibilities are: `"perc"`
+#'   which gives the standard errors by percentiles (default), `"sd"`
+#'   which gives the standard errors by the using the normal
+#'   approximation of the mean with standard devaition, or `"se"`
+#'   which uses the normal approximation with standard errors
+#'   calculated with `nSampIndiv`
 #' @param ci Confidence interval level to calculate.  Default is 0.95
 #'   for a 95 percent confidence interval
 #' @param plotHist A boolean indicating if a histogram plot to assess
-#'   how well the bootstrap is doing.  By default this is turned off (`FALSE`)
+#'   how well the bootstrap is doing.  By default this is turned off
+#'   (`FALSE`)
 #' @param pvalues a vector of pvalues indicating the probability of
-#'   each subject to get selected; default value is `NULL` implying that
-#'   probability of each subject is the same
+#'   each subject to get selected; default value is `NULL` implying
+#'   that probability of each subject is the same
 #' @param restart A boolean to try to restart an interrupted or
 #'   incomplete boostrap.  By default this is `FALSE`
 #' @param fitName is the fit name that is used for the name of the
@@ -364,20 +377,15 @@ bootstrapFit <- function(fit,
                          nboot = 200,
                          nSampIndiv,
                          stratVar,
-                         stdErrType = c("perc", "se"),
+                         stdErrType = c("perc", "sd", "se"),
                          ci = 0.95,
                          pvalues = NULL,
                          restart = FALSE,
                          plotHist = FALSE,
                          fitName = as.character(substitute(fit))) {
-  stdErrType <- match.arg(stdErrType)
-  if (missing(stdErrType)) {
-    stdErrType <- "perc"
-  }
 
-  if (!(ci < 1 && ci > 0)) {
-    stop("'ci' needs to be between 0 and 1", call. = FALSE)
-  }
+  stdErrType <- match.arg(stdErrType)
+  checkmate::assertNumeric(ci, lower=0, upper=1, len=1, any.missing=FALSE, null.ok = FALSE)
 
   if (missing(stratVar)) {
     performStrat <- FALSE
@@ -425,7 +433,7 @@ bootstrapFit <- function(fit,
   }
 
   bootSummary <-
-    getBootstrapSummary(modelsList, ci, stdErrType) # aggregate values/summary
+    getBootstrapSummary(modelsList, ci=ci, stdErrType=stdErrType) # aggregate values/summary
 
   # modify the fit object
   nrws <- nrow(bootSummary$parFixedDf$mean)
@@ -465,7 +473,9 @@ bootstrapFit <- function(fit,
   newParFixed["Bootstrap %RSE"] <-
     signif(seBoot / estEst * 100, sigdig)
   .w <- which(regexpr("^Bootstrap +Back[-]transformed", names(newParFixed)) != -1)
-  if (length(.w) >= 1) newParFixed <- newParFixed[, -.w]
+  if (length(.w) >= 1) {
+    newParFixed <- newParFixed[, -.w]
+  }
   newParFixed[sprintf("Bootstrap Back-transformed(%s%%CI)", ci * 100)] <-
     backTransformed
 
@@ -604,13 +614,13 @@ bootstrapFit <- function(fit,
 #' sampling(data, 10)
 #' @noRd
 sampling <- function(data,
-                     nsamp,
+                     nsamp=NULL,
                      uid_colname,
                      pvalues = NULL,
                      performStrat = FALSE,
                      stratVar) {
   checkmate::assert_data_frame(data)
-  if (missing(nsamp)) {
+  if (is.null(nsamp)) {
     nsamp <- length(unique(data[, uid_colname]))
   }
   else {
@@ -740,7 +750,7 @@ sampling <- function(data,
 #' @noRd
 modelBootstrap <- function(fit,
                            nboot = 100,
-                           nSampIndiv,
+                           nSampIndiv=NULL,
                            stratVar,
                            pvalues = NULL,
                            restart = FALSE,
@@ -981,7 +991,7 @@ modelBootstrap <- function(fit,
         message("error fitting the model")
         message(error_message)
         message("storing the models as NA ...")
-        return(NA) # return NA otherwise (instead of NULL)
+        NA # return NA otherwise (instead of NULL)
       })
 
       saveRDS(
@@ -1105,18 +1115,17 @@ extractVars <- function(fitlist, id = "method") {
 #' @param fitList a list of lists containing information on the multiple bootstrapped models; similar to the output of modelsBootstrap() function
 #' @return returns aggregated quantities (mean, median, standard deviation, and variance) as a list for all the quantities
 #' @author Vipul Mann, Matthew Fidler
+#' @inheritParams bootstrapFit
 #' @examples
 #' getBootstrapSummary(fitlist)
 #' @noRd
 getBootstrapSummary <- function(fitList,
                                 ci = 0.95,
                                 stdErrType = "perc") {
-  if (!(ci < 1 && ci > 0)) {
-    stop("'ci' needs to be between 0 and 1", call. = FALSE)
-  }
+  checkmate::assertNumeric(ci, len=1, lower=0, upper=1, any.missing=FALSE, null.ok=FALSE)
 
   quantLevels <-
-    c(0.5, (1 - ci) / 2, 1 - (1 - ci) / 2) # median, (1-ci)/2, 1-(1-ci)/2
+    c(0.5, (1 - ci)/2, 1 - (1 - ci)/2) # median, (1-ci)/2, 1-(1-ci)/2
 
   varIds <-
     names(fitList[[1]]) # number of different variables present in fitlist
@@ -1148,7 +1157,7 @@ getBootstrapSummary <- function(fitList,
       confUpper <- quants[3, , ]
 
       if (stdErrType != "perc") {
-        confLower <- mn - qnorm(quantLevels[[2]]) * sd
+        confLower <- mn + qnorm(quantLevels[[2]]) * sd
         confUpper <- mn + qnorm(quantLevels[[3]]) * sd
       }
 
@@ -1241,7 +1250,7 @@ getBootstrapSummary <- function(fitList,
       confUpper <- quants[3, , ]
 
       if (stdErrType != "perc") {
-        confLower <- mn - qnorm(quantLevels[[2]]) * sd
+        confLower <- mn + qnorm(quantLevels[[2]]) * sd
         confUpper <- mn + qnorm(quantLevels[[3]]) * sd
       }
 
