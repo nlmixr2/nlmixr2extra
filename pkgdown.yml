@@ -1,9 +1,8 @@
 pandoc: 3.1.11
-pkgdown: 2.0.9
+pkgdown: 2.1.0
 pkgdown_sha: ~
 articles: {}
-last_built: 2024-05-29T21:37Z
+last_built: 2024-07-17T20:49Z
 urls:
   reference: https://nlmixr2.github.io/nlmixr2extra/reference
   article: https://nlmixr2.github.io/nlmixr2extra/articles
-

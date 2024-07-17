@@ -1,87 +1,31 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/404.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/LICENSE.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/authors.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/index.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/news/index.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/adaptivelassoCoefficients.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/addCatCovariates.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/addorremoveCovariate.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/adjustedlassoCoefficients.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/backwardSearch.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/bootplot.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/bootstrapFit.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/buildcovInfo.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/buildupatedUI.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/covarSearchAuto.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/foldgen.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/forwardSearch.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/horseshoeSummardf.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/index.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/knit_print.nlmixr2FitCore.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/lassoCoefficients.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/lassoSummardf.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/normalizedData.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/optimUnisampling.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/preconditionFit.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/reexports.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/regularmodel.html</loc>
-  </url>
-  <url>
-    <loc>https://nlmixr2.github.io/nlmixr2extra/reference/theoFitOde.html</loc>
-  </url>
+<urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/404.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/LICENSE.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/authors.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/index.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/news/index.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/adaptivelassoCoefficients.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/addCatCovariates.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/addorremoveCovariate.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/adjustedlassoCoefficients.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/backwardSearch.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/bootplot.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/bootstrapFit.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/buildcovInfo.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/buildupatedUI.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/covarSearchAuto.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/foldgen.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/forwardSearch.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/horseshoeSummardf.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/index.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/knit_print.nlmixr2FitCore.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/lassoCoefficients.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/lassoSummardf.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/normalizedData.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/optimUnisampling.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/preconditionFit.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/reexports.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/regularmodel.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/theoFitOde.html</loc></url>
 </urlset>
+
