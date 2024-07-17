@@ -50,8 +50,7 @@ Suggests:
     testthat (>= 3.0.0),
     withr,
     dplyr,
-    devtools,
-    rxode2parse
+    devtools
 LinkingTo:
     Rcpp,
     RcppArmadillo
