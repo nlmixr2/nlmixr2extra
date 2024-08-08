@@ -958,11 +958,7 @@ modelBootstrap <- function(fit,
   }
 
   # get control settings for the 'fit' object and save computation effort by not computing the tables
-  .ctl <- fit$control
-  .ctl$print <- 0L
-  .ctl$covMethod <- 0L
-  .ctl$calcTables <- FALSE
-  .ctl$compress <- FALSE
+  .ctl <- setQuietFastControl(fit$control)
 
   modelsEnsemble <-
     lapply(bootData[.env$mod_idx:nboot], function(boot_data) {

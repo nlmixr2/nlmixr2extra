@@ -69,22 +69,27 @@ extractEqHelperLhsRhs <- function(x, ..., inModel, prefix = "", middle, suffix =
   paste0(prefix, lhs, middle, rhs, suffix)
 }
 
+#' @export
 extractEqHelper.nlmixr2FitCore <- function(x, ..., inModel) {
   extractEqHelper(as.function(x), ..., inModel=FALSE)
 }
 
+#' @export
 extractEqHelper.rxUi <- function(x, ..., inModel, name) {
   extractEqHelper(as.function(x), ..., inModel=FALSE)
 }
 
+#' @export
 extractEqHelper.function <- function(x, ..., inModel, name) {
   extractEqHelper(methods::functionBody(x), ..., inModel=FALSE)
 }
 
+#' @export
 "extractEqHelper.{" <- function(x, ..., inModel, name) {
   extractEqHelperSeqDrop(x, ..., inModel = inModel)
 }
 
+#' @export
 "extractEqHelper.(" <- function(x, ..., inModel, dropParen = FALSE, name) {
   stopifnot(length(x) == 2)
   if (dropParen) {
@@ -178,6 +183,7 @@ latexOpMap <-
     "!"="{\\lnot}"
   )
 
+#' @export
 extractEqHelper.call <- function(x, ..., inModel, name) {
   if (inModel) {
     if (is.name(x[[1]])) {
@@ -270,6 +276,7 @@ extractEqHelper.call <- function(x, ..., inModel, name) {
   ret
 }
 
+#' @export
 extractEqHelper.name <- function(x, ..., inModel, underscoreToSubscript = FALSE, name) {
   if (inModel) {
     ret <- as.character(x)
@@ -292,6 +299,7 @@ extractEqHelper.name <- function(x, ..., inModel, underscoreToSubscript = FALSE,
   ret
 }
 
+#' @export
 extractEqHelper.numeric <- function(x, ..., inModel, name = NULL) {
   if (inModel) {
     ret <- format(x)
@@ -329,6 +337,7 @@ escapeLatex <- function (x, newlines = FALSE, spaces = FALSE) {
   x
 }
 
+#' @export
 extractEqHelper.character <- function(x, ..., inModel, name = NULL) {
   if (inModel) {
     ret <- sprintf('\\text{"%s"}', escapeLatex(x))
@@ -394,6 +403,7 @@ extractEqHelper.if <- function(x, ..., inModel, alignment, indent = 0L, firstIf 
   ret
 }
 
+#' @export
 extractEqHelper.default <- function(x, ..., inModel) {
   if (inherits(x, "<-") | inherits(x, "=")) {
     # The assignment classes go via extractEqHelper.default to fix an R CMD
