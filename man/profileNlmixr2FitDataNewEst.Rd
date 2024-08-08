@@ -16,7 +16,24 @@ profileNlmixr2FitDataNewEst(
 )
 }
 \arguments{
-\item{estimates}{A data.frame with the parameter estimates}
+\item{estimates}{A data.frame with the parameter values as the
+\code{estimates[[which]]} column and an \code{"OFV"} column}
+
+\item{which}{The parameter names to perform likelihood profiling on
+(\code{NULL} indicates all parameters)}
+
+\item{direction}{Go up (\code{1}) or down (\code{-1})}
+
+\item{bound}{Parameter boundaries}
+
+\item{ofvIncrease}{The targetted change in objective function value (3.84
+corresponds to a Chi-squared test with a 95\% confidence interval)}
+
+\item{method}{The method to use for selecting a new parameter}
+}
+\value{
+The new numeric estimate as a single number or \code{NA_real_} if no
+value should be used.
 }
 \description{
 Generate a new estimate for likelihood profiling, and return a list

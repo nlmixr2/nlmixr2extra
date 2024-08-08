@@ -56,8 +56,20 @@ test_that("profileNlmixr2FitDataEstInitial", {
 })
 
 test_that("profileNlmixr2FitDataNewEst", {
+  # Go the range in the down direction
   estimateSetup <- data.frame(A = 1:2, OFV = c(1, 5))
-  profileNlmixr2FitDataNewEst(
-    estimates = estimateSetup, which = "A", direction = 1, bound = Inf, ofvIncrease = 3, method = "linapprox"
+  expect_equal(
+    profileNlmixr2FitDataNewEst(
+      estimates = estimateSetup, which = "A", direction = -1, bound = Inf, ofvIncrease = 3, method = "linapprox"
+    ),
+    0
+  )
+  # Go the range in the up direction
+  estimateSetup <- data.frame(A = 1:2, OFV = c(1, 5))
+  expect_equal(
+    profileNlmixr2FitDataNewEst(
+      estimates = estimateSetup, which = "A", direction = 1, bound = Inf, ofvIncrease = 3, method = "linapprox"
+    ),
+    2
   )
 })

@@ -26,7 +26,13 @@
 #'   fixed on that row, one column for the \code{OFV}, and columns for each
 #'   parameter estimate (or fixed value) in the model.
 #' @export
-profile.nlmixr2FitCore <- function(fitted, ..., which = NULL, maxpts = 10, ofvIncrease = qchisq(0.95, df = 1), normQuantile = qnorm(p = 0.975), rse_theta, tol = 0.001, ignoreBounds = FALSE, quiet = TRUE) {
+profile.nlmixr2FitCore <- function(fitted, ...,
+                                   which = NULL, maxpts = 10,
+                                   ofvIncrease = qchisq(0.95, df = 1),
+                                   normQuantile = qnorm(p = 0.975),
+                                   rse_theta, tol = 0.001,
+                                   ignoreBounds = FALSE,
+                                   quiet = TRUE) {
   # Input checking
   if (is.null(which)) {
     which <- names(fixef(fitted))
@@ -45,7 +51,7 @@ profile.nlmixr2FitCore <- function(fitted, ..., which = NULL, maxpts = 10, ofvIn
   checkmate::assert_integerish(maxpts, lower = 1, any.missing = FALSE, len = 1)
   checkmate::assert_number(ofvIncrease, lower = 0, finite = TRUE, null.ok = FALSE, na.ok = FALSE)
   if (missing(rse_theta)) {
-    fittedVcov <- vcov(fitted)
+    fittedVcov <- stats::vcov(fitted)
     if (is.null(fittedVcov)) {
       # Handle when vcov() is an error
       rse_theta <- 30
@@ -207,15 +213,23 @@ profileNlmixr2FitDataEstInitial <- function(estimates, which, normQuantile, rse_
 #' indicating if the new estimate should not be run (because the current data
 #' find the value within the tolerance)
 #'
-#' @param estimates A data.frame with the parameter estimates
+#' @param estimates A data.frame with the parameter values as the
+#'   `estimates[[which]]` column and an `"OFV"` column
+#' @inheritParams profile.nlmixr2FitCore
+#' @param direction Go up (`1`) or down (`-1`)
+#' @param bound Parameter boundaries
+#' @param method The method to use for selecting a new parameter
+#' @returns The new numeric estimate as a single number or `NA_real_` if no
+#'   value should be used.
+#' @export
 profileNlmixr2FitDataNewEst <- function(estimates, which, direction, bound, ofvIncrease, method = "linapprox") {
   checkmate::assert_data_frame(estimates, min.rows = 2)
+  checkmate::assert_true("OFV" %in% names(estimates))
   checkmate::assert_subset(which, choices = names(estimates))
-  stopifnot(direction != 0)
+  checkmate::assert_subset(direction, choices = c(-1, 1), empty.ok = FALSE)
   checkmate::assert_number(bound, na.ok = FALSE, finite = FALSE, null.ok = FALSE)
   checkmate::assert_number(ofvIncrease, lower = 0, na.ok = FALSE, finite = TRUE, null.ok = FALSE)
 
-  cli::cli_abort("More than one estimation row is required")
   minOFV <- min(estimates$OFV, na.rm = TRUE)
   minRow <- which(estimates$OFV %in% minOFV)
   if (length(minRow) > 1) {
@@ -234,9 +248,8 @@ profileNlmixr2FitDataNewEst <- function(estimates, which, direction, bound, ofvI
   if (length(estDir) == 0) {
     cli::cli_abort("No values detected in the estimation direction, please report a bug") # nocov
   } else if (length(estDir) == 1) {
-    browser()
     # Move in the opposite direction by the range
-    newEst <- estDir - direction*diff(range(estimates[[which]]))
+    newEst <- estDir + direction*diff(range(estimates[[which]]))
   } else if (all(dOFV < ofvIncrease)) {
     # Expand the search
     if (length(estDir) == 1) {
@@ -251,7 +264,7 @@ profileNlmixr2FitDataNewEst <- function(estimates, which, direction, bound, ofvI
     if (!monotonic) {
       newEst <- "OFV is not monotonic"
     } else if (method == "linapprox") {
-      newEst <- approx(x = dOFV, y = estDir, xout = ofvIncrease)$y
+      newEst <- stats::approx(x = dOFV, y = estDir, xout = ofvIncrease)$y
     } else {
       cli::cli_abort(sprintf("method %s is not implemented", method))
     }
