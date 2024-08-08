@@ -1,90 +1,34 @@
-#' @importFrom equatiomatic extract_eq
+#' @importFrom knitr knit_print
 #' @export
-equatiomatic::extract_eq
+knitr::knit_print
 
 #' Extract the equations from an nlmixr2/rxode2 model to produce a 'LaTeX'
 #' equation.
 #'
-#' @param model The model to extract equations from
-#' @param intercept,greek,greek_colors,subscript_colors,var_colors,var_subscript_colors,raw_tex,swap_var_names,swap_subscript_names,ital_vars,label,index_factors,show_distribution,wrap,terms_per_line,operator_location,align_env,use_coefs,coef_digits,fix_signs,font_size,mean_separate,return_variances,se_subscripts Ignored
+#' @param x The model to extract equations from
+#' @param ... Ignored
+#' @param output The type of output to request (currently, just "equations")
 #' @export
-extract_eq.nlmixr2FitCore <- function(model, intercept = "alpha", greek = "beta",
-                                      greek_colors = NULL, subscript_colors = NULL,
-                                      var_colors = NULL, var_subscript_colors = NULL,
-                                      raw_tex = FALSE,
-                                      swap_var_names = NULL, swap_subscript_names = NULL,
-                                      ital_vars = FALSE, label = NULL,
-                                      index_factors = FALSE, show_distribution = FALSE,
-                                      wrap = FALSE, terms_per_line = 4,
-                                      operator_location = "end", align_env = "aligned",
-                                      use_coefs = FALSE, coef_digits = 2,
-                                      fix_signs = TRUE, font_size = NULL,
-                                      mean_separate, return_variances = FALSE,
-                                      se_subscripts = FALSE, ...) {
-  stopifnot(identical(intercept, "alpha"))
-  stopifnot(identical(greek, "beta"))
-  stopifnot(is.null(greek_colors))
-  stopifnot(is.null(subscript_colors))
-  stopifnot(is.null(var_colors))
-  stopifnot(is.null(var_subscript_colors))
-  stopifnot(identical(raw_tex, FALSE))
-  stopifnot(is.null(swap_var_names))
-  stopifnot(is.null(swap_subscript_names))
-  stopifnot(identical(ital_vars, FALSE))
-  stopifnot(is.null(label))
-  stopifnot(identical(index_factors, FALSE))
-  stopifnot(identical(show_distribution, FALSE))
-  stopifnot(identical(wrap, FALSE))
-  stopifnot(identical(terms_per_line, 4))
-  stopifnot(identical(operator_location, "end"))
-  stopifnot(identical(align_env, "aligned"))
-  stopifnot(identical(use_coefs, FALSE))
-  stopifnot(identical(coef_digits, 2))
-  stopifnot(identical(fix_signs, TRUE))
-  stopifnot(is.null(font_size))
-  stopifnot(missing(mean_separate))
-  stopifnot(identical(return_variances, FALSE))
-  stopifnot(identical(se_subscripts, FALSE))
-  ret <-
-    paste0(
-      "\\begin{align*}\n",
-      paste(
-        extractEqHelper(x = model, ...),
-        collapse = " \\\\\n"
-      ),
-      "\n\\end{align*}\n"
-    )
+knit_print.nlmixr2FitCore <- function(x,  ..., output = "equations") {
+  output <- match.arg(output)
+  if ("equations" %in% output) {
+    ret <-
+      paste0(
+        "\\begin{align*}\n",
+        paste(
+          extractEqHelper(x = x, ...),
+          collapse = " \\\\\n"
+        ),
+        "\n\\end{align*}\n"
+      )
+  }
   knitr::asis_output(ret)
 }
 
-#' @rdname extract_eq.nlmixr2FitCore
+#' @rdname knit_print.nlmixr2FitCore
 #' @export
-extract_eq.rxUi <- function(model, intercept = "alpha", greek = "beta",
-                            greek_colors = NULL, subscript_colors = NULL,
-                            var_colors = NULL, var_subscript_colors = NULL,
-                            raw_tex = FALSE,
-                            swap_var_names = NULL, swap_subscript_names = NULL,
-                            ital_vars = FALSE, label = NULL,
-                            index_factors = FALSE, show_distribution = FALSE,
-                            wrap = FALSE, terms_per_line = 4,
-                            operator_location = "end", align_env = "aligned",
-                            use_coefs = FALSE, coef_digits = 2,
-                            fix_signs = TRUE, font_size = NULL,
-                            mean_separate, return_variances = FALSE,
-                            se_subscripts = FALSE, ...) {
-  extract_eq.nlmixr2FitCore(model, intercept = intercept, greek = greek,
-                            greek_colors = greek_colors, subscript_colors = subscript_colors,
-                            var_colors = var_colors, var_subscript_colors = var_colors,
-                            raw_tex = raw_tex,
-                            swap_var_names = swap_var_names, swap_subscript_names = swap_subscript_names,
-                            ital_vars = ital_vars, label = label,
-                            index_factors = index_factors, show_distribution = show_distribution,
-                            wrap = wrap, terms_per_line = terms_per_line,
-                            operator_location = operator_location, align_env = align_env,
-                            use_coefs = use_coefs, coef_digits = coef_digits,
-                            fix_signs = fix_signs, font_size = font_size,
-                            mean_separate = mean_separate, return_variances = return_variances,
-                            se_subscripts = se_subscripts, ...)
+knit_print.rxUi <- function(x, ...) {
+  knit_print.nlmixr2FitCore(x, ...)
 }
 
 extractEqHelper <- function(x, ..., inModel) {
@@ -222,16 +166,16 @@ extractEqHelperAssign <- function(x, ..., inModel, alignment = "&", name) {
 latexOpMap <-
   list(
     "<"="<",
-    "<="="\\leq",
-    "=="="\\equiv",
-    ">="="\\geq",
+    "<="="{\\leq}",
+    "=="="{\\equiv}",
+    ">="="{\\geq}",
     ">"=">",
-    "&"="\\land",
-    "&&"="\\land",
-    "|"="\\lor",
-    "||"="\\lor",
-    "!="="\\ne",
-    "!"="\\lnot"
+    "&"="{\\land}",
+    "&&"="{\\land}",
+    "|"="{\\lor}",
+    "||"="{\\lor}",
+    "!="="{\\ne}",
+    "!"="{\\lnot}"
   )
 
 extractEqHelper.call <- function(x, ..., inModel, name) {
@@ -341,6 +285,7 @@ extractEqHelper.name <- function(x, ..., inModel, underscoreToSubscript = FALSE,
       # Otherwise underscores are protected from LaTeX interpretation
       ret <- gsub(x = ret, pattern = "_", replacement = "\\_", fixed = TRUE)
     }
+    ret <- paste0("{", ret, "}")
   } else {
     ret <- character()
   }
@@ -356,12 +301,14 @@ extractEqHelper.numeric <- function(x, ..., inModel, name = NULL) {
       base <- gsub(x = ret, pattern = patternSi, replacement = "\\1")
       # as.numeric will remove the leading zeros
       exponent <- as.numeric(gsub(x = ret, pattern = patternSi, replacement = "\\2"))
-      ret <- sprintf("{%s \\times 10^{%d}}", base, exponent)
+      ret <- sprintf("%s \\times 10^{%d}", base, exponent)
     }
     if (!is.null(name) && !(name == "")) {
       # Hopefully this is right; it occurs in named arguments to calls
       ret <- sprintf("%s=%s", name, ret)
     }
+    # Add braces to protect from combination with the prior command
+    ret <- paste0("{", ret, "}")
   } else {
     ret <- character()
   }

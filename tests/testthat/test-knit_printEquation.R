@@ -1,4 +1,4 @@
-test_that("extract_eq, simple version", {
+test_that("knit_print, simple version", {
   mod <- function() {
     ini({
       lka <- 0.45
@@ -17,20 +17,20 @@ test_that("extract_eq, simple version", {
   }
   ui <- rxode2::rxode(mod)
   expect_equal(
-    extract_eq(ui),
-    knitr::asis_output("\\begin{align*}\nka & = \\exp\\left(lka\\right) \\\\\ncl & = \\exp\\left(lcl\\right) \\\\\nvc & = \\exp\\left(lvc\\right) \\\\\ncp & = linCmt() \\\\\ncp & \\sim prop(propSd)\n\\end{align*}\n")
+    knit_print(ui),
+    knitr::asis_output("\\begin{align*}\n{ka} & = \\exp\\left({lka}\\right) \\\\\n{cl} & = \\exp\\left({lcl}\\right) \\\\\n{vc} & = \\exp\\left({lvc}\\right) \\\\\n{cp} & = linCmt() \\\\\n{cp} & \\sim prop({propSd})\n\\end{align*}\n")
   )
 
   suppressMessages(
     fit <- nlmixr2est::nlmixr(mod, data = nlmixr2data::theo_sd, est = "focei", control = nlmixr2est::foceiControl(eval.max = 1, print = 0))
   )
   expect_equal(
-    extract_eq(fit),
-    knitr::asis_output("\\begin{align*}\nka & = \\exp\\left(lka\\right) \\\\\ncl & = \\exp\\left(lcl\\right) \\\\\nvc & = \\exp\\left(lvc\\right) \\\\\ncp & = linCmt() \\\\\ncp & \\sim prop(propSd)\n\\end{align*}\n")
+    knit_print(fit),
+    knitr::asis_output("\\begin{align*}\n{ka} & = \\exp\\left({lka}\\right) \\\\\n{cl} & = \\exp\\left({lcl}\\right) \\\\\n{vc} & = \\exp\\left({lvc}\\right) \\\\\n{cp} & = linCmt() \\\\\n{cp} & \\sim prop({propSd})\n\\end{align*}\n")
   )
 })
 
-test_that("extract_eq, less common models", {
+test_that("knit_print, less common models", {
   mod <- function() {
     ini({
       lka <- 0.45
@@ -65,12 +65,12 @@ test_that("extract_eq, less common models", {
   }
   ui <- rxode2::rxode(mod)
   expect_equal(
-    extract_eq(ui),
-    knitr::asis_output("\\begin{align*}\nka & = \\exp\\left(lka\\right)<1 \\\\\ncl & = \\exp\\left(lcl\\right)\\leq2 \\\\\nvc & = \\exp\\left(lvc\\right)\\equiv3 \\\\\nvc4 & = vc\\geq4 \\\\\nvc5 & = vc>5 \\\\\nvc6 & = vc\\land6 \\\\\nvc7 & = vc\\land7 \\\\\nvc8 & = vc\\lor8 \\\\\nvc9 & = vc\\lor9 \\\\\nvc10 & = vc\\ne10 \\\\\nvc11 & = \\lnot vc \\\\\n\\mathrm{if} & \\left(vc>11\\right) \\{ \\\\\n & cl  = 12 \\\\\n\\}  \\quad & \\mathrm{else} \\: \\mathrm{if}  \\left(vc>13\\right) \\{ \\\\\n & cl  = 14 \\\\\n & cl  = 15 \\\\\n\\}  \\quad & \\mathrm{else} \\: cl  = 16 \\\\\ncp & = linCmt() \\\\\ncp & \\sim c(p0=0, p1=1, p2=2, 3)\n\\end{align*}\n")
+    knit_print(ui),
+    knitr::asis_output("\\begin{align*}\n{ka} & = \\exp\\left({lka}\\right)<{1} \\\\\n{cl} & = \\exp\\left({lcl}\\right){\\leq}{2} \\\\\n{vc} & = \\exp\\left({lvc}\\right){\\equiv}{3} \\\\\n{vc4} & = {vc}{\\geq}{4} \\\\\n{vc5} & = {vc}>{5} \\\\\n{vc6} & = {vc}{\\land}{6} \\\\\n{vc7} & = {vc}{\\land}{7} \\\\\n{vc8} & = {vc}{\\lor}{8} \\\\\n{vc9} & = {vc}{\\lor}{9} \\\\\n{vc10} & = {vc}{\\ne}{10} \\\\\n{vc11} & = {\\lnot} {vc} \\\\\n\\mathrm{if} & \\left({vc}>{11}\\right) \\{ \\\\\n & {cl}  = {12} \\\\\n\\}  \\quad & \\mathrm{else} \\: \\mathrm{if}  \\left({vc}>{13}\\right) \\{ \\\\\n & {cl}  = {14} \\\\\n & {cl}  = {15} \\\\\n\\}  \\quad & \\mathrm{else} \\: {cl}  = {16} \\\\\n{cp} & = linCmt() \\\\\n{cp} & \\sim c({p0=0}, {p1=1}, {p2=2}, {3})\n\\end{align*}\n")
   )
 })
 
-test_that("extract_eq, model with 'if' and a character string", {
+test_that("knit_print, model with 'if' and a character string", {
   mod <- function() {
     ini({
       lka <- 0.45
@@ -94,20 +94,22 @@ test_that("extract_eq, model with 'if' and a character string", {
   }
   ui <- rxode2::rxode(mod)
   expect_equal(
-    extract_eq(ui),
-    knitr::asis_output("\\begin{align*}\nka & = \\exp\\left(lka\\right)<1 \\\\\ncl & = \\exp\\left(lcl\\right)\\leq2 \\\\\nvc & = \\exp\\left(lvc\\right)\\equiv3 \\\\\n\\mathrm{if} & \\left(vc\\equiv\\text{\"a\"}\\right) \\{ \\\\\n & cl  = 12 \\\\\n\\}  \\quad & \\mathrm{else} \\: cl  = 16 \\\\\ncp & = linCmt() \\\\\ncp & \\sim c(p0=0, p1=1, p2=2, 3)\n\\end{align*}\n")
+    knit_print(ui),
+    knitr::asis_output("\\begin{align*}\n{ka} & = \\exp\\left({lka}\\right)<{1} \\\\\n{cl} & = \\exp\\left({lcl}\\right){\\leq}{2} \\\\\n{vc} & = \\exp\\left({lvc}\\right){\\equiv}{3} \\\\\n\\mathrm{if} & \\left({vc}{\\equiv}\\text{\"a\"}\\right) \\{ \\\\\n & {cl}  = {12} \\\\\n\\}  \\quad & \\mathrm{else} \\: {cl}  = {16} \\\\\n{cp} & = linCmt() \\\\\n{cp} & \\sim c({p0=0}, {p1=1}, {p2=2}, {3})\n\\end{align*}\n")
   )
 })
 
-expect_equal(
-  extractEqHelper.function(function() {ini({a <- 1});model({log(foo)+exp(bar)})}, inModel = FALSE),
-  "\\log\\left(foo\\right)+\\exp\\left(bar\\right)"
-)
+test_that("function extraction works", {
+  expect_equal(
+    extractEqHelper.function(function() {ini({a <- 1});model({log(foo)+exp(bar)})}, inModel = FALSE),
+    "\\log\\left({foo}\\right)+\\exp\\left({bar}\\right)"
+  )
+})
 
 test_that("extractEqHelper.(", {
   expect_equal(
     "extractEqHelper.("(str2lang("(foo)"), inModel = TRUE),
-    "\\left(foo\\right)"
+    "\\left({foo}\\right)"
   )
   expect_equal(
     "extractEqHelper.("(str2lang("(foo)"), inModel = FALSE),
@@ -119,20 +121,20 @@ test_that("extractEqHelperAssign", {
   # ODE, space with multiple-character state ("abc")
   expect_equal(
     extractEqHelperAssign(str2lang("d/dt(abc) = d"), inModel = TRUE),
-    "\\frac{d \\: abc}{dt} & = d"
+    "\\frac{d \\: abc}{dt} & = {d}"
   )
   # ODE, no space with single-character state ("a")
   expect_equal(
     extractEqHelperAssign(str2lang("d/dt(a) = b"), inModel = TRUE),
-    "\\frac{da}{dt} & = b"
+    "\\frac{da}{dt} & = {b}"
   )
   expect_equal(
     extractEqHelperAssign(str2lang("a = b"), inModel = TRUE),
-    "a & = b"
+    "{a} & = {b}"
   )
   expect_equal(
     extractEqHelperAssign(str2lang("a <- b"), inModel = TRUE),
-    "a & = b"
+    "{a} & = {b}"
   )
   expect_equal(
     extractEqHelperAssign(str2lang("a <- b"), inModel = FALSE),
@@ -144,40 +146,40 @@ test_that("extractEqHelper.call", {
   # named functions are escaped
   expect_equal(
     extractEqHelper.call(str2lang("model({log(foo)+exp(bar)})"), inModel = FALSE),
-    "\\log\\left(foo\\right)+\\exp\\left(bar\\right)"
+    "\\log\\left({foo}\\right)+\\exp\\left({bar}\\right)"
   )
   # binary plus and unary minus
   expect_equal(
     extractEqHelper.call(str2lang("model({-foo+add(bar)})"), inModel = FALSE),
-    "-foo+add(bar)"
+    "-{foo}+add({bar})"
   )
   # multiplication
   expect_equal(
     extractEqHelper.call(str2lang("model({foo*add(bar)})"), inModel = FALSE),
-    "foo {\\times} add(bar)"
+    "{foo} {\\times} add({bar})"
   )
   # division
   expect_equal(
     extractEqHelper.call(str2lang("model({foo/add(bar)})"), inModel = FALSE),
-    "\\frac{foo}{add(bar)}"
+    "\\frac{{foo}}{add({bar})}"
   )
   # exponent with both operators
   expect_equal(
     extractEqHelper.call(str2lang("model({foo**add(bar)})"), inModel = FALSE),
-    "{foo}^{add(bar)}"
+    "{{foo}}^{add({bar})}"
   )
   expect_equal(
     extractEqHelper.call(str2lang("model({foo^add(bar)})"), inModel = FALSE),
-    "{foo}^{add(bar)}"
+    "{{foo}}^{add({bar})}"
   )
   expect_equal(
     extractEqHelper.call(str2lang("model({foo~add(bar)})"), inModel = FALSE),
-    "foo & \\sim add(bar)"
+    "{foo} & \\sim add({bar})"
   )
   # transition to inModel works
   expect_equal(
     extractEqHelper.call(str2lang("model({foo(bar)})"), inModel = FALSE),
-    "foo(bar)"
+    "foo({bar})"
   )
   expect_equal(
     extractEqHelper.call(str2lang("foo(bar)"), inModel = FALSE),
@@ -188,19 +190,19 @@ test_that("extractEqHelper.call", {
 test_that("extractEqHelper.name", {
   expect_equal(
     extractEqHelper.name(as.name("fo_o_bar"), inModel = TRUE, underscoreToSubscript = FALSE),
-    "fo\\_o\\_bar"
+    "{fo\\_o\\_bar}"
   )
   expect_equal(
     extractEqHelper.name(as.name("fo_o_bar"), inModel = TRUE, underscoreToSubscript = TRUE),
-    "fo_{o, bar}"
+    "{fo_{o, bar}}"
   )
   expect_equal(
     extractEqHelper.name(as.name("fo_o"), inModel = TRUE, underscoreToSubscript = TRUE),
-    "fo_{o}"
+    "{fo_{o}}"
   )
   expect_equal(
     extractEqHelper.name(as.name("foo"), inModel = TRUE, underscoreToSubscript = TRUE),
-    "foo"
+    "{foo}"
   )
   expect_equal(
     extractEqHelper.name(as.name("foo"), inModel = FALSE),
@@ -211,11 +213,11 @@ test_that("extractEqHelper.name", {
 test_that("extractEqHelper.numeric", {
   expect_equal(
     extractEqHelper.numeric(5, inModel = TRUE),
-    "5"
+    "{5}"
   )
   expect_equal(
     extractEqHelper.numeric(pi, inModel = TRUE),
-    "3.141593"
+    "{3.141593}"
   )
   # test SI
   expect_equal(
@@ -272,22 +274,29 @@ test_that("extractEqHelper.if", {
   }")
   expect_equal(
     extractEqHelper.if(ifOnly, inModel = TRUE),
-    c("\\mathrm{if} & \\left(vc>11\\right) \\{", " & cl  = 12", "\\} ")
+    c("\\mathrm{if} & \\left({vc}>{11}\\right) \\{", " & {cl}  = {12}", "\\} ")
   )
   expect_equal(
     extractEqHelper.if(ifOnlyNoBrace, inModel = TRUE),
-    "\\mathrm{if} & \\left(vc>11\\right) cl  = 12"
+    "\\mathrm{if} & \\left({vc}>{11}\\right) {cl}  = {12}"
   )
   expect_equal(
     extractEqHelper.if(ifOnlyMultiline, inModel = TRUE),
-    c("\\mathrm{if} & \\left(vc>11\\right) \\{", " & cl  = 12", " & cl2  = 13", "\\} ")
+    c("\\mathrm{if} & \\left({vc}>{11}\\right) \\{", " & {cl}  = {12}", " & {cl2}  = {13}", "\\} ")
   )
   expect_equal(
     extractEqHelper.if(ifElse, inModel = TRUE),
-    c("\\mathrm{if} & \\left(vc>11\\right) \\{", " & cl  = 12", "\\}  \\quad & \\mathrm{else} \\: cl  = 16")
+    c("\\mathrm{if} & \\left({vc}>{11}\\right) \\{", " & {cl}  = {12}", "\\}  \\quad & \\mathrm{else} \\: {cl}  = {16}")
   )
   expect_equal(
     extractEqHelper.if(ifElseIf, inModel = TRUE),
-    c("\\mathrm{if} & \\left(vc>11\\right) \\{", " & cl  = 12", "\\}  \\quad & \\mathrm{else} \\: \\mathrm{if}  \\left(vc>13\\right) \\{", " & cl  = 14", " & cl  = 15", "\\}  \\quad & \\mathrm{else} \\: cl  = 16")
+    c("\\mathrm{if} & \\left({vc}>{11}\\right) \\{", " & {cl}  = {12}", "\\}  \\quad & \\mathrm{else} \\: \\mathrm{if}  \\left({vc}>{13}\\right) \\{", " & {cl}  = {14}", " & {cl}  = {15}", "\\}  \\quad & \\mathrm{else} \\: {cl}  = {16}")
+  )
+})
+
+test_that("items are correctly braced to prevent confusion", {
+  expect_equal(
+    extractEqHelper.call(str2lang("a & b"), inModel = TRUE),
+    "{a}{\\land}{b}"
   )
 })
