@@ -12,9 +12,11 @@
   ofvIncrease = qchisq(0.95, df = 1),
   normQuantile = qnorm(p = 0.975),
   rse_theta,
-  tol = 0.001,
   ignoreBounds = FALSE,
-  quiet = TRUE
+  quiet = TRUE,
+  itermax = 10,
+  ofvtol = 0.005,
+  paramDigits = 3
 )
 }
 \arguments{
@@ -41,14 +43,16 @@ of 30\% will be applied.  If given as a single number, it will be applied to
 all parameters.  If given as a named vector of numbers, it will be applied
 to each named parameter.}
 
-\item{tol}{The relative tolerance for the parameter estimate being close
-enough to the \code{ofvIncrease}.  The tolerance is applied to the
-parameter estimate and not the the \code{ofvIncrease} to allow for ranges
-with a high derivative to complete in a reasonable number of iterations.}
-
 \item{ignoreBounds}{Should the boundary conditions in the model be ignored?}
 
 \item{quiet}{Print less information from model estimation steps}
+
+\item{ofvtol}{The relative tolerance for the objective function being close
+enough to the \code{ofvIncrease}.}
+
+\item{paramDigits}{The number of significant digits required for the
+parameter.  When interpolation attempts to get smaller than that number of
+significant digits, it will stop.}
 }
 \value{
 A data.frame with one column for the \code{Parameter} name being
@@ -56,5 +60,12 @@ fixed on that row, one column for the \code{OFV}, and columns for each
 parameter estimate (or fixed value) in the model.
 }
 \description{
-Perform likelihood profiling on nlmixr2 focei fits
+The search will stop when either the OFV is within \code{ofvtol} of the desired
+OFV change or when the parameter is interpolating to more significant digits
+than specified in \code{paramDigits}.
 }
+\seealso{
+Other Profiling: 
+\code{\link{profileNlmixr2SingleParam}()}
+}
+\concept{Profiling}

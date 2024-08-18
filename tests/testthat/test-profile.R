@@ -55,21 +55,60 @@ test_that("profileNlmixr2FitDataEstInitial", {
   )
 })
 
-test_that("profileNlmixr2FitDataNewEst", {
-  # Go the range in the down direction
-  estimateSetup <- data.frame(A = 1:2, OFV = c(1, 5))
-  expect_equal(
-    profileNlmixr2FitDataNewEst(
-      estimates = estimateSetup, which = "A", direction = -1, bound = Inf, ofvIncrease = 3, method = "linapprox"
-    ),
-    0
-  )
-  # Go the range in the up direction
-  estimateSetup <- data.frame(A = 1:2, OFV = c(1, 5))
-  expect_equal(
-    profileNlmixr2FitDataNewEst(
-      estimates = estimateSetup, which = "A", direction = 1, bound = Inf, ofvIncrease = 3, method = "linapprox"
-    ),
-    2
-  )
+test_that("profileNlmixr2MultiParam", {
+  # fix most of the parameters so that it estimates faster
+  one.compartment <- function() {
+    ini({
+      tka <- log(1.57)
+      tcl <- log(2.72)
+      tv <- fixed(log(31.5))
+      eta.ka ~ 0.6
+      add.sd <- 0.7
+    })
+    model({
+      ka <- exp(tka + eta.ka)
+      cl <- exp(tcl)
+      v <- exp(tv)
+      cp <- linCmt()
+      cp ~ add(add.sd)
+    })
+  }
+
+  fit <-
+    suppressMessages(nlmixr2(
+      one.compartment, data = theo_sd, est="focei", control = list(print=0)
+    ))
+
+  testMultiParam <-
+    suppressMessages(
+      profileNlmixr2MultiParam(fit, which = data.frame(tka = log(c(1.4, 1.6, 1.8))))
+    )
+  expect_s3_class(testMultiParam, "data.frame")
+})
+
+test_that("profile", {
+  # fix most of the parameters so that it estimates faster
+  one.compartment <- function() {
+    ini({
+      tka <- log(1.57)
+      tcl <- log(2.72)
+      tv <- fixed(log(31.5))
+      eta.ka ~ 0.6
+      add.sd <- 0.7
+    })
+    model({
+      ka <- exp(tka + eta.ka)
+      cl <- exp(tcl)
+      v <- exp(tv)
+      cp <- linCmt()
+      cp ~ add(add.sd)
+    })
+  }
+
+  fit <-
+    suppressMessages(nlmixr2(
+      one.compartment, data = nlmixr2data::theo_sd, est="focei", control = list(print=0)
+    ))
+  proftka <- suppressMessages(profile(fit, which = "tka"))
+
 })
