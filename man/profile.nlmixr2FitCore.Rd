@@ -8,7 +8,6 @@
   fitted,
   ...,
   which = NULL,
-  maxpts = 10,
   ofvIncrease = qchisq(0.95, df = 1),
   normQuantile = qnorm(p = 0.975),
   rseTheta,
@@ -24,10 +23,6 @@
 
 \item{which}{The parameter names to perform likelihood profiling on
 (\code{NULL} indicates all parameters)}
-
-\item{maxpts}{The maximum number of fits to perform in each direction (higher
-or lower values) for each parameter.  The total maximum number of estimates
-that may be performed is \code{maxpts*2*length(which)}.}
 
 \item{ofvIncrease}{The targetted change in objective function value (3.84
 corresponds to a Chi-squared test with a 95\% confidence interval)}

@@ -8,9 +8,6 @@
 #' @param ... ignored
 #' @param which The parameter names to perform likelihood profiling on
 #'   (`NULL` indicates all parameters)
-#' @param maxpts The maximum number of fits to perform in each direction (higher
-#'   or lower values) for each parameter.  The total maximum number of estimates
-#'   that may be performed is `maxpts*2*length(which)`.
 #' @param ofvIncrease The targetted change in objective function value (3.84
 #'   corresponds to a Chi-squared test with a 95% confidence interval)
 #' @param normQuantile The quantile of a normal distribution to use for the
@@ -36,7 +33,7 @@
 #' @family Profiling
 #' @export
 profile.nlmixr2FitCore <- function(fitted, ...,
-                                   which = NULL, maxpts = 10,
+                                   which = NULL,
                                    ofvIncrease = qchisq(0.95, df = 1),
                                    normQuantile = qnorm(p = 0.975),
                                    rseTheta,
@@ -58,7 +55,6 @@ profile.nlmixr2FitCore <- function(fitted, ...,
   # setOfv(currentFit, fittedOfvType)
   # logLik(currentFit)
 
-  checkmate::assert_integerish(maxpts, lower = 1, any.missing = FALSE, len = 1)
   checkmate::assert_number(ofvIncrease, lower = 0, finite = TRUE, null.ok = FALSE, na.ok = FALSE)
   checkmate::assert_integerish(paramDigits, lower = 1, upper = 10, any.missing = FALSE, len = 1, null.ok = FALSE, coerce = TRUE)
   if (missing(rseTheta)) {
@@ -92,12 +88,10 @@ profile.nlmixr2FitCore <- function(fitted, ...,
             fitted = fitted,
             ...,
             which = currentWhich,
-            maxpts = maxpts,
             ofvIncrease = ofvIncrease,
             normQuantile = normQuantile,
             rseTheta = rseTheta,
-            ofvtol = ofvtol,
-            optimControl = optimControl
+            ofvtol = ofvtol
           )
         )
     }
