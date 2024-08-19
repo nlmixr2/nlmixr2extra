@@ -41,6 +41,9 @@ of 30\% will be applied.  If given as a single number, it will be applied to
 all parameters.  If given as a named vector of numbers, it will be applied
 to each named parameter.}
 
+\item{itermax}{Maximum number of likelihood profiling iterations for each
+bound estimated}
+
 \item{ofvtol}{The relative tolerance for the objective function being close
 enough to the \code{ofvIncrease}.}
 

@@ -20,6 +20,8 @@
 #'   of 30% will be applied.  If given as a single number, it will be applied to
 #'   all parameters.  If given as a named vector of numbers, it will be applied
 #'   to each named parameter.
+#' @param itermax Maximum number of likelihood profiling iterations for each
+#'   bound estimated
 #' @param ofvtol The relative tolerance for the objective function being close
 #'   enough to the `ofvIncrease`.
 #' @param paramDigits The number of significant digits required for the
@@ -86,7 +88,7 @@ profile.nlmixr2FitCore <- function(fitted, ...,
       ret <-
         rbind(
           ret,
-          profile(
+          stats::profile(
             fitted = fitted,
             ...,
             which = currentWhich,
@@ -94,7 +96,7 @@ profile.nlmixr2FitCore <- function(fitted, ...,
             ofvIncrease = ofvIncrease,
             normQuantile = normQuantile,
             rseTheta = rseTheta,
-            tol = tol,
+            ofvtol = ofvtol,
             optimControl = optimControl
           )
         )
@@ -250,7 +252,7 @@ optimProfile <- function(par, fitted, optimDf, which, ofvIncrease, direction, lo
       # ensure that we are within the boundary
       currentPar <- min(max(currentPar, lower), upper)
     } else { # interpolate
-      currentPar <- approx(x = ret$OFV, y = ret[[which]], xout = targetOfv)$y
+      currentPar <- stats::approx(x = ret$OFV, y = ret[[which]], xout = targetOfv)$y
     }
     if (currentPar %in% ret[[which]]) {
       # Don't try to test the same parameter value multiple times (usually the
