@@ -13,7 +13,6 @@
   normQuantile = qnorm(p = 0.975),
   rseTheta,
   ignoreBounds = FALSE,
-  quiet = TRUE,
   itermax = 10,
   ofvtol = 0.005,
   paramDigits = 3
@@ -44,8 +43,6 @@ all parameters.  If given as a named vector of numbers, it will be applied
 to each named parameter.}
 
 \item{ignoreBounds}{Should the boundary conditions in the model be ignored?}
-
-\item{quiet}{Print less information from model estimation steps}
 
 \item{ofvtol}{The relative tolerance for the objective function being close
 enough to the \code{ofvIncrease}.}

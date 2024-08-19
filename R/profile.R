@@ -26,7 +26,6 @@
 #'   parameter.  When interpolation attempts to get smaller than that number of
 #'   significant digits, it will stop.
 #' @param ignoreBounds Should the boundary conditions in the model be ignored?
-#' @param quiet Print less information from model estimation steps
 #' @return A data.frame with one column named `Parameter` indicating the
 #'   parameter being fixed on that row, one column for the `OFV` indicating the
 #'   OFV estimated for the model at that step, one column named `profileBound`
@@ -41,7 +40,6 @@ profile.nlmixr2FitCore <- function(fitted, ...,
                                    normQuantile = qnorm(p = 0.975),
                                    rseTheta,
                                    ignoreBounds = FALSE,
-                                   quiet = TRUE,
                                    itermax = 10,
                                    ofvtol = 0.005,
                                    paramDigits = 3) {
@@ -82,11 +80,7 @@ profile.nlmixr2FitCore <- function(fitted, ...,
   }
   checkmate::assert_number(ofvtol, na.ok = FALSE, lower = 1e-10, upper = 1, finite = TRUE, null.ok = FALSE)
   checkmate::assert_logical(ignoreBounds, any.missing = FALSE, len = 1)
-  checkmate::assert_logical(quiet, any.missing = FALSE, len = 1)
 
-  if (quiet) {
-    # TODO: set print = 0 for all the control arguments
-  }
   if (length(which) > 1) {
     ret <- data.frame()
     # Make the general case of profiling many parameters to be a concatenation
@@ -104,7 +98,6 @@ profile.nlmixr2FitCore <- function(fitted, ...,
             normQuantile = normQuantile,
             rseTheta = rseTheta,
             tol = tol,
-            quiet = quiet,
             optimControl = optimControl
           )
         )
