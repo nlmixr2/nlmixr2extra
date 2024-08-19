@@ -15,7 +15,7 @@
 #'   corresponds to a Chi-squared test with a 95% confidence interval)
 #' @param normQuantile The quantile of a normal distribution to use for the
 #'   initial estimates.
-#' @param rse_theta The relative standard error (percent) for the model
+#' @param rseTheta The relative standard error (percent) for the model
 #'   parameters.  It can be missing (the default) in which case a default value
 #'   of 30% will be applied.  If given as a single number, it will be applied to
 #'   all parameters.  If given as a named vector of numbers, it will be applied
@@ -39,7 +39,7 @@ profile.nlmixr2FitCore <- function(fitted, ...,
                                    which = NULL, maxpts = 10,
                                    ofvIncrease = qchisq(0.95, df = 1),
                                    normQuantile = qnorm(p = 0.975),
-                                   rse_theta,
+                                   rseTheta,
                                    ignoreBounds = FALSE,
                                    quiet = TRUE,
                                    itermax = 10,
@@ -63,22 +63,22 @@ profile.nlmixr2FitCore <- function(fitted, ...,
   checkmate::assert_integerish(maxpts, lower = 1, any.missing = FALSE, len = 1)
   checkmate::assert_number(ofvIncrease, lower = 0, finite = TRUE, null.ok = FALSE, na.ok = FALSE)
   checkmate::assert_integerish(paramDigits, lower = 1, upper = 10, any.missing = FALSE, len = 1, null.ok = FALSE, coerce = TRUE)
-  if (missing(rse_theta)) {
+  if (missing(rseTheta)) {
     fittedVcov <- stats::vcov(fitted)
     if (is.null(fittedVcov)) {
       # Handle when vcov() is an error
-      rse_theta <- 30
-      cli::cli_alert_info(paste("covariance is unavailable, using default rse_theta of", rse_theta))
+      rseTheta <- 30
+      cli::cli_alert_info(paste("covariance is unavailable, using default rseTheta of", rseTheta))
     } else {
       sd_theta <- sqrt(diag(fittedVcov))
-      rse_theta <- 100*abs(sd_theta/nlmixr2est::fixef(fitted)[names(sd_theta)])
+      rseTheta <- 100*abs(sd_theta/nlmixr2est::fixef(fitted)[names(sd_theta)])
     }
   }
-  if (length(rse_theta) == 1 & is.null(names(rse_theta))) {
-    rse_theta <- setNames(rep(rse_theta, length(which)), which)
+  if (length(rseTheta) == 1 & is.null(names(rseTheta))) {
+    rseTheta <- setNames(rep(rseTheta, length(which)), which)
   } else {
-    checkmate::assert_names(names(rse_theta), subset.of = names(nlmixr2est::fixef(fitted)))
-    checkmate::assert_numeric(rse_theta, lower = 0, any.missing = FALSE, min.len = 1)
+    checkmate::assert_names(names(rseTheta), subset.of = names(nlmixr2est::fixef(fitted)))
+    checkmate::assert_numeric(rseTheta, lower = 0, any.missing = FALSE, min.len = 1)
   }
   checkmate::assert_number(ofvtol, na.ok = FALSE, lower = 1e-10, upper = 1, finite = TRUE, null.ok = FALSE)
   checkmate::assert_logical(ignoreBounds, any.missing = FALSE, len = 1)
@@ -102,7 +102,7 @@ profile.nlmixr2FitCore <- function(fitted, ...,
             maxpts = maxpts,
             ofvIncrease = ofvIncrease,
             normQuantile = normQuantile,
-            rse_theta = rse_theta,
+            rseTheta = rseTheta,
             tol = tol,
             quiet = quiet,
             optimControl = optimControl
@@ -116,7 +116,7 @@ profile.nlmixr2FitCore <- function(fitted, ...,
         estimates = ret,
         which = which,
         normQuantile = normQuantile,
-        rse_theta = rse_theta
+        rseTheta = rseTheta
       )
     for (direction in c(-1, 1)) {
       effectRange <- fitted$iniDf[fitted$iniDf$name == which, c("lower", "upper")]
@@ -174,13 +174,13 @@ profileNlmixr2FitCoreRet <- function(fitted, which, fixedVal, rowname = 0) {
 }
 
 # Provide the initial estimates going up and down from the initial value
-profileNlmixr2FitDataEstInitial <- function(estimates, which, normQuantile, rse_theta) {
+profileNlmixr2FitDataEstInitial <- function(estimates, which, normQuantile, rseTheta) {
   checkmate::assert_data_frame(estimates, nrows = 1)
   checkmate::assert_character(which, any.missing = FALSE, len = 1)
   checkmate::assert_subset(which, choices = names(estimates))
-  # use default rse_theta if not available
-  if (which %in% names(rse_theta)) {
-    currentRseTheta <- rse_theta[which]
+  # use default rseTheta if not available
+  if (which %in% names(rseTheta)) {
+    currentRseTheta <- rseTheta[which]
   } else {
     currentRseTheta <- 30
   }

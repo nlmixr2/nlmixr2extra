@@ -11,7 +11,7 @@
   maxpts = 10,
   ofvIncrease = qchisq(0.95, df = 1),
   normQuantile = qnorm(p = 0.975),
-  rse_theta,
+  rseTheta,
   ignoreBounds = FALSE,
   quiet = TRUE,
   itermax = 10,
@@ -37,7 +37,7 @@ corresponds to a Chi-squared test with a 95\% confidence interval)}
 \item{normQuantile}{The quantile of a normal distribution to use for the
 initial estimates.}
 
-\item{rse_theta}{The relative standard error (percent) for the model
+\item{rseTheta}{The relative standard error (percent) for the model
 parameters.  It can be missing (the default) in which case a default value
 of 30\% will be applied.  If given as a single number, it will be applied to
 all parameters.  If given as a named vector of numbers, it will be applied
