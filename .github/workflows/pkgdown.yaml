@@ -41,6 +41,8 @@ jobs:
             nlmixr2/rxode2
             nlmixr2/nlmixr2est
             nlmixr2/nlmixr2plot
+            nlmixr2/PreciseSums
+            nlmixr2/dparser
             local::.
           needs: website
 
