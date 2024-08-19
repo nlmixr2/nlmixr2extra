@@ -86,7 +86,7 @@ test_that("profileNlmixr2MultiParam", {
   expect_s3_class(testMultiParam, "data.frame")
 })
 
-test_that("profile", {
+test_that("profile a standard model", {
   # fix most of the parameters so that it estimates faster
   one.compartment <- function() {
     ini({
@@ -109,6 +109,13 @@ test_that("profile", {
     suppressMessages(nlmixr2(
       one.compartment, data = nlmixr2data::theo_sd, est="focei", control = list(print=0)
     ))
+  # A single parameter
   proftka <- suppressMessages(profile(fit, which = "tka"))
+  expect_s3_class(proftka, "data.frame")
+  expect_named(proftka, c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "profileBound"))
 
+  # All parameters
+  proftka <- profile(fit)
+  expect_s3_class(proftka, "data.frame")
+  expect_named(proftka, c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "profileBound"))
 })

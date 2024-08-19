@@ -59,6 +59,7 @@ profile.nlmixr2FitCore <- function(fitted, ...,
 
   checkmate::assert_integerish(maxpts, lower = 1, any.missing = FALSE, len = 1)
   checkmate::assert_number(ofvIncrease, lower = 0, finite = TRUE, null.ok = FALSE, na.ok = FALSE)
+  checkmate::assert_integerish(paramDigits, lower = 1, upper = 10, any.missing = FALSE, len = 1, null.ok = FALSE, coerce = TRUE)
   if (missing(rse_theta)) {
     fittedVcov <- stats::vcov(fitted)
     if (is.null(fittedVcov)) {
@@ -125,7 +126,6 @@ profile.nlmixr2FitCore <- function(fitted, ...,
         currentLower <- nlmixr2est::fixef(fitted)[[which]]
         currentUpper <- effectRange$upper
       }
-      currentTraceStore <- profileTraceStore()
 
       retCurrentDirection <-
         optimProfile(
@@ -137,24 +137,13 @@ profile.nlmixr2FitCore <- function(fitted, ...,
           ofvIncrease = ofvIncrease,
           lower = currentLower, upper = currentUpper,
           itermax = itermax,
-          ofvtol = ofvtol
+          ofvtol = ofvtol,
+          paramDigits = paramDigits
         )
-      ret <- unique(rbind(ret, retCurrentDirection))
+      ret <- unique(rbindAddCols(ret, retCurrentDirection))
     }
   }
   ret
-}
-
-profileTraceStore <- function() {
-  # It's a function wrapped in a function in a function so that each call gets a
-  # unique data.frame
-  (function() {
-    ret <- data.frame()
-    function(x = NULL) {
-      ret <<- rbind(ret, x)
-      ret
-    }
-  })()
 }
 
 #' Give the output data.frame for a single model for profile.nlmixr2FitCore
@@ -181,29 +170,6 @@ profileNlmixr2FitCoreRet <- function(fitted, which, fixedVal, rowname = 0) {
   ret
 }
 
-# Constrain the estimate to be within the bounds, shift away from the bound if
-# the boundary is already estimated
-profileNlmixr2FitDatEstBound <- function(estimates, which, newEst, bound, direction, tol, atol) {
-  # Ensure that the bounds are not exceeded
-  if (bound %in% estimates[[which]]) {
-    # negative direction ensures that the value is within the bound (rather than
-    # outside)
-    if (bound == 0) {
-      boundAdj <- -direction*atol/2
-    } else {
-      boundAdj <- bound*(1 - direction*tol/2)
-    }
-  } else {
-    boundAdj <- bound
-  }
-  if (direction < 0) {
-    newEst <- max(newEst, boundAdj)
-  } else if (direction > 0) {
-    newEst <- min(newEst, boundAdj)
-  }
-  newEst
-}
-
 # Provide the initial estimates going up and down from the initial value
 profileNlmixr2FitDataEstInitial <- function(estimates, which, normQuantile, rse_theta) {
   checkmate::assert_data_frame(estimates, nrows = 1)
@@ -224,10 +190,9 @@ profileNlmixr2FitDataEstInitial <- function(estimates, which, normQuantile, rse_
 #'   value of the fitted estimate fixing the parameters in the other columns
 #' @family Profiling
 #' @export
-profileNlmixr2SingleParam <- function(fitted, which, returnType = c("OFVdf", "model")) {
+profileNlmixr2SingleParam <- function(fitted, which) {
   checkmate::assert_data_frame(which, types = "numeric", any.missing = FALSE, nrows = 1)
   checkmate::assert_names(names(which), subset.of = names(nlmixr2est::fixef(fitted)))
-  returnType <- match.arg(returnType)
 
   message("Profiling ", paste(names(which), "=", unlist(which), collapse = ", "))
   # Update the model by fixing all of the parameters
@@ -249,26 +214,26 @@ profileNlmixr2SingleParam <- function(fitted, which, returnType = c("OFVdf", "mo
 }
 
 optimProfile <- function(par, fitted, optimDf, which, ofvIncrease, direction, lower = -Inf, upper = Inf,
-                         itermax = 10, ofvtol = 0.005,
+                         itermax = 10, ofvtol = 0.005, paramDigits = 3,
                          extrapolateExpand = 1.5) {
   currentOFVDiff <- Inf
   currentIter <- 0
   currentPar <- par
   ret <- optimDf[optimDf$Parameter %in% which & optimDf[[which]] >= lower & optimDf[[which]] <= upper, ]
-  while ((itermax > currentIter) && (abs(currentOFVDiff) > ofvtol)) {
+  while (itermax > currentIter) {
     currentIter <- currentIter + 1
     dfWhich <- stats::setNames(data.frame(X = currentPar), nm = which)
     fitResult <- profileNlmixr2SingleParam(fitted = fitted, which = dfWhich)
 
-    ret <- rbind(ret, fitResult)
+    ret <- rbindAddCols(ret, fitResult)
     ret <- ret[order(ret$OFV), , drop = FALSE]
     targetOfv <- min(ret$OFV, na.rm = TRUE) + ofvIncrease
     if (all(targetOfv > ret$OFV)) { # extrapolate
       # Find the closest two rows for extrapolation
       extrapRows <- ret[!is.na(ret$OFV), ]
       if (nrow(extrapRows) < 2) {
+        messageProfileComplete(which, direction = direction, "aborted due to lack of convergence prior to attempted extrapolation")
         currentIter <- Inf
-        warning("profiling ", which, " could not extrapolate due to lack of convergence")
       }
       if (direction > 0) {
         extrapRows <- ret[nrow(ret) + c(-1, 0), ]
@@ -285,14 +250,56 @@ optimProfile <- function(par, fitted, optimDf, which, ofvIncrease, direction, lo
     if (currentPar %in% ret[[which]]) {
       # Don't try to test the same parameter value multiple times (usually the
       # case for hitting a limit)
+      messageProfileComplete(which, direction = direction, "aborted due to attempted repeated parameter value estimation")
       currentIter <- Inf
     }
-    # Check if the parameter significant digits are sufficiently precise.
-    stop("Add check")
+    # Check if the parameter significant digits are sufficiently precise.  This
+    # is done by finding values that have the same significant digit rounding
+    # where one estimate is above and one is below the next parameter to be
+    # estimated.
+    signifSame <- signif(ret[[which]], digits = paramDigits) == signif(currentPar, digits = paramDigits)
+    signifAbove <- ret[[which]] > currentPar
+    signifBelow <- ret[[which]] < currentPar
+    if (any(signifSame & signifAbove) && any(signifSame & signifBelow)) {
+      messageProfileComplete(which, direction = direction, "complete due to significant digits precision")
+      storeBound <- data.frame(Parameter = which, X = currentPar, profileBound = direction*ofvIncrease)
+      names(storeBound)[2] <- which
+      ret <- rbindAddCols(storeBound, ret)
+      currentIter <- Inf
+    }
+
     currentOFVDiff <- min(abs(targetOfv - ret$OFV), na.rm = TRUE)
-    message("Profiling ", which, " best distance to target OFV: ", currentOFVDiff)
+    if (currentOFVDiff <= ofvtol) {
+      messageProfileComplete(which, direction = direction, "complete due to achieving OFV within specified tolerance")
+      storeBound <- data.frame(Parameter = which, X = currentPar, profileBound = direction*ofvIncrease)
+      names(storeBound)[2] <- which
+      ret <- rbindAddCols(storeBound, ret)
+      currentIter <- Inf
+    } else {
+      message("Profiling ", which, " best distance to target OFV: ", currentOFVDiff)
+    }
   }
+  if (is.finite(currentIter)) {
+    messageProfileComplete(which, direction = direction, "aborted due to too many iterations without convergence")
+  }
+
+  # Sort the output by parameter value
+  ret <- ret[order(ret[[which]]), ]
+  # Add extra information to assist with subsequent
+  # The output rownames are uninformative and distracting; remove them.
+  rownames(ret) <- NULL
   ret
+}
+
+messageProfileComplete <- function(which, direction, msg) {
+  message(
+    "Profiling ",
+    which,
+    " ",
+    ifelse(direction > 0, "above the point estimate", "below the point estimate"),
+    " is ",
+    msg
+  )
 }
 
 #' @describeIn profileNlmixr2SingleParam Estimate the objective function values
@@ -308,4 +315,17 @@ profileNlmixr2MultiParam <- function(fitted, which) {
     FUN = \(idx, fitted) profileNlmixr2SingleParam(fitted = fitted, which = which[idx, , drop = FALSE]),
     fitted = fitted
   ))
+}
+
+# Add more columns to x so that `rbind()` works
+rbindAddCols <- function(x, y, .default = NA) {
+  extraColsX <- setdiff(names(y), names(x))
+  if (length(extraColsX) > 0) {
+    x[extraColsX] <- .default
+  }
+  extraColsY <- setdiff(names(x), names(y))
+  if (length(extraColsY) > 0) {
+    y[extraColsY] <- .default
+  }
+  rbind(x, y)
 }

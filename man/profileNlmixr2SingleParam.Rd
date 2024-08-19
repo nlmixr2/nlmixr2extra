@@ -6,7 +6,7 @@
 \title{Estimate the objective function value for a model while fixing a single set
 of defined parameter values (for use in parameter profiling)}
 \usage{
-profileNlmixr2SingleParam(fitted, which, returnType = c("OFVdf", "model"))
+profileNlmixr2SingleParam(fitted, which)
 
 profileNlmixr2MultiParam(fitted, which)
 }
