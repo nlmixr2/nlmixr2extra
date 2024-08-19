@@ -109,13 +109,22 @@ test_that("profile a standard model", {
     suppressMessages(nlmixr2(
       one.compartment, data = nlmixr2data::theo_sd, est="focei", control = list(print=0)
     ))
+
+  # All parameters
+  profall <- profile(fit)
+  expect_s3_class(profall, "data.frame")
+  expect_named(profall, c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "profileBound"))
+
   # A single parameter
   proftka <- suppressMessages(profile(fit, which = "tka"))
   expect_s3_class(proftka, "data.frame")
   expect_named(proftka, c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "profileBound"))
 
-  # All parameters
-  proftka <- profile(fit)
-  expect_s3_class(proftka, "data.frame")
-  expect_named(proftka, c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "profileBound"))
+  # A fixed parameter
+  expect_warning(
+    proftv <- profile(fit, which = "tv"),
+    regexp = "OFV decreased while profiling"
+  )
+  expect_s3_class(proftv, "data.frame")
+  expect_named(proftv, c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "profileBound"))
 })

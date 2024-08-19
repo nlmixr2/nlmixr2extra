@@ -55,9 +55,12 @@ parameter.  When interpolation attempts to get smaller than that number of
 significant digits, it will stop.}
 }
 \value{
-A data.frame with one column for the \code{Parameter} name being
-fixed on that row, one column for the \code{OFV}, and columns for each
-parameter estimate (or fixed value) in the model.
+A data.frame with one column named \code{Parameter} indicating the
+parameter being fixed on that row, one column for the \code{OFV} indicating the
+OFV estimated for the model at that step, one column named \code{profileBound}
+indicating the estimated value for the profile likelihood and its step
+above the minimum profile likelihood value, and columns for each parameter
+estimate (or fixed) in the model.
 }
 \description{
 The search will stop when either the OFV is within \code{ofvtol} of the desired

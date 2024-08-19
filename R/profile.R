@@ -27,9 +27,12 @@
 #'   significant digits, it will stop.
 #' @param ignoreBounds Should the boundary conditions in the model be ignored?
 #' @param quiet Print less information from model estimation steps
-#' @return A data.frame with one column for the `Parameter` name being
-#'   fixed on that row, one column for the `OFV`, and columns for each
-#'   parameter estimate (or fixed value) in the model.
+#' @return A data.frame with one column named `Parameter` indicating the
+#'   parameter being fixed on that row, one column for the `OFV` indicating the
+#'   OFV estimated for the model at that step, one column named `profileBound`
+#'   indicating the estimated value for the profile likelihood and its step
+#'   above the minimum profile likelihood value, and columns for each parameter
+#'   estimate (or fixed) in the model.
 #' @family Profiling
 #' @export
 profile.nlmixr2FitCore <- function(fitted, ...,
@@ -175,9 +178,15 @@ profileNlmixr2FitDataEstInitial <- function(estimates, which, normQuantile, rse_
   checkmate::assert_data_frame(estimates, nrows = 1)
   checkmate::assert_character(which, any.missing = FALSE, len = 1)
   checkmate::assert_subset(which, choices = names(estimates))
-  checkmate::assert_subset(which, choices = names(rse_theta))
+  # use default rse_theta if not available
+  if (which %in% names(rse_theta)) {
+    currentRseTheta <- rse_theta[which]
+  } else {
+    currentRseTheta <- 30
+  }
+
   # The -1,1 makes the estimate go up and down
-  estimates[[which]] + c(-1, 1)*normQuantile*rse_theta[which]/100*abs(estimates[[which]])
+  estimates[[which]] + c(-1, 1)*normQuantile*currentRseTheta/100*abs(estimates[[which]])
 }
 
 #' Estimate the objective function value for a model while fixing a single set
@@ -219,6 +228,7 @@ optimProfile <- function(par, fitted, optimDf, which, ofvIncrease, direction, lo
   currentOFVDiff <- Inf
   currentIter <- 0
   currentPar <- par
+  origMinOFV <- min(optimDf$OFV, na.rm = TRUE)
   ret <- optimDf[optimDf$Parameter %in% which & optimDf[[which]] >= lower & optimDf[[which]] <= upper, ]
   while (itermax > currentIter) {
     currentIter <- currentIter + 1
@@ -227,7 +237,12 @@ optimProfile <- function(par, fitted, optimDf, which, ofvIncrease, direction, lo
 
     ret <- rbindAddCols(ret, fitResult)
     ret <- ret[order(ret$OFV), , drop = FALSE]
-    targetOfv <- min(ret$OFV, na.rm = TRUE) + ofvIncrease
+    currentMinOFV <- min(ret$OFV, na.rm = TRUE)
+    if (isTRUE(any(currentMinOFV < origMinOFV))) {
+      warning("OFV decreased while profiling ", which, " profile may be inaccurate")
+      origMinOFV <- NA # Only give the warning once
+    }
+    targetOfv <- currentMinOFV + ofvIncrease
     if (all(targetOfv > ret$OFV)) { # extrapolate
       # Find the closest two rows for extrapolation
       extrapRows <- ret[!is.na(ret$OFV), ]
