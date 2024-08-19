@@ -12,7 +12,6 @@
   ofvIncrease = qchisq(0.95, df = 1),
   normQuantile = qnorm(p = 0.975),
   rseTheta,
-  ignoreBounds = FALSE,
   itermax = 10,
   ofvtol = 0.005,
   paramDigits = 3
@@ -41,8 +40,6 @@ parameters.  It can be missing (the default) in which case a default value
 of 30\% will be applied.  If given as a single number, it will be applied to
 all parameters.  If given as a named vector of numbers, it will be applied
 to each named parameter.}
-
-\item{ignoreBounds}{Should the boundary conditions in the model be ignored?}
 
 \item{ofvtol}{The relative tolerance for the objective function being close
 enough to the \code{ofvIncrease}.}
