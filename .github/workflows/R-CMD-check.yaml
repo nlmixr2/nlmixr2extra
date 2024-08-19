@@ -51,7 +51,7 @@ jobs:
             nlmixr2/nlmixr2est
             nlmixr2/nlmixr2plot
             nlmixr2/PreciseSums
-            nlmixr2/dparser
+            nlmixr2/dparser-R
           needs: check
 
       - uses: r-lib/actions/check-r-package@v2
