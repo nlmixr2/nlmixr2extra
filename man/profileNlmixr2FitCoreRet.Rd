@@ -4,13 +4,16 @@
 \alias{profileNlmixr2FitCoreRet}
 \title{Give the output data.frame for a single model for profile.nlmixr2FitCore}
 \usage{
-profileNlmixr2FitCoreRet(fitted, which, fixedVal, rowname = 0)
+profileNlmixr2FitCoreRet(fitted, which, fixedVal)
 }
 \arguments{
 \item{fitted}{The fit model}
 
 \item{which}{The parameter names to perform likelihood profiling on
 (\code{NULL} indicates all parameters)}
+
+\item{fixedVal}{The value that \code{which} is fixed to in case the model does not
+converge.}
 }
 \value{
 A data.frame with columns named "Parameter" (the parameter name(s)

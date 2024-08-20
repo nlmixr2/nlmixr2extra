@@ -84,11 +84,13 @@ profile.nlmixr2FitCore <- function(fitted, ...,
 #' Give the output data.frame for a single model for profile.nlmixr2FitCore
 #'
 #' @inheritParams profile.nlmixr2FitCore
+#' @param fixedVal The value that `which` is fixed to in case the model does not
+#'   converge.
 #' @return A data.frame with columns named "Parameter" (the parameter name(s)
 #'   that were fixed), OFV (the objective function value), and the current
 #'   estimate for each of the parameters.
 #' @family Profiling
-profileNlmixr2FitCoreRet <- function(fitted, which, fixedVal, rowname = 0) {
+profileNlmixr2FitCoreRet <- function(fitted, which, fixedVal) {
   if (inherits(fitted, "try-error")) {
     ret <- data.frame(Parameter = which, OFV = NA_real_, X = fixedVal)
     names(ret)[3] <- which
