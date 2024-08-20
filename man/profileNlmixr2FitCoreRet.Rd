@@ -18,7 +18,8 @@ converge.}
 \value{
 A data.frame with columns named "Parameter" (the parameter name(s)
 that were fixed), OFV (the objective function value), and the current
-estimate for each of the parameters.
+estimate for each of the parameters.  Omega values are given as their
+variances and covariances.
 }
 \description{
 Give the output data.frame for a single model for profile.nlmixr2FitCore

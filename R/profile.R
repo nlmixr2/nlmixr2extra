@@ -88,7 +88,8 @@ profile.nlmixr2FitCore <- function(fitted, ...,
 #'   converge.
 #' @return A data.frame with columns named "Parameter" (the parameter name(s)
 #'   that were fixed), OFV (the objective function value), and the current
-#'   estimate for each of the parameters.
+#'   estimate for each of the parameters.  Omega values are given as their
+#'   variances and covariances.
 #' @family Profiling
 profileNlmixr2FitCoreRet <- function(fitted, which, fixedVal) {
   if (inherits(fitted, "try-error")) {
@@ -98,10 +99,26 @@ profileNlmixr2FitCoreRet <- function(fitted, which, fixedVal) {
     if (any(names(nlmixr2est::fixef(fitted)) %in% c("Parameter", "OFV"))) {
       cli::cli_abort("Cannot profile a model with a parameter named either 'Parameter' or 'OFV'")
     }
+    retOmega <- as.data.frame(t(diag(fitted$omega)))
+    for (idxRow in seq_len(nrow(fitted$omega)) - 1) {
+      for (idxCol in seq_len(idxRow)) {
+        # Only capture the columns when the covariance is nonzero
+        if (fitted$omega[idxRow + 1, idxCol] != 0) {
+          covColName <-
+            sprintf(
+              "cov(%s,%s)",
+              rownames(fitted$omega)[idxRow + 1],
+              colnames(fitted$omega)[idxCol]
+            )
+          retOmega[[covColName]] <- fitted$omega[idxRow + 1, idxCol]
+        }
+      }
+    }
     ret <-
       cbind(
         data.frame(Parameter = which, OFV = fitted$objective),
-        data.frame(t(nlmixr2est::fixef(fitted)))
+        data.frame(t(nlmixr2est::fixef(fitted))),
+        retOmega
       )
   }
   rownames(ret) <- NULL

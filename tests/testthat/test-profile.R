@@ -1,48 +1,3 @@
-test_that("profileNlmixr2FitDatEstBound", {
-  estimatesSetup <- data.frame(A = 0:4)
-
-  # Outside range, bound not present
-  expect_equal(
-    profileNlmixr2FitDatEstBound(estimates = estimatesSetup, which="A", newEst = 4.5, bound = 4.25, direction = 1, tol = 0.001, atol = 0.005),
-    4.25
-  )
-  # Inside range, bound not present
-  expect_equal(
-    profileNlmixr2FitDatEstBound(estimates = estimatesSetup, which="A", newEst = 4.5, bound = 5, direction = 1, tol = 0.001, atol = 0.005),
-    4.5
-  )
-  # Inside range, bound already present
-  expect_equal(
-    profileNlmixr2FitDatEstBound(estimates = estimatesSetup, which="A", newEst = 0.5, bound = 1, direction = 1, tol = 0.001, atol = 0.005),
-    0.5
-  )
-  # Outside range, bound already present
-  expect_equal(
-    profileNlmixr2FitDatEstBound(estimates = estimatesSetup, which="A", newEst = 1.5, bound = 1, direction = 1, tol = 0.001, atol = 0.005),
-    0.9995
-  )
-  # Non-zero bound is already present, coming from below
-  expect_equal(
-    profileNlmixr2FitDatEstBound(estimates = estimatesSetup, which="A", newEst = 1, bound = 1, direction = 1, tol = 0.001, atol = 0.005),
-    0.9995
-  )
-  # Non-zero bound is already present, coming from above
-  expect_equal(
-    profileNlmixr2FitDatEstBound(estimates = estimatesSetup, which="A", newEst = 1, bound = 1, direction = -1, tol = 0.001, atol = 0.005),
-    1.0005
-  )
-  # Zero bound is already present, coming from below
-  expect_equal(
-    profileNlmixr2FitDatEstBound(estimates = estimatesSetup, which="A", newEst = 1, bound = 0, direction = 1, tol = 0.001, atol = 0.005),
-    -0.0025
-  )
-  # Zero bound is already present, coming from above
-  expect_equal(
-    profileNlmixr2FitDatEstBound(estimates = estimatesSetup, which="A", newEst = 0, bound = 0, direction = -1, tol = 0.001, atol = 0.005),
-    0.0025
-  )
-})
-
 test_that("profileNlmixr2FitDataEstInitial", {
   # Must have one-row input
   expect_error(
@@ -50,9 +5,79 @@ test_that("profileNlmixr2FitDataEstInitial", {
   )
 
   expect_equal(
-    profileNlmixr2FitDataEstInitial(estimates = data.frame(A = 1), which = "A", normQuantile = 1.96, rse_theta = c(A=100)),
-    c(-0.96, 2.96)
+    profileNlmixr2FitDataEstInitial(
+      estimates = data.frame(A = 1),
+      which = "A",
+      ofvIncrease = 1.92,
+      rseTheta = c(A=100),
+      lower = -100, upper = 200
+    ),
+    c(-0.92, 2.92)
   )
+  # Bounds are respected
+  expect_equal(
+    profileNlmixr2FitDataEstInitial(
+      estimates = data.frame(A = 1),
+      which = "A",
+      ofvIncrease = 1.92,
+      rseTheta = c(A=100),
+      lower = 0, upper = 200
+    ),
+    c(sqrt(.Machine$double.eps), 2.92)
+  )
+})
+
+test_that("profileNlmixr2FitCoreRet", {
+  # Variance and covariance is correctly captured
+  one.compartment <- function() {
+    ini({
+      tka <- log(1.57)
+      tcl <- log(2.72)
+      tv <- fixed(log(31.5))
+      eta.ka ~ 0.6
+      add.sd <- 0.7
+    })
+    model({
+      ka <- exp(tka + eta.ka)
+      cl <- exp(tcl)
+      v <- exp(tv)
+      cp <- linCmt()
+      cp ~ add(add.sd)
+    })
+  }
+
+  fit <-
+    suppressMessages(nlmixr2(
+      one.compartment, data = nlmixr2data::theo_sd, est="focei", control = list(print=0)
+    ))
+  withoutCov <- profileNlmixr2FitCoreRet(fit, which = "tka")
+  expect_s3_class(withoutCov, "data.frame")
+  expect_named(withoutCov, expected = c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "eta.ka"))
+
+  one.compartment <- function() {
+    ini({
+      tka <- log(1.57)
+      tcl <- log(2.72)
+      tv <- fixed(log(31.5))
+      eta.ka + eta.cl ~ c(0.6, 0.1, 0.2)
+      add.sd <- 0.7
+    })
+    model({
+      ka <- exp(tka + eta.ka)
+      cl <- exp(tcl + eta.cl)
+      v <- exp(tv)
+      cp <- linCmt()
+      cp ~ add(add.sd)
+    })
+  }
+
+  fit <-
+    suppressMessages(nlmixr2(
+      one.compartment, data = nlmixr2data::theo_sd, est="focei", control = list(print=0)
+    ))
+  withCov <- profileNlmixr2FitCoreRet(fit, which = "tka")
+  expect_s3_class(withCov, "data.frame")
+  expect_named(withCov, expected = c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "eta.ka", "eta.cl", "cov(eta.cl,eta.ka)"))
 })
 
 test_that("profileFixed", {
@@ -84,7 +109,7 @@ test_that("profileFixed", {
       profile(fit, which = data.frame(tka = log(c(1.4, 1.6, 1.8))), method = "fixed")
     )
   expect_s3_class(testFixed, "data.frame")
-  expect_named(testFixed, expected = c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd"))
+  expect_named(testFixed, expected = c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "eta.ka"))
   expect_equal(nrow(testFixed), 3)
 
   # Fix multiple parameters simultaneously
@@ -101,7 +126,7 @@ test_that("profileFixed", {
       )
     )
   expect_s3_class(testFixedMulti, "data.frame")
-  expect_named(testFixedMulti, expected = c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd"))
+  expect_named(testFixedMulti, expected = c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "eta.ka"))
   expect_equal(nrow(testFixedMulti), 3)
   expect_equal(testFixedMulti$Parameter, rep("tka,tcl", 3))
 })
@@ -152,4 +177,54 @@ test_that("profile a standard model", {
   profadd.sd <- profile(fit, which = "add.sd")
   expect_s3_class(profadd.sd, "data.frame")
   expect_named(profadd.sd, c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "profileBound"))
+})
+
+test_that("profile a standard model with correlated etas", {
+  # fix most of the parameters so that it estimates faster
+  one.compartment <- function() {
+    ini({
+      tka <- log(1.57)
+      tcl <- log(2.72)
+      tv <- fixed(log(31.5))
+      eta.ka ~ 0.6
+      eta.cl ~ 0.1
+      eta.v ~ 0.2
+      add.sd <- 0.7
+    })
+    model({
+      ka <- exp(tka + eta.ka)
+      cl <- exp(tcl + eta.cl)
+      v <- exp(tv + eta.v)
+      cp <- linCmt()
+      cp ~ add(add.sd)
+    })
+  }
+
+  fit <-
+    suppressMessages(nlmixr2(
+      one.compartment, data = nlmixr2data::theo_sd, est="focei", control = list(print=0)
+    ))
+
+  # All parameters
+  profall <- suppressMessages(profile(fit))
+  expect_s3_class(profall, "data.frame")
+  expect_named(profall, c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "eta.ka", "profileBound"))
+
+  # A single parameter
+  proftka <- suppressMessages(profile(fit, which = "tka"))
+  expect_s3_class(proftka, "data.frame")
+  expect_named(proftka, c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "eta.ka", "profileBound"))
+
+  # A fixed parameter
+  expect_warning(
+    proftv <- profile(fit, which = "tv"),
+    regexp = "OFV decreased while profiling"
+  )
+  expect_s3_class(proftv, "data.frame")
+  expect_named(proftv, c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "eta.ka", "profileBound"))
+
+  # Residual error
+  profadd.sd <- profile(fit, which = "add.sd")
+  expect_s3_class(profadd.sd, "data.frame")
+  expect_named(profadd.sd, c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "eta.ka", "profileBound"))
 })
