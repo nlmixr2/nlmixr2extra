@@ -143,16 +143,19 @@ profileLlp <- function(fitted, which, control) {
 
     # The original fitted model should be in the output
     ret <- profileNlmixr2FitCoreRet(fitted = fitted, which = which)
+
+    effectRange <- fitted$iniDf[fitted$iniDf$name == which, c("lower", "upper")]
     estInitial <-
       profileNlmixr2FitDataEstInitial(
         estimates = ret,
         which = which,
         ofvIncrease = control$ofvIncrease,
-        rseTheta = control$rseTheta
+        rseTheta = control$rseTheta,
+        lower = effectRange$lower,
+        upper = effectRange$upper
       )
     # Find the lower and upper limits
     for (direction in c(-1, 1)) {
-      effectRange <- fitted$iniDf[fitted$iniDf$name == which, c("lower", "upper")]
       if (direction == -1) {
         currentInitialEst = estInitial[1]
         currentUpper <- nlmixr2est::fixef(fitted)[[which]]
@@ -220,8 +223,9 @@ optimProfile <- function(par, fitted, optimDf, which, ofvIncrease, direction, lo
       }
       currentPar <-
         extrapolateExpand*diff(extrapRows[[which]])/diff(extrapRows$OFV)*(targetOfv - extrapRows$OFV[1]) + extrapRows[[which]][1]
-      # ensure that we are within the boundaries
-      currentPar <- min(max(currentPar, lower), upper)
+      # ensure that we are within the boundaries with a slight margin
+      margin <- sqrt(.Machine$double.eps)
+      currentPar <- min(max(currentPar, lower + margin), upper - margin)
     } else { # interpolate
       currentPar <- stats::approx(x = ret$OFV, y = ret[[which]], xout = targetOfv)$y
     }
@@ -315,7 +319,7 @@ llpControl <- function(ofvIncrease = qchisq(0.95, df = 1),
 }
 
 # Provide the initial estimates going up and down from the initial value
-profileNlmixr2FitDataEstInitial <- function(estimates, which, ofvIncrease, rseTheta) {
+profileNlmixr2FitDataEstInitial <- function(estimates, which, ofvIncrease, rseTheta, lower, upper) {
   checkmate::assert_data_frame(estimates, nrows = 1)
   checkmate::assert_character(which, any.missing = FALSE, len = 1)
   checkmate::assert_subset(which, choices = names(estimates))
@@ -327,7 +331,10 @@ profileNlmixr2FitDataEstInitial <- function(estimates, which, ofvIncrease, rseTh
   }
 
   # The -1,1 makes the estimate go up and down
-  estimates[[which]] + c(-1, 1)*ofvIncrease*currentRseTheta/100*abs(estimates[[which]])
+  ret <- estimates[[which]] + c(-1, 1)*ofvIncrease*currentRseTheta/100*abs(estimates[[which]])
+  # Ensure that the estimate is within the bounds with a slight margin
+  margin <- sqrt(.Machine$double.eps)
+  pmax(pmin(ret, upper - margin), lower + margin)
 }
 
 # Support functions ----
