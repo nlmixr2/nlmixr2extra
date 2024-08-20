@@ -129,7 +129,7 @@ test_that("profile a standard model", {
   expect_named(proftv, c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "profileBound"))
 
   # Residual error
-  proftv <- profile(fit, which = "add.sd")
-  expect_s3_class(proftv, "data.frame")
-  expect_named(proftv, c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "profileBound"))
+  profadd.sd <- profile(fit, which = "add.sd")
+  expect_s3_class(profadd.sd, "data.frame")
+  expect_named(profadd.sd, c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "profileBound"))
 })
