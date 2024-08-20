@@ -4,7 +4,13 @@
 \alias{profile.nlmixr2FitCore}
 \title{Perform likelihood profiling on nlmixr2 focei fits}
 \usage{
-\method{profile}{nlmixr2FitCore}(fitted, ..., which = NULL, method = "llp", control = list())
+\method{profile}{nlmixr2FitCore}(
+  fitted,
+  ...,
+  which = NULL,
+  method = c("llp", "fixed"),
+  control = list()
+)
 }
 \arguments{
 \item{fitted}{The fit model}
@@ -14,7 +20,7 @@
 \item{which}{The parameter names to perform likelihood profiling on
 (\code{NULL} indicates all parameters)}
 
-\item{method}{Method to use for profiling}
+\item{method}{Method to use for profiling (see the details)}
 
 \item{control}{Control arguments for the \code{method}}
 }
@@ -27,12 +33,62 @@ above the minimum profile likelihood value, and columns for each parameter
 estimate (or fixed) in the model.
 }
 \description{
+Perform likelihood profiling on nlmixr2 focei fits
+}
+\section{Log-likelihood profiling}{
+\code{method = "llp"}
+
 The search will stop when either the OFV is within \code{ofvtol} of the desired
 OFV change or when the parameter is interpolating to more significant digits
-than specified in \code{paramDigits}.
+than specified in \code{paramDigits}.  The "llp" method uses the \code{profileLlp()}
+function.  See its help for more details.
+}
+
+\section{Fixed points}{
+\code{method = "fixed"}
+
+Estimate the OFV for specific fixed values.  The "fixed" method uses the
+\code{profileFixed()} function.  See its help for more details.
+}
+
+\examples{
+\dontrun{
+# Likelihood profiling takes a long time to run each model multiple times, so
+# be aware that running this example may take a few minutes.
+oneCmt <- function() {
+  ini({
+    tka <- log(1.57)
+    tcl <- log(2.72)
+    tv <- fixed(log(31.5))
+    eta.ka ~ 0.6
+    add.sd <- 0.7
+  })
+  model({
+    ka <- exp(tka + eta.ka)
+    cl <- exp(tcl)
+    v <- exp(tv)
+    cp <- linCmt()
+    cp ~ add(add.sd)
+  })
+}
+
+fit <-
+  nlmixr2(
+    oneCmt, data = nlmixr2data::theo_sd, est="focei", control = list(print=0)
+  )
+# profile all parameters
+profall <- profile(fit)
+
+# profile a single parameter
+proftka <- profile(fit, which = "tka")
+}
 }
 \seealso{
 Other Profiling: 
-\code{\link{profileNlmixr2SingleParam}()}
+\code{\link{fixedControl}()},
+\code{\link{llpControl}()},
+\code{\link{profileFixed}()},
+\code{\link{profileLlp}()},
+\code{\link{profileNlmixr2FitCoreRet}()}
 }
 \concept{Profiling}

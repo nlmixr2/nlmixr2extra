@@ -42,3 +42,14 @@ A validated list of control options for log-likelihood profiling
 \description{
 Control options for log-likelihood profiling
 }
+\seealso{
+\code{\link[=profileLlp]{profileLlp()}}
+
+Other Profiling: 
+\code{\link{fixedControl}()},
+\code{\link{profile.nlmixr2FitCore}()},
+\code{\link{profileFixed}()},
+\code{\link{profileLlp}()},
+\code{\link{profileNlmixr2FitCoreRet}()}
+}
+\concept{Profiling}

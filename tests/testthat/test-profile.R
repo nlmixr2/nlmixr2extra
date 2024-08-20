@@ -55,7 +55,7 @@ test_that("profileNlmixr2FitDataEstInitial", {
   )
 })
 
-test_that("profileNlmixr2MultiParam", {
+test_that("profileFixed", {
   # fix most of the parameters so that it estimates faster
   one.compartment <- function() {
     ini({
@@ -76,14 +76,34 @@ test_that("profileNlmixr2MultiParam", {
 
   fit <-
     suppressMessages(nlmixr2(
-      one.compartment, data = theo_sd, est="focei", control = list(print=0)
+      one.compartment, data = nlmixr2data::theo_sd, est="focei", control = list(print=0)
     ))
 
-  testMultiParam <-
+  testFixed <-
     suppressMessages(
-      profileNlmixr2MultiParam(fit, which = data.frame(tka = log(c(1.4, 1.6, 1.8))))
+      profile(fit, which = data.frame(tka = log(c(1.4, 1.6, 1.8))), method = "fixed")
     )
-  expect_s3_class(testMultiParam, "data.frame")
+  expect_s3_class(testFixed, "data.frame")
+  expect_named(testFixed, expected = c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd"))
+  expect_equal(nrow(testFixed), 3)
+
+  # Fix multiple parameters simultaneously
+  testFixedMulti <-
+    suppressMessages(
+      profile(
+        fit,
+        which =
+          data.frame(
+            tka = log(c(1.4, 1.6, 1.8)),
+            tcl = log(c(2.6, 2.7, 2.8))
+          ),
+        method = "fixed"
+      )
+    )
+  expect_s3_class(testFixedMulti, "data.frame")
+  expect_named(testFixedMulti, expected = c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd"))
+  expect_equal(nrow(testFixedMulti), 3)
+  expect_equal(testFixedMulti$Parameter, rep("tka,tcl", 3))
 })
 
 test_that("profile a standard model", {

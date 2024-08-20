@@ -2,15 +2,30 @@
 
 #' Perform likelihood profiling on nlmixr2 focei fits
 #'
+#'
+#' @details
+#'
+#' # Log-likelihood profiling
+#'
+#' `method = "llp"`
+#'
 #' The search will stop when either the OFV is within `ofvtol` of the desired
 #' OFV change or when the parameter is interpolating to more significant digits
-#' than specified in `paramDigits`.
+#' than specified in `paramDigits`.  The "llp" method uses the `profileLlp()`
+#' function.  See its help for more details.
+#'
+#' # Fixed points
+#'
+#' `method = "fixed"`
+#'
+#' Estimate the OFV for specific fixed values.  The "fixed" method uses the
+#' `profileFixed()` function.  See its help for more details.
 #'
 #' @param fitted The fit model
 #' @param ... ignored
 #' @param which The parameter names to perform likelihood profiling on
 #'   (`NULL` indicates all parameters)
-#' @param method Method to use for profiling
+#' @param method Method to use for profiling (see the details)
 #' @param control Control arguments for the `method`
 #' @return A data.frame with one column named `Parameter` indicating the
 #'   parameter being fixed on that row, one column for the `OFV` indicating the
@@ -19,26 +34,60 @@
 #'   above the minimum profile likelihood value, and columns for each parameter
 #'   estimate (or fixed) in the model.
 #' @family Profiling
+#' @examples
+#' \dontrun{
+#' # Likelihood profiling takes a long time to run each model multiple times, so
+#' # be aware that running this example may take a few minutes.
+#' oneCmt <- function() {
+#'   ini({
+#'     tka <- log(1.57)
+#'     tcl <- log(2.72)
+#'     tv <- fixed(log(31.5))
+#'     eta.ka ~ 0.6
+#'     add.sd <- 0.7
+#'   })
+#'   model({
+#'     ka <- exp(tka + eta.ka)
+#'     cl <- exp(tcl)
+#'     v <- exp(tv)
+#'     cp <- linCmt()
+#'     cp ~ add(add.sd)
+#'   })
+#' }
+#'
+#' fit <-
+#'   nlmixr2(
+#'     oneCmt, data = nlmixr2data::theo_sd, est="focei", control = list(print=0)
+#'   )
+#' # profile all parameters
+#' profall <- profile(fit)
+#'
+#' # profile a single parameter
+#' proftka <- profile(fit, which = "tka")
+#' }
 #' @export
 profile.nlmixr2FitCore <- function(fitted, ...,
                                    which = NULL,
-                                   method = "llp",
+                                   method = c("llp", "fixed"),
                                    control = list()) {
   method <- match.arg(method)
 
   if (method == "llp") {
     profileLlp(fitted = fitted, which = which, control = control)
+  } else if (method == "fixed") {
+    profileFixed(fitted = fitted, which = which, control = control)
   } else {
     stop("Invalid 'method': ", method) # nocov
   }
 }
 
 #' Give the output data.frame for a single model for profile.nlmixr2FitCore
+#'
 #' @inheritParams profile.nlmixr2FitCore
-#' @return A data.frame with columns for Parameter (the parameter name), OFV
-#'   (the objective function value), and the current estimate for each of the
-#'   parameters
-#' @noRd
+#' @return A data.frame with columns named "Parameter" (the parameter name(s)
+#'   that were fixed), OFV (the objective function value), and the current
+#'   estimate for each of the parameters.
+#' @family Profiling
 profileNlmixr2FitCoreRet <- function(fitted, which, fixedVal, rowname = 0) {
   if (inherits(fitted, "try-error")) {
     ret <- data.frame(Parameter = which, OFV = NA_real_, X = fixedVal)
@@ -59,17 +108,37 @@ profileNlmixr2FitCoreRet <- function(fitted, which, fixedVal, rowname = 0) {
 
 # Fixed parameter estimate profiling ----
 
-#' Estimate the objective function value for a model while fixing a single set
-#' of defined parameter values (for use in parameter profiling)
+#' Estimate the objective function values for a model while fixing defined
+#' parameter values
 #'
 #' @inheritParams profile.nlmixr2FitCore
+#' @param which A data.frame with column names of parameters to fix and values
+#'   of the fitted value to fix (one row per set of parameters to estimate)
+#' @param control A list passed to `fixedControl()` (currently unused)
+#' @inherit profileNlmixr2FitCoreRet return
+#' @family Profiling
+#' @export
+profileFixed <- function(fitted, which, control = list()) {
+  control <- do.call(fixedControl, control)
+  checkmate::assert_data_frame(which, types = "numeric", any.missing = FALSE, min.rows = 1)
+  dplyr::bind_rows(lapply(
+    X = seq_len(nrow(which)),
+    FUN = \(idx, fitted) profileFixedSingle(fitted = fitted, which = which[idx, , drop = FALSE]),
+    fitted = fitted
+  ))
+}
+
+#' @describeIn profileFixed Estimate the objective function value for a model
+#'   while fixing a single set of defined parameter values (for use in parameter
+#'   profiling)
+#'
 #' @param which A data.frame with column names of parameters to fix and values
 #'   of the fitted value to fix (one row only).
 #' @returns `which` with a column named `OFV` added with the objective function
 #'   value of the fitted estimate fixing the parameters in the other columns
 #' @family Profiling
 #' @export
-profileNlmixr2SingleParam <- function(fitted, which) {
+profileFixedSingle <- function(fitted, which) {
   checkmate::assert_data_frame(which, types = "numeric", any.missing = FALSE, nrows = 1)
   checkmate::assert_names(names(which), subset.of = names(nlmixr2est::fixef(fitted)))
 
@@ -92,22 +161,36 @@ profileNlmixr2SingleParam <- function(fitted, which) {
   ret
 }
 
-#' @describeIn profileNlmixr2SingleParam Estimate the objective function values
-#'   for a model while fixing defined parameter values (for use in parameter
-#'   profiling)
-#' @param which A data.frame with column names of parameters to fix and values
-#'   of the fitted value to fix (one row per set of parameters to estimate)
+#' Control options for fixed-value likelihood profiling
+#'
+#' @returns A validated list of control options for fixed-value likelihood
+#'   profiling
+#' @family Profiling
+#' @seealso [profileFixed()]
 #' @export
-profileNlmixr2MultiParam <- function(fitted, which) {
-  checkmate::assert_data_frame(which, types = "numeric", any.missing = FALSE, min.rows = 1)
-  dplyr::bind_rows(lapply(
-    X = seq_len(nrow(which)),
-    FUN = \(idx, fitted) profileNlmixr2SingleParam(fitted = fitted, which = which[idx, , drop = FALSE]),
-    fitted = fitted
-  ))
+fixedControl <- function() {
+  ret <- list()
+  class(ret) <- "fixedControl"
+  ret
 }
 
 # Log-likelihood profiling ----
+
+#' Profile confidence intervals with log-likelihood profiling
+#'
+#' @inheritParams profile.nlmixr2FitCore
+#' @param control A list passed to `llpControl()`
+#' @param which Either `NULL` to profile all parameters or a character vector of
+#'   parameters to estimate
+#' @return A data.frame with columns named "Parameter" (the parameter name(s)
+#'   that were fixed), OFV (the objective function value), and the current
+#'   estimate for each of the parameters.  In addition, if any boundary is
+#'   found, the OFV increase will be indicated by the absolute value of the
+#'   "profileBound" column and if that boundary is the upper or lower boundary
+#'   will be indicated by the "profileBound" column being positive or negative,
+#'   respectively.
+#' @family Profiling
+#' @export
 profileLlp <- function(fitted, which, control) {
   # Validate inputs
   control <- do.call(llpControl, control)
@@ -197,7 +280,7 @@ optimProfile <- function(par, fitted, optimDf, which, ofvIncrease, direction, lo
   while (itermax > currentIter) {
     currentIter <- currentIter + 1
     dfWhich <- stats::setNames(data.frame(X = currentPar), nm = which)
-    fitResult <- profileNlmixr2SingleParam(fitted = fitted, which = dfWhich)
+    fitResult <- profileFixedSingle(fitted = fitted, which = dfWhich)
 
     ret <- dplyr::bind_rows(ret, fitResult)
     ret <- ret[order(ret$OFV), , drop = FALSE]
@@ -298,6 +381,8 @@ optimProfile <- function(par, fitted, optimDf, which, ofvIncrease, direction, lo
 #' @param extrapolateExpand When extrapolating outside the range previously
 #'   tested, how far should the step occur as a ratio
 #' @returns A validated list of control options for log-likelihood profiling
+#' @family Profiling
+#' @seealso [profileLlp()]
 #' @export
 llpControl <- function(ofvIncrease = qchisq(0.95, df = 1),
                        rseTheta = 30,
