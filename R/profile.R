@@ -1,3 +1,5 @@
+# General profiling functions ----
+
 #' Perform likelihood profiling on nlmixr2 focei fits
 #'
 #' The search will stop when either the OFV is within `ofvtol` of the desired
@@ -8,22 +10,8 @@
 #' @param ... ignored
 #' @param which The parameter names to perform likelihood profiling on
 #'   (`NULL` indicates all parameters)
-#' @param ofvIncrease The targetted change in objective function value (3.84
-#'   corresponds to a Chi-squared test with a 95% confidence interval)
-#' @param normQuantile The quantile of a normal distribution to use for the
-#'   initial estimates.
-#' @param rseTheta The relative standard error (percent) for the model
-#'   parameters.  It can be missing (the default) in which case a default value
-#'   of 30% will be applied.  If given as a single number, it will be applied to
-#'   all parameters.  If given as a named vector of numbers, it will be applied
-#'   to each named parameter.
-#' @param itermax Maximum number of likelihood profiling iterations for each
-#'   bound estimated
-#' @param ofvtol The relative tolerance for the objective function being close
-#'   enough to the `ofvIncrease`.
-#' @param paramDigits The number of significant digits required for the
-#'   parameter.  When interpolation attempts to get smaller than that number of
-#'   significant digits, it will stop.
+#' @param method Method to use for profiling
+#' @param control Control arguments for the `method`
 #' @return A data.frame with one column named `Parameter` indicating the
 #'   parameter being fixed on that row, one column for the `OFV` indicating the
 #'   OFV estimated for the model at that step, one column named `profileBound`
@@ -34,105 +22,15 @@
 #' @export
 profile.nlmixr2FitCore <- function(fitted, ...,
                                    which = NULL,
-                                   ofvIncrease = qchisq(0.95, df = 1),
-                                   normQuantile = qnorm(p = 0.975),
-                                   rseTheta,
-                                   itermax = 10,
-                                   ofvtol = 0.005,
-                                   paramDigits = 3) {
-  # Input checking
-  if (is.null(which)) {
-    which <- names(nlmixr2est::fixef(fitted))
+                                   method = "llp",
+                                   control = list()) {
+  method <- match.arg(method)
+
+  if (method == "llp") {
+    profileLlp(fitted = fitted, which = which, control = control)
   } else {
-    checkmate::assert_subset(x = which, choices = names(nlmixr2est::fixef(fitted)), empty.ok = FALSE)
+    stop("Invalid 'method': ", method) # nocov
   }
-
-  fittedControl <- setQuietFastControl(fitted$control)
-  # fitted$objective sets the ofvType to ensure that we have the same type of
-  # OFV (and logLik) later
-  fitted$objective
-  fittedOfvType <- fitted$ofvType
-  # setOfv(currentFit, fittedOfvType)
-  # logLik(currentFit)
-
-  checkmate::assert_number(ofvIncrease, lower = 0, finite = TRUE, null.ok = FALSE, na.ok = FALSE)
-  checkmate::assert_integerish(paramDigits, lower = 1, upper = 10, any.missing = FALSE, len = 1, null.ok = FALSE, coerce = TRUE)
-  if (missing(rseTheta)) {
-    fittedVcov <- stats::vcov(fitted)
-    if (is.null(fittedVcov)) {
-      # Handle when vcov() is an error
-      rseTheta <- 30
-      cli::cli_alert_info(paste("covariance is unavailable, using default rseTheta of", rseTheta))
-    } else {
-      sd_theta <- sqrt(diag(fittedVcov))
-      rseTheta <- 100*abs(sd_theta/nlmixr2est::fixef(fitted)[names(sd_theta)])
-    }
-  }
-  if (length(rseTheta) == 1 & is.null(names(rseTheta))) {
-    rseTheta <- setNames(rep(rseTheta, length(which)), which)
-  } else {
-    checkmate::assert_names(names(rseTheta), subset.of = names(nlmixr2est::fixef(fitted)))
-    checkmate::assert_numeric(rseTheta, lower = 0, any.missing = FALSE, min.len = 1)
-  }
-  checkmate::assert_number(ofvtol, na.ok = FALSE, lower = 1e-10, upper = 1, finite = TRUE, null.ok = FALSE)
-
-  if (length(which) > 1) {
-    ret <- data.frame()
-    # Make the general case of profiling many parameters to be a concatenation
-    # of single cases
-    for (currentWhich in which) {
-      ret <-
-        rbind(
-          ret,
-          stats::profile(
-            fitted = fitted,
-            ...,
-            which = currentWhich,
-            ofvIncrease = ofvIncrease,
-            normQuantile = normQuantile,
-            rseTheta = rseTheta,
-            ofvtol = ofvtol
-          )
-        )
-    }
-  } else {
-    ret <- profileNlmixr2FitCoreRet(fitted = fitted, which = which)
-    estInitial <-
-      profileNlmixr2FitDataEstInitial(
-        estimates = ret,
-        which = which,
-        normQuantile = normQuantile,
-        rseTheta = rseTheta
-      )
-    for (direction in c(-1, 1)) {
-      effectRange <- fitted$iniDf[fitted$iniDf$name == which, c("lower", "upper")]
-      if (direction == -1) {
-        currentInitialEst = estInitial[1]
-        currentUpper <- nlmixr2est::fixef(fitted)[[which]]
-        currentLower <- effectRange$lower
-      } else {
-        currentInitialEst = estInitial[2]
-        currentLower <- nlmixr2est::fixef(fitted)[[which]]
-        currentUpper <- effectRange$upper
-      }
-
-      retCurrentDirection <-
-        optimProfile(
-          par = currentInitialEst,
-          fitted = fitted,
-          which = which,
-          optimDf = ret,
-          direction = direction,
-          ofvIncrease = ofvIncrease,
-          lower = currentLower, upper = currentUpper,
-          itermax = itermax,
-          ofvtol = ofvtol,
-          paramDigits = paramDigits
-        )
-      ret <- unique(rbindAddCols(ret, retCurrentDirection))
-    }
-  }
-  ret
 }
 
 #' Give the output data.frame for a single model for profile.nlmixr2FitCore
@@ -159,21 +57,7 @@ profileNlmixr2FitCoreRet <- function(fitted, which, fixedVal, rowname = 0) {
   ret
 }
 
-# Provide the initial estimates going up and down from the initial value
-profileNlmixr2FitDataEstInitial <- function(estimates, which, normQuantile, rseTheta) {
-  checkmate::assert_data_frame(estimates, nrows = 1)
-  checkmate::assert_character(which, any.missing = FALSE, len = 1)
-  checkmate::assert_subset(which, choices = names(estimates))
-  # use default rseTheta if not available
-  if (which %in% names(rseTheta)) {
-    currentRseTheta <- rseTheta[which]
-  } else {
-    currentRseTheta <- 30
-  }
-
-  # The -1,1 makes the estimate go up and down
-  estimates[[which]] + c(-1, 1)*normQuantile*currentRseTheta/100*abs(estimates[[which]])
-}
+# Fixed parameter estimate profiling ----
 
 #' Estimate the objective function value for a model while fixing a single set
 #' of defined parameter values (for use in parameter profiling)
@@ -208,6 +92,97 @@ profileNlmixr2SingleParam <- function(fitted, which) {
   ret
 }
 
+#' @describeIn profileNlmixr2SingleParam Estimate the objective function values
+#'   for a model while fixing defined parameter values (for use in parameter
+#'   profiling)
+#' @param which A data.frame with column names of parameters to fix and values
+#'   of the fitted value to fix (one row per set of parameters to estimate)
+#' @export
+profileNlmixr2MultiParam <- function(fitted, which) {
+  checkmate::assert_data_frame(which, types = "numeric", any.missing = FALSE, min.rows = 1)
+  dplyr::bind_rows(lapply(
+    X = seq_len(nrow(which)),
+    FUN = \(idx, fitted) profileNlmixr2SingleParam(fitted = fitted, which = which[idx, , drop = FALSE]),
+    fitted = fitted
+  ))
+}
+
+# Log-likelihood profiling ----
+profileLlp <- function(fitted, which, control) {
+  # Validate inputs
+  control <- do.call(llpControl, control)
+
+  if (is.null(which)) {
+    which <- names(nlmixr2est::fixef(fitted))
+  } else {
+    checkmate::assert_subset(x = which, choices = names(nlmixr2est::fixef(fitted)), empty.ok = FALSE)
+  }
+
+  if (length(which) > 1) {
+    ret <- data.frame()
+    # Make the general case of profiling many parameters to be a concatenation
+    # of single cases
+    for (currentWhich in which) {
+      ret <-
+        dplyr::bind_rows(
+          ret,
+          profileLlp(
+            fitted = fitted,
+            which = currentWhich,
+            control = control
+          )
+        )
+    }
+  } else {
+    if (length(control$rseTheta) == 1 & is.null(names(control$rseTheta))) {
+      control$rseTheta <- setNames(rep(control$rseTheta, length(which)), which)
+    } else {
+      checkmate::assert_names(names(control$rseTheta), subset.of = names(nlmixr2est::fixef(fitted)))
+      checkmate::assert_numeric(control$rseTheta, lower = 0, any.missing = FALSE, min.len = 1)
+    }
+
+    # The original fitted model should be in the output
+    ret <- profileNlmixr2FitCoreRet(fitted = fitted, which = which)
+    estInitial <-
+      profileNlmixr2FitDataEstInitial(
+        estimates = ret,
+        which = which,
+        ofvIncrease = control$ofvIncrease,
+        rseTheta = control$rseTheta
+      )
+    # Find the lower and upper limits
+    for (direction in c(-1, 1)) {
+      effectRange <- fitted$iniDf[fitted$iniDf$name == which, c("lower", "upper")]
+      if (direction == -1) {
+        currentInitialEst = estInitial[1]
+        currentUpper <- nlmixr2est::fixef(fitted)[[which]]
+        currentLower <- effectRange$lower
+      } else {
+        currentInitialEst = estInitial[2]
+        currentLower <- nlmixr2est::fixef(fitted)[[which]]
+        currentUpper <- effectRange$upper
+      }
+
+      retCurrentDirection <-
+        optimProfile(
+          par = currentInitialEst,
+          fitted = fitted,
+          which = which,
+          optimDf = ret,
+          direction = direction,
+          ofvIncrease = control$ofvIncrease,
+          lower = currentLower, upper = currentUpper,
+          itermax = control$itermax,
+          ofvtol = control$ofvtol,
+          paramDigits = control$paramDigits
+        )
+      ret <- unique(dplyr::bind_rows(ret, retCurrentDirection))
+    }
+  }
+  ret
+}
+
+# Single-parameter, single-direction optimization of likelihood profiling
 optimProfile <- function(par, fitted, optimDf, which, ofvIncrease, direction, lower = -Inf, upper = Inf,
                          itermax = 10, ofvtol = 0.005, paramDigits = 3,
                          extrapolateExpand = 1.5) {
@@ -221,7 +196,7 @@ optimProfile <- function(par, fitted, optimDf, which, ofvIncrease, direction, lo
     dfWhich <- stats::setNames(data.frame(X = currentPar), nm = which)
     fitResult <- profileNlmixr2SingleParam(fitted = fitted, which = dfWhich)
 
-    ret <- rbindAddCols(ret, fitResult)
+    ret <- dplyr::bind_rows(ret, fitResult)
     ret <- ret[order(ret$OFV), , drop = FALSE]
     currentMinOFV <- min(ret$OFV, na.rm = TRUE)
     if (isTRUE(any(currentMinOFV < origMinOFV))) {
@@ -236,6 +211,8 @@ optimProfile <- function(par, fitted, optimDf, which, ofvIncrease, direction, lo
         messageProfileComplete(which, direction = direction, "aborted due to lack of convergence prior to attempted extrapolation")
         currentIter <- Inf
       }
+      # When generating the extrapolation rows, always have the first row as the
+      # most extreme (farthest out)
       if (direction > 0) {
         extrapRows <- ret[nrow(ret) + c(-1, 0), ]
       } else {
@@ -243,7 +220,7 @@ optimProfile <- function(par, fitted, optimDf, which, ofvIncrease, direction, lo
       }
       currentPar <-
         extrapolateExpand*diff(extrapRows[[which]])/diff(extrapRows$OFV)*(targetOfv - extrapRows$OFV[1]) + extrapRows[[which]][1]
-      # ensure that we are within the boundary
+      # ensure that we are within the boundaries
       currentPar <- min(max(currentPar, lower), upper)
     } else { # interpolate
       currentPar <- stats::approx(x = ret$OFV, y = ret[[which]], xout = targetOfv)$y
@@ -261,20 +238,26 @@ optimProfile <- function(par, fitted, optimDf, which, ofvIncrease, direction, lo
     signifSame <- signif(ret[[which]], digits = paramDigits) == signif(currentPar, digits = paramDigits)
     signifAbove <- ret[[which]] > currentPar
     signifBelow <- ret[[which]] < currentPar
-    if (any(signifSame & signifAbove) && any(signifSame & signifBelow)) {
-      messageProfileComplete(which, direction = direction, "complete due to significant digits precision")
-      storeBound <- data.frame(Parameter = which, X = currentPar, profileBound = direction*ofvIncrease)
-      names(storeBound)[2] <- which
-      ret <- rbindAddCols(storeBound, ret)
-      currentIter <- Inf
-    }
+    convergedSignif <- any(signifSame & signifAbove) && any(signifSame & signifBelow)
 
     currentOFVDiff <- min(abs(targetOfv - ret$OFV), na.rm = TRUE)
-    if (currentOFVDiff <= ofvtol) {
-      messageProfileComplete(which, direction = direction, "complete due to achieving OFV within specified tolerance")
+    convergedOfv <- currentOFVDiff <= ofvtol
+
+    converged <- convergedSignif | convergedOfv
+
+    if (converged) {
+      if (convergedSignif & convergedOfv) {
+        messageProfileComplete(which, direction = direction, "complete due to significant digits precision and achieving OFV within specified tolerance")
+      } else if (convergedSignif) {
+        messageProfileComplete(which, direction = direction, "complete due to significant digits precision")
+      } else if (convergedOfv) {
+        messageProfileComplete(which, direction = direction, "complete due to achieving OFV within specified tolerance")
+      } else {
+        stop("Unclear convergece criteria, please report a bug") # nocov
+      }
       storeBound <- data.frame(Parameter = which, X = currentPar, profileBound = direction*ofvIncrease)
       names(storeBound)[2] <- which
-      ret <- rbindAddCols(storeBound, ret)
+      ret <- dplyr::bind_rows(storeBound, ret)
       currentIter <- Inf
     } else {
       message("Profiling ", which, " best distance to target OFV: ", currentOFVDiff)
@@ -292,6 +275,63 @@ optimProfile <- function(par, fitted, optimDf, which, ofvIncrease, direction, lo
   ret
 }
 
+#' Control options for log-likelihood profiling
+#'
+#' @param ofvIncrease The targetted change in objective function value (3.84
+#'   corresponds to a Chi-squared test with a 95% confidence interval)
+#' @param rseTheta The relative standard error (percent) for the model
+#'   parameters.  It can be missing (the default) in which case a default value
+#'   of 30% will be applied.  If given as a single number, it will be applied to
+#'   all parameters.  If given as a named vector of numbers, it will be applied
+#'   to each named parameter.
+#' @param itermax Maximum number of likelihood profiling iterations for each
+#'   bound estimated
+#' @param ofvtol The relative tolerance for the objective function being close
+#'   enough to the `ofvIncrease`.
+#' @param paramDigits The number of significant digits required for the
+#'   parameter.  When interpolation attempts to get smaller than that number of
+#'   significant digits, it will stop.
+#' @param extrapolateExpand When extrapolating outside the range previously
+#'   tested, how far should the step occur as a ratio
+#' @returns A validated list of control options for log-likelihood profiling
+#' @export
+llpControl <- function(ofvIncrease = qchisq(0.95, df = 1),
+                       rseTheta = 30,
+                       itermax = 10,
+                       ofvtol = 0.005,
+                       paramDigits = 3,
+                       extrapolateExpand = 1.5) {
+  ret <-
+    list(
+      ofvIncrease = checkmate::assert_number(ofvIncrease, lower = 0, finite = TRUE, null.ok = FALSE, na.ok = FALSE),
+      rseTheta = checkmate::assert_number(rseTheta, lower = 0, finite = TRUE, null.ok = FALSE, na.ok = FALSE),
+      ofvtol = checkmate::assert_number(ofvtol, na.ok = FALSE, lower = 1e-10, upper = 1, finite = TRUE, null.ok = FALSE),
+      itermax = checkmate::assert_integerish(itermax, lower = 1, any.missing = FALSE, len = 1, null.ok = FALSE, coerce = TRUE),
+      paramDigits = checkmate::assert_integerish(paramDigits, lower = 1, upper = 10, any.missing = FALSE, len = 1, null.ok = FALSE, coerce = TRUE),
+      extrapolateExpand = checkmate::assert_number(extrapolateExpand, lower = 1.001, na.ok = FALSE, finite = TRUE, null.ok = FALSE)
+    )
+  class(ret) <- "llpControl"
+  ret
+}
+
+# Provide the initial estimates going up and down from the initial value
+profileNlmixr2FitDataEstInitial <- function(estimates, which, ofvIncrease, rseTheta) {
+  checkmate::assert_data_frame(estimates, nrows = 1)
+  checkmate::assert_character(which, any.missing = FALSE, len = 1)
+  checkmate::assert_subset(which, choices = names(estimates))
+  # use default rseTheta if not available
+  if (which %in% names(rseTheta)) {
+    currentRseTheta <- rseTheta[which]
+  } else {
+    currentRseTheta <- 30
+  }
+
+  # The -1,1 makes the estimate go up and down
+  estimates[[which]] + c(-1, 1)*ofvIncrease*currentRseTheta/100*abs(estimates[[which]])
+}
+
+# Support functions ----
+
 messageProfileComplete <- function(which, direction, msg) {
   message(
     "Profiling ",
@@ -301,32 +341,4 @@ messageProfileComplete <- function(which, direction, msg) {
     " is ",
     msg
   )
-}
-
-#' @describeIn profileNlmixr2SingleParam Estimate the objective function values
-#'   for a model while fixing defined parameter values (for use in parameter
-#'   profiling)
-#' @param which A data.frame with column names of parameters to fix and values
-#'   of the fitted value to fix (one row per set of parameters to estimate)
-#' @export
-profileNlmixr2MultiParam <- function(fitted, which) {
-  checkmate::assert_data_frame(which, types = "numeric", any.missing = FALSE, min.rows = 1)
-  dplyr::bind_rows(lapply(
-    X = seq_len(nrow(which)),
-    FUN = \(idx, fitted) profileNlmixr2SingleParam(fitted = fitted, which = which[idx, , drop = FALSE]),
-    fitted = fitted
-  ))
-}
-
-# Add more columns to x so that `rbind()` works
-rbindAddCols <- function(x, y, .default = NA) {
-  extraColsX <- setdiff(names(y), names(x))
-  if (length(extraColsX) > 0) {
-    x[extraColsX] <- .default
-  }
-  extraColsY <- setdiff(names(x), names(y))
-  if (length(extraColsY) > 0) {
-    y[extraColsY] <- .default
-  }
-  rbind(x, y)
 }

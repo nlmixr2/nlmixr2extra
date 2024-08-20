@@ -4,17 +4,7 @@
 \alias{profile.nlmixr2FitCore}
 \title{Perform likelihood profiling on nlmixr2 focei fits}
 \usage{
-\method{profile}{nlmixr2FitCore}(
-  fitted,
-  ...,
-  which = NULL,
-  ofvIncrease = qchisq(0.95, df = 1),
-  normQuantile = qnorm(p = 0.975),
-  rseTheta,
-  itermax = 10,
-  ofvtol = 0.005,
-  paramDigits = 3
-)
+\method{profile}{nlmixr2FitCore}(fitted, ..., which = NULL, method = "llp", control = list())
 }
 \arguments{
 \item{fitted}{The fit model}
@@ -24,27 +14,9 @@
 \item{which}{The parameter names to perform likelihood profiling on
 (\code{NULL} indicates all parameters)}
 
-\item{ofvIncrease}{The targetted change in objective function value (3.84
-corresponds to a Chi-squared test with a 95\% confidence interval)}
+\item{method}{Method to use for profiling}
 
-\item{normQuantile}{The quantile of a normal distribution to use for the
-initial estimates.}
-
-\item{rseTheta}{The relative standard error (percent) for the model
-parameters.  It can be missing (the default) in which case a default value
-of 30\% will be applied.  If given as a single number, it will be applied to
-all parameters.  If given as a named vector of numbers, it will be applied
-to each named parameter.}
-
-\item{itermax}{Maximum number of likelihood profiling iterations for each
-bound estimated}
-
-\item{ofvtol}{The relative tolerance for the objective function being close
-enough to the \code{ofvIncrease}.}
-
-\item{paramDigits}{The number of significant digits required for the
-parameter.  When interpolation attempts to get smaller than that number of
-significant digits, it will stop.}
+\item{control}{Control arguments for the \code{method}}
 }
 \value{
 A data.frame with one column named \code{Parameter} indicating the

@@ -111,7 +111,7 @@ test_that("profile a standard model", {
     ))
 
   # All parameters
-  profall <- profile(fit)
+  profall <- suppressMessages(profile(fit))
   expect_s3_class(profall, "data.frame")
   expect_named(profall, c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "profileBound"))
 
@@ -125,6 +125,11 @@ test_that("profile a standard model", {
     proftv <- profile(fit, which = "tv"),
     regexp = "OFV decreased while profiling"
   )
+  expect_s3_class(proftv, "data.frame")
+  expect_named(proftv, c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "profileBound"))
+
+  # Residual error
+  proftv <- profile(fit, which = "add.sd")
   expect_s3_class(proftv, "data.frame")
   expect_named(proftv, c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "profileBound"))
 })

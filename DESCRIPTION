@@ -32,6 +32,7 @@ Imports:
     crayon,
     data.table,
     digest,
+    dplyr,
     ggplot2,
     ggtext,
     knitr,
@@ -49,7 +50,6 @@ Suggests:
     nlmixr2data,
     testthat (>= 3.0.0),
     withr,
-    dplyr,
     devtools
 LinkingTo:
     Rcpp,
