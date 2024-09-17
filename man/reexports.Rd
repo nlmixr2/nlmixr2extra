@@ -10,6 +10,7 @@
 \alias{nlmixr}
 \alias{nlmixr2}
 \alias{setCov}
+\alias{rxUiDeparse}
 \title{Objects exported from other packages}
 \keyword{internal}
 \description{
@@ -21,6 +22,6 @@ below to see their documentation.
 
   \item{nlmixr2est}{\code{\link[nlmixr2est:nlmixr2]{nlmixr}}, \code{\link[nlmixr2est]{nlmixr2}}, \code{\link[nlmixr2est]{nlmixrWithTiming}}, \code{\link[nlmixr2est]{setCov}}}
 
-  \item{rxode2}{\code{\link[rxode2]{ini}}, \code{\link[rxode2]{model}}}
+  \item{rxode2}{\code{\link[rxode2]{ini}}, \code{\link[rxode2]{model}}, \code{\link[rxode2]{rxUiDeparse}}}
 }}
 

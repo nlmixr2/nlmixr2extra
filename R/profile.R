@@ -422,6 +422,14 @@ llpControl <- function(ofvIncrease = qchisq(0.95, df = 1),
   ret
 }
 
+#' @export
+rxUiDeparse.llpControl <- function(object, var) {
+  .default <- llpControl()
+  .w <- nlmixr2est::.deparseDifferent(.default, object, "genRxControl")
+  nlmixr2est::.deparseFinal(.default, object, .w, var)
+}
+
+
 # Provide the initial estimates going up and down from the initial value
 profileNlmixr2FitDataEstInitial <- function(estimates, which, ofvIncrease, rseTheta, lower, upper) {
   checkmate::assert_data_frame(estimates, nrows = 1)

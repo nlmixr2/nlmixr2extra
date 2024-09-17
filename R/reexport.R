@@ -21,3 +21,7 @@ nlmixr2est::nlmixr2
 
 #' @importFrom nlmixr2est setCov
 nlmixr2est::setCov
+
+#' @importFrom rxode2 rxUiDeparse
+#' @export
+rxode2::rxUiDeparse
