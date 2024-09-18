@@ -1,3 +1,7 @@
+# nlmixr2extra development version
+
+* New `profile()` method for likelihood profiling (Issue #1)
+
 # nlmixr2extra 2.0.10
 
 * `bootstrapFit()` fixes `se` option (Issue #66)
