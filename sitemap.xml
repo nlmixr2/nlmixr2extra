@@ -14,6 +14,7 @@
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/buildcovInfo.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/buildupatedUI.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/covarSearchAuto.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/fixedControl.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/foldgen.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/forwardSearch.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/horseshoeSummardf.html</loc></url>
@@ -21,9 +22,14 @@
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/knit_print.nlmixr2FitCore.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/lassoCoefficients.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/lassoSummardf.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/llpControl.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/normalizedData.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/optimUnisampling.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/preconditionFit.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/profile.nlmixr2FitCore.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/profileFixed.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/profileLlp.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/profileNlmixr2FitCoreRet.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/reexports.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/regularmodel.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/theoFitOde.html</loc></url>
