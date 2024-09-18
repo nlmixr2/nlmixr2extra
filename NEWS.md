@@ -1,4 +1,4 @@
-# nlmixr2extra development version
+# nlmixr2extra 3.0.0
 
 * New `profile()` method for likelihood profiling (Issue #1)
 
