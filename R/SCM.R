@@ -18,7 +18,7 @@
 #'   of the covariate selection as well as "resFwd" for the forward
 #'   selection method and "resBck" for the backward selection method.
 #'
-#' @export
+#' @noRd
 #' @author Vipul Mann, Matthew Fidler, Vishal Sarsani
 #'
 #' @examples
@@ -146,7 +146,7 @@ covarSearchAuto <- function(fit,
 #'
 #' @return returns the updated 'fit' object at the end of the forward search and a table of information for all the covariates tested
 #' @author Vipul Mann, Matthew Fidler, Vishal Sarsani
-#' @export
+#' @noRd
 forwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL,fit, pVal = 0.05, outputDir, restart = FALSE) {
   ## Update data and covarsvec if categorical variables are provided
   if (!inherits(fit, "nlmixr2FitCore")) {
@@ -315,7 +315,7 @@ forwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL,fit, pVal = 0.05, ou
 #' @param restart a boolean that controls if the search should be restarted; default is FALSE
 #'
 #' @return returns the updated 'fit' object at the end of the backward search and a table of information for all the covariates tested
-#' @export
+#' @noRd
 #'
 #' @author Vipul Mann, Matthew Fidler, Vishal Sarsani
 backwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL, fitorig, fitupdated, pVal = 0.01, reFitCovars = FALSE, outputDir, restart = FALSE) {

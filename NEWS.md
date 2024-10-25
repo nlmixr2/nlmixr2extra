@@ -1,3 +1,7 @@
+# nlmixr2extra 3.0.1
+
+* Remove non-functioning SCM for now (#71)
+
 # nlmixr2extra 3.0.0
 
 * New `profile()` method for likelihood profiling (Issue #1)
