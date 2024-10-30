@@ -1,3 +1,3 @@
-# nlmixr2extra 3.0.0
+# nlmixr2extra 3.0.1
 
-- This is made to work with new version of rxode2
+- Remove non-functioning scm
