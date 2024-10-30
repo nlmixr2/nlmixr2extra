@@ -16,8 +16,8 @@ knitr::opts_chunk$set(
 # nlmixr2extra
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/nlmixr2/nlmixr2extra/workflows/R-CMD-check/badge.svg)](https://github.com/nlmixr2/nlmixr2extra/actions)
-[![Codecov test coverage](https://codecov.io/gh/nlmixr2/nlmixr2extra/branch/main/graph/badge.svg)](https://app.codecov.io/gh/nlmixr2/nlmixr2extra?branch=main)
+[![R-CMD-check](https://github.com/nlmixr2/nlmixr2extra/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/nlmixr2/nlmixr2extra/actions/workflows/R-CMD-check.yaml)
+[![Codecov test coverage](https://codecov.io/gh/nlmixr2/nlmixr2extra/graph/badge.svg)](https://app.codecov.io/gh/nlmixr2/nlmixr2extra)
 [![CRAN version](http://www.r-pkg.org/badges/version/nlmixr2extra)](https://cran.r-project.org/package=nlmixr2extra)
 [![CRAN total downloads](https://cranlogs.r-pkg.org/badges/grand-total/nlmixr2extra)](https://cran.r-project.org/package=nlmixr2extra)
 [![CRAN total downloads](https://cranlogs.r-pkg.org/badges/nlmixr2extra)](https://cran.r-project.org/package=nlmixr2extra)
@@ -47,8 +47,8 @@ This is a basic example of bootstrapping provided by this package
 ```{r example}
 library(nlmixr2est)
 library(nlmixr2extra)
-## basic example code
-## The basic model consiss of an ini block that has initial estimates
+# basic example code
+# The basic model consists of an ini block that has initial estimates
 one.compartment <- function() {
   ini({
     tka <- 0.45 # Log Ka
@@ -59,7 +59,7 @@ one.compartment <- function() {
     eta.v ~ 0.1
     add.sd <- 0.7
   })
-  # and a model block with the error sppecification and model specification
+  # and a model block with the error specification and model specification
   model({
     ka <- exp(tka + eta.ka)
     cl <- exp(tcl + eta.cl)
@@ -71,9 +71,11 @@ one.compartment <- function() {
   })
 }
 
-## The fit is performed by the function nlmixr/nlmix2 specifying the model, data and estimate
-fit <- nlmixr2(one.compartment, theo_sd,  est="saem", saemControl(print=0))
+# The fit is performed by the function nlmixr/nlmixr2 specifying the model, data
+# and estimate (in a real estimate, nBurn and nEm would be much higher.)
+fit <- nlmixr2(one.compartment, theo_sd,  est="saem", saemControl(print=0, nBurn = 10, nEm = 20))
 
-fit2 <- suppressMessages(bootstrapFit(fit))
+# In a real bootstrap, nboot would be much higher.
+fit2 <- suppressMessages(bootstrapFit(fit, nboot = 5))
 fit2
 ```

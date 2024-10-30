@@ -21,20 +21,17 @@ Function to return data of normalized covariates
 }
 \examples{
 
-\donttest{
 d <- nlmixr2data::theo_sd
 d$SEX <-0
 d$SEX[d$ID<=6] <-1
 
 covarsVec <- c("WT")
 
-
 # Normalized covariate (replaced)
 df1 <- normalizedData(d,covarsVec,replace=TRUE)
 
 # Normalized covariate (without replacement)
 df2 <- normalizedData(d,covarsVec,replace=FALSE)
-}
 }
 \author{
 Vishal Sarsani

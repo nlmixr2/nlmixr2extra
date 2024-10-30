@@ -1,13 +1,14 @@
 Package: nlmixr2extra
 Title: Nonlinear Mixed Effects Models in Population PK/PD, Extra Support
     Functions
-Version: 2.0.8
+Version: 3.0.1.9000
 Authors@R: c(
     person("Matthew", "Fidler", email="matthew.fidler@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-8538-6691")),
     person("Vipul", "Mann",email="vm2583@columbia.edu", role = "aut"),
     person("Vishal", "Sarsani", email="vsarsani@umass.edu", comment=c(ORCID = "0000-0002-9272-3438"), role="aut"),
-    person("Christian", "Bartels", email="christian.bartels@novartis.com", role="ctb")
+    person("Christian", "Bartels", email="christian.bartels@novartis.com", role="ctb"),
+    person("Bill", "Denney", email="wdenney@humanpredictions.com", role="aut", comment=c(ORCID="0000-0002-5759-428X"))
   )
 Maintainer: Matthew Fidler <matthew.fidler@gmail.com>
 Description: Fit and compare nonlinear mixed-effects models in
@@ -19,21 +20,24 @@ Description: Fit and compare nonlinear mixed-effects models in
     support functions like preconditioned fits
     <doi:10.1208/s12248-016-9866-5>, boostrap and stepwise covariate
     selection.
-Depends: 
+Depends:
     R (>= 4.0)
 License: GPL (>= 3)
 URL: https://nlmixr2.github.io/nlmixr2extra/,
     https://github.com/nlmixr2/nlmixr2extra/
 BugReports: https://github.com/nlmixr2/nlmixr2extra/issues/
-Imports: 
+Imports:
     checkmate,
     cli (>= 3.4.0),
     crayon,
     data.table,
     digest,
+    dplyr,
     ggplot2,
     ggtext,
+    knitr,
     lotri,
+    methods,
     nlme,
     nlmixr2est (>= 2.1.1),
     Rcpp,
@@ -41,14 +45,13 @@ Imports:
     stats,
     symengine,
     utils
-Suggests: 
+Suggests:
     brms,
     nlmixr2data,
     testthat (>= 3.0.0),
     withr,
-    dplyr,
     devtools
-LinkingTo: 
+LinkingTo:
     Rcpp,
     RcppArmadillo
 Biarch: true
@@ -56,5 +59,5 @@ Config/testthat/edition: 3
 Encoding: UTF-8
 NeedsCompilation: yes
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.1
+RoxygenNote: 7.3.2
 LazyData: true
