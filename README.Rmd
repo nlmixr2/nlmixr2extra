@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/nlmixr2/nlmixr2extra/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/nlmixr2/nlmixr2extra/actions/workflows/R-CMD-check.yaml)
 [![Codecov test coverage](https://codecov.io/gh/nlmixr2/nlmixr2extra/graph/badge.svg)](https://app.codecov.io/gh/nlmixr2/nlmixr2extra)
-[![CRAN version](http://www.r-pkg.org/badges/version/nlmixr2extra)](https://cran.r-project.org/package=nlmixr2extra)
+[![CRAN status](https://www.r-pkg.org/badges/version/nlmixr2extra)](https://CRAN.R-project.org/package=nlmixr2extra)
 [![CRAN total downloads](https://cranlogs.r-pkg.org/badges/grand-total/nlmixr2extra)](https://cran.r-project.org/package=nlmixr2extra)
 [![CRAN total downloads](https://cranlogs.r-pkg.org/badges/nlmixr2extra)](https://cran.r-project.org/package=nlmixr2extra)
 [![CodeFactor](https://www.codefactor.io/repository/github/nlmixr2/nlmixr2extra/badge)](https://www.codefactor.io/repository/github/nlmixr2/nlmixr2extra)
@@ -51,13 +51,13 @@ library(nlmixr2extra)
 # The basic model consists of an ini block that has initial estimates
 one.compartment <- function() {
   ini({
-    tka <- 0.45 # Log Ka
-    tcl <- 1 # Log Cl
-    tv <- 3.45    # Log V
+    tka <- 0.45; label("Absorption rate, Ka")
+    tcl <- 1; label("Clearance, Cl")
+    tv <- 3.45; label("Central volumne, V")
     eta.ka ~ 0.6
     eta.cl ~ 0.3
     eta.v ~ 0.1
-    add.sd <- 0.7
+    add.sd <- 0.7; label("Additive residual error")
   })
   # and a model block with the error specification and model specification
   model({
