@@ -3,7 +3,8 @@ if (!dir.exists("data")) {
 }
 
 .in <- suppressWarnings(readLines("src/Makevars.in"))
-if (.Platform$OS.type == "windows" && !file.exists("src/Makevars.win")) {
+if (.Platform$OS.type == "windows" && !file.exists("src/Makevars.win") ||
+    (R.version$os == "linux-musl")) {
   file.out <- file("src/Makevars.win", "wb")
   writeLines(.in, file.out)
   close(file.out)
