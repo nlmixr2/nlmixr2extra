@@ -585,6 +585,10 @@ bootstrapFit <- function(fit,
   }
   ## Update covariance estimate
   .nm <- names(fit$theta)[!fit$foceiSkipCov[seq_along(fit$theta)]]
+  .nm <- .nm[.nm %in% dimnames(fit$bootSummary$omega$covMatrixCombined)[[1]], drop=FALSE]
+  if (length(.nm) == 0) {
+    stop("No parameters to update covariance matrix", call.=FALSE)
+  }
   .cov <- fit$bootSummary$omega$covMatrixCombined[.nm, .nm]
   .setCov(fit, covMethod = .cov)
   assign("covMethod", paste0("boot", fit$bootSummary$nboot), fit$env)
@@ -1160,10 +1164,13 @@ getBootstrapSummary <- function(fitList,
       # computing the covariance and correlation matrices
       # =======================================================
       parFixedOmegaBootVec <- list()
-
       parFixedlist <- extractVars(fitList, id = "parFixedDf")
       parFixedlistVec <- lapply(parFixedlist, function(x) {
-        x$Estimate
+        ret <- x$Estimate
+        if (is.null(names(ret))) {
+          ret <- stats::setNames(ret, rownames(x))
+        }
+        ret
       })
       parFixedlistVec <- do.call("rbind", parFixedlistVec)
 
@@ -1227,7 +1234,6 @@ getBootstrapSummary <- function(fitList,
         corMatrixCombined = corMatrix
       )
     }
-
     else if (id == "parFixedDf") {
       # parameter estimates (dataframe)
       varVec <- extractVars(fitList, id)
