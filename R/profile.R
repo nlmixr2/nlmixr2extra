@@ -135,6 +135,7 @@ profileNlmixr2FitCoreRet <- function(fitted, which, fixedVal) {
 #'   of the fitted value to fix (one row per set of parameters to estimate)
 #' @param control A list passed to `fixedControl()` (currently unused)
 #' @inherit profileNlmixr2FitCoreRet return
+#' @author Bill Denney (changed by Matt Fidler to take out R 4.1 specific code)
 #' @family Profiling
 #' @export
 profileFixed <- function(fitted, which, control = list()) {
@@ -142,7 +143,9 @@ profileFixed <- function(fitted, which, control = list()) {
   checkmate::assert_data_frame(which, types = "numeric", any.missing = FALSE, min.rows = 1)
   dplyr::bind_rows(lapply(
     X = seq_len(nrow(which)),
-    FUN = \(idx, fitted) profileFixedSingle(fitted = fitted, which = which[idx, , drop = FALSE]),
+    FUN = function(idx, fitted) {
+      profileFixedSingle(fitted = fitted, which = which[idx, , drop = FALSE])
+    },
     fitted = fitted
   ))
 }
