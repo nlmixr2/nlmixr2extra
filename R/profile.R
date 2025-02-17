@@ -159,6 +159,7 @@ profileFixed <- function(fitted, which, control = list()) {
 #' @returns `which` with a column named `OFV` added with the objective function
 #'   value of the fitted estimate fixing the parameters in the other columns
 #' @family Profiling
+#' @author Bill Denney (changed by Matt Fidler to take out R 4.1 specific code)
 #' @export
 profileFixedSingle <- function(fitted, which) {
   checkmate::assert_data_frame(which, types = "numeric", any.missing = FALSE, nrows = 1)
@@ -166,7 +167,10 @@ profileFixedSingle <- function(fitted, which) {
 
   message("Profiling ", paste(names(which), "=", unlist(which), collapse = ", "))
   # Update the model by fixing all of the parameters
-  paramToFix <- lapply(X = which, FUN = \(x) str2lang(sprintf("fixed(%s)", x)))
+  paramToFix <- lapply(X = which,
+                       FUN = function(x) {
+                         str2lang(sprintf("fixed(%s)", x))
+                       })
   iniArgs <- append(list(x = fitted), paramToFix)
   modelToFit <- suppressMessages(do.call(rxode2::ini, iniArgs))
   controlFit <- fitted$control
