@@ -1,3 +1,7 @@
+# nlmixr2extra 3.0.3
+
+* Allow raw fits to be returned (or only the parameters)
+
 # nlmixr2extra 3.0.2
 
 * Make sure bootstrapped thetas are named.  Fixed issue #76
