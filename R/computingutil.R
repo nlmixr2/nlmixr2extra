@@ -61,7 +61,7 @@
   if (length(.new) == 0L) stop("covariate specified not in original dataset")
 
   if (is.factor(data[[covariate]])) {
-    return(data)
+    data
   } else {
     # Column name for the standardized covariate
     datColNames <- paste0("normalized_", covariate)
@@ -71,7 +71,7 @@
     .popStd = .popMeanStd(data,covariate)[[2]]
     # add standardized covariate values to the data frame
     data[,datColNames] <- (data[,covariate]-.popMean)/(.popStd)
-    return(data)
+    data
   }
 }
 
@@ -257,7 +257,7 @@ optimUnisampling <- function(xvec,N=1000,medValue,floorT=TRUE) {
   else if (xrmin==xvec[1] && xrmax==xvec[2]) {
     return(sampled)
   }
-  return(optimUnisampling(xvec,N=1000,medValue))
+  optimUnisampling(xvec,N=1000,medValue)
 }
 
 #' Format confidence bounds for a variable into bracketed notation using string formatting
