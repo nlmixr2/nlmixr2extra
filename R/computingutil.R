@@ -61,7 +61,7 @@
   if (length(.new) == 0L) stop("covariate specified not in original dataset")
 
   if (is.factor(data[[covariate]])) {
-    return(data)
+    data
   } else {
     # Column name for the standardized covariate
     datColNames <- paste0("normalized_", covariate)
@@ -71,7 +71,7 @@
     .popStd = .popMeanStd(data,covariate)[[2]]
     # add standardized covariate values to the data frame
     data[,datColNames] <- (data[,covariate]-.popMean)/(.popStd)
-    return(data)
+    data
   }
 }
 
@@ -257,7 +257,7 @@ optimUnisampling <- function(xvec,N=1000,medValue,floorT=TRUE) {
   else if (xrmin==xvec[1] && xrmax==xvec[2]) {
     return(sampled)
   }
-  return(optimUnisampling(xvec,N=1000,medValue))
+  optimUnisampling(xvec,N=1000,medValue)
 }
 
 #' Format confidence bounds for a variable into bracketed notation using string formatting
@@ -323,12 +323,25 @@ addConfboundsToVar <- function(var, confLower, confUpper, sigdig = 3) {
 #' @param fitName is the fit name that is used for the name of the
 #'   boostrap files.  By default it is the fit provided though it
 #'   could be something else.
+#'
+#' @param returnType this describes the return type
+#'
+#' - `model` this is the default and returns an updated model boostrapped
+#'   confidence intervals and standard errors updated in the estimates.
+#'
+#' - `fitList` this returns the list of the full fits from the bootstrap.
+#'
+#' - `modelList` this returns the model list (which abbreviates the
+#'    parameters and messages) used for the bootstrap summary
+#'    statistics.
+#'
 #' @author Vipul Mann, Matthew Fidler
 #' @return Nothing, called for the side effects; The original fit is
 #'   updated with the bootstrap confidence bands
 #' @export
 #' @examples
 #' \dontrun{
+#'
 #' one.cmt <- function() {
 #'   ini({
 #'     tka <- 0.45; label("Ka")
@@ -382,9 +395,11 @@ bootstrapFit <- function(fit,
                          pvalues = NULL,
                          restart = FALSE,
                          plotHist = FALSE,
-                         fitName = as.character(substitute(fit))) {
+                         fitName = as.character(substitute(fit)),
+                         returnType=c("model", "fitList", "modelList")) {
 
   stdErrType <- match.arg(stdErrType)
+  returnType <- match.arg(returnType)
   checkmate::assertNumeric(ci, lower=0, upper=1, len=1, any.missing=FALSE, null.ok = FALSE)
 
   if (missing(stratVar)) {
@@ -431,6 +446,13 @@ bootstrapFit <- function(fit,
     modelsList <- resBootstrap[[1]]
     fitList <- resBootstrap[[2]]
   }
+
+  if (returnType == "fitList") {
+    return(fitList)
+  } else if (returnType == "modelList") {
+    return(modelsList)
+  }
+
 
   bootSummary <-
     getBootstrapSummary(modelsList, ci=ci, stdErrType=stdErrType) # aggregate values/summary
