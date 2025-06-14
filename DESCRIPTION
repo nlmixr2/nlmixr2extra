@@ -47,10 +47,12 @@ Imports:
     utils
 Suggests:
     brms,
+    devtools,
     nlmixr2data,
+    pander,
+    rmarkdown,
     testthat (>= 3.0.0),
-    withr,
-    devtools
+    withr
 LinkingTo:
     Rcpp,
     RcppArmadillo
@@ -61,3 +63,4 @@ NeedsCompilation: yes
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 LazyData: true
+VignetteBuilder: knitr
