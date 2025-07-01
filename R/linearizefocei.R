@@ -59,7 +59,7 @@ getDerv <- function(fit){
 
     # D_EPSETA
     for(i in seq_len(ncol(eta))){
-        derv <- renameCol(derv, paste0("D_EPSETA_",1, "_", i), paste0("rx__sens_rx_r__BY_ETA_", i, "___"))
+        derv <- renameCol(derv, paste0("D_VAR_ETA_",1, "_", i), paste0("rx__sens_rx_r__BY_ETA_", i, "___"))
     }
     
     derv
@@ -68,4 +68,76 @@ getDerv <- function(fit){
 renameCol <- function(df, new, old){
     names(df)[names(df) == old] <- new
     df
+}
+
+linModGen <- function(fit){
+    
+    if(nrow(fit$predDf) != 1){
+        stop("Mutiple endpoints linearization is not supported")
+    }
+    
+    if(!(fit$predDf$errType %in% c("add", "prop", "add + prop"))){
+        stop("Error model not supported")
+    }
+
+    errSym <- rxode2:::.rxGetVarianceForErrorType(rxUiDecompress(fit), fit$predDf)
+    epStr <- fit$predDf$var
+    errNames <- fit$iniDf$name[!is.na(fit$iniDf$err)]
+    nlmod <- fit$finalUi
+    eta_df <- fit$eta[,-1]
+
+    modelstr <- list()
+
+    # linearize eta
+    for(i in seq_along(colnames(eta_df))){
+        # D_ETAn * (-OETAn + eta.n)
+        modelstr$baseEta[i] <- paste0("base",i , "=", "D_ETA", i, "*(", "-O_ETA", i, "+", colnames(eta_df)[i], ")")
+    }
+    # BASE_TERMS = base1 + ... + basen
+    modelstr$baseEta[i+1] <- paste("BASE_TERMS =", paste(paste0("base", seq(ncol(eta_df))), collapse = " + "))
+    modelstr$baseEta[i+2] <- paste0("F = BASE_TERMS + OPRED")
+
+    # linearize residuals
+    for(i in seq_along(colnames(eta_df))){
+        # ERRn = D_VAR_ETA_1_n*(-O_ETAn + eta.n)
+        modelstr$baseEps[i] <- paste0("err",i , "=", "D_VAR_ETA_1_", i, "*(", "-O_ETA", i, "+", colnames(eta_df)[i], ")")
+    }
+    
+    
+    modelstr$baseEps[i+1] <- paste("BASE_ERROR =", paste(paste0("err", seq(ncol(eta_df))), collapse = " + "))
+    errSym <- gsub("rx_pred_f_", "OPRED", deparse(errSym))
+    # modelstr$baseEps[i+2] <- paste0("R2 = (BASE_ERROR * ", errSym, "+", errSym, ")")
+    modelstr$baseEps[i+2] <- paste0("R2 = (BASE_ERROR +", errSym, ")")
+
+    modelstr$basePred[1] <- paste0(epStr ,"  = F")
+    modelstr$basePred[2] <- paste0(epStr, " ~ add(R2) + var()")
+
+    # iniDf already captures final estimates
+    inidf <- nlmod$iniDf[nlmod$iniDf$name %in% c(colnames(eta_df), errNames) , ] 
+
+    # n_theta == n_errors
+    inidf$ntheta[!is.na(inidf$ntheta)] <- seq_along(na.omit(inidf$ntheta))
+
+    # newMod <- modelExtract(nlmod, endpoint=FALSE)
+    # model(nlmod) <- model(newMod)
+    ini(nlmod) <- inidf
+    model(nlmod) <-   c(modelstr$baseEta, modelstr$baseEps, modelstr$basePred)
+
+    nlmod
+}
+
+#' Perform linearization of a model fitted using FOCEI
+#' @author Omar Elashkar
+#' @export 
+linearize <- function(fit){
+    derv <- getDerv(fit)
+    linMod <- linModGen(fit)
+    fitL <- nlmixr(linMod, derv, est="focei")
+
+    oObj <- fit$objDf$OBJF
+    lObj <- fitL$objDf$OBJF
+
+    message(paste("Non-Linear OFV: ", oObj, "Linear OFV:", lObj))
+
+    fitL
 }
