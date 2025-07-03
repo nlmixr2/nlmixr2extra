@@ -103,12 +103,12 @@ rxUiGet.linearizeError <- function(x, ...) {
   .tipred <- lapply(seq_along(.predDf$cmt),
                     function(i) {
                       .replaceFwithOpred(expr=str2lang("TIPRED <- rx_pred_f_"),
-                                                  env=ui,
+                                                  env=.ui,
                                                   pred1=.predDf[i, ],
                                                   y="y")
                     })
   if (all(vapply(seq_along(.tipred), function(i) {
-    identical(.tipred[[1]], str2lang("TIPRED <- y"))
+    identical(.tipred[[i]], str2lang("TIPRED <- y"))
   }, logical(1)))) {
     .tipred <- "TIPRED <- y"
   } else {
@@ -167,7 +167,7 @@ rxUiGet.linearizeError <- function(x, ...) {
                              `logit + boxCox`=sprintf(" + boxCox(%s) + dv()", .lambda),
                              `probit + boxCox`=sprintf(" + boxCox(%s) + dv()", .lambda)
                              )
-             deparse1(str2lang(paste0("y", i, " ~ ",  .first, " + var()")))
+             deparse1(str2lang(paste0("y", i, " ~ ",  .first, " + var()", .last)))
            }, character(1), USE.NAMES=FALSE)
 
   .errModel <- c(vapply(seq_along(.predDf$cmt),

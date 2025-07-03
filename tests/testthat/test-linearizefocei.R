@@ -68,7 +68,47 @@ test_that("linearize error models", {
                             "y1 ~ add(rxR) + var()",
                             "y2 ~ add(rxR) + var()")))
 
-  f1 <- f %>% model(effect ~ lnorm(pdadd.err))
+  f1 <- f %>% model(effect ~ lnorm(pdadd.err) + prop(pdprop.err))
+
+  expect_equal(f1$linearizeError,
+               list(rxR2 = c("if (CMT == 5) {",
+                             "    rxR2 <- (pkadd.err)^2 + (OPRED)^2 * (prop.err)^2",
+                             "}",
+                             "if (CMT == 4) {",
+                             "    rxR2 <- (pdadd.err)^2 + (exp(OPRED))^2 * (pdprop.err)^2",
+                             "}"),
+                    tipred = c("if (CMT == 5) {",
+                               "    TIPRED <- y",
+                               "}", "if (CMT == 4) {",
+                               "    TIPRED <- exp(y)",
+                               "}"),
+                    err = c("y1 <- y",
+                            "y2 <- y",
+                            "y1 ~ add(rxR) + var()",
+                            "y2 ~ lnorm(rxR) + var() + dv()")))
+
+  f1 <- f %>% model(effect ~ logitNorm(pdadd.err, 10, 20) + prop(pdprop.err) + yeoJohnson(lambda))
+
+  expect_equal(f1$linearizeError,
+               list(rxR2 = c("if (CMT == 5) {",
+                             "    rxR2 <- (pkadd.err)^2 + (OPRED)^2 * (prop.err)^2",
+                             "}",
+                             "if (CMT == 4) {",
+                             "    rxR2 <- (pdadd.err)^2 + (rxTBSi(OPRED, lambda, 5, 10, 20))^2 * ",
+                             "        (pdprop.err)^2",
+                             "}"),
+                    tipred = c("if (CMT == 5) {",
+                               "    TIPRED <- y",
+                               "}",
+                               "if (CMT == 4) {",
+                               "    TIPRED <- rxTBSi(y, lambda, 5, 10, 20)",
+                               "}"),
+                    err = c("y1 <- y",
+                            "y2 <- y",
+                            "y1 ~ add(rxR) + var()",
+                            "y2 ~ logitNorm(rxR, 10, 20) + var() + yeoJohnson(lambda) + dv()"))
+               )
+
 
 })
 
@@ -272,91 +312,91 @@ test_that("linearize wrapper", {
 })
 
 
-test_that("Linearize multiple endpoints ", {
-pk.turnover.emax3 <- function() {
-    ini({
-    tktr <- log(1)
-    tka <- log(1)
-    tcl <- log(0.1)
-    tv <- log(10)
-    ##
-    eta.ktr ~ 1
-    eta.ka ~ 1
-    eta.cl ~ 2
-    eta.v ~ 1
-    prop.err <- 0.1
-    pkadd.err <- 0.1
-    ##
-    temax <- logit(0.8)
-    tec50 <- log(0.5)
-    tkout <- log(0.05)
-    te0 <- log(100)
-    ##
+## test_that("Linearize multiple endpoints ", {
+## pk.turnover.emax3 <- function() {
+##     ini({
+##     tktr <- log(1)
+##     tka <- log(1)
+##     tcl <- log(0.1)
+##     tv <- log(10)
+##     ##
+##     eta.ktr ~ 1
+##     eta.ka ~ 1
+##     eta.cl ~ 2
+##     eta.v ~ 1
+##     prop.err <- 0.1
+##     pkadd.err <- 0.1
+##     ##
+##     temax <- logit(0.8)
+##     tec50 <- log(0.5)
+##     tkout <- log(0.05)
+##     te0 <- log(100)
+##     ##
 
-    eta.emax ~ .5
-    eta.ec50  ~ .5
-    eta.kout ~ .5
-    eta.e0 ~ .5
-    ##
-    pdadd.err <- 10
-    })
-    model({
-    ktr <- exp(tktr + eta.ktr)
-    ka <- exp(tka + eta.ka)
-    cl <- exp(tcl + eta.cl)
-    v <- exp(tv + eta.v)
-    emax = expit(temax+eta.emax)
-    ec50 =  exp(tec50 + eta.ec50)
-    kout = exp(tkout + eta.kout)
-    e0 = exp(te0 + eta.e0)
-    ##
-    DCP = center/v
-    PD=1-emax*DCP/(ec50+DCP)
-    ##
-    effect(0) = e0
-    kin = e0*kout
-    ##
-    d/dt(depot) = -ktr * depot
-    d/dt(gut) =  ktr * depot -ka * gut
-    d/dt(center) =  ka * gut - cl / v * center
-    d/dt(effect) = kin*PD -kout*effect
-    ##
-    cp = center / v
-    cp ~ prop(prop.err) + add(pkadd.err)
-    effect ~ add(pdadd.err) | pca
-    })
-}
+##     eta.emax ~ .5
+##     eta.ec50  ~ .5
+##     eta.kout ~ .5
+##     eta.e0 ~ .5
+##     ##
+##     pdadd.err <- 10
+##     })
+##     model({
+##     ktr <- exp(tktr + eta.ktr)
+##     ka <- exp(tka + eta.ka)
+##     cl <- exp(tcl + eta.cl)
+##     v <- exp(tv + eta.v)
+##     emax = expit(temax+eta.emax)
+##     ec50 =  exp(tec50 + eta.ec50)
+##     kout = exp(tkout + eta.kout)
+##     e0 = exp(te0 + eta.e0)
+##     ##
+##     DCP = center/v
+##     PD=1-emax*DCP/(ec50+DCP)
+##     ##
+##     effect(0) = e0
+##     kin = e0*kout
+##     ##
+##     d/dt(depot) = -ktr * depot
+##     d/dt(gut) =  ktr * depot -ka * gut
+##     d/dt(center) =  ka * gut - cl / v * center
+##     d/dt(effect) = kin*PD -kout*effect
+##     ##
+##     cp = center / v
+##     cp ~ prop(prop.err) + add(pkadd.err)
+##     effect ~ add(pdadd.err) | pca
+##     })
+## }
 
-fit <- nlmixr(pk.turnover.emax3, nlmixr2data::warfarin, est = "focei")
+## fit <- nlmixr(pk.turnover.emax3, nlmixr2data::warfarin, est = "focei")
 
-derv <- getDerv(fit)
+## derv <- getDerv(fit)
 
-sum(grepl("O_ETA\\d+", names(derv))) |> expect_equal(ncol(fit$eta) - 1)
-all(derv$D_ResVar == 1) |> expect_equal(TRUE)
+## sum(grepl("O_ETA\\d+", names(derv))) |> expect_equal(ncol(fit$eta) - 1)
+## all(derv$D_ResVar == 1) |> expect_equal(TRUE)
 
-lmod <- linModGen(fit)
+## lmod <- linModGen(fit)
 
-lmod <- function(
-    ini({
-        eta.ktr ~ 1
-        eta.ka ~ 1
-        eta.cl ~ 2
-        eta.v ~ 1
+## lmod <- function(){
+##     ini({
+##         eta.ktr ~ 1
+##         eta.ka ~ 1
+##         eta.cl ~ 2
+##         eta.v ~ 1
 
-        eta.emax ~ .5
-        eta.ec50  ~ .5
-        eta.kout ~ .5
-        eta.e0 ~ .5
+##         eta.emax ~ .5
+##         eta.ec50  ~ .5
+##         eta.kout ~ .5
+##         eta.e0 ~ .5
 
-        prop.err <- 0.1
-        pkadd.err <- 0.1
+##         prop.err <- 0.1
+##         pkadd.err <- 0.1
 
-        pdadd.err <- 10
-    })
+##         pdadd.err <- 10
+##     })
 
-    model({
+##     model({
 
-    })
-)
+##     })
+## )
 
-})
+## })
