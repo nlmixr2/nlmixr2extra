@@ -72,9 +72,9 @@ renameCol <- function(df, new, old){
 
 linModGen <- function(fit){
     
-    if(nrow(fit$predDf) != 1){
-        stop("Mutiple endpoints linearization is not supported")
-    }
+    # if(nrow(fit$predDf) != 1){
+    #     stop("Mutiple endpoints linearization is not supported")
+    # }
     
     if(!(fit$predDf$errType %in% c("add", "prop", "add + prop"))){
         stop("Error model not supported")
@@ -104,10 +104,11 @@ linModGen <- function(fit){
     }
     
     
-    modelstr$baseEps[i+1] <- paste("BASE_ERROR =", paste(paste0("err", seq(ncol(eta_df))), collapse = " + "))
-    errSym <- gsub("rx_pred_f_", "OPRED", deparse(errSym))
-    # modelstr$baseEps[i+2] <- paste0("R2 = (BASE_ERROR * ", errSym, "+", errSym, ")")
-    modelstr$baseEps[i+2] <- paste0("R2 = (BASE_ERROR +", errSym, ")")
+    errSym <- gsub("rx_pred_f_", "OPRED", deparse1(errSym))
+    modelstr$baseEps[i+1] <- paste("BASE_ERROR = (", paste(paste0("err", seq(ncol(eta_df))), collapse = " + "), ")")
+    modelstr$baseEps[i+1] <-  paste(modelstr$baseEps[i+1], "+", errSym) 
+    # modelstr$baseEps[i+2] <- paste0("R2 = BASE_ERROR +", errSym, ")")
+    modelstr$baseEps[i+2] <- "R2 = BASE_ERROR"
 
     modelstr$basePred[1] <- paste0(epStr ,"  = F")
     modelstr$basePred[2] <- paste0(epStr, " ~ add(R2) + var()")
@@ -129,10 +130,12 @@ linModGen <- function(fit){
 #' Perform linearization of a model fitted using FOCEI
 #' @author Omar Elashkar
 #' @export 
-linearize <- function(fit){
+linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol){  # TODO mceta
+
     derv <- getDerv(fit)
     linMod <- linModGen(fit)
-    fitL <- nlmixr(linMod, derv, est="focei")
+    fitL <- nlmixr(linMod, derv, est="focei", 
+        control = nlmixr2::foceiControl(etaMat = as.matrix(fit$eta[-1])))
 
     oObj <- fit$objDf$OBJF
     lObj <- fitL$objDf$OBJF
