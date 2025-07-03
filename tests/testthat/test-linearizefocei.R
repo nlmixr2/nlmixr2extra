@@ -1,3 +1,62 @@
+test_that("linearize error models", {
+
+  pk.turnover.emax3 <- function() {
+    ini({
+      tktr <- log(1)
+      tka <- log(1)
+      tcl <- log(0.1)
+      tv <- log(10)
+      ##
+      eta.ktr ~ 1
+      eta.ka ~ 1
+      eta.cl ~ 2
+      eta.v ~ 1
+      prop.err <- 0.1
+      pkadd.err <- 0.1
+      ##
+      temax <- logit(0.8)
+      tec50 <- log(0.5)
+      tkout <- log(0.05)
+      te0 <- log(100)
+      ##
+      eta.emax ~ .5
+      eta.ec50  ~ .5
+      eta.kout ~ .5
+      eta.e0 ~ .5
+      ##
+      pdadd.err <- 10
+    })
+    model({
+      ktr <- exp(tktr + eta.ktr)
+      ka <- exp(tka + eta.ka)
+      cl <- exp(tcl + eta.cl)
+      v <- exp(tv + eta.v)
+      emax = expit(temax+eta.emax)
+      ec50 =  exp(tec50 + eta.ec50)
+      kout = exp(tkout + eta.kout)
+      e0 = exp(te0 + eta.e0)
+      ##
+      DCP = center/v
+      PD=1-emax*DCP/(ec50+DCP)
+      ##
+      effect(0) = e0
+      kin = e0*kout
+      ##
+      d/dt(depot) = -ktr * depot
+      d/dt(gut) =  ktr * depot -ka * gut
+      d/dt(center) =  ka * gut - cl / v * center
+      d/dt(effect) = kin*PD -kout*effect
+      ##
+      cp = center / v
+      cp ~ prop(prop.err) + add(pkadd.err)
+      effect ~ add(pdadd.err) | pca
+    })
+  }
+
+  f <- rxode2::rxode2(pk.turnover.emax3)
+
+})
+
 test_that("Linearize add err model ", {
     one.cmpt.adderr <- function() {
         ini({
@@ -28,7 +87,7 @@ test_that("Linearize add err model ", {
     all(derv$D_VAR_ETA_1_1 == 0) |> expect_equal(TRUE)
     all(derv$D_VAR_ETA_1_2 == 0) |> expect_equal(TRUE)
     all(derv$D_VAR_ETA_1_3 == 0) |> expect_equal(TRUE)
-    
+
     lmod <- linModGen(fit)
 
     fitLin <- nlmixr(lmod, derv, est = "focei")
@@ -75,8 +134,8 @@ test_that("Linearize prop err model ", {
 
     lmod <- linModGen(fit)
 
-# TODO try remove the var() or 
-# TODO try squaring the term 
+# TODO try remove the var() or
+# TODO try squaring the term
 lmod <- function() {
 ini({
     eta.cl ~ 0.3
@@ -86,16 +145,16 @@ ini({
   })
   model({
 
-    base1 = D_ETA1*(-O_ETA1 + eta.cl) 
-    base2 = D_ETA2*(- O_ETA2 + eta.v) 
-    # base3 = D_ETA3*(-O_ETA3 + eta.ka) 
+    base1 = D_ETA1*(-O_ETA1 + eta.cl)
+    base2 = D_ETA2*(- O_ETA2 + eta.v)
+    # base3 = D_ETA3*(-O_ETA3 + eta.ka)
 
     BASE_TERMS = base1 + base2 #+ base3
 
     IPRED = BASE_TERMS + OPRED
 
-    ERR1 = D_VAR_ETA_1_1*(-O_ETA1 + eta.cl) 
-    ERR2 = D_VAR_ETA_1_2*(-O_ETA2 + eta.v) 
+    ERR1 = D_VAR_ETA_1_1*(-O_ETA1 + eta.cl)
+    ERR2 = D_VAR_ETA_1_2*(-O_ETA2 + eta.v)
     # ERR3 = D_EPSETA_1_3*(-O_ETA3 + eta.ka)
 
     BASE_ERROR1 = (ERR1 + ERR2)+(prop.sd*OPRED)**2 # endpoint1
@@ -109,10 +168,10 @@ ini({
 }
 
 
-    fitLin <- nlmixr(lmod, derv, est = "focei", 
+    fitLin <- nlmixr(lmod, derv, est = "focei",
         control = nlmixr2::foceiControl(etaMat = as.matrix(fit$eta[-1]), mceta = -1))
 
-    fitLin <- nlmixr(lmod, derv, est = "focei", 
+    fitLin <- nlmixr(lmod, derv, est = "focei",
         control = nlmixr2::foceiControl(etaMat = as.matrix(fit$eta[-1]), mceta = 100))
 
     fitLin$parFixedDf
@@ -126,7 +185,7 @@ ini({
 
 
 test_that("Linearize combined model ", {
-    one.cmpt.combinederr <- function() { 
+    one.cmpt.combinederr <- function() {
         ini({
             tka <- log(1.56) # Ka
             tcl <- log(2.7) # Cl
@@ -189,10 +248,10 @@ test_that("linearize wrapper", {
     fit <- nlmixr(one.cmpt.adderr, nlmixr2data::theo_md, est = "focei")
 
     fitLin <- linearize(fit)
-    
+
     diffObjF <- abs((fit$objDf$OBJF - fitLin$objDf$OBJF)/ fitLin$objDf$OBJF)
     expect_true(diffObjF < 0.1)
-    
+
     all.equal(fit$omega, fitLin$omega, tolerance = 0.1) |> expect_true()
 
 })
@@ -218,7 +277,7 @@ pk.turnover.emax3 <- function() {
     tkout <- log(0.05)
     te0 <- log(100)
     ##
- 
+
     eta.emax ~ .5
     eta.ec50  ~ .5
     eta.kout ~ .5
@@ -276,7 +335,7 @@ lmod <- function(
 
         prop.err <- 0.1
         pkadd.err <- 0.1
-        
+
         pdadd.err <- 10
     })
 
