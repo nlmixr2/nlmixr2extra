@@ -22,8 +22,8 @@
         # Otherwise use the inverse transformation
         # rxTBSi(DV, rx_lambda_, rx_yj_, rx_low_, rx_hi_)
         .lambda <- deparse1(rxode2::.rxGetLambdaFromPred1AndIni(env, pred1))
-        .low <- deparse1(.rxGetLowBoundaryPred1AndIni(env, pred1))
-        .hi <- deparse1(.rxGetHiBoundaryPred1AndIni(env, pred1))
+        .low <- deparse1(rxode2::.rxGetLowBoundaryPred1AndIni(env, pred1))
+        .hi <- deparse1(rxode2::.rxGetHiBoundaryPred1AndIni(env, pred1))
         str2lang(sprintf("rxTBSi(%s, %s, %s, %s, %s)", y,
                          .lambda, .yj, .low, .hi))
       }
@@ -133,7 +133,52 @@ rxUiGet.linearizeError <- function(x, ...) {
 
                   }, character(1))
 
+  .errModel <-
+    vapply(seq_along(.predDf$cmt),
+           function(i) {
+             .pred1 <- .predDf[i, ]
+             .lambda <- deparse1(rxode2::.rxGetLambdaFromPred1AndIni(.ui, .pred1))
+             .low <- deparse1(rxode2::.rxGetLowBoundaryPred1AndIni(.ui, .pred1))
+             .hi <- deparse1(rxode2::.rxGetHiBoundaryPred1AndIni(.ui, .pred1))
+             .transform <- paste0(.predDf$transform[i])
+             .first <- switch(.transform,
+                              boxCox="add(rxR)",
+                              yeoJohnson="add(rxR)",
+                              untransformed="add(rxR)",
+                              lnorm="lnorm(rxR)",
+                              logit=sprintf("logitNorm(rxR, %s, %s)", .low, .hi),
+                              `logit + yeoJohnson`=sprintf("logitNorm(rxR, %s, %s)", .low, .hi),
+
+                              probit=sprintf("probitNorm(rxR, %s, %s)", .low, .hi),
+                              `probit + yeoJohnson`=sprintf("probitNorm(rxR, %s, %s)", .low, .hi),
+                              `logit + boxCox`=sprintf("logitNorm(rxR, %s, %s)", .low, .hi),
+                              `probit + boxCox`=sprintf("probitNorm(rxR, %s, %s)", .low, .hi)
+                              )
+
+             .last <- switch(.transform,
+                             boxCox=sprintf(" + boxCox(%s) + dv()", .lambda),
+                             yeoJohnson=sprintf("+ yeoJohnson(%s) + dv()", .lambda),
+                             untransformed="",
+                             lnorm="+dv()",
+                             logit="+dv()",
+                             `logit + yeoJohnson`=sprintf("+yeoJohnson(%s)+dv()", .lambda),
+
+                             probit="+dv()",
+                             `probit + yeoJohnson`=sprintf("+yeoJohnson(%s)+dv()", .lambda),
+                             `logit + boxCox`=sprintf(" + boxCox(%s) + dv()", .lambda),
+                             `probit + boxCox`=sprintf(" + boxCox(%s) + dv()", .lambda)
+                             )
+             deparse1(str2lang(paste0("y", i, " ~ ",  .first, " + var()")))
+           }, character(1), USE.NAMES=FALSE)
+
+  .errModel <- c(vapply(seq_along(.predDf$cmt),
+                      function(i) {
+                        deparse1(str2lang(sprintf("y%s <- y", i)))
+                      }, character(1), USE.NAMES=FALSE),
+                 .errModel)
 
   list(rxR2=strsplit(paste(.rxR2, collapse="\n"), "\n")[[1]],
-       tipred=.tipred)
+
+       tipred=.tipred,
+       err=.errModel)
 }
