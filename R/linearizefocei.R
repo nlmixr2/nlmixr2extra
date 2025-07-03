@@ -140,7 +140,7 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol){  # TODO mceta
     derv <- getDerv(fit)
     linMod <- linModGen(fit)
     fitL <- nlmixr(linMod, derv, est="focei",
-        control = nlmixr2::foceiControl(etaMat = as.matrix(fit$eta[-1])))
+        control = nlmixr2est::foceiControl(etaMat = as.matrix(fit$eta[-1])))
 
     oObj <- fit$objDf$OBJF
     lObj <- fitL$objDf$OBJF
