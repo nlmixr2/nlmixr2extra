@@ -224,10 +224,10 @@ ini({
 
 
     fitLin <- nlmixr(lmod, derv, est = "focei",
-        control = nlmixr2::foceiControl(etaMat = as.matrix(fit$eta[-1]), mceta = -1))
+        control = nlmixr2est::foceiControl(etaMat = as.matrix(fit$eta[-1]), mceta = -1))
 
     fitLin <- nlmixr(lmod, derv, est = "focei",
-        control = nlmixr2::foceiControl(etaMat = as.matrix(fit$eta[-1]), mceta = 100))
+        control = nlmixr2est::foceiControl(etaMat = as.matrix(fit$eta[-1]), mceta = 100))
 
     fitLin$parFixedDf
     diffObjF <- abs((fit$objDf$OBJF - fitLin$objDf$OBJF)/ fitLin$objDf$OBJF)
