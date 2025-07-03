@@ -95,7 +95,6 @@ linearizeErrorLines.rxUi <- function(line) {
 }
 
 
-#' @export
 rxUiGet.linearizeError <- function(x, ...) {
   .ui <- x[[1]]
   .errLines <- linearizeErrorLines(.ui)

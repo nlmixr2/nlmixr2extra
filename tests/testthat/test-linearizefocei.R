@@ -55,6 +55,21 @@ test_that("linearize error models", {
 
   f <- rxode2::rxode2(pk.turnover.emax3)
 
+  expect_equal(f$linearizeError,
+               list(rxR2 = c("if (CMT == 5) {",
+                             "    rxR2 <- (pkadd.err)^2 + (OPRED)^2 * (prop.err)^2",
+                             "}",
+                             "if (CMT == 6) {",
+                             "    rxR2 <- (pdadd.err)^2",
+                             "}"),
+                    tipred = "TIPRED <- y",
+                    err = c("y1 <- y",
+                            "y2 <- y",
+                            "y1 ~ add(rxR) + var()",
+                            "y2 ~ add(rxR) + var()")))
+
+  f1 <- f %>% model(effect ~ lnorm(pdadd.err))
+
 })
 
 test_that("Linearize add err model ", {
