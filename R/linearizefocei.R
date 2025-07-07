@@ -119,15 +119,15 @@ linModGen <- function(fit){
     modelStr$basePred[2] <- paste0(epStr, " ~ add(R2) + var()")
 
     # iniDf already captures final estimates
-    inidf <- nlmod$iniDf[nlmod$iniDf$name %in% c(colnames(etaDf), errNames) , ]
+    iniDf <- nlmod$iniDf[nlmod$iniDf$name %in% c(colnames(etaDf), errNames) , ]
     # FIXME handle transformation ==> 
 
     # n_theta == n_errors
-    inidf$ntheta[!is.na(inidf$ntheta)] <- seq_along(na.omit(inidf$ntheta))
+    iniDf$ntheta[!is.na(iniDf$ntheta)] <- seq_along(na.omit(iniDf$ntheta))
 
     # newMod <- modelExtract(nlmod, endpoint=FALSE)
     # model(nlmod) <- model(newMod)
-    ini(nlmod) <- inidf
+    ini(nlmod) <- iniDf
     model(nlmod) <-   c(modelStr$baseEta, modelStr$baseEps, modelStr$basePred)
 
     nlmod
@@ -137,16 +137,33 @@ linModGen <- function(fit){
 #' @author Omar Elashkar
 #' @export 
 linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.2){ 
+    checkmate::assertIntegerish(mceta, lower = -1, upper = 2000,  unique = TRUE)
+    checkmate::assertNumeric(relTol, lower=0, upper=0.6)
 
     derv <- getDeriv(fit)
     linMod <- linModGen(fit)
-    fitL <- nlmixr(linMod, derv, est="focei",
-        control = nlmixr2est::foceiControl(etaMat = as.matrix(fit$eta[-1])))
+    for(i in seq_along(mceta)){
+        fitL <- nlmixr(linMod, derv, est="focei",
+            control = nlmixr2est::foceiControl(etaMat = as.matrix(fit$eta[-1])))
+        oObj <- fit$objDf$OBJF
+        lObj <- fitL$objDf$OBJF
 
-    oObj <- fit$objDf$OBJF
-    lObj <- fitL$objDf$OBJF
+        relDev <- abs((oObj-lObj)/lObj)
 
-    message(paste("Non-Linear OFV: ", oObj, "Linear OFV:", lObj))
+        if(relDev <=relTol){
+            break
+        } else{
+            message(paste("Non-Linear OFV: ", oObj, "Linear OFV:", lObj, "mceta:", mceta[i], "Relative OFV Dev", relDev*100, "%"))
+
+            if(i != length(mceta)){
+                message(paste("Using mceta = ", mceta[i], "provided inadequate linearization. Trying mceta = ", mceta[i+1], "..."))
+            } else{
+                message("Linearization was inadequate for the given tolerance. Try increasing the tolerance.")
+            }
+        }
+    }
+    
+    message(paste("Non-Linear OFV: ", oObj, "Linear OFV:", lObj, "mceta:", mceta[i], "Relative OFV Dev", relDev*100, "%"))
 
     fitL
 }

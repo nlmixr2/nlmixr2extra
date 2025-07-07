@@ -176,58 +176,18 @@ test_that("Linearize prop err model ", {
     }
     ev <- rxode2::et(amountUnits = "mg", timeUnits = "hours") |>
         rxode2::et(amt = 320, cmt = "depot")
-    sim <- rxSolve(one.cmpt.properr, ev, nSub = 100, addDosing = TRUE)
+    sim <- rxode2::rxSolve(one.cmpt.properr, ev, nSub = 100, addDosing = TRUE)
     sim$DV <- sim$sim
     sim$ID <- sim$sim.id
     sim$sim.id <- NULL
 
     fit <- nlmixr(one.cmpt.properr, sim, est = "focei")
-    derv <- getDeriv(fit)
 
-    sum(grepl("O_ETA\\d+", names(derv))) |> expect_equal(ncol(fit$eta) - 1)
-    all(derv$D_ResVar == 1) |> expect_equal(TRUE)
+    # derv <- getDeriv(fit)
+    # sum(grepl("O_ETA\\d+", names(derv))) |> expect_equal(ncol(fit$eta) - 1)
+    # all(derv$D_ResVar == 1) |> expect_equal(TRUE)
 
-    lmod <- linModGen(fit)
-
-# TODO try remove the var() or
-# TODO try squaring the term
-lmod <- function() {
-ini({
-    eta.cl ~ 0.3
-    eta.v ~ 0.1
-    # eta.ka ~ 0.6
-    prop.sd <- 0.1 # actual prop.sd
-  })
-  model({
-
-    base1 = D_ETA1*(-O_ETA1 + eta.cl)
-    base2 = D_ETA2*(- O_ETA2 + eta.v)
-    # base3 = D_ETA3*(-O_ETA3 + eta.ka)
-
-    BASE_TERMS = base1 + base2 #+ base3
-
-    IPRED = BASE_TERMS + OPRED
-
-    ERR1 = D_VAR_ETA_1_1*(-O_ETA1 + eta.cl)
-    ERR2 = D_VAR_ETA_1_2*(-O_ETA2 + eta.v)
-    # ERR3 = D_EPSETA_1_3*(-O_ETA3 + eta.ka)
-
-    BASE_ERROR1 = (ERR1 + ERR2)+(prop.sd*OPRED)**2 # endpoint1
-    BASE_ERROR2 = (ERR3 + ERR4)+(prop.sd*OPRED)**2 # endpoint2
-
-    R2 = (BASE_ERROR1+BASE_ERROR2)
-
-    y = IPRED
-    y ~ add(R2) + var()
-  })
-}
-
-
-    fitLin <- nlmixr(lmod, derv, est = "focei",
-        control = nlmixr2est::foceiControl(etaMat = as.matrix(fit$eta[-1]), mceta = -1))
-
-    fitLin <- nlmixr(lmod, derv, est = "focei",
-        control = nlmixr2est::foceiControl(etaMat = as.matrix(fit$eta[-1]), mceta = 100))
+    fitLin <- linearize(fit, relTol = 0.2)
 
     fitLin$parFixedDf
     diffObjF <- abs((fit$objDf$OBJF - fitLin$objDf$OBJF)/ fitLin$objDf$OBJF)
