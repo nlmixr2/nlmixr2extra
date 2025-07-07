@@ -1,12 +1,17 @@
+
+
 #' Extract derivatives from NLME model fitted with FOCE
+#'
 #' @param fit object fitted with nlmixr2 of class nlmixr2.focei
+#'
 #' @author Omar Elashkar
+#'
 #' @noRd
 getDerv <- function(fit){
     if(fit$method != "FOCE") stop("This method requires FOCE method")
     stopifnot(inherits(fit, "nlmixr2.focei"))
 
-    
+
 
     ui <- rxode2::assertRxUi(fit)
     innerModel <- ui$foceiModel
@@ -18,22 +23,22 @@ getDerv <- function(fit){
 
     theta <- fit$theta
     reps <- ceiling(nrow(eta) / nrow(theta))
-    theta <- setNames(fit$theta, paste0("THETA[", seq_along(fit$theta), "]")) |> 
-        t() |> 
+    theta <- setNames(fit$theta, paste0("THETA[", seq_along(fit$theta), "]")) |>
+        t() |>
         as.data.frame()
-    
+
     theta <- theta[rep(1, nrow(eta)),]
     params_df <- cbind(theta, eta)
 
-    o_data <- nlme::getData(fit) 
+    o_data <- nlme::getData(fit)
     names(o_data) <- toupper(names(o_data))
 
     stopifnot(all(c("rx_pred_", "rx_r_") %in% innerModel$inner$lhs))
     stopifnot(sum(grepl("rx__sens_rx_pred__BY_ETA_\\d+___", innerModel$inner$lhs)) == ncol(eta))
     stopifnot(sum(grepl("rx__sens_rx_r__BY_ETA_\\d+___", innerModel$inner$lhs)) >= ncol(eta))
-    
-    derv <- rxSolve(innerModel$innerOeta, o_data, params=params_df, 
-        addDosing=TRUE, 
+
+    derv <- rxSolve(innerModel$innerOeta, o_data, params=params_df,
+        addDosing=TRUE,
         keep = c("DV", setdiff(names(o_data),  c("ID", "TIME", "EVID", "AMT", "CMT"))))
 
     # OPRED
@@ -49,7 +54,7 @@ getDerv <- function(fit){
         derv <- renameCol(derv, paste0("O_ETA", i), paste0("rx__ETA", i))
     }
 
-    #O_EPS 
+    #O_EPS
     derv <- renameCol(derv, "O_ResVar", "rx_r_")
 
     # D_EPS
@@ -61,7 +66,7 @@ getDerv <- function(fit){
     for(i in seq_len(ncol(eta))){
         derv <- renameCol(derv, paste0("D_VAR_ETA_",1, "_", i), paste0("rx__sens_rx_r__BY_ETA_", i, "___"))
     }
-    
+
     derv
 }
 
@@ -71,11 +76,11 @@ renameCol <- function(df, new, old){
 }
 
 linModGen <- function(fit){
-    
+
     # if(nrow(fit$predDf) != 1){
     #     stop("Mutiple endpoints linearization is not supported")
     # }
-    
+
     if(!(fit$predDf$errType %in% c("add", "prop", "add + prop"))){
         stop("Error model not supported")
     }
@@ -102,11 +107,11 @@ linModGen <- function(fit){
         # ERRn = D_VAR_ETA_1_n*(-O_ETAn + eta.n)
         modelstr$baseEps[i] <- paste0("err",i , "=", "D_VAR_ETA_1_", i, "*(", "-O_ETA", i, "+", colnames(eta_df)[i], ")")
     }
-    
-    
+
+
     errSym <- gsub("rx_pred_f_", "OPRED", deparse1(errSym))
     modelstr$baseEps[i+1] <- paste("BASE_ERROR = (", paste(paste0("err", seq(ncol(eta_df))), collapse = " + "), ")")
-    modelstr$baseEps[i+1] <-  paste(modelstr$baseEps[i+1], "+", errSym) 
+    modelstr$baseEps[i+1] <-  paste(modelstr$baseEps[i+1], "+", errSym)
     # modelstr$baseEps[i+2] <- paste0("R2 = BASE_ERROR +", errSym, ")")
     modelstr$baseEps[i+2] <- "R2 = BASE_ERROR"
 
@@ -114,7 +119,7 @@ linModGen <- function(fit){
     modelstr$basePred[2] <- paste0(epStr, " ~ add(R2) + var()")
 
     # iniDf already captures final estimates
-    inidf <- nlmod$iniDf[nlmod$iniDf$name %in% c(colnames(eta_df), errNames) , ] 
+    inidf <- nlmod$iniDf[nlmod$iniDf$name %in% c(colnames(eta_df), errNames) , ]
     # FIXME handle transformation ==> 
 
     # n_theta == n_errors
@@ -135,8 +140,8 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.2){
 
     derv <- getDerv(fit)
     linMod <- linModGen(fit)
-    fitL <- nlmixr(linMod, derv, est="focei", 
-        control = nlmixr2::foceiControl(etaMat = as.matrix(fit$eta[-1])))
+    fitL <- nlmixr(linMod, derv, est="focei",
+        control = nlmixr2est::foceiControl(etaMat = as.matrix(fit$eta[-1])))
 
     oObj <- fit$objDf$OBJF
     lObj <- fitL$objDf$OBJF
