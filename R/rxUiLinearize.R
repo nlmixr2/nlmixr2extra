@@ -63,6 +63,7 @@ linearizeErrorLines.norm <- function(line) {
   pred1 <- line[[2]]
   ret <- vector("list", 1)
   ret[[1]] <- bquote(rxR2 <- .(.replaceFwithOpred(rxode2::.rxGetVarianceForErrorType(env, pred1), env=env, pred1=pred1, y="OPRED")))
+  ret
 }
 
 #' @rdname linearizeErrorLines
