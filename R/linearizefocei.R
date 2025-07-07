@@ -85,7 +85,8 @@ linModGen <- function(fit){
         stop("Error model not supported")
     }
 
-    errSym <- rxode2:::.rxGetVarianceForErrorType(rxUiDecompress(fit), fit$predDf)
+    # errSym <- rxode2:::.rxGetVarianceForErrorType(rxUiDecompress(fit), fit$predDf)
+    extractError <- fit$linearizeError
     epStr <- fit$predDf$var
     errNames <- fit$iniDf$name[!is.na(fit$iniDf$err)]
     nlmod <- fit$finalUi
@@ -100,7 +101,7 @@ linModGen <- function(fit){
     }
     # BASE_TERMS = base1 + ... + basen
     modelStr$baseEta[i+1] <- paste("BASE_TERMS =", paste(paste0("base", seq(ncol(etaDf))), collapse = " + "))
-    modelStr$baseEta[i+2] <- paste0("F = BASE_TERMS + OPRED")
+    modelStr$baseEta[i+2] <- paste0("y = BASE_TERMS + OPRED")
 
     # linearize residuals
     for(i in seq_along(colnames(etaDf))){
@@ -109,14 +110,25 @@ linModGen <- function(fit){
     }
 
 
-    errSym <- gsub("rx_pred_f_", "OPRED", deparse1(errSym))
-    modelStr$baseEps[i+1] <- paste("BASE_ERROR = (", paste(paste0("err", seq(ncol(etaDf))), collapse = " + "), ")")
-    modelStr$baseEps[i+1] <-  paste(modelStr$baseEps[i+1], "+", errSym)
-    # modelStr$baseEps[i+2] <- paste0("R2 = BASE_ERROR +", errSym, ")")
-    modelStr$baseEps[i+2] <- "R2 = BASE_ERROR"
+    # errSym <- gsub("rx_pred_f_", "OPRED", deparse1(errSym))
+    errSym <- extractError$rxR2
+
+    # for single ep, this will be single line
+    # for(ii in seq_along(errSym)){
+        # modelStr$baseEps[i+ii] <- errSym[ii]
+    # }
+    ii <- 1
+    modelStr$baseEps[i+ii] <- errSym[2]
+
+    modelStr$baseEps[i+ii+1] <- paste("BASE_ERROR = (", paste(paste0("err", seq(ncol(etaDf))), collapse = " + "), ") + rxR2")
+    modelStr$baseEps[i+ii+2] <- "rxR = BASE_ERROR"
 
     modelStr$basePred[1] <- paste0(epStr ,"  = F")
-    modelStr$basePred[2] <- paste0(epStr, " ~ add(R2) + var()")
+    modelStr$basePred[2] <- paste0(epStr, " ~ add(rxR) + var()")
+
+    for(i in seq_along(extractError$err)){
+        modelStr$basePred[i] <-   extractError$err[i]
+    }
 
     # iniDf already captures final estimates
     iniDf <- nlmod$iniDf[nlmod$iniDf$name %in% c(colnames(etaDf), errNames) , ]
@@ -125,15 +137,19 @@ linModGen <- function(fit){
     # n_theta == n_errors
     iniDf$ntheta[!is.na(iniDf$ntheta)] <- seq_along(na.omit(iniDf$ntheta))
 
-    # newMod <- modelExtract(nlmod, endpoint=FALSE)
+    # nlmod <- modelExtract(nlmod, endpoint=FALSE)
     # model(nlmod) <- model(newMod)
     ini(nlmod) <- iniDf
-    model(nlmod) <-   c(modelStr$baseEta, modelStr$baseEps, modelStr$basePred)
+    model(nlmod) <-  c(modelStr$baseEta, modelStr$baseEps, 
+                        extractError$tipred, modelStr$basePred)
 
     nlmod
 }
 
 #' Perform linearization of a model fitted using FOCEI
+#' @param fit
+#' @param mceta
+#' @param relTol
 #' @author Omar Elashkar
 #' @export 
 linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.2){ 

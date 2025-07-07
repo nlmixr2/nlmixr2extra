@@ -134,6 +134,7 @@ test_that("Linearize add err model ", {
         })
     }
 
+    rxode2::rxode(one.cmpt.adderr)$linearizeError
     fit <- nlmixr(one.cmpt.adderr, nlmixr2data::theo_md, est = "focei")
     derv <- getDeriv(fit)
 
