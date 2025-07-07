@@ -115,6 +115,7 @@ linModGen <- function(fit){
 
     # iniDf already captures final estimates
     inidf <- nlmod$iniDf[nlmod$iniDf$name %in% c(colnames(eta_df), errNames) , ] 
+    # FIXME handle transformation ==> 
 
     # n_theta == n_errors
     inidf$ntheta[!is.na(inidf$ntheta)] <- seq_along(na.omit(inidf$ntheta))
@@ -130,7 +131,7 @@ linModGen <- function(fit){
 #' Perform linearization of a model fitted using FOCEI
 #' @author Omar Elashkar
 #' @export 
-linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol){  # TODO mceta
+linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.2){ 
 
     derv <- getDerv(fit)
     linMod <- linModGen(fit)
