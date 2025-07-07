@@ -7,7 +7,7 @@
 #' @author Omar Elashkar
 #'
 #' @noRd
-getDerv <- function(fit){
+getDeriv <- function(fit){
     if(fit$method != "FOCE") stop("This method requires FOCE method")
     stopifnot(inherits(fit, "nlmixr2.focei"))
 
@@ -89,37 +89,37 @@ linModGen <- function(fit){
     epStr <- fit$predDf$var
     errNames <- fit$iniDf$name[!is.na(fit$iniDf$err)]
     nlmod <- fit$finalUi
-    eta_df <- fit$eta[,-1]
+    etaDf <- fit$eta[,-1]
 
-    modelstr <- list()
+    modelStr <- list()
 
     # linearize eta
-    for(i in seq_along(colnames(eta_df))){
+    for(i in seq_along(colnames(etaDf))){
         # D_ETAn * (-OETAn + eta.n)
-        modelstr$baseEta[i] <- paste0("base",i , "=", "D_ETA", i, "*(", "-O_ETA", i, "+", colnames(eta_df)[i], ")")
+        modelStr$baseEta[i] <- paste0("base",i , "=", "D_ETA", i, "*(", "-O_ETA", i, "+", colnames(etaDf)[i], ")")
     }
     # BASE_TERMS = base1 + ... + basen
-    modelstr$baseEta[i+1] <- paste("BASE_TERMS =", paste(paste0("base", seq(ncol(eta_df))), collapse = " + "))
-    modelstr$baseEta[i+2] <- paste0("F = BASE_TERMS + OPRED")
+    modelStr$baseEta[i+1] <- paste("BASE_TERMS =", paste(paste0("base", seq(ncol(etaDf))), collapse = " + "))
+    modelStr$baseEta[i+2] <- paste0("F = BASE_TERMS + OPRED")
 
     # linearize residuals
-    for(i in seq_along(colnames(eta_df))){
+    for(i in seq_along(colnames(etaDf))){
         # ERRn = D_VAR_ETA_1_n*(-O_ETAn + eta.n)
-        modelstr$baseEps[i] <- paste0("err",i , "=", "D_VAR_ETA_1_", i, "*(", "-O_ETA", i, "+", colnames(eta_df)[i], ")")
+        modelStr$baseEps[i] <- paste0("err",i , "=", "D_VAR_ETA_1_", i, "*(", "-O_ETA", i, "+", colnames(etaDf)[i], ")")
     }
 
 
     errSym <- gsub("rx_pred_f_", "OPRED", deparse1(errSym))
-    modelstr$baseEps[i+1] <- paste("BASE_ERROR = (", paste(paste0("err", seq(ncol(eta_df))), collapse = " + "), ")")
-    modelstr$baseEps[i+1] <-  paste(modelstr$baseEps[i+1], "+", errSym)
-    # modelstr$baseEps[i+2] <- paste0("R2 = BASE_ERROR +", errSym, ")")
-    modelstr$baseEps[i+2] <- "R2 = BASE_ERROR"
+    modelStr$baseEps[i+1] <- paste("BASE_ERROR = (", paste(paste0("err", seq(ncol(etaDf))), collapse = " + "), ")")
+    modelStr$baseEps[i+1] <-  paste(modelStr$baseEps[i+1], "+", errSym)
+    # modelStr$baseEps[i+2] <- paste0("R2 = BASE_ERROR +", errSym, ")")
+    modelStr$baseEps[i+2] <- "R2 = BASE_ERROR"
 
-    modelstr$basePred[1] <- paste0(epStr ,"  = F")
-    modelstr$basePred[2] <- paste0(epStr, " ~ add(R2) + var()")
+    modelStr$basePred[1] <- paste0(epStr ,"  = F")
+    modelStr$basePred[2] <- paste0(epStr, " ~ add(R2) + var()")
 
     # iniDf already captures final estimates
-    inidf <- nlmod$iniDf[nlmod$iniDf$name %in% c(colnames(eta_df), errNames) , ]
+    inidf <- nlmod$iniDf[nlmod$iniDf$name %in% c(colnames(etaDf), errNames) , ]
     # FIXME handle transformation ==> 
 
     # n_theta == n_errors
@@ -128,7 +128,7 @@ linModGen <- function(fit){
     # newMod <- modelExtract(nlmod, endpoint=FALSE)
     # model(nlmod) <- model(newMod)
     ini(nlmod) <- inidf
-    model(nlmod) <-   c(modelstr$baseEta, modelstr$baseEps, modelstr$basePred)
+    model(nlmod) <-   c(modelStr$baseEta, modelStr$baseEps, modelStr$basePred)
 
     nlmod
 }
@@ -138,7 +138,7 @@ linModGen <- function(fit){
 #' @export 
 linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.2){ 
 
-    derv <- getDerv(fit)
+    derv <- getDeriv(fit)
     linMod <- linModGen(fit)
     fitL <- nlmixr(linMod, derv, est="focei",
         control = nlmixr2est::foceiControl(etaMat = as.matrix(fit$eta[-1])))

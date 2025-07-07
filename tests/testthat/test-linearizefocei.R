@@ -135,7 +135,7 @@ test_that("Linearize add err model ", {
     }
 
     fit <- nlmixr(one.cmpt.adderr, nlmixr2data::theo_md, est = "focei")
-    derv <- getDerv(fit)
+    derv <- getDeriv(fit)
 
     sum(grepl("O_ETA\\d+", names(derv))) |> expect_equal(ncol(fit$eta) - 1)
     all(derv$D_ResVar == 1) |> expect_equal(TRUE)
@@ -182,7 +182,7 @@ test_that("Linearize prop err model ", {
     sim$sim.id <- NULL
 
     fit <- nlmixr(one.cmpt.properr, sim, est = "focei")
-    derv <- getDerv(fit)
+    derv <- getDeriv(fit)
 
     sum(grepl("O_ETA\\d+", names(derv))) |> expect_equal(ncol(fit$eta) - 1)
     all(derv$D_ResVar == 1) |> expect_equal(TRUE)
@@ -270,7 +270,7 @@ test_that("Linearize combined model ", {
     # sim$sim.id <- NULL
 
     fit <- nlmixr(one.cmpt.combinederr, nlmixr2data::theo_sd, est = "focei")
-    derv <- getDerv(fit)
+    derv <- getDeriv(fit)
 
     sum(grepl("O_ETA\\d+", names(derv))) |> expect_equal(ncol(fit$eta) - 1)
     all(derv$D_ResVar == 1) |> expect_equal(TRUE)
@@ -369,7 +369,7 @@ test_that("linearize wrapper", {
 
 ## fit <- nlmixr(pk.turnover.emax3, nlmixr2data::warfarin, est = "focei")
 
-## derv <- getDerv(fit)
+## derv <- getDeriv(fit)
 
 ## sum(grepl("O_ETA\\d+", names(derv))) |> expect_equal(ncol(fit$eta) - 1)
 ## all(derv$D_ResVar == 1) |> expect_equal(TRUE)
