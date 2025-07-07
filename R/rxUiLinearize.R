@@ -116,7 +116,7 @@ rxUiGet.linearizeError <- function(x, ...) {
     .tipred <- vapply(seq_along(.predDf$cmt),
                       function(i) {
                         paste(deparse(as.call(list(quote(`if`), as.call(list(quote(`==`),
-                                                                             quote(CMT), as.numeric(.predDf$cmt[i]))),
+                                                                             quote(OCMT), as.numeric(.predDf$cmt[i]))),
                                                    as.call(c(list(quote(`{`)),
                                                              .tipred[[i]]))))), collapse="\n")
 
@@ -127,7 +127,7 @@ rxUiGet.linearizeError <- function(x, ...) {
   .rxR2 <- vapply(seq_along(.predDf$cmt),
                   function(i) {
                     paste(deparse(as.call(list(quote(`if`), as.call(list(quote(`==`),
-                                                                         quote(CMT), as.numeric(.predDf$cmt[i]))),
+                                                                         quote(OCMT), as.numeric(.predDf$cmt[i]))),
                                                as.call(c(list(quote(`{`)),
                                                          .errLines[[i]]))))), collapse="\n")
 
