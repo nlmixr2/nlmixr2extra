@@ -62,8 +62,7 @@ linearizeErrorLines.norm <- function(line) {
   env <- line[[1]]
   pred1 <- line[[2]]
   ret <- vector("list", 1)
-  ret[[1]] <- bquote(rxR2 <- .(.replaceFwithOpred(rxode2::.rxGetVarianceForErrorType(env, pred1), env=env, pred1=pred1, y="OPRED")))
-  ret
+  bquote(rxR2 <- .(.replaceFwithOpred(rxode2::.rxGetVarianceForErrorType(env, pred1), env=env, pred1=pred1, y="OPRED")))
 }
 
 #' @rdname linearizeErrorLines
@@ -124,7 +123,7 @@ rxUiGet.linearizeError <- function(x, ...) {
 
     .tipred <- strsplit(paste(.tipred, collapse="\n"), "\n")[[1]]
   }
-  if(length(.predDf$cmpt > 1)){
+  if(length(.predDf$cmt) > 1){
     .rxR2 <- vapply(seq_along(.predDf$cmt),
                     function(i) {
                       paste(deparse(as.call(list(quote(`if`), as.call(list(quote(`==`),
@@ -134,8 +133,7 @@ rxUiGet.linearizeError <- function(x, ...) {
 
                     }, character(1))
   } else {
-    .rxR2 <- unlist(.errLines)
-    stopifnot(length(.rxR2) == 1)
+    .rxR2 <- paste(deparse(.errLines[[1]]), collapse="\n")
   }
 
   .errModel <-
@@ -182,7 +180,7 @@ rxUiGet.linearizeError <- function(x, ...) {
                       }, character(1), USE.NAMES=FALSE),
                  .errModel)
 
-  list(rxR2=ifelse(length(.predDf$cmpt) == 1, .rxR2, strsplit(paste(.rxR2, collapse="\n"), "\n")[[1]]),
+  list(rxR2=strsplit(paste(.rxR2, collapse="\n"), "\n")[[1]],
        tipred=.tipred,
        err=.errModel)
 }
