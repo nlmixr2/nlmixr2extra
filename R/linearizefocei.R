@@ -114,11 +114,9 @@ linModGen <- function(fit){
     errSym <- extractError$rxR2
 
     # for single ep, this will be single line
-    # for(ii in seq_along(errSym)){
-        # modelStr$baseEps[i+ii] <- errSym[ii]
-    # }
-    ii <- 1
-    modelStr$baseEps[i+ii] <- errSym[2]
+    for(ii in seq_along(errSym)){
+        modelStr$baseEps[i+ii] <- errSym[ii]
+    }
 
     modelStr$baseEps[i+ii+1] <- paste("BASE_ERROR = (", paste(paste0("err", seq(ncol(etaDf))), collapse = " + "), ") + rxR2")
     modelStr$baseEps[i+ii+2] <- "rxR = BASE_ERROR"
