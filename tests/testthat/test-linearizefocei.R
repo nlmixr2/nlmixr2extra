@@ -184,15 +184,9 @@ test_that("Linearize prop err model ", {
 
     fit <- nlmixr(one.cmpt.properr, sim, est = "focei")
 
-    # derv <- getDeriv(fit)
-    # sum(grepl("O_ETA\\d+", names(derv))) |> expect_equal(ncol(fit$eta) - 1)
-    # all(derv$D_ResVar == 1) |> expect_equal(TRUE)
-
     fitLin <- linearize(fit, relTol = 0.2)
 
-    fitLin$parFixedDf
     diffObjF <- abs((fit$objDf$OBJF - fitLin$objDf$OBJF)/ fitLin$objDf$OBJF)
-    diffObjF
     expect_true(diffObjF < 0.1)
 
     all.equal(fit$omega, fitLin$omega, tolerance = 0.1) |> expect_true()
@@ -236,11 +230,15 @@ test_that("Linearize combined model ", {
     all(derv$D_ResVar == 1) |> expect_equal(TRUE)
 
     fitLin <- linearize(fit)
+    diffObjF <- abs((fit$objDf$OBJF - fitLin$objDf$OBJF)/ fitLin$objDf$OBJF)
+    expect_true(diffObjF < 0.1)
+
+    all.equal(fit$omega, fitLin$omega, tolerance = 0.1) |> expect_true()
 
 
 })
 
-test_that("linearize wrapper", {
+test_that("Linearize wrapper", {
     one.cmpt.adderr <- function() {
         ini({
             tcl <- log(2.7) # Cl
@@ -331,12 +329,12 @@ test_that("Linearize multiple endpoints ", {
 
 # fit <- nlmixr(pk.turnover.emax3, nlmixr2data::warfarin, est = "focei")
 # saveRDS(fit, "warfarin.RDS")
-    fit <- readRDS("./inst/warfarin.RDS")
+    fit <- readRDS(system.file("warfarin.RDS", package="nlmixr2extra"))
 
     derv <- getDeriv(fit) 
 
-    ## sum(grepl("O_ETA\\d+", names(derv))) |> expect_equal(ncol(fit$eta) - 1)
-    ## all(derv$D_ResVar == 1) |> expect_equal(TRUE)
+    sum(grepl("O_ETA\\d+", names(derv))) |> expect_equal(ncol(fit$eta) - 1)
+    all(derv$D_ResVar == 1) |> expect_equal(TRUE)
 
     fitL <- linearize(fit)
  

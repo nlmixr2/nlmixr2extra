@@ -63,8 +63,8 @@ getDeriv <- function(fit){
         derv <- renameCol(derv, paste0("D_VAR_ETA_",1, "_", i), paste0("rx__sens_rx_r__BY_ETA_", i, "___"))
     }
 
-    # add OCMT
-    if(length(unique(fit$predDf$cond) > 1)){
+    # add OCMT col
+    if(length(unique(fit$predDf$cond)) > 1){
         derv$OCMT <- as.integer(derv$CMT)
     }
 
