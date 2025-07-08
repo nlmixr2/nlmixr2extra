@@ -37,8 +37,8 @@ getDeriv <- function(fit){
 
     derv <- rxSolve(innerModel$innerOeta, oData, params=params_df,
         addDosing=TRUE,
-        keep = c("DV", setdiff(names(oData),  c("ID", "TIME", "EVID", "AMT"))))
-
+        keep = c("DV", setdiff(names(oData),  c("ID", "TIME", "EVID", "AMT", "CMT"))))
+    
     # OPRED
     derv <- renameCol(derv, "OPRED", "rx_pred_")
 
@@ -64,7 +64,7 @@ getDeriv <- function(fit){
     }
 
     # add OCMT
-    if(length(unique(fit$iniDf$condition) > 1)){
+    if(length(unique(fit$predDf$cond) > 1)){
         derv$OCMT <- as.integer(derv$CMT)
     }
 

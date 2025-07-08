@@ -206,14 +206,13 @@ test_that("Linearize combined model ", {
             tka <- log(1.56) # Ka
             tcl <- log(2.7) # Cl
             tv <- log(30) # V
-            eta.ka ~ 0.6
             eta.cl ~ 0.3
             eta.v ~ 0.1
             add.sd <- 0.7
             prop.sd <- 0.1
         })
         model({
-            ka <- exp(tka + eta.ka)
+            ka <- exp(tka)
             cl <- exp(tcl + eta.cl)
             v <- exp(tv + eta.v)
             d / dt(depot) <- -ka * depot
@@ -224,7 +223,7 @@ test_that("Linearize combined model ", {
     }
 
     # ev <- rxode2::et(amountUnits = "mg", timeUnits = "hours") |>
-    #     rxode2::et(amt = 10000, cmt = "depot")
+    #     rxode2::et(amt = 300, cmt = "depot")
     # sim <- rxSolve(one.cmpt.combinederr, ev, nSub = 100, addDosing = TRUE)
     # sim$DV <- sim$sim
     # sim$ID <- sim$sim.id
@@ -235,6 +234,8 @@ test_that("Linearize combined model ", {
 
     sum(grepl("O_ETA\\d+", names(derv))) |> expect_equal(ncol(fit$eta) - 1)
     all(derv$D_ResVar == 1) |> expect_equal(TRUE)
+
+    fitLin <- linearize(fit)
 
 
 })
