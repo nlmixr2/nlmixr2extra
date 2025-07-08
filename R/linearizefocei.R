@@ -35,9 +35,10 @@ getDeriv <- function(fit){
     stopifnot(sum(grepl("rx__sens_rx_pred__BY_ETA_\\d+___", innerModel$inner$lhs)) == ncol(eta))
     stopifnot(sum(grepl("rx__sens_rx_r__BY_ETA_\\d+___", innerModel$inner$lhs)) >= ncol(eta))
 
-    derv <- rxSolve(innerModel$innerOeta, oData, params=params_df,
-        addDosing=TRUE,
-        keep = c("DV", setdiff(names(oData),  c("ID", "TIME", "EVID", "AMT", "CMT"))))
+    derv <- rxode2::rxSolve(innerModel$innerOeta, oData, params=params_df,
+        addDosing=FALSE,
+        keep = c("DV"))
+        # keep = c("DV", setdiff(names(oData),  c("ID", "TIME", "EVID", "AMT", "CMT"))))
     
     # OPRED
     derv <- renameCol(derv, "OPRED", "rx_pred_")
@@ -65,7 +66,19 @@ getDeriv <- function(fit){
 
     # add OCMT col
     if(length(unique(fit$predDf$cond)) > 1){
-        derv$OCMT <- as.integer(derv$CMT)
+        # derv$OCMT <- as.integer(derv$CMT)
+
+        mv <- rxode2::rxModelVars(innerModel$inner)
+        cmtName <- c(mv$state, mv$stateExtra)
+        cmtDf <- data.frame(CMT=seq_along(cmtName), cond=cmtName)
+        predDf <- fit$predDf
+        predDf$OCMT <- predDf$cmt
+        cmtDf <- merge(cmtDf, predDf)
+        cmtDf <- cmtDf[,c("OCMT", "CMT", "dvid")]
+
+        derv <- merge(derv, cmtDf)
+        derv$CMT <- NULL
+ 
     }
 
     derv
@@ -131,16 +144,23 @@ linModGen <- function(fit){
     iniDf$ntheta[!is.na(iniDf$ntheta)] <- seq_along(na.omit(iniDf$ntheta))
 
     ini(nlmod) <- iniDf
-    model(nlmod) <-  c(modelStr$baseEta, modelStr$baseEps, 
-                        extractError$tipred, modelStr$basePred)
+    v <- c(modelStr$baseEta, modelStr$baseEps, 
+                        extractError$tipred, modelStr$basePred) 
+    # model(nlmod) <-  v
+
+    nlmod <- rxode2::rxUiDecompress(nlmod)
+    nlmod$lstExpr <- as.list(str2lang(paste0("{", paste(v, collapse="\n"), "}"))[-1])
+    nlmod <- rxode2::rxUiCompress(nlmod)
+    nlmod <- nlmod$fun
+    nlmod <- nlmod()
 
     nlmod
 }
 
 #' Perform linearization of a model fitted using FOCEI
-#' @param fit
-#' @param mceta
-#' @param relTol
+#' @param fit fit of nonlinear model.
+#' @param mceta a numeric vector for mceta to try. See decription.
+#' @param relTol relative deviation tolerance between original and linearized models objective functions.
 #' @author Omar Elashkar
 #' @export 
 linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.2){ 
@@ -151,7 +171,7 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.2){
     linMod <- linModGen(fit)
     for(i in seq_along(mceta)){
         fitL <- nlmixr(linMod, derv, est="focei",
-            control = nlmixr2est::foceiControl(etaMat = as.matrix(fit$eta[-1])))
+            control = nlmixr2est::foceiControl(etaMat = as.matrix(fit$eta[-1]), mceta=mceta[i], covMethod = "", calcTables=FALSE))
         oObj <- fit$objDf$OBJF
         lObj <- fitL$objDf$OBJF
 
@@ -165,12 +185,14 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.2){
             if(i != length(mceta)){
                 message(paste("Using mceta = ", mceta[i], "provided inadequate linearization. Trying mceta = ", mceta[i+1], "..."))
             } else{
-                message("Linearization was inadequate for the given tolerance. Try increasing the tolerance.")
+                warning("Linearization was inadequate for the given tolerance. Try increasing the tolerance.")
             }
         }
     }
     
     message(paste("Non-Linear OFV: ", oObj, "Linear OFV:", lObj, "mceta:", mceta[i], "Relative OFV Dev", relDev*100, "%"))
 
+    fitL <- fitL |> nlmixr2est::addTable()
+    nlme::getVarCov(fitL)
     fitL
 }

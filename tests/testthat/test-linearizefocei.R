@@ -327,16 +327,25 @@ test_that("Linearize multiple endpoints ", {
         })
     }
 
-# fit <- nlmixr(pk.turnover.emax3, nlmixr2data::warfarin, est = "focei")
-# saveRDS(fit, "warfarin.RDS")
+    # fit <- nlmixr(pk.turnover.emax3, nlmixr2data::warfarin, est = "focei")
+    # saveRDS(fit, "warfarin.RDS")
     fit <- readRDS(system.file("warfarin.RDS", package="nlmixr2extra"))
 
     derv <- getDeriv(fit) 
+    # derv$CMT <- NULL
 
     sum(grepl("O_ETA\\d+", names(derv))) |> expect_equal(ncol(fit$eta) - 1)
     all(derv$D_ResVar == 1) |> expect_equal(TRUE)
 
-    fitL <- linearize(fit)
- 
 
+    # lmod <- linModGen(fit)
+    # fitLin <- nlmixr(lmod, derv, est = "focei")
+
+
+    fitLin <- linearize(fit)
+
+    diffObjF <- abs((fit$objDf$OBJF - fitLin$objDf$OBJF)/ fitLin$objDf$OBJF)
+    expect_true(diffObjF < 0.1)
+
+    all.equal(fit$omega, fitLin$omega, tolerance = 0.1) |> expect_true()
 })
