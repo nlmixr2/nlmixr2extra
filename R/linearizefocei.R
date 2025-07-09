@@ -30,6 +30,7 @@ getDeriv <- function(fit){
 
     oData <- nlme::getData(fit)
     names(oData) <- toupper(names(oData))
+
     
     stopifnot(all(c("rx_pred_", "rx_r_") %in% innerModel$inner$lhs))
     stopifnot(sum(grepl("rx__sens_rx_pred__BY_ETA_\\d+___", innerModel$inner$lhs)) == ncol(eta))
@@ -39,6 +40,7 @@ getDeriv <- function(fit){
         addDosing=FALSE,
         keep = c("DV"))
         # keep = c("DV", setdiff(names(oData),  c("ID", "TIME", "EVID", "AMT", "CMT"))))
+    
     
     # OPRED
     derv <- renameCol(derv, "OPRED", "rx_pred_")
@@ -55,6 +57,9 @@ getDeriv <- function(fit){
 
     #O_EPS
     derv <- renameCol(derv, "O_ResVar", "rx_r_")
+
+    # O_IRES 
+    derv$O_IRES <- fit$IRES
 
     # D_EPS
     derv$D_ResVar <- 1
@@ -116,6 +121,7 @@ linModGen <- function(fit){
     # BASE_TERMS = base1 + ... + basen
     modelStr$baseEta[i+1] <- paste("BASE_TERMS =", paste(paste0("base", seq(ncol(etaDf))), collapse = " + "))
     modelStr$baseEta[i+2] <- paste0("y = BASE_TERMS + OPRED")
+    modelStr$baseEta[i+3] <- paste0("eps = y - DV")
 
     # linearize residuals
     for(i in seq_along(colnames(etaDf))){
@@ -130,7 +136,7 @@ linModGen <- function(fit){
         modelStr$baseEps[i+ii] <- errSym[ii]
     }
 
-    modelStr$baseEps[i+ii+1] <- paste("BASE_ERROR = (", paste(paste0("err", seq(ncol(etaDf))), collapse = " + "), ") + rxR2")
+    modelStr$baseEps[i+ii+1] <- paste("BASE_ERROR = (", paste(paste0("err", seq(ncol(etaDf))), collapse = " + "), ") *(eps) + rxR2")
     modelStr$baseEps[i+ii+2] <- "rxR = BASE_ERROR"
 
     for(i in seq_along(extractError$err)){
@@ -161,11 +167,17 @@ linModGen <- function(fit){
 #' @param fit fit of nonlinear model.
 #' @param mceta a numeric vector for mceta to try. See decription.
 #' @param relTol relative deviation tolerance between original and linearized models objective functions.
+#' @param plot print plot of linearized vs original
+#' 
+#' `plot` argument can only print ggplot figure with default settings. 
+#' If a user wish to capture the plot, one might use `linearizePlot()` call. 
+#' 
 #' @author Omar Elashkar
 #' @export 
-linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.2){ 
+linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.2, plot = FALSE){ 
     checkmate::assertIntegerish(mceta, lower = -1, upper = 2000,  unique = TRUE)
     checkmate::assertNumeric(relTol, lower=0, upper=0.6)
+    checkmate::assertLogical(plot)
 
     derv <- getDeriv(fit)
     linMod <- linModGen(fit)
@@ -192,7 +204,35 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.2){
     
     message(paste("Non-Linear OFV: ", oObj, "Linear OFV:", lObj, "mceta:", mceta[i], "Relative OFV Dev", relDev*100, "%"))
 
-    fitL <- fitL |> nlmixr2est::addTable()
+    if(plot){
+        print(linearizePlot(fit, fitL))
+    }
+
+    fitL <- nlmixr2est::addTable(fitL)
     nlme::getVarCov(fitL)
     fitL
+}
+
+#' Plot original versus linear iobj and etas
+#' @author Omar Elashkar
+#' @return ggplot object
+#' @export
+linearizePlot <- function(nl, lin){
+    # TODO assertion that both objects are siblings
+    l <- \(x, descr) {
+        x$factor <- descr
+        x
+    }
+    originalIval <- l(nl$etaObf, "original")
+    linearIval <- l(lin$etaObf, "linear")
+
+    fig <- rbind(originalIval, linearIval) |> 
+        tidyr::pivot_longer(cols = c(-c("ID", "factor")), names_to = "parameter", 
+        values_to = "value") |> 
+        tidyr::pivot_wider(names_from = "factor", values_from = "value") |> 
+        ggplot2::ggplot(aes(x = .data[["original"]], y=.data[["linear"]])) +
+        ggplot2::geom_smooth(se = FALSE) +
+        ggplot2::geom_point() + 
+        ggplot2::facet_wrap("parameter", scales = "free") 
+    fig
 }
