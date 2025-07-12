@@ -121,7 +121,7 @@ linModGen <- function(fit){
     # BASE_TERMS = base1 + ... + basen
     modelStr$baseEta[i+1] <- paste("BASE_TERMS =", paste(paste0("base", seq(ncol(etaDf))), collapse = " + "))
     modelStr$baseEta[i+2] <- paste0("y = BASE_TERMS + OPRED")
-    modelStr$baseEta[i+3] <- paste0("eps = y - DV")
+    # modelStr$baseEta[i+3] <- paste0("eps = y - DV")
 
     # linearize residuals
     for(i in seq_along(colnames(etaDf))){
@@ -136,7 +136,7 @@ linModGen <- function(fit){
         modelStr$baseEps[i+ii] <- errSym[ii]
     }
 
-    modelStr$baseEps[i+ii+1] <- paste("BASE_ERROR = (", paste(paste0("err", seq(ncol(etaDf))), collapse = " + "), ") *(eps) + rxR2")
+    modelStr$baseEps[i+ii+1] <- paste("BASE_ERROR = (", paste(paste0("err", seq(ncol(etaDf))), collapse = " + "), ") + rxR2")
     modelStr$baseEps[i+ii+2] <- "rxR = BASE_ERROR"
 
     for(i in seq_along(extractError$err)){
@@ -181,9 +181,24 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.2, plot = FALSE)
 
     derv <- getDeriv(fit)
     linMod <- linModGen(fit)
+
+    # check linearization feasbility
+    fitL <- evalLinModel(fit, linMod, derv)
+            
+    oObj <- fit$objDf$OBJF
+    lObj <- fitL$objDf$OBJF
+    message(paste("Non-Linear OFV: ", oObj, "Linear OFV:", lObj))
+
+    if(isTRUE(all.equal(fit$objDf$OBJF, fitL$objDf$OBJF, tolerance = 0.02))){
+        message("Linearization without optimization matched. Linearization might be feasible ...")
+    } else{
+        warning("Linearization without optimization mismatched by deltaOFV > 2%. Linearization might be difficult")
+    }
+
+    # fit linearized model
     for(i in seq_along(mceta)){
         fitL <- nlmixr(linMod, derv, est="focei",
-            control = nlmixr2est::foceiControl(etaMat = as.matrix(fit$eta[-1]), mceta=mceta[i], covMethod = "", calcTables=FALSE))
+            control = nlmixr2est::foceiControl(etaMat = fit, mceta=mceta[i], covMethod = "", calcTables=FALSE))
         oObj <- fit$objDf$OBJF
         lObj <- fitL$objDf$OBJF
 
@@ -214,12 +229,18 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.2, plot = FALSE)
 }
 
 #' Plot original versus linear iobj and etas
+#' @param nl non-linear fitting object
+#' @param l linear fitting object
 #' @author Omar Elashkar
 #' @return ggplot object
 #' @export
 linearizePlot <- function(nl, lin){
-    # TODO assertion that both objects are siblings
-    l <- \(x, descr) {
+    # TODO assertion that both objects are siblings. Random effects and errors are names same
+
+    stopifnot(inherits(nl, "nlmixr2.focei"))
+    stopifnot(inherits(lin, "nlmixr2FitCore"))
+
+    l <- function(x, descr) {
         x$factor <- descr
         x
     }
@@ -231,8 +252,37 @@ linearizePlot <- function(nl, lin){
         values_to = "value") |> 
         tidyr::pivot_wider(names_from = "factor", values_from = "value") |> 
         ggplot2::ggplot(aes(x = .data[["original"]], y=.data[["linear"]])) +
-        ggplot2::geom_smooth(se = FALSE) +
+        ggplot2::geom_smooth(se = FALSE, method = "lm") +
         ggplot2::geom_point() + 
         ggplot2::facet_wrap("parameter", scales = "free") 
     fig
+}
+
+evalLinModel <- function(fit, linMod, derv, innerInter = 0){
+    fitL <- nlmixr(linMod, derv, est="focei", 
+            control = nlmixr2est::foceiControl(etaMat = fit, mceta=-1, 
+            covMethod = "", calcTables=FALSE, maxInnerIterations=innerInter, maxOuterIterations=0L))
+    fitL
+}
+
+
+isLinearizeMatch <- function(fit, linFit, tol = 0.05){
+    
+    est <-setNames(fit$iniDf$est, fit$iniDf$name)
+    estLin <- setNames(linFit$iniDf$est, linFit$iniDf$name)
+    est <- est[names(estLin)]
+    
+    list(
+        ofv = isTRUE(all.equal(fit$objDf$OBJF, linFit$objDf$OBJF, tol = tol)), 
+        omega = isTRUE(all.equal(fit$omega, linFit$omega, tol = tol)), 
+        eta = isTRUE(all.equal(fit$eta, linFit$eta, tol = tol)), 
+        err = isTRUE(all.equal(est, estLin, tol = tol))
+    )
+}
+
+
+.printInnerExp <- function(mod){
+    ui <- rxode2::assertRxUi(mod)
+    innerModel <- ui$foceiModel
+    summary(innerModel$inner)
 }
