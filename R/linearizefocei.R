@@ -9,7 +9,7 @@
 #' @noRd
 getDeriv <- function(fit){
     if(fit$method != "FOCE") stop("This method requires FOCE method")
-    stopifnot(inherits(fit, "nlmixr2.focei"))
+    rxode2::assertRxUiMixedOnly(fit, " for the procedure routine 'linerize'", .var.name=fit$modelName)
 
     ui <- rxode2::assertRxUi(fit)
     innerModel <- ui$foceiModel
@@ -94,15 +94,8 @@ renameCol <- function(df, new, old){
     df
 }
 
-linModGen <- function(fit){
-
-    # if(nrow(fit$predDf) != 1){
-    #     stop("Mutiple endpoints linearization is not supported")
-    # }
-
-    # if(!(fit$predDf$errType %in% c("add", "prop", "add + prop"))){
-    #     stop("Error model not supported")
-    # }
+linModGen <- function(fit, focei = TRUE){
+    rxode2::assertRxUiMixedOnly(fit, " for the procedure routine 'linerize'", .var.name=fit$modelName)
 
     # errSym <- rxode2:::.rxGetVarianceForErrorType(rxUiDecompress(fit), fit$predDf)
     extractError <- fit$linearizeError
@@ -132,12 +125,15 @@ linModGen <- function(fit){
     errSym <- extractError$rxR2
 
     # for single ep, this will be single line
+    # rxR2
     for(ii in seq_along(errSym)){
         modelStr$baseEps[i+ii] <- errSym[ii]
     }
 
-    modelStr$baseEps[i+ii+1] <- paste("BASE_ERROR = (", paste(paste0("err", seq(ncol(etaDf))), collapse = " + "), ") + rxR2")
-    modelStr$baseEps[i+ii+2] <- "rxR = BASE_ERROR"
+    modelStr$baseEps[i+ii+1] <- "r <- sqrt(rxR2)"
+    modelStr$baseEps[i+ii+2] <- paste0("foceiLin <- ", ifelse(focei, 1, 0))
+    modelStr$baseEps[i+ii+3] <- paste("BASE_ERROR = foceiLin * (", paste(paste0("err", seq(ncol(etaDf))), collapse = " + "), ")/(2*r) + r")
+    modelStr$baseEps[i+ii+4] <- "rxR = BASE_ERROR"
 
     for(i in seq_along(extractError$err)){
         modelStr$basePred[i] <-   extractError$err[i]
@@ -166,34 +162,51 @@ linModGen <- function(fit){
 #' Perform linearization of a model fitted using FOCEI
 #' @param fit fit of nonlinear model.
 #' @param mceta a numeric vector for mceta to try. See decription.
-#' @param relTol relative deviation tolerance between original and linearized models objective functions.
-#' @param plot print plot of linearized vs original
+#' @param relTol relative deviation tolerance between original and linearized models objective functions. Used for switching if focei = NA. See details.
+#' @param focei Default is NA for automatic switch from FOCEI to FOCE if failed. See details.
+#' @param plot boolean. Print plot of linearized vs original
 #' 
 #' `plot` argument can only print ggplot figure with default settings. 
 #' If a user wish to capture the plot, one might use `linearizePlot()` call. 
 #' 
 #' @author Omar Elashkar
 #' @export 
-linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.2, plot = FALSE){ 
+linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA, derivFct = FALSE, plot = FALSE){ 
     checkmate::assertIntegerish(mceta, lower = -1, upper = 2000,  unique = TRUE)
     checkmate::assertNumeric(relTol, lower=0, upper=0.6)
     checkmate::assertLogical(plot)
+    checkmate::assertLogical(derivFct)
+    checkmate::assertLogical(focei, max.len = 1, any.missing=TRUE)
 
     derv <- getDeriv(fit)
-    linMod <- linModGen(fit)
+    linMod <- linModGen(fit, focei = ifelse(is.na(focei), TRUE, focei))
 
-    # check linearization feasbility
-    fitL <- evalLinModel(fit, linMod, derv)
-            
-    oObj <- fit$objDf$OBJF
-    lObj <- fitL$objDf$OBJF
-    message(paste("Non-Linear OFV: ", oObj, "Linear OFV:", lObj))
-
-    if(isTRUE(all.equal(fit$objDf$OBJF, fitL$objDf$OBJF, tolerance = 0.02))){
-        message("Linearization without optimization matched. Linearization might be feasible ...")
-    } else{
-        warning("Linearization without optimization mismatched by deltaOFV > 2%. Linearization might be difficult")
+    evalFun <- function(){
+        # check linearization feasbility
+        fitL <- evalLinModel(fit, linMod, derv)
+        fitL_map <- evalLinModel(fit, linMod, derv, 1000)
+        
+        list(
+            lObj_exact = fitL$objDf$OBJF,
+            lObj_map = fitL_map$objDf$OBJF,
+            oObj = fit$objDf$OBJF,
+            message = paste("Non-Linear OFV: ", oObj, 
+            "Eval Linear OFV (Exact):", lObj_exact, 
+            "Eval Linear OFV (MAP):", lObj_map)
+        )
     }
+
+    firstEval <- evalFun()
+
+    if(isTRUE(all.equal(firstEval$oObj, firstEval$lObj_map, tolerance = relTol))){
+        message("Linearization evaluation matched. Linearization might be feasible ...")
+    } else{
+        message("Linearization evaluation mismatched by deltaOFV > 2%. Linearization might be difficult")
+        message("Switching to linearization around predictions only (Variance linearization skipped)")
+        linMod <- linMod |> model(foceiLin <- 0) 
+        secondEval <- evalFun()
+    }
+
 
     # fit linearized model
     for(i in seq_along(mceta)){
@@ -208,16 +221,13 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.2, plot = FALSE)
             break
         } else{
             message(paste("Non-Linear OFV: ", oObj, "Linear OFV:", lObj, "mceta:", mceta[i], "Relative OFV Dev", relDev*100, "%"))
-
             if(i != length(mceta)){
                 message(paste("Using mceta = ", mceta[i], "provided inadequate linearization. Trying mceta = ", mceta[i+1], "..."))
             } else{
-                warning("Linearization was inadequate for the given tolerance. Try increasing the tolerance.")
+                warning("Linearization was inadequate for the given tolerance. Try increasing the tolerance, refine the model or fit with mceta")
             }
         }
     }
-    
-    message(paste("Non-Linear OFV: ", oObj, "Linear OFV:", lObj, "mceta:", mceta[i], "Relative OFV Dev", relDev*100, "%"))
 
     if(plot){
         print(linearizePlot(fit, fitL))
@@ -225,6 +235,16 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.2, plot = FALSE)
 
     fitL <- nlmixr2est::addTable(fitL)
     nlme::getVarCov(fitL)
+
+    message("---Linearization Summary---")
+    message("Relative Tolerance:", relTol)
+    message("Linearization method:", ifelse(is.na(focei), "Auto", ifelse(focei, "FOCEI", "Variance Skipped")))
+    message("Skipping variance during linearization:", ifelse(is.null(secondEval), FALSE, focei))
+    message(paste("Non-Linear OFV: ", oObj))
+    message(paste("Linear OFV (Exact):", ifelse(is.null(secondEval), firstEval$lObj_exact, secondEval$lObj_exact)))
+    message(paste("Linear OFV (MAP):", ifelse(is.null(secondEval), firstEval$lObj_exact, secondEval$lObj_exact)))
+    message(paste("mceta:", mceta[i]))
+    message(paste("Relative OFV Dev", relDev*100, "%"))
     fitL
 }
 
@@ -237,7 +257,7 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.2, plot = FALSE)
 linearizePlot <- function(nl, lin){
     # TODO assertion that both objects are siblings. Random effects and errors are names same
 
-    stopifnot(inherits(nl, "nlmixr2.focei"))
+    stopifnot(inherits(nl, "nlmixr2FitCore"))
     stopifnot(inherits(lin, "nlmixr2FitCore"))
 
     l <- function(x, descr) {
@@ -272,11 +292,16 @@ isLinearizeMatch <- function(fit, linFit, tol = 0.05){
     estLin <- setNames(linFit$iniDf$est, linFit$iniDf$name)
     est <- est[names(estLin)]
     
+    deltaOfv <- all.equal(fit$objDf$OBJF, linFit$objDf$OBJF, tol = tol)
+    deltaOmega <- all.equal(fit$omega, linFit$omega, tol = tol)
+    deltaEta <- all.equal(fit$eta, linFit$eta, tol = tol)
+    deltaErr <- all.equal(est, estLin, tol = tol)
+
     list(
-        ofv = isTRUE(all.equal(fit$objDf$OBJF, linFit$objDf$OBJF, tol = tol)), 
-        omega = isTRUE(all.equal(fit$omega, linFit$omega, tol = tol)), 
-        eta = isTRUE(all.equal(fit$eta, linFit$eta, tol = tol)), 
-        err = isTRUE(all.equal(est, estLin, tol = tol))
+        ofv = list(isTRUE(deltaOfv), deltaOfv),
+        omega = list(isTRUE(deltaOmega), deltaOmega),
+        eta = list(isTRUE(deltaEta), deltaEta),
+        err = list(isTRUE(deltaErr), deltaErr)
     )
 }
 

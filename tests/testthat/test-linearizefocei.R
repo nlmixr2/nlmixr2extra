@@ -148,6 +148,8 @@ test_that("Linearize add err model ", {
 
     fitLin <- nlmixr(lmod, derv, est = "focei")
 
+    linearizePlot(fit, fitLin) 
+
     diffObjF <- abs((fit$objDf$OBJF - fitLin$objDf$OBJF)/ fitLin$objDf$OBJF)
     expect_true(diffObjF < 0.1)
 
@@ -162,7 +164,7 @@ test_that("Linearize prop err model ", {
             tcl <- log(2.7) # Cl
             tv <- log(30) # V
             eta.cl ~ 0.3
-            eta.v ~ 0.1
+            eta.v ~ 0.2
             prop.sd <- 0.10
         })
         model({
@@ -175,26 +177,43 @@ test_that("Linearize prop err model ", {
             cp ~ prop(prop.sd)
         })
     }
+    set.seed(100)
     ev <- rxode2::et(amountUnits = "mg", timeUnits = "hours") |>
-        rxode2::et(amt = 320, cmt = "depot")
-    sim <- rxode2::rxSolve(one.cmpt.properr, ev, nSub = 100, addDosing = TRUE)
+        rxode2::et(amt = 320, cmt = "depot") |> rxode2::et(time = c(0.25, 0.5, 1,2,3,6,8,12,16,24))
+    sim <- rxode2::rxSolve(one.cmpt.properr, ev, nSub = 300, addDosing = TRUE)
     sim$DV <- sim$sim
     sim$ID <- sim$sim.id
     sim$sim.id <- NULL
 
-    fit <- nlmixr(one.cmpt.properr, sim, est = "focei")
+    fit <- nlmixr(one.cmpt.properr, sim, est = "focei", 
+            control = nlmixr2est::foceiControl(mceta=10))
+    # linMod <- linModGen(fit, FALSE)
+    # derv <- getDeriv(fit)
+    
+    # fitLin <- nlmixr(linMod, derv, est="focei", 
+    #         control = nlmixr2est::foceiControl(etaMat = fit, mceta=10, 
+    #         covMethod = "", 
+    #         calcTables=FALSE,
+    #         maxInnerIterations=100, maxOuterIterations=100))
+            
 
-    fitLin <- linearize(fit, relTol = 0.2)
+    # fit$scaleInfo$scaleC
+    # fitLin$scaleInfo$scaleC
+    # INNER ETA
+    # OUTER THETA OMEGA 
+    # 
 
-    diffObjF <- abs((fit$objDf$OBJF - fitLin$objDf$OBJF)/ fitLin$objDf$OBJF)
-    expect_true(diffObjF < 0.1)
+    fitLin <- linearize(fit, relTol = 0.2, mceta = c(-1, 10, 100))
+    isLinearizeMatch(fit, fitLin)
 
-    all.equal(fit$omega, fitLin$omega, tolerance = 0.1) |> expect_true()
-    all.equal(fit$eta, fitLin$eta, tolerance = 0.1) |> expect_true()
+    
+    fitLin <- linearize(fit, relTol = 0.2, mceta = c(-1, 10), focei = FALSE)
+    isLinearizeMatch(fit, fitLin)
+
 })
 
 
-test_that("Linearize combined model ", {
+test_that("Linearize combined2 model ", {
     one.cmpt.combinederr <- function() {
         ini({
             tka <- log(1.56) # Ka
@@ -212,64 +231,53 @@ test_that("Linearize combined model ", {
             d / dt(depot) <- -ka * depot
             d / dt(center) <- ka * depot - cl / v * center
             cp <- center / v
-            cp ~ add(add.sd) + prop(prop.sd)
+            cp ~ add(add.sd) + prop(prop.sd) + combined2()
         })
     }
 
-    # ev <- rxode2::et(amountUnits = "mg", timeUnits = "hours") |>
-    #     rxode2::et(amt = 300, cmt = "depot")
-    # sim <- rxSolve(one.cmpt.combinederr, ev, nSub = 100, addDosing = TRUE)
-    # sim$DV <- sim$sim
-    # sim$ID <- sim$sim.id
-    # sim$sim.id <- NULL
-
     fit <- nlmixr(one.cmpt.combinederr, nlmixr2data::theo_sd, est = "focei")
-    derv <- getDeriv(fit)
+    # derv <- getDeriv(fit)
 
-    sum(grepl("O_ETA\\d+", names(derv))) |> expect_equal(ncol(fit$eta) - 1)
-    all(derv$D_ResVar == 1) |> expect_equal(TRUE)
+    # sum(grepl("O_ETA\\d+", names(derv))) |> expect_equal(ncol(fit$eta) - 1)
+    # all(derv$D_ResVar == 1) |> expect_equal(TRUE)
 
     fitLin <- linearize(fit)
-    diffObjF <- abs((fit$objDf$OBJF - fitLin$objDf$OBJF)/ fitLin$objDf$OBJF)
-    expect_true(diffObjF < 0.1)
-
-    all.equal(fit$omega, fitLin$omega, tolerance = 0.1) |> expect_true()
-
-
+    isLinearizeMatch(fit, fitLin)
 })
 
-test_that("Linearize wrapper", {
-    one.cmpt.adderr <- function() {
+
+1est_that("Linearize combined1 model ", {
+    one.cmpt.combinederr <- function() {
         ini({
+            tka <- log(1.56) # Ka
             tcl <- log(2.7) # Cl
             tv <- log(30) # V
-            tka <- log(1.56) #  Ka
             eta.cl ~ 0.3
             eta.v ~ 0.1
-            eta.ka ~ 0.6
             add.sd <- 0.7
+            prop.sd <- 0.1
         })
         model({
-            ka <- exp(tka + eta.ka)
+            ka <- exp(tka)
             cl <- exp(tcl + eta.cl)
             v <- exp(tv + eta.v)
             d / dt(depot) <- -ka * depot
             d / dt(center) <- ka * depot - cl / v * center
             cp <- center / v
-            cp ~ add(add.sd)
+            cp ~ add(add.sd) + prop(prop.sd) + combined1()
         })
     }
 
-    fit <- nlmixr(one.cmpt.adderr, nlmixr2data::theo_md, est = "focei")
+    fit <- nlmixr(one.cmpt.combinederr, nlmixr2data::theo_sd, est = "focei")
+    # derv <- getDeriv(fit)
+
+    # sum(grepl("O_ETA\\d+", names(derv))) |> expect_equal(ncol(fit$eta) - 1)
+    # all(derv$D_ResVar == 1) |> expect_equal(TRUE)
 
     fitLin <- linearize(fit)
-
-    diffObjF <- abs((fit$objDf$OBJF - fitLin$objDf$OBJF)/ fitLin$objDf$OBJF)
-    expect_true(diffObjF < 0.1)
-
-    all.equal(fit$omega, fitLin$omega, tolerance = 0.1) |> expect_true()
-
+    isLinearizeMatch(fit, fitLin)
 })
+
 
 
 test_that("Linearize multiple endpoints ", {

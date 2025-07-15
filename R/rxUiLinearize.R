@@ -171,7 +171,7 @@ rxUiGet.linearizeError <- function(x, ...) {
                              `logit + boxCox`=sprintf(" + boxCox(%s) + dv()", .lambda),
                              `probit + boxCox`=sprintf(" + boxCox(%s) + dv()", .lambda)
                              )
-             deparse1(str2lang(paste0("y", i, " ~ ",  .first, " + var()", .last)))
+             deparse1(str2lang(paste0("y", i, " ~ ",  .first, .last)))
            }, character(1), USE.NAMES=FALSE)
 
   .errModel <- c(vapply(seq_along(.predDf$cmt),
