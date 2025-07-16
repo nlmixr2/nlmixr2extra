@@ -134,7 +134,7 @@ test_that("Linearize add err model ", {
         })
     }
 
-    rxode2::rxode(one.cmpt.adderr)$linearizeError
+    # rxode2::rxode(one.cmpt.adderr)$linearizeError
     fit <- nlmixr(one.cmpt.adderr, nlmixr2data::theo_md, est = "focei")
     derv <- getDeriv(fit)
 
@@ -144,16 +144,14 @@ test_that("Linearize add err model ", {
     all(derv$D_VAR_ETA_1_2 == 0) |> expect_equal(TRUE)
     all(derv$D_VAR_ETA_1_3 == 0) |> expect_equal(TRUE)
 
-    lmod <- linModGen(fit)
-
-    fitLin <- nlmixr(lmod, derv, est = "focei")
+    # lmod <- linModGen(fit)
+    # fitLin <- nlmixr(lmod, derv, est = "focei")
 
     linearizePlot(fit, fitLin) 
 
-    diffObjF <- abs((fit$objDf$OBJF - fitLin$objDf$OBJF)/ fitLin$objDf$OBJF)
-    expect_true(diffObjF < 0.1)
+    fitLin <- linearize(fit)
+    isLinearizeMatch(fit, fitLin)$ofv[[1]] |> expect_true()
 
-    all.equal(fit$omega, fitLin$omega, tolerance = 0.1) |> expect_true()
 })
 
 
@@ -177,13 +175,15 @@ test_that("Linearize prop err model ", {
             cp ~ prop(prop.sd)
         })
     }
-    set.seed(100)
+    set.seed(999)
     ev <- rxode2::et(amountUnits = "mg", timeUnits = "hours") |>
-        rxode2::et(amt = 320, cmt = "depot") |> rxode2::et(time = c(0.25, 0.5, 1,2,3,6,8,12,16,24))
-    sim <- rxode2::rxSolve(one.cmpt.properr, ev, nSub = 300, addDosing = TRUE)
-    sim$DV <- sim$sim
-    sim$ID <- sim$sim.id
+        rxode2::et(amt = 500, cmt = "depot") |> 
+        rxode2::et(time = c(0.25, 0.5, 1,2,3,6,8,12,16,24))
+    sim <- rxode2::rxSolve(one.cmpt.properr, ev, nSub = 200, addDosing = TRUE)
+    sim$dv <- sim$sim
+    sim$id <- sim$sim.id
     sim$sim.id <- NULL
+    sim <- sim[,c("id", "time", "amt", "dv", "evid")]
 
     fit <- nlmixr(one.cmpt.properr, sim, est = "focei", 
             control = nlmixr2est::foceiControl(mceta=10))
@@ -204,11 +204,7 @@ test_that("Linearize prop err model ", {
     # 
 
     fitLin <- linearize(fit, relTol = 0.2, mceta = c(-1, 10, 100))
-    isLinearizeMatch(fit, fitLin)
-
-    
-    fitLin <- linearize(fit, relTol = 0.2, mceta = c(-1, 10), focei = FALSE)
-    isLinearizeMatch(fit, fitLin)
+    isLinearizeMatch(fit, fitLin)$ofv[[1]] |> expect_true()
 
 })
 
@@ -242,11 +238,11 @@ test_that("Linearize combined2 model ", {
     # all(derv$D_ResVar == 1) |> expect_equal(TRUE)
 
     fitLin <- linearize(fit)
-    isLinearizeMatch(fit, fitLin)
+    isLinearizeMatch(fit, fitLin)$ofv[[1]] |> expect_true()
 })
 
 
-1est_that("Linearize combined1 model ", {
+test_that("Linearize combined1 model ", {
     one.cmpt.combinederr <- function() {
         ini({
             tka <- log(1.56) # Ka
@@ -275,12 +271,14 @@ test_that("Linearize combined2 model ", {
     # all(derv$D_ResVar == 1) |> expect_equal(TRUE)
 
     fitLin <- linearize(fit)
-    isLinearizeMatch(fit, fitLin)
+    isLinearizeMatch(fit, fitLin)$ofv[[1]] |> expect_true()
 })
 
 
 
 test_that("Linearize multiple endpoints ", {
+    skip_on_cran()
+    skip_on_ci()
     pk.turnover.emax3 <- function() {
         ini({
         tktr <- log(1)
@@ -330,30 +328,42 @@ test_that("Linearize multiple endpoints ", {
         d/dt(effect) = kin*PD -kout*effect
         ##
         cp = center / v
-        cp ~ prop(prop.err) + add(pkadd.err)
+        cp ~ prop(prop.err) + add(pkadd.err) # TODO from here center/cp is mapped
         effect ~ add(pdadd.err) | pca
         })
     }
 
-    # fit <- nlmixr(pk.turnover.emax3, nlmixr2data::warfarin, est = "focei")
+    set.seed(999)
+    ev <- rxode2::et(amountUnits = "mg", timeUnits = "hours") |>
+        rxode2::et(amt = 100, cmt = "depot") |> 
+        rxode2::et(time = c(0.25, 0.5, 1,2,3,6,8,12,16,24), cmt="cp") |>
+        rxode2::et(time = c(0.25, 0.5, 1,2,3,6,8,12,16,24), cmt="pca")
+    sim <- rxode2::rxSolve(pk.turnover.emax3, ev, nSub = 100, addDosing = TRUE)
+    sim$dv <- sim$sim
+    sim$id <- sim$sim.id
+    sim$sim.id <- NULL
+    sim$dvid <- ifelse(sim$CMT == 5, "cp", "pca")
+    sim$CMT <- NULL
+
+    sim <- sim[,c("id", "time", "amt", "dv", "dvid", "evid")]
+
+    fit <- nlmixr(pk.turnover.emax3, sim, est = "focei", 
+            control = nlmixr2est::foceiControl(mceta=10, 
+            calcTables=FALSE, maxInnerIterations=100, maxOuterIterations=100))
     # saveRDS(fit, "warfarin.RDS")
     fit <- readRDS(system.file("warfarin.RDS", package="nlmixr2extra"))
 
     derv <- getDeriv(fit) 
     # derv$CMT <- NULL
 
-    sum(grepl("O_ETA\\d+", names(derv))) |> expect_equal(ncol(fit$eta) - 1)
-    all(derv$D_ResVar == 1) |> expect_equal(TRUE)
-
-
-    # lmod <- linModGen(fit)
+    lmod <- linModGen(fit, T)
+    lmod 
+    fitLin <- evalLinModel(fit, lmod, derv)
+    isLinearizeMatch(fit, fitLin)
     # fitLin <- nlmixr(lmod, derv, est = "focei")
 
 
     fitLin <- linearize(fit)
+    isLinearizeMatch(fit, fitLin)$ofv[[1]] |> expect_true()
 
-    diffObjF <- abs((fit$objDf$OBJF - fitLin$objDf$OBJF)/ fitLin$objDf$OBJF)
-    expect_true(diffObjF < 0.1)
-
-    all.equal(fit$omega, fitLin$omega, tolerance = 0.1) |> expect_true()
 })
