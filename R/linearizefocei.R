@@ -164,10 +164,26 @@ linModGen <- function(fit, focei = TRUE){
 #' @param mceta a numeric vector for mceta to try. See decription.
 #' @param relTol relative deviation tolerance between original and linearized models objective functions. Used for switching if focei = NA. See details.
 #' @param focei Default is NA for automatic switch from FOCEI to FOCE if failed. See details.
+#' @param derivFct boolean. If TRUE, turn on derivatives for linearization. Default is FALSE.
 #' @param plot boolean. Print plot of linearized vs original
+#' 
+#' @details
+#' 
+#' mceta vector will be iterated over to find the best linearization if linearization failed. 
+#' Escalating to next mceta will depend on the relative deviation `relTol` of the original and linearized models objective functions.
+#' 
+#' If `focei` is set to `NA`, the function will first try to linearize using FOCEI. 
+#' If the relative deviation between original and linearized models objective functions is greater than `relTol`, it will switch to FOCE where residual linearization is skipped.
+#' If `focei` is set to `TRUE`, the function will use FOCEI linearization with individual and residual linearization.
+#' If `focei` is set to `FALSE`, the function will use FOCE linearization with residual linearization skipped.
+#' 
+#' If `derivFct` is set to `TRUE`, the function will use derivatives for linearization. 
+#' This might be usefull to try with FOCEI.
 #' 
 #' `plot` argument can only print ggplot figure with default settings. 
 #' If a user wish to capture the plot, one might use `linearizePlot()` call. 
+#' 
+#' 
 #' 
 #' @author Omar Elashkar
 #' @export 
@@ -185,14 +201,19 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA, d
         # check linearization feasbility
         fitL <- evalLinModel(fit, linMod, derv)
         fitL_map <- evalLinModel(fit, linMod, derv, 1000)
+
+        
+        lObj_exact <- fitL$objDf$OBJF
+        lObj_map <- fitL_map$objDf$OBJF
+        oObj <- fit$objDf$OBJF
         
         list(
-            lObj_exact = fitL$objDf$OBJF,
-            lObj_map = fitL_map$objDf$OBJF,
-            oObj = fit$objDf$OBJF,
+            lObj_exact = lObj_exact,
+            lObj_map = lObj_map,
+            oObj = oObj,
             message = paste("Non-Linear OFV: ", oObj, 
-            "Eval Linear OFV (Exact):", lObj_exact, 
-            "Eval Linear OFV (MAP):", lObj_map)
+            "\n Eval Linear OFV (Exact):", lObj_exact, 
+            "\n Eval Linear OFV (MAP):", lObj_map)
         )
     }
 
@@ -236,15 +257,22 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA, d
     fitL <- nlmixr2est::addTable(fitL)
     nlme::getVarCov(fitL)
 
+    if (exists("secondEval")) {
+        finalEval <- secondEval
+    } else {
+        finalEval <- firstEval
+    }
     message("---Linearization Summary---")
+    message("Linearization method:", ifelse(is.na(focei), "Auto", ifelse(focei, "FOCE (individual + residual)", "Variance Skipped")))
     message("Relative Tolerance:", relTol)
-    message("Linearization method:", ifelse(is.na(focei), "Auto", ifelse(focei, "FOCEI", "Variance Skipped")))
-    message("Skipping variance during linearization:", ifelse(is.null(secondEval), FALSE, focei))
-    message(paste("Non-Linear OFV: ", oObj))
-    message(paste("Linear OFV (Exact):", ifelse(is.null(secondEval), firstEval$lObj_exact, secondEval$lObj_exact)))
-    message(paste("Linear OFV (MAP):", ifelse(is.null(secondEval), firstEval$lObj_exact, secondEval$lObj_exact)))
+    if(is.na(focei) & exists("secondEval")){
+        message("Linearization method switched automatically to FOCE (residual linearization skipped)")
+    }
+    message(paste(finalEval$message))
+    message(paste("Fitted Linear OFV:", lObj))
+    message(paste("Relative OFV Dev", round(relDev,4)*100, "%"))
     message(paste("mceta:", mceta[i]))
-    message(paste("Relative OFV Dev", relDev*100, "%"))
+
     fitL
 }
 
