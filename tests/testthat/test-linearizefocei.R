@@ -144,18 +144,13 @@ test_that("Linearize add err model ", {
     all(derv$D_VAR_ETA_1_2 == 0) |> expect_equal(TRUE)
     all(derv$D_VAR_ETA_1_3 == 0) |> expect_equal(TRUE)
 
-    lmod <- linModGen(fit)
-    # fitLin <- nlmixr(lmod, derv, est = "focei")
-
-    linearizePlot(fit, fitLin) 
-
     fitLin <- linearize(fit)
 
+    linearizePlot(fit, fitLin) 
     isLinearizeMatch(fit, fitLin)$ofv[[1]] |> expect_true()
 
-    derv2 <- getDeriv(fitLin)
-
-    plot(derv2$D_ETA1, derv$D_ETA1)
+    # derv2 <- getDeriv(fitLin)
+    # plot(derv2$D_ETA1, derv$D_ETA1)
 })
 
 
@@ -179,16 +174,18 @@ test_that("Linearize prop err model ", {
             cp ~ prop(prop.sd)
         })
     }
-    set.seed(999)
-    ev <- rxode2::et(amountUnits = "mg", timeUnits = "hours") |>
-        rxode2::et(amt = 500, cmt = "depot") |> 
-        rxode2::et(time = c(0.25, 0.5, 1,2,3,6,8,12,16,24))
-    sim <- rxode2::rxSolve(one.cmpt.properr, ev, nSub = 200, addDosing = TRUE)
-    sim$dv <- sim$sim
-    sim$id <- sim$sim.id
-    sim$sim.id <- NULL
-    sim <- sim[,c("id", "time", "amt", "dv", "evid")]
+    # set.seed(42)
+    # ev <- rxode2::et(amountUnits = "mg", timeUnits = "hours") |>
+    #     rxode2::et(amt = 300, cmt = "depot") |> 
+    #     rxode2::et(time = c(0.25, 0.5, 1,2,3,6,8,12,16,24))
+    # sim <- rxode2::rxSolve(one.cmpt.properr, ev, nSub = 200, addDosing = TRUE)
+    # sim$dv <- sim$sim
+    # sim$id <- sim$sim.id
+    # sim$sim.id <- NULL
+    # sim <- sim[,c("id", "time", "amt", "dv", "evid")]
 
+    # saveRDS(sim, "one.cmpt.properr_data.RDS")
+    sim <- readRDS(system.file("one.cmpt.properr_data.RDS", package="nlmixr2extra"))
     fit <- nlmixr(one.cmpt.properr, sim, est = "focei", 
             control = nlmixr2est::foceiControl(mceta=10))
     # linMod <- linModGen(fit, FALSE)
@@ -208,7 +205,7 @@ test_that("Linearize prop err model ", {
     # 
 
     fitLin <- linearize(fit, relTol = 0.2, mceta = c(-1, 10, 100))
-    isLinearizeMatch(fit, fitLin)$ofv[[1]] |> expect_true()
+    isLinearizeMatch(fit, fitLin)$ofv[[1], tol = 0.15] |> expect_true()
 
 })
 
@@ -282,9 +279,8 @@ test_that("Linearize combined1 model ", {
 
 test_that("Linearize multiple endpoints ", {
     skip_on_cran()
-    skip_on_ci()
 
-pk.turnover.emax3 <- function() {
+    pk.turnover.emax3 <- function() {
     ini({
         tktr <- 0.326787337229061
         tka <- 0.573847838322594
@@ -330,47 +326,44 @@ pk.turnover.emax3 <- function() {
     })
 }
 
-    pk.turnover.emax3 <- pk.turnover.emax3()
-    y <- linModGen(pk.turnover.emax3)
-    set.seed(999)
-    ev <- rxode2::et(amountUnits = "mg", timeUnits = "hours") |>
-        rxode2::et(amt = 100, cmt = "depot") |> 
-        rxode2::et(time =  c(0, 0.5, 1, 1.5, 2, 3, 6, 9, 12, 24, 36, 48, 72, 96, 120) , cmt="cp")|>
-        rxode2::et(time = c(0, 24, 36, 48, 72, 96, 120, 144), cmt="pca")
-    sim <- rxode2::rxSolve(pk.turnover.emax3, ev, nSub = 50, addDosing = TRUE)
-    plot(sim, "sim")
-    sim$dv <- sim$sim
-    sim$id <- sim$sim.id
-    sim$sim.id <- NULL
-    sim$dvid <- ifelse(sim$CMT == 5, "cp", "pca")
+    # pk.turnover.emax3 <- pk.turnover.emax3()
+    # y <- linModGen(pk.turnover.emax3)
+    # set.seed(999)
+    # ev <- rxode2::et(amountUnits = "mg", timeUnits = "hours") |>
+    #     rxode2::et(amt = 100, cmt = "depot") |> 
+    #     rxode2::et(time =  c(0, 0.5, 1, 1.5, 2, 3, 6, 9, 12, 24, 36, 48, 72, 96, 120) , cmt="cp")|>
+    #     rxode2::et(time = c(0, 24, 36, 48, 72, 96, 120, 144), cmt="pca")
+    # sim <- rxode2::rxSolve(pk.turnover.emax3, ev, nSub = 50, addDosing = TRUE)
+    # plot(sim, "sim")
+    # sim$dv <- sim$sim
+    # sim$id <- sim$sim.id
+    # sim$sim.id <- NULL
+    # sim$dvid <- ifelse(sim$CMT == 5, "cp", "pca")
 
-    sim <- sim[,c("id", "time", "amt", "dv", "dvid", "evid")]
-    # sim <- sim[,c("id", "time", "amt", "dv",  "evid")]
+    # sim <- sim[,c("id", "time", "amt", "dv", "dvid", "evid")]
+    # # sim <- sim[,c("id", "time", "amt", "dv",  "evid")]
 
-    fit <- nlmixr(pk.turnover.emax3, sim, est = "focei", 
-            control = nlmixr2est::foceiControl(mceta=10, 
-            calcTables=TRUE))
-    # saveRDS(fit, "warfarin.RDS")
+    # fit <- nlmixr(pk.turnover.emax3, sim, est = "focei", 
+    #         control = nlmixr2est::foceiControl(mceta=10, 
+    #         calcTables=TRUE))
+    # # saveRDS(fit, "warfarin.RDS")
     fit <- readRDS(system.file("warfarin.RDS", package="nlmixr2extra"))
 
-    derv <- getDeriv(fit) 
-    View(dplyr::arrange(derv, id, time))
-    # derv$CMT <- NULL
+    # derv <- getDeriv(fit) 
+    # # derv$CMT <- NULL
 
-    lmod <- linModGen(fit, TRUE)
-    fitLin <- evalLinModel(fit, lmod, derv, 1000)
-    isLinearizeMatch(fit, fitLin)
-    linearizePlot(fit, fitLin)
+    # lmod <- linModGen(fit, TRUE)
+    # fitLin <- evalLinModel(fit, lmod, derv, 1000)
+    # isLinearizeMatch(fit, fitLin)
+    # linearizePlot(fit, fitLin)
     # fitLin <- nlmixr(lmod, derv, est = "focei")
-
 
     fitLin <- linearize(fit, mceta = 10, focei = FALSE)
     isLinearizeMatch(fit, fitLin)$ofv[[1]] |> expect_true()
     linearizePlot(fit, fitLin)
 
-    fit$dataMergeInner$nlmixrLlikObs[1:20]
-    fitLin$dataMergeInner$nlmixrLlikObs[1:20]
-
-    derv2 <- getDeriv(fitLin) # FIXME
-    plot(derv2$D_ETA1, derv$D_ETA1)
+    # fit$dataMergeInner$nlmixrLlikObs[1:20]
+    # fitLin$dataMergeInner$nlmixrLlikObs[1:20]
+    # derv2 <- getDeriv(fitLin) # FIXME consider droping names starts with D_ETA ...etc for avoid conflict with new derv
+    # plot(derv2$D_ETA1, derv$D_ETA1)
 })

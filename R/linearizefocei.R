@@ -1,11 +1,8 @@
-
-
 #' Extract derivatives from NLME model fitted with FOCE
 #'
 #' @param fit object fitted with nlmixr2 of class nlmixr2.focei
 #'
 #' @author Omar Elashkar
-#'
 #' @noRd
 getDeriv <- function(fit){
     # if(fit$method != "FOCE") stop("This method requires FOCE method")
@@ -98,6 +95,12 @@ renameCol <- function(df, new, old){
     df
 }
 
+#' Generate a Linearization Model From Previous Fit 
+#' @param fit fit of nonlinear model.
+#' @param focei boolean. If TRUE, use FOCEI linearization with individual and residual linearization. Default is TRUE.
+#' @param derivFct boolean. If TRUE, use normalization derivative factors. Default is FALSE.
+#' @author Omar Elashkar
+#' @noRd
 linModGen <- function(fit, focei = TRUE, derivFct = FALSE){
     rxode2::assertRxUiMixedOnly(fit, " for the procedure routine 'linerize'", .var.name=fit$modelName)
 
@@ -285,14 +288,14 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA, d
     fitL
 }
 
-#' Plot original versus linear iobj and etas
+#' Plot Original Versus Linear Models iObj and Etas
 #' @param nl non-linear fitting object
 #' @param l linear fitting object
 #' @author Omar Elashkar
 #' @return ggplot object
 #' @export
 linearizePlot <- function(nl, lin){
-    # TODO assertion that both objects are siblings. Random effects and errors are names same
+    # TODO assertion that both objects are siblings. Random effects and errors names same
 
     stopifnot(inherits(nl, "nlmixr2FitCore"))
     stopifnot(inherits(lin, "nlmixr2FitCore"))
@@ -315,14 +318,31 @@ linearizePlot <- function(nl, lin){
     fig
 }
 
-evalLinModel <- function(fit, linMod, derv, innerInter = 0){
+#' Evaluate A Linear Model Without Estimation 
+#' @param fit fit of nonlinear model.
+#' @param linMod linear model to evaluate
+#' @param derv data frame of derivatives
+#' @param innerIter number of inner iterations to use. Default is 0. 
+#' 
+#' `evalLinModel()` evaluates a linear model without estimation. 
+#' This is useful for checking the linearization feasibility under given non-linear model and its fit. 
+#' `innerIter=0` is equivalent to NONMEM `$ESTIMATION MAXITER=0` and will not perform any inner iterations.
+#' 
+#' @author Omar Elashkar
+#' @noRd 
+evalLinModel <- function(fit, linMod, derv, innerIter = 0){
     fitL <- nlmixr(linMod, derv, est="focei", 
             control = nlmixr2est::foceiControl(etaMat = fit, mceta=-1, 
-            covMethod = "", calcTables=TRUE, maxInnerIterations=innerInter, maxOuterIterations=0L))
+            covMethod = "", calcTables=TRUE, maxInnerIterations=innerIter, maxOuterIterations=0L))
     fitL
 }
 
-
+#' Check Linearization Match 
+#' @param fit fit of nonlinear model.
+#' @param linFit fit of linear model.
+#' @param tol relative tolerance for matching. Default is 0.05.
+#' @author Omar Elashkar
+#' @noRd
 isLinearizeMatch <- function(fit, linFit, tol = 0.05){
     
     est <-setNames(fit$iniDf$est, fit$iniDf$name)
@@ -348,7 +368,3 @@ isLinearizeMatch <- function(fit, linFit, tol = 0.05){
     innerModel <- ui$foceiModel
     summary(innerModel$inner)
 }
-
-## FOCE 
-## only additive
-## FACTOR
