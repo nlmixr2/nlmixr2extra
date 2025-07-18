@@ -62,7 +62,9 @@ linearizeErrorLines.norm <- function(line) {
   env <- line[[1]]
   pred1 <- line[[2]]
   ret <- vector("list", 1)
-  bquote(rxR2 <- .(.replaceFwithOpred(rxode2::.rxGetVarianceForErrorType(env, pred1), env=env, pred1=pred1, y="OPRED")))
+  list(
+    bquote(rxR2 <- .(.replaceFwithOpred(rxode2::.rxGetVarianceForErrorType(env, pred1), env=env, pred1=pred1, y="OPRED"))), 
+    str2lang("fct <- 1"))
 }
 
 #' @rdname linearizeErrorLines
@@ -133,7 +135,10 @@ rxUiGet.linearizeError <- function(x, ...) {
 
                     }, character(1))
   } else {
-    .rxR2 <- paste(deparse(.errLines[[1]]), collapse="\n")
+    .rxR2 <- vapply(seq_along(.errLines[[1]]),
+                    function(i) {
+                      paste(deparse(.errLines[[1]][[i]]), collapse="\n")
+                    }, character(1))
   }
 
   .errModel <-

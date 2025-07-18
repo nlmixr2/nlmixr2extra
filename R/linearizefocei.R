@@ -8,7 +8,7 @@
 #'
 #' @noRd
 getDeriv <- function(fit){
-    if(fit$method != "FOCE") stop("This method requires FOCE method")
+    # if(fit$method != "FOCE") stop("This method requires FOCE method")
     rxode2::assertRxUiMixedOnly(fit, " for the procedure routine 'linerize'", .var.name=fit$modelName)
 
     ui <- rxode2::assertRxUi(fit)
@@ -21,11 +21,12 @@ getDeriv <- function(fit){
 
     theta <- fit$theta
     reps <- ceiling(nrow(eta) / nrow(theta))
+    # theta <- as.data.frame(theta)
     theta <- setNames(fit$theta, paste0("THETA[", seq_along(fit$theta), "]")) |>
         t() |>
         as.data.frame()
 
-    theta <- theta[rep(1, nrow(eta)),]
+    theta <- theta[rep(1, nrow(eta)),,drop=FALSE]
     params_df <- cbind(theta, eta)
 
     oData <- nlme::getData(fit)
@@ -73,15 +74,18 @@ getDeriv <- function(fit){
     if(length(unique(fit$predDf$cond)) > 1){
         # derv$OCMT <- as.integer(derv$CMT)
 
-        mv <- rxode2::rxModelVars(innerModel$inner)
-        cmtName <- c(mv$state, mv$stateExtra)
+        mv <- rxode2::rxModelVars(innerModel$inner) # model variables
+        cmtName <- c(mv$state, mv$stateExtra) # + cmt names (states)
         cmtDf <- data.frame(CMT=seq_along(cmtName), cond=cmtName)
         predDf <- fit$predDf
         predDf$OCMT <- predDf$cmt
         cmtDf <- merge(cmtDf, predDf)
         cmtDf <- cmtDf[,c("OCMT", "CMT", "dvid")]
-
-        derv <- merge(derv, cmtDf)
+        
+        derv$rxRow <- seq_along(derv$id) # dummy sort
+        derv <- merge(derv, cmtDf) 
+        derv <- derv[order(derv$rxRow), ]
+        derv$rxRow <- NULL
         derv$CMT <- NULL
  
     }
@@ -94,11 +98,16 @@ renameCol <- function(df, new, old){
     df
 }
 
-linModGen <- function(fit, focei = TRUE){
+linModGen <- function(fit, focei = TRUE, derivFct = FALSE){
     rxode2::assertRxUiMixedOnly(fit, " for the procedure routine 'linerize'", .var.name=fit$modelName)
 
     # errSym <- rxode2:::.rxGetVarianceForErrorType(rxUiDecompress(fit), fit$predDf)
-    extractError <- fit$linearizeError
+    fitui <- rxode2::assertRxUi(fit)
+    fitui <- rxode2::rxUiDecompress(fitui)
+    assign("derivFct", derivFct, envir = fitui)
+    extractError <- fitui$linearizeError
+    # fitui <- rxode2::rxUiCompress(fitui)
+    rm(fitui)
     epStr <- fit$predDf$var
     errNames <- fit$iniDf$name[!is.na(fit$iniDf$err)]
     nlmod <- fit$finalUi
@@ -132,7 +141,7 @@ linModGen <- function(fit, focei = TRUE){
 
     modelStr$baseEps[i+ii+1] <- "r <- sqrt(rxR2)"
     modelStr$baseEps[i+ii+2] <- paste0("foceiLin <- ", ifelse(focei, 1, 0))
-    modelStr$baseEps[i+ii+3] <- paste("BASE_ERROR = foceiLin * (", paste(paste0("err", seq(ncol(etaDf))), collapse = " + "), ")/(2*r) + r")
+    modelStr$baseEps[i+ii+3] <- paste("BASE_ERROR = foceiLin * fct * (", paste(paste0("err", seq(ncol(etaDf))), collapse = " + "), ")/(2*r) + r")
     modelStr$baseEps[i+ii+4] <- "rxR = BASE_ERROR"
 
     for(i in seq_along(extractError$err)){
@@ -195,7 +204,7 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA, d
     checkmate::assertLogical(focei, max.len = 1, any.missing=TRUE)
 
     derv <- getDeriv(fit)
-    linMod <- linModGen(fit, focei = ifelse(is.na(focei), TRUE, focei))
+    linMod <- linModGen(fit, focei = ifelse(is.na(focei), TRUE, focei), derivFct = derivFct)
 
     evalFun <- function(){
         # check linearization feasbility
@@ -309,7 +318,7 @@ linearizePlot <- function(nl, lin){
 evalLinModel <- function(fit, linMod, derv, innerInter = 0){
     fitL <- nlmixr(linMod, derv, est="focei", 
             control = nlmixr2est::foceiControl(etaMat = fit, mceta=-1, 
-            covMethod = "", calcTables=FALSE, maxInnerIterations=innerInter, maxOuterIterations=0L))
+            covMethod = "", calcTables=TRUE, maxInnerIterations=innerInter, maxOuterIterations=0L))
     fitL
 }
 
@@ -339,3 +348,7 @@ isLinearizeMatch <- function(fit, linFit, tol = 0.05){
     innerModel <- ui$foceiModel
     summary(innerModel$inner)
 }
+
+## FOCE 
+## only additive
+## FACTOR
