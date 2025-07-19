@@ -205,7 +205,7 @@ test_that("Linearize prop err model ", {
     # 
 
     fitLin <- linearize(fit, relTol = 0.2, mceta = c(-1, 10, 100))
-    isLinearizeMatch(fit, fitLin)$ofv[[1], tol = 0.15] |> expect_true()
+    isLinearizeMatch(fit, fitLin, tol = 0.15)$ofv[[1]] |> expect_true()
 
 })
 
@@ -366,4 +366,120 @@ test_that("Linearize multiple endpoints ", {
     # fitLin$dataMergeInner$nlmixrLlikObs[1:20]
     # derv2 <- getDeriv(fitLin) # FIXME consider droping names starts with D_ETA ...etc for avoid conflict with new derv
     # plot(derv2$D_ETA1, derv$D_ETA1)
+})
+
+
+test_that("linearization covariance", {
+    one.cmpt.adderr <- function() {
+        ini({
+            tcl <- log(2.7) # Cl
+            tv <- log(30) # V
+            tka <- log(1.56) #  Ka
+            eta.cl ~ 0.3
+            eta.v ~ 0.1
+            eta.ka ~ 0.6
+            add.sd <- 0.7
+        })
+        model({
+            ka <- exp(tka + eta.ka)
+            cl <- exp(tcl + eta.cl)
+            v <- exp(tv + eta.v)
+            d / dt(depot) <- -ka * depot
+            d / dt(center) <- ka * depot - cl / v * center
+            cp <- center / v
+            cp ~ add(add.sd)
+        })
+    }
+    fit <- nlmixr(one.cmpt.adderr, nlmixr2data::theo_md, est = "focei")
+    derv <- getDeriv(fit)
+    linMod <- linModGen(fit, FALSE)
+    fitLin <- evalLinModel(fit, linMod, derv, 0, covMethod = "r,s")
+
+    fitLin
+
+})
+
+test_that("linearize correlated eta ", {
+    one.cmpt.adderr <- function() {
+        ini({
+            tcl <- log(2.7) # Cl
+            tv <- log(30) # V
+            tka <- log(1.56) #  Ka
+            eta.cl + eta.v ~ c(0.3, 
+                                0.1, 0.1)
+            eta.ka ~ 0.6
+            add.sd <- 0.7
+        })
+        model({
+            ka <- exp(tka + eta.ka)
+            cl <- exp(tcl + eta.cl)
+            v <- exp(tv + eta.v)
+            d / dt(depot) <- -ka * depot
+            d / dt(center) <- ka * depot - cl / v * center
+            cp <- center / v
+            cp ~ add(add.sd)
+        })
+    }
+    fit <- nlmixr(one.cmpt.adderr, nlmixr2data::theo_md, est = "focei")
+    fitLin <- linearize(fit)
+    isLinearizeMatch(fit, fitLin)$ofv[[1]] |> expect_true()
+})
+
+test_that("Adding covariates to lin models", {
+
+    one.cmpt.adderr <- function() {
+        ini({
+            tcl <- log(2.7) # Cl
+            tv <- log(30) # V
+            tka <- log(1.56) #  Ka
+            eta.cl ~ 0.3
+            eta.v ~ 0.1
+            eta.ka ~ 0.6
+            add.sd <- 0.7
+        })
+        model({
+            ka <- exp(tka + eta.ka)
+            cl <- exp(tcl + eta.cl)
+            v <- exp(tv + eta.v)
+            d / dt(depot) <- -ka * depot
+            d / dt(center) <- ka * depot - cl / v * center
+            cp <- center / v
+            cp ~ add(add.sd)
+        })
+    }
+
+    fit <- nlmixr(one.cmpt.adderr, nlmixr2data::theo_md, est = "focei")
+    add_covariate()
+
+
+})
+
+test_that("mu ref", {
+    one.cmpt.adderr <- function() {
+        ini({
+            tcl <- log(2.7) # Cl
+            tv <- log(30) # V
+            tka <- log(1.56) #  Ka
+            eta.cl ~ 0.3
+            eta.v ~ 0.1
+            eta.ka ~ 0.6
+            add.sd <- 0.7
+        })
+        model({
+            ka <- exp(tka + eta.ka)
+            cl <- exp(tcl + eta.cl)
+            v <- exp(tv + eta.v)
+            d / dt(depot) <- -ka * depot
+            d / dt(center) <- ka * depot - cl / v * center
+            cp <- center / v
+            cp ~ add(add.sd)
+        })
+    }
+
+    fit <- nlmixr(one.cmpt.adderr, nlmixr2data::theo_md, est = "focei")
+
+    linModGen(fit, focei = TRUE)
+    x <- linearize(fit)
+
+
 })

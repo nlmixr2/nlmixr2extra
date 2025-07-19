@@ -118,10 +118,14 @@ linModGen <- function(fit, focei = TRUE, derivFct = FALSE){
 
     modelStr <- list()
 
+    # mu block
+    for(i in seq_along(colnames(etaDf))){
+        modelStr$muRef[i] <- paste0("mu.", colnames(etaDf)[i], " = " , "theta.", colnames(etaDf)[i] , " + ", colnames(etaDf)[i])
+    }
     # linearize eta
     for(i in seq_along(colnames(etaDf))){
         # D_ETAn * (-OETAn + eta.n)
-        modelStr$baseEta[i] <- paste0("base",i , "=", "D_ETA", i, "*(", "-O_ETA", i, "+", colnames(etaDf)[i], ")")
+        modelStr$baseEta[i] <- paste0("base",i , "=", "D_ETA", i, "*(", "-O_ETA", i, "+ mu.", colnames(etaDf)[i], ")")
     }
     # BASE_TERMS = base1 + ... + basen
     modelStr$baseEta[i+1] <- paste("BASE_TERMS =", paste(paste0("base", seq(ncol(etaDf))), collapse = " + "))
@@ -152,19 +156,35 @@ linModGen <- function(fit, focei = TRUE, derivFct = FALSE){
     }
 
     # iniDf already captures final estimates
-    iniDf <- nlmod$iniDf[nlmod$iniDf$name %in% c(colnames(etaDf), errNames) , ]
+    iniDf <- nlmod$iniDf[nlmod$iniDf$name %in% errNames | !is.na(nlmod$iniDf$neta1), ]
 
-    # n_theta == n_errors
-    iniDf$ntheta[!is.na(iniDf$ntheta)] <- seq_along(na.omit(iniDf$ntheta))
+    # n_theta == n_errors + n_eta
+    iniDf$ntheta[!is.na(iniDf$ntheta)] <- seq_along(na.omit(iniDf$ntheta)) # remove thetas except for err
+    # add theta.etaname 
+    thetaetadf <- data.frame(
+        ntheta = seq_along(colnames(etaDf)) + max(iniDf$ntheta, na.rm = TRUE),
+        neta1 = NA_real_,
+        neta2 = NA_real_,
+        name = paste0("theta.", colnames(etaDf)),
+        lower = 0,
+        est = 0,
+        upper = Inf,
+        fix = TRUE, 
+        label = NA_character_,
+        backTransform = NA_character_,
+        condition = NA_character_,
+        err = NA_character_
+    )
 
-    ini(nlmod) <- iniDf
-    v <- c(modelStr$baseEta, modelStr$baseEps, 
-                        extractError$tipred, modelStr$basePred) 
-    # model(nlmod) <-  v
+    iniDf  <- rbind(iniDf, thetaetadf)
+    iniDf  <- iniDf[order(iniDf$ntheta), ]
 
     nlmod <- rxode2::rxUiDecompress(nlmod)
+    assign("iniDf", iniDf, envir = nlmod)
+    v <- c(modelStr$muRef, modelStr$baseEta, modelStr$baseEps, 
+                        extractError$tipred, modelStr$basePred) 
+
     nlmod$lstExpr <- as.list(str2lang(paste0("{", paste(v, collapse="\n"), "}"))[-1])
-    nlmod <- rxode2::rxUiCompress(nlmod)
     nlmod <- nlmod$fun
     nlmod <- nlmod()
 
@@ -258,9 +278,11 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA, d
                 message(paste("Using mceta = ", mceta[i], "provided inadequate linearization. Trying mceta = ", mceta[i+1], "..."))
             } else{
                 warning("Linearization was inadequate for the given tolerance. Try increasing the tolerance, refine the model or fit with mceta")
+                # TODO automatically switch to FOCE if not already
             }
         }
     }
+
 
     if(plot){
         print(linearizePlot(fit, fitL))
@@ -274,17 +296,22 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA, d
     } else {
         finalEval <- firstEval
     }
-    message("---Linearization Summary---")
-    message("Linearization method:", ifelse(is.na(focei), "Auto", ifelse(focei, "FOCE (individual + residual)", "Variance Skipped")))
-    message("Relative Tolerance:", relTol)
-    if(is.na(focei) & exists("secondEval")){
-        message("Linearization method switched automatically to FOCE (residual linearization skipped)")
-    }
-    message(paste(finalEval$message))
-    message(paste("Fitted Linear OFV:", lObj))
-    message(paste("Relative OFV Dev", round(relDev,4)*100, "%"))
-    message(paste("mceta:", mceta[i]))
+    m <- paste(
+        "Linearization method: ", ifelse(is.na(focei), 
+            "Auto", ifelse(focei, "FOCE (individual + residual)", "Variance Skipped")), "\n",
+        "Linearization Relative Tolerance: ", relTol, "\n",
+        ifelse(is.na(focei) & exists("secondEval"), 
+            "Linearization method switched automatically to FOCE (residual linearization skipped)", ""),
+        "\n", paste(finalEval$message, collapse = "\n"),
+        "\nFitted Linear OFV: ", lObj,
+        "\nRelative OFV Dev: ", round(relDev, 4) * 100, "%\n",
+        "mceta: ", mceta[i]
+    )
+    message("Linearization Summary:")
+    message(m)
 
+    assign("message", c(fitL$message, m), envir=fitL$env) 
+    # class(fitL) <- c("nlmixr2Linearize", class(fitL)) # FIXME
     fitL
 }
 
@@ -330,10 +357,11 @@ linearizePlot <- function(nl, lin){
 #' 
 #' @author Omar Elashkar
 #' @noRd 
-evalLinModel <- function(fit, linMod, derv, innerIter = 0){
+evalLinModel <- function(fit, linMod, derv, innerIter = 0, covMethod = ""){
     fitL <- nlmixr(linMod, derv, est="focei", 
             control = nlmixr2est::foceiControl(etaMat = fit, mceta=-1, 
-            covMethod = "", calcTables=TRUE, maxInnerIterations=innerIter, maxOuterIterations=0L))
+            covMethod = covMethod, calcTables=TRUE, 
+            maxInnerIterations=innerIter, maxOuterIterations=0L))
     fitL
 }
 
@@ -367,4 +395,49 @@ isLinearizeMatch <- function(fit, linFit, tol = 0.05){
     ui <- rxode2::assertRxUi(mod)
     innerModel <- ui$foceiModel
     summary(innerModel$inner)
+}
+
+
+#' Add Covariate to Model Fit (Generic)
+#'
+#' @param fit Model fit object
+#' @param covpar Expression eg. CL ~ WT/70 + AGE/80 + ... .
+#' @param normalize "mean" or "median". Default "median"
+#' @param mutiply boolean. If TRUE, multiply the covariate by the parameter, if FALSE, add the covariate to the parameter.
+#' @param effect character or list of characters of "linear", "piece_lin", "exp", "power". see details 
+#' 
+#' `effect` and `normalize` are only used if covariate is continuous.
+#' `normalize` call will be skipped if what covpar expression is normalized by other value
+#' 
+#' @export
+#' 
+
+addCovariate <- function(fit, covpar) {
+    UseMethod("addCovariate")
+}
+
+addCovariate.default <- function(fit, covpar) {
+    # stop("addCovariate is not supported for this object")
+
+    # stop if not expression with first call tilda 
+    stopifnot()
+
+    # ensure all functions are either + or / 
+
+    # make dataframe with col param, cov, transform, type 
+    ## type is extracted from getData() ==> cont or cat only 
+
+    ## each of transform is must be either numeric or NA
+
+    ## check all param in model and all cov in data 
+
+    ## if cov transform isNa and cont ==> impute with tranform
+
+    ## add cols min and max for cont
+    ## add col levels for cat covars
+
+}
+
+addCovariate.nlmixr2Linearize <- function(fit, covpar) {
+    invisible(fit)
 }
