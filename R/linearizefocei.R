@@ -602,7 +602,8 @@ iivSearch.nlmixr2Linearize <- function(fit){
             d <- fit$objDf
             d$search <- search
             d
-        }, res, iivSpace)
+        }, res, iivSpace, SIMPLIFY = FALSE)
+    objDfAll <- do.call(rbind, objDfAll)
 
     list(res = res, summary = objDfAll)
 }
