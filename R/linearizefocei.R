@@ -515,7 +515,8 @@ addCovariate.default <- function(fit, expr, effect) {
 
 #'@export 
 addCovariate.nlmixr2Linearize <- function(fit, expr, effect) {
-    parseCovExpr(expr, nlme::getData(fit), effect = effect)
+    covParseDf <- parseCovExpr(expr, nlme::getData(fit), effect = effect)
+    covParseDf$Deriv <- paste0("D_", currentCovDf$param)
 
     # get D_eta of parameter
 }
@@ -584,7 +585,6 @@ iivSearch.nlmixr2Linearize <- function(fit){
     iivSpace <- iivCombn(etaNames)
 
     varCovMat <- cov(fit$eta[,-1])
-
     res <- lapply(iivSpace, function(x){
         omegaMat <- filterEtaMat(varCovMat, x)
         newMod <- fit %>% ini(omegaMat) 
@@ -609,14 +609,14 @@ iivSearch.nlmixr2Linearize <- function(fit){
 
 filterEtaMat <- function(oMat, filterStr){
         stopifnot(length(filterStr) == 1)
-        resMat <- varCovMat
+        resMat <- oMat
         resMat[] <- 0
         elem <- unlist(strsplit(filterStr, "-"))
         for(i in elem){
             elem2 <- unlist(strsplit(i, ","))
             x <- elem2[1]
             y <- ifelse(length(elem2) == 1, elem2[1], elem2[2])
-            resMat[x,y] <- varCovMat[x, y]
+            resMat[x,y] <- oMat[x, y]
         }
         resMat
     }
