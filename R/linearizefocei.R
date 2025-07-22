@@ -36,21 +36,22 @@ getDeriv <- function(fit){
 
     derv <- rxode2::rxSolve(innerModel$innerOeta, oData, params=params_df,
         addDosing=FALSE,
-        keep = c("DV"))
-        # keep = c("DV", setdiff(names(oData),  c("ID", "TIME", "EVID", "AMT", "CMT"))))
+        keep = c("DV", setdiff(names(oData),  c("DV", "ID", "TIME", "DVID", "ADDL", "EVID", "AMT", "CMT")))) # add covariates
     
-    
+    eta <- fit$eta[,-1]
     # OPRED
     derv <- renameCol(derv, "OPRED", "rx_pred_")
 
     # D_ETA
-    for(i in seq_len(ncol(fit$eta))){
-        derv <- renameCol(derv, paste0("D_ETA", i), paste0("rx__sens_rx_pred__BY_ETA_", i, "___"))
+    for(i in seq_len(ncol(eta))){
+        currEta <- colnames(eta)[i]
+        derv <- renameCol(derv, paste0("D_", currEta), paste0("rx__sens_rx_pred__BY_ETA_", i, "___"))
     }
 
     #O_ETA
-    for(i in seq_len(ncol(fit$eta))){
-        derv <- renameCol(derv, paste0("O_ETA", i), paste0("rx__ETA", i))
+    for(i in seq_len(ncol(eta))){
+        currEta <- colnames(eta)[i]
+        derv <- renameCol(derv, paste0("O_", currEta), paste0("rx__ETA", i))
     }
 
     #O_EPS
@@ -64,7 +65,8 @@ getDeriv <- function(fit){
 
     # D_EPSETA
     for(i in seq_len(ncol(eta))){
-        derv <- renameCol(derv, paste0("D_VAR_ETA_",1, "_", i), paste0("rx__sens_rx_r__BY_ETA_", i, "___"))
+        currEta <- colnames(eta)[i]
+        derv <- renameCol(derv, paste0("D_VAR_",currEta), paste0("rx__sens_rx_r__BY_ETA_", i, "___"))
     }
 
     # add OCMT col
@@ -96,7 +98,7 @@ renameCol <- function(df, new, old){
 }
 
 #' Generate a Linearization Model From Previous Fit 
-#' @param fit fit of nonlinear model.
+#' @param fit a nonlinear model.
 #' @param focei boolean. If TRUE, use FOCEI linearization with individual and residual linearization. Default is TRUE.
 #' @param derivFct boolean. If TRUE, use normalization derivative factors. Default is FALSE.
 #' @author Omar Elashkar
@@ -120,22 +122,25 @@ linModGen <- function(fit, focei = TRUE, derivFct = FALSE){
 
     # mu block
     for(i in seq_along(colnames(etaDf))){
-        modelStr$muRef[i] <- paste0("mu.", colnames(etaDf)[i], " = " , "theta.", colnames(etaDf)[i] , " + ", colnames(etaDf)[i])
+        currEta <- colnames(etaDf)[i]
+        modelStr$muRef[i] <- paste0("mu_", currEta , " = " , "theta.", currEta , " + ", currEta)
     }
     # linearize eta
     for(i in seq_along(colnames(etaDf))){
         # D_ETAn * (-OETAn + eta.n)
-        modelStr$baseEta[i] <- paste0("base",i , "=", "D_ETA", i, "*(", "-O_ETA", i, "+ mu.", colnames(etaDf)[i], ")")
+        currEta <- colnames(etaDf)[i]
+        modelStr$baseEta[i] <- paste0("base_",currEta , "=", "D_", currEta, "*(", "-O_", currEta, "+ mu_", currEta, ")")
     }
     # BASE_TERMS = base1 + ... + basen
-    modelStr$baseEta[i+1] <- paste("BASE_TERMS =", paste(paste0("base", seq(ncol(etaDf))), collapse = " + "))
+    modelStr$baseEta[i+1] <- paste("BASE_TERMS =", paste(paste0("base_", colnames(etaDf)), collapse = " + "))
     modelStr$baseEta[i+2] <- paste0("y = BASE_TERMS + OPRED")
     # modelStr$baseEta[i+3] <- paste0("eps = y - DV")
 
     # linearize residuals
     for(i in seq_along(colnames(etaDf))){
+        currEta <- colnames(etaDf)[i]
         # ERRn = D_VAR_ETA_1_n*(-O_ETAn + eta.n)
-        modelStr$baseEps[i] <- paste0("err",i , "=", "D_VAR_ETA_1_", i, "*(", "-O_ETA", i, "+", colnames(etaDf)[i], ")")
+        modelStr$baseEps[i] <- paste0("err_",currEta , "=", "D_VAR_", currEta, "*(", "-O_", currEta, "+", currEta, ")")
     }
 
     errSym <- extractError$rxR2
@@ -148,7 +153,8 @@ linModGen <- function(fit, focei = TRUE, derivFct = FALSE){
 
     modelStr$baseEps[i+ii+1] <- "r <- sqrt(rxR2)"
     modelStr$baseEps[i+ii+2] <- paste0("foceiLin <- ", ifelse(focei, 1, 0))
-    modelStr$baseEps[i+ii+3] <- paste("BASE_ERROR = foceiLin * fct * (", paste(paste0("err", seq(ncol(etaDf))), collapse = " + "), ")/(2*r) + r")
+    modelStr$baseEps[i+ii+3] <- paste("BASE_ERROR = foceiLin * fct * (", paste(paste0("err_", colnames(etaDf)), 
+        collapse = " + "), ")/(2*r) + r")
     modelStr$baseEps[i+ii+4] <- "rxR = BASE_ERROR"
 
     for(i in seq_along(extractError$err)){
@@ -283,11 +289,6 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA, d
         }
     }
 
-
-    if(plot){
-        print(linearizePlot(fit, fitL))
-    }
-
     fitL <- nlmixr2est::addTable(fitL)
     nlme::getVarCov(fitL)
 
@@ -305,13 +306,22 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA, d
         "\n", paste(finalEval$message, collapse = "\n"),
         "\nFitted Linear OFV: ", lObj,
         "\nRelative OFV Dev: ", round(relDev, 4) * 100, "%\n",
-        "mceta: ", mceta[i]
+        "\nmceta: ", mceta[i],
+        "\nAll Eta Estimated:", hasAllEta(fit)
     )
     message("Linearization Summary:")
     message(m)
 
-    assign("message", c(fitL$message, m), envir=fitL$env) 
-    # class(fitL) <- c("nlmixr2Linearize", class(fitL)) # FIXME
+    tmpEnv <- fitL$env
+    assign("message", c(fitL$message, m), envir=tmpEnv)
+    v <- c("nlmixr2Linearize", class(fitL))
+    attr(v, ".foceiEnv") <- tmpEnv
+    class(fitL) <- v
+    
+    if(plot){
+        print(linearizePlot(fit, fitL))
+    }
+    
     fitL
 }
 
@@ -325,7 +335,7 @@ linearizePlot <- function(nl, lin){
     # TODO assertion that both objects are siblings. Random effects and errors names same
 
     stopifnot(inherits(nl, "nlmixr2FitCore"))
-    stopifnot(inherits(lin, "nlmixr2FitCore"))
+    stopifnot(inherits(lin, "nlmixr2Linearize"))
 
     l <- function(x, descr) {
         x$factor <- descr
@@ -398,10 +408,94 @@ isLinearizeMatch <- function(fit, linFit, tol = 0.05){
 }
 
 
+parseCovExpr <- function(expr, oData, effect){
+    # ensure all functions are either + or / 
+    if (expr[[1]] != as.name("~")){
+        stop("Expression must be a formula using '~'")
+        }
+
+    currentCovDf <- covExprDf(expr)
+
+    ## TODO check all param in model @mattfidler
+    # if(!all(currentCovDf$param %in% fit$lhs)) {
+    #     stop("get lhs")
+    # }
+
+    # assert all cov in df 
+    if(!all(currentCovDf$covariate %in% names(oData))) {
+        stop("Not all covariates are present in the data")
+        } else {
+        message("All covariates exists in the model data")
+        }
+    
+    ## type is extracted from getData() ==> cont or cat only 
+    currentCovDf$type <- sapply(currentCovDf$covariate, function(x) class(oData[[x]]))
+    if(!(currentCovDf$type %in% c("numeric", "logical", "factor", "character"))){
+        stop("Covariate type cannot be identified")
+    }
+    currentCovDf$type <- ifelse(currentCovDf$type == "numeric", "cont", "cat")
+
+    ## each of normfactor must be either numeric or 1 if cont  
+    # TODO support mean/median/NA
+    currentCovDf$normfactor <- ifelse(is.na(currentCovDf$normfactor), 1, currentCovDf$normfactor)
+    if(any(currentCovDf$normfactor != 1 &  currentCovDf$normfactor == "cat")){
+        stop("Categorical covariates does not have normalization factor")
+    }
+
+    ## add col levels for cat covars
+    currentCovDf$levels <- unlist(lapply(1:nrow(currentCovDf), function(x){
+                                if(currentCovDf$type[x] == "cat"){
+                                    covName <- currentCovDf$covariate[x]
+                                    unique(oData[[covName]])
+                                } else{
+                                    NA
+                                }
+    }))
+
+    ## add cols min and max for cont
+    currentCovDf$min <- unlist(lapply(1:nrow(currentCovDf), function(x){
+                                if(currentCovDf$type[x] == "cont"){
+                                    covName <- currentCovDf$covariate[x]
+                                    min(oData[[covName]])
+                                } else{
+                                    NA
+                                }
+    }))
+    
+    currentCovDf$max <- unlist(lapply(1:nrow(currentCovDf), function(x){
+                                if(currentCovDf$type[x] == "cont"){
+                                    covName <- currentCovDf$covariate[x]
+                                    max(oData[[covName]])
+                                } else{
+                                    NA
+                                }
+    }))
+
+    currentCovDf$expr <- unlist(lapply(1:nrow(currentCovDf), function(x){
+                                if(currentCovDf$type[x] == "cont"){
+                                    if(effect == "power"){
+                                        param <- currentCovDf$param[x]
+                                        covName <- currentCovDf$covariate[x]
+                                        normfactor <- currentCovDf$normfactor[x]
+                                        covTheta <- paste0("theta", param, covName)
+                                        paste0(param, covName,  "= (" ,  covName, "/", normfactor, ")^",  covTheta)
+                                    }
+                                } else{
+                                    # TODO cat
+                                    NA
+                                }
+    }))
+
+    currentCovDf$effect <- effect
+
+    currentCovDf
+
+}
+
 #' Add Covariate to Model Fit (Generic)
 #'
 #' @param fit Model fit object
-#' @param covpar Expression eg. CL ~ WT/70 + AGE/80 + ... .
+#' @param expr Expression eg. CL ~ WT/70 + AGE/80 + ... .
 #' @param normalize "mean" or "median". Default "median"
 #' @param mutiply boolean. If TRUE, multiply the covariate by the parameter, if FALSE, add the covariate to the parameter.
 #' @param effect character or list of characters of "linear", "piece_lin", "exp", "power". see details 
@@ -410,34 +504,155 @@ isLinearizeMatch <- function(fit, linFit, tol = 0.05){
 #' `normalize` call will be skipped if what covpar expression is normalized by other value
 #' 
 #' @export
-#' 
-
-addCovariate <- function(fit, covpar) {
+addCovariate <- function(fit, expr, effect) {
     UseMethod("addCovariate")
 }
 
-addCovariate.default <- function(fit, covpar) {
-    # stop("addCovariate is not supported for this object")
-
-    # stop if not expression with first call tilda 
-    stopifnot()
-
-    # ensure all functions are either + or / 
-
-    # make dataframe with col param, cov, transform, type 
-    ## type is extracted from getData() ==> cont or cat only 
-
-    ## each of transform is must be either numeric or NA
-
-    ## check all param in model and all cov in data 
-
-    ## if cov transform isNa and cont ==> impute with tranform
-
-    ## add cols min and max for cont
-    ## add col levels for cat covars
-
+#'@export 
+addCovariate.default <- function(fit, expr, effect) {
+    stop("addCovariate is not supported for this object")
 }
 
-addCovariate.nlmixr2Linearize <- function(fit, covpar) {
-    invisible(fit)
+#'@export 
+addCovariate.nlmixr2Linearize <- function(fit, expr, effect) {
+    parseCovExpr(expr, nlme::getData(fit), effect = effect)
+
+    # get D_eta of parameter
+}
+
+
+
+covExprDf <- function(expr) {
+    # Extract parameter
+    param <- as.character(expr[[2]])
+
+    # Extract covariate and normfactor parts
+    cov_norm <- expr[[3]]
+    
+    # A helper function to handle nested calls inside the expression
+    handle_part <- function(part, covariates, normfactors) {
+        if (inherits(part, "call")) {
+            if (as.character(part[[1]]) == "/") {
+            covariates <- c(covariates, as.character(part[[2]]))
+            normfactors <- c(normfactors, as.numeric(as.character(part[[3]])))
+        } else if (as.character(part[[1]]) == "+") {
+            results1 <- handle_part(part[[2]], covariates, normfactors)
+            results2 <- handle_part(part[[3]], results1$covariates, results1$normfactors)
+            covariates <- results2$covariates
+            normfactors <- results2$normfactors
+        }
+        } else {
+            covariates <- c(covariates, as.character(part))
+            normfactors <- c(normfactors, NA)
+        }
+        return(list(covariates = covariates, normfactors = normfactors))
+}
+
+    results <- handle_part(cov_norm, covariates = c(), normfactors = c())
+
+    # Create a data frame with param, covariates, and normfactors
+    result <- data.frame(
+        param = param,
+        covariate = results$covariates,
+        normfactor = results$normfactors,
+        stringsAsFactors = FALSE
+    )
+
+    result
+}
+
+
+#'@author Omar Elashkar
+#'@export 
+iivSearch <- function(fit, searchCorr = TRUE){
+    UseMethod("iivSearch")
+}
+
+#'@export 
+iivSearch.default <- function(fit){
+    stop("Currently supports only linearized models with all etas estimated")
+}
+
+
+#'@export 
+iivSearch.nlmixr2Linearize <- function(fit){
+    # get eta names
+    etaAll <- fit$iniDf[!is.na(fit$iniDf$neta1), ]
+    etaNoCorr <- etaAll[etaAll$neta1 == etaAll$neta2,]
+    etaNames <- etaNoCorr$name
+
+    iivSpace <- iivCombn(etaNames)
+
+    varCovMat <- cov(fit$eta[,-1])
+
+    res <- lapply(iivSpace, function(x){
+        omegaMat <- filterEtaMat(varCovMat, x)
+        newMod <- fit %>% ini(omegaMat) 
+        noCorrSpace <- unlist(strsplit(x, "-"))
+        noCorrSpace <- grep(",", noCorrSpace, invert = TRUE, value = TRUE)
+        etaToRemove <- setdiff(etaNames, noCorrSpace)
+        for(i in etaToRemove){
+            newMod <- eval(str2lang(paste0("model(newMod, base_", i, " = 0)")))
+            newMod <- eval(str2lang(paste0("model(newMod, err_", i, " = 0)")))
+        }
+        nlmixr(newMod, nlme::getData(fit), est = "focei")
+    })
+
+    objDfAll <- mapply(function(fit, search){
+            d <- fit$objDf
+            d$search <- search
+            d
+        }, res, iivSpace)
+
+    list(res = res, summary = objDfAll)
+}
+
+filterEtaMat <- function(oMat, filterStr){
+        stopifnot(length(filterStr) == 1)
+        resMat <- varCovMat
+        resMat[] <- 0
+        elem <- unlist(strsplit(filterStr, "-"))
+        for(i in elem){
+            elem2 <- unlist(strsplit(i, ","))
+            x <- elem2[1]
+            y <- ifelse(length(elem2) == 1, elem2[1], elem2[2])
+            resMat[x,y] <- varCovMat[x, y]
+        }
+        resMat
+    }
+
+hasAllEta <- function(ui){
+    etadf <- ui$iniDf[!is.na(ui$iniDf$neta1),]
+    thetadf <- ui$iniDf[is.na(ui$iniDf$neta1) & is.na(ui$ini$condition),]
+    # TODO remove iov 
+    # TODO remove corr
+    nrow(etadf) == nrow(thetadf)
+}
+
+
+iivCombn <- function(params) {
+    # Generate all combinations of input parameters
+    all_combinations <- unlist(lapply(1:length(params), function(i) {
+    combn(params, i, FUN = function(x) paste(x, collapse = "-"), simplify = TRUE)
+    }))
+
+    # Generate results with/without all possible corr per all available etas
+    all_results <- unlist(lapply(all_combinations, function(combo) {
+        individual <- strsplit(combo, "-")[[1]]
+        if (length(individual) == 1) {
+            return(combo)
+        }
+        # Generate all pairwise correlations
+        all_corr <- combn(individual, 2, FUN = function(x) paste(x, collapse = ","), simplify = TRUE)
+        
+        # Generate subsets of correlations
+        corr_subsets <- unlist(lapply(0:length(all_corr), function(k) {
+            combn(all_corr, k, FUN = function(x) paste(x, collapse = "-"), simplify = TRUE)
+        }))
+        
+        # Combine the base combination with each correlation subset
+        paste0(combo, "-", corr_subsets)
+    }))
+
+    all_results
 }
