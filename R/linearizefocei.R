@@ -314,6 +314,8 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA, d
 
     tmpEnv <- fitL$env
     assign("message", c(fitL$message, m), envir=tmpEnv)
+    assign("originalUi", fit$finalUi, envir=tmpEnv)
+
     v <- c("nlmixr2Linearize", class(fitL))
     attr(v, ".foceiEnv") <- tmpEnv
     class(fitL) <- v
@@ -615,7 +617,11 @@ iivSearch.nlmixr2Linearize <- function(fit){
 
     objDfAll <- do.call(rbind, lapply(res, function(x) x$objDf))
 
-    list(res = res, summary = objDfAll) # TODO fit and return original model with correct 
+    finalVarCov <- filterEtaMat(varCovMat, iivSpace[[which.min(objDfAll$OBJF)]])
+    finalOFit <- fit$env$originalUi |> ini(finalVarCov)
+    finalFit <- nlmixr(fit$env$originalUi, nlme::getData(fit), est = "focei")
+
+    list(res = res, summary = objDfAll, finalFit) # TODO fit and return original model with correct 
 }
 
 #' Filter covariance matrix
