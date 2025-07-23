@@ -609,6 +609,7 @@ iivSearch.nlmixr2Linearize <- function(fit){
         }
         fit <- nlmixr(newMod, nlme::getData(fit), est = "focei")
         summ <- fit$objDf[, c("OBJF", "AIC", "BIC")]
+        summ$search <- x
         list(fit = fit, objDf = summ, search = x)
     })
 
