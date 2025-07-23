@@ -330,8 +330,8 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA, d
 #' Plot Original Versus Linear Models iObj and Etas
 #' @param nl non-linear fitting object
 #' @param l linear fitting object
-#' @author Omar Elashkar
 #' @return ggplot object
+#' @author Omar Elashkar
 #' @export
 linearizePlot <- function(nl, lin){
     # TODO assertion that both objects are siblings. Random effects and errors names same
@@ -409,16 +409,16 @@ isLinearizeMatch <- function(fit, linFit, tol = 0.05){
     summary(innerModel$inner)
 }
 
-#'Parse covariate information from expression and data
-#'@param expr formula
+#' Parse Covariate Expression and Extract Data Type
+#'@param expr expression to parse. Must have no operation but division and addition
 #'@param oData dataframe
-#'@param effect character
-#'@return dataframe of covariates
+#'@param effect character of effect type. One of "linear", "power", "exp", "hockyStick"
+#'@return data frame with columns: param, covariate, normfactor, type, levels, min, max, expr, effect
 #'@author Omar Elashkar
 #'@noRd 
 parseCovExpr <- function(expr, oData, effect){
     checkmate::assertFormula(expr)
-    checkmate::assertChoice(effec, c("linear", "power", "exp", "hockyStick"))
+    checkmate::assertChoice(effect, c("linear", "power", "exp", "hockyStick"))
     checkmate::assertDataFrame(oData)
     
     # ensure all functions are either + or / 
@@ -522,19 +522,41 @@ addCovariate.default <- function(fit, expr, effect) {
 
 #'@export 
 addCovariate.nlmixr2Linearize <- function(fit, expr, effect) {
-    covParseDf <- parseCovExpr(expr, nlme::getData(fit), effect = effect)
-    covParseDf$Deriv <- paste0("D_", currentCovDf$param)
 
-    ## TODO check all param in model @mattfidler
-    # if(!all(currentCovDf$param %in% fit$lhs)) {
-    #     stop("get lhs")
-    # }
+    covParseDf <- parseCovExpr(expr, nlme::getData(fit), effect = effect)
+
+    if(!any(covParseDf$param %in% fit$ui$eta)){
+        message("eta parameters: ", paste(fit$ui$eta, collapse = ", "))
+        stop("For linearized models, covariates are added to eta parameters only")
+    }
+    covParseDf$Deriv <- paste0("D_", covParseDf$param)
     
-    # get D_eta of parameter
+    covRef <- paste0("cov", covParseDf$param, " = ", 
+        covParseDf$Deriv, "*1*(" , covParseDf$param, covParseDf$covariate , " - 1)")
+    covTermLine <- paste0("covTerms = ", 
+        paste0("cov", covParseDf$param, collapse = "+"))
+
+    v <- c(covParseDf$expr, covRef, covTermLine, fit$ui$lstChr)
+
+    iniDf <- addThetaToIniDf(fit$iniDf, paste0("theta", covParseDf$param, covParseDf$covariate), 1)
+    newMod <- fit$ui
+    newMod <- rxode2::rxUiDecompress(newMod)
+    assign("iniDf", iniDf, envir = newMod)
+
+    newMod$lstExpr <- as.list(str2lang(paste0("{", paste(v, collapse="\n"), "}"))[-1])
+    newMod <- newMod$fun
+    newMod <- newMod()
+
+    newMod <- newMod %>% model(y = BASE_TERMS+ OPRED + covTerms)
+    newMod
 }
 
 
-
+#' Parse covariate expression into a data frame
+#' @param expr expression to parse
+#' @return data frame with columns: param, covariate, normfactor
+#' @author Omar Elashkar
+#' @noRd
 covExprDf <- function(expr) {
     # Extract parameter
     param <- as.character(expr[[2]])
@@ -575,10 +597,11 @@ covExprDf <- function(expr) {
 }
 
 
-#' Automated Search for Inter-individual Variability
-#' @fit fit `nlmixr2` object
-#'@author Omar Elashkar
-#'@export 
+#' Automated Inter-Individual Variability Search
+#' @param fit a model fit
+#' 
+#' @author Omar Elashkar
+#' @export 
 iivSearch <- function(fit){
     UseMethod("iivSearch")
 }
@@ -627,9 +650,8 @@ iivSearch.nlmixr2Linearize <- function(fit){
 #' Filter covariance matrix
 #' @param oMat covariance matrix 
 #' @param filterStr single string with pattern of "-" between entities and "," for within entity correlation
-
-#'@author Omar Elashkar
-#'@noRd 
+#' @author Omar Elashkar
+#' @noRd 
 filterEtaMat <- function(oMat, filterStr){
         stopifnot(length(filterStr) == 1)
         resMat <- oMat
@@ -652,15 +674,17 @@ hasAllEta <- function(ui){
     thetadf <- ui$iniDf[is.na(ui$iniDf$neta1) & is.na(ui$ini$condition),]
     # TODO remove iov 
     # TODO remove corr
+    ui$muRefDataFrame
+
     nrow(etadf) == nrow(thetadf)
 }
 
 
-#'Create a combination 
-#'@params char vector of IIV names
-#'@author Omar Elashkar
-#'@return char vector of possible combinations separated by "-". Correlations are marked by ",".
-#'@noRd 
+#' Generate all combinations of input parameters
+#' @param params character vector of parameter names
+#' @author Omar Elashkar
+#' @return char vector of possible combinations separated by "-". Correlations are marked by ",".
+#' @noRd 
 iivCombn <- function(params) {
     # Generate all combinations of input parameters
     all_combinations <- unlist(lapply(1:length(params), function(i) {
@@ -686,4 +710,34 @@ iivCombn <- function(params) {
     }))
 
     all_results
+}
+
+
+#' Add a theta to initial parameter data frame
+#' @param iniDf initial parameter data frame
+#' @param thetaname name of the theta to add
+#' @param ini initial value for the theta
+#' @param fix boolean. If TRUE, the theta will be fixed. Default is FALSE.
+#' @return updated initial parameter data frame with the new theta added
+#' @author Omar Elashkar
+#' @noRd
+addThetaToIniDf <- function(iniDf, thetaname, ini, fix = FALSE){
+    if(!thetaname %in% iniDf$name){
+        newTheta <- data.frame(
+            ntheta = max(iniDf$ntheta, na.rm = TRUE) + 1,
+            neta1 = NA_real_,
+            neta2 = NA_real_,
+            name = thetaname,
+            lower = 0,
+            est = ini,
+            upper = Inf,
+            fix = fix,
+            label = NA_character_,
+            backTransform = NA_character_,
+            condition = NA_character_,
+            err = NA_character_
+        )
+        iniDf <- rbind(iniDf, newTheta)
+    }
+    iniDf[order(iniDf$ntheta), ]
 }

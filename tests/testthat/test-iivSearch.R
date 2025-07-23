@@ -24,8 +24,5 @@ test_that("linearized eta search", {
     fit <- nlmixr(one.cmpt.adderr, nlmixr2data::theo_md, est = "focei")
     
     fitLin <- linearize(fit)
-    iivSearch(fitLin)
     iivSearch.nlmixr2Linearize(fitLin)
-    
-
 })

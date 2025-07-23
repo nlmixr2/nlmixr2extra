@@ -451,7 +451,7 @@ test_that("Adding covariates to lin models", {
 
     fit <- nlmixr(one.cmpt.adderr, nlmixr2data::theo_md, est = "focei")
     fitLin <- linearize(fit)
-    addCovariate.nlmixr2Linearize(fitLin, CL~WT/70, effect = "power")
+    addCovariate.nlmixr2Linearize(fitLin, eta.cl~WT/70, effect = "power")
 
 
 })
