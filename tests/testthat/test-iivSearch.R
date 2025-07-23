@@ -23,6 +23,14 @@ test_that("linearized eta search", {
     # rxode2::rxode(one.cmpt.adderr)$linearizeError
     fit <- nlmixr(one.cmpt.adderr, nlmixr2data::theo_md, est = "focei")
     
+
+
     fitLin <- linearize(fit)
-    iivSearch.nlmixr2Linearize(fitLin)
+    
+    # start: model with no eta ==> stop if has eta
+    # add random effects with small var
+    fitLin <- linearizeVar(model)
+    nlmixr2lib::addEta()
+
+    iivSearch(fitLin)
 })

@@ -464,7 +464,7 @@ test_that("Adding covariates to lin models", {
             WTVCOV = (WT/70)^WTVTheta
             ka <- exp(tka + eta.ka)
             cl <- exp(tcl + eta.cl)
-            v <- tv*exp(eta.v)* WTVCOV
+            v <- tv*exp(eta.v)*WTVCOV
             d / dt(depot) <- -ka * depot
             d / dt(center) <- ka * depot - cl / v * center
             cp <- center / v
@@ -486,6 +486,7 @@ test_that("Adding covariates to lin models", {
     fitLinNoCov <- linearize(nlfitNoCov)
     fitLinCov <- addCovariate(fitLinNoCov, eta.v~WT/70, effect = "power")
     fitLinCov <- nlmixr(fitLinCov, nlme::getData(fitLinNoCov), est = "focei")
+    
     nlfitCov <- nlmixr(one.cmpt.adderr.cov, nlme::getData(nlfitNoCov), est = "focei")
 
     nlfitCov$parFixed # FIXME why 0.5 and not 1.5?

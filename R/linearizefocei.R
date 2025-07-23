@@ -540,7 +540,7 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect) {
         stop("For linearized models, covariates are added to eta parameters only")
     }
     covParseDf$Deriv <- paste0("D_", covParseDf$param)
-    browser()
+    
     covRef <- paste0("cov", covParseDf$param, " = ", 
         covParseDf$Deriv, "*1*(" , covParseDf$param, covParseDf$covariate , " - 1)")
     covTermLine <- paste0("covTerms = ", 
