@@ -407,19 +407,24 @@ isLinearizeMatch <- function(fit, linFit, tol = 0.05){
     summary(innerModel$inner)
 }
 
-
+#'Parse covariate information from expression and data
+#'@param expr formula
+#'@param oData dataframe
+#'@param effect character
+#'@return dataframe of covariates
+#'@author Omar Elashkar
+#'@noRd 
 parseCovExpr <- function(expr, oData, effect){
+    checkmate::assertFormula(expr)
+    checkmate::assertChoice(effec, c("linear", "power", "exp", "hockyStick"))
+    checkmate::assertDataFrame(oData)
+    
     # ensure all functions are either + or / 
     if (expr[[1]] != as.name("~")){
         stop("Expression must be a formula using '~'")
         }
 
     currentCovDf <- covExprDf(expr)
-
-    ## TODO check all param in model @mattfidler
-    # if(!all(currentCovDf$param %in% fit$lhs)) {
-    #     stop("get lhs")
-    # }
 
     # assert all cov in df 
     if(!all(currentCovDf$covariate %in% names(oData))) {
@@ -473,11 +478,11 @@ parseCovExpr <- function(expr, oData, effect){
 
     currentCovDf$expr <- unlist(lapply(1:nrow(currentCovDf), function(x){
                                 if(currentCovDf$type[x] == "cont"){
+                                    param <- currentCovDf$param[x]
+                                    covName <- currentCovDf$covariate[x]
+                                    normfactor <- currentCovDf$normfactor[x]
+                                    covTheta <- paste0("theta", param, covName)
                                     if(effect == "power"){
-                                        param <- currentCovDf$param[x]
-                                        covName <- currentCovDf$covariate[x]
-                                        normfactor <- currentCovDf$normfactor[x]
-                                        covTheta <- paste0("theta", param, covName)
                                         paste0(param, covName,  "= (" ,  covName, "/", normfactor, ")^",  covTheta)
                                     }
                                 } else{
@@ -496,12 +501,12 @@ parseCovExpr <- function(expr, oData, effect){
 #'
 #' @param fit Model fit object
 #' @param expr Expression eg. CL ~ WT/70 + AGE/80 + ... .
-#' @param normalize "mean" or "median". Default "median"
+#' @param normDefault Default normalization for continuous covariates. "mean", "median" or NA. Default "median"
 #' @param mutiply boolean. If TRUE, multiply the covariate by the parameter, if FALSE, add the covariate to the parameter.
 #' @param effect character or list of characters of "linear", "piece_lin", "exp", "power". see details 
 #' 
-#' `effect` and `normalize` are only used if covariate is continuous.
-#' `normalize` call will be skipped if what covpar expression is normalized by other value
+#' `effect` and `normaDefault` are only used if covariate is continuous.
+#' `normaDefault` call will be skipped if what covpar expression is normalized by other value
 #' 
 #' @export
 addCovariate <- function(fit, expr, effect) {
@@ -518,6 +523,11 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect) {
     covParseDf <- parseCovExpr(expr, nlme::getData(fit), effect = effect)
     covParseDf$Deriv <- paste0("D_", currentCovDf$param)
 
+    ## TODO check all param in model @mattfidler
+    # if(!all(currentCovDf$param %in% fit$lhs)) {
+    #     stop("get lhs")
+    # }
+    
     # get D_eta of parameter
 }
 
@@ -563,15 +573,17 @@ covExprDf <- function(expr) {
 }
 
 
+#' Automated Search for Inter-individual Variability
+#' @fit fit `nlmixr2` object
 #'@author Omar Elashkar
 #'@export 
-iivSearch <- function(fit, searchCorr = TRUE){
+iivSearch <- function(fit){
     UseMethod("iivSearch")
 }
 
 #'@export 
 iivSearch.default <- function(fit){
-    stop("Currently supports only linearized models with all etas estimated")
+    stop("Currently supports only linearized models")
 }
 
 
@@ -595,19 +607,22 @@ iivSearch.nlmixr2Linearize <- function(fit){
             newMod <- eval(str2lang(paste0("model(newMod, base_", i, " = 0)")))
             newMod <- eval(str2lang(paste0("model(newMod, err_", i, " = 0)")))
         }
-        nlmixr(newMod, nlme::getData(fit), est = "focei")
+        fit <- nlmixr(newMod, nlme::getData(fit), est = "focei")
+        summ <- fit$objDf[, c("OBJF", "AIC", "BIC")]
+        list(fit = fit, objDf = summ, search = x)
     })
 
-    objDfAll <- mapply(function(fit, search){
-            d <- fit$objDf
-            d$search <- search
-            d
-        }, res, iivSpace, SIMPLIFY = FALSE)
-    objDfAll <- do.call(rbind, objDfAll)
+    objDfAll <- do.call(rbind, lapply(res, function(x) x$objDf))
 
-    list(res = res, summary = objDfAll)
+    list(res = res, summary = objDfAll) # TODO fit and return original model with correct 
 }
 
+#' Filter covariance matrix
+#' @param oMat covariance matrix 
+#' @param filterStr single string with pattern of "-" between entities and "," for within entity correlation
+
+#'@author Omar Elashkar
+#'@noRd 
 filterEtaMat <- function(oMat, filterStr){
         stopifnot(length(filterStr) == 1)
         resMat <- oMat
@@ -622,6 +637,9 @@ filterEtaMat <- function(oMat, filterStr){
         resMat
     }
 
+#' Check if not all fixed effects has eta 
+#' @author Omar Elashkar
+#' @noRd
 hasAllEta <- function(ui){
     etadf <- ui$iniDf[!is.na(ui$iniDf$neta1),]
     thetadf <- ui$iniDf[is.na(ui$iniDf$neta1) & is.na(ui$ini$condition),]
@@ -631,6 +649,11 @@ hasAllEta <- function(ui){
 }
 
 
+#'Create a combination 
+#'@params char vector of IIV names
+#'@author Omar Elashkar
+#'@return char vector of possible combinations separated by "-". Correlations are marked by ",".
+#'@noRd 
 iivCombn <- function(params) {
     # Generate all combinations of input parameters
     all_combinations <- unlist(lapply(1:length(params), function(i) {
