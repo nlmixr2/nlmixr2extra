@@ -428,10 +428,11 @@ test_that("linearize correlated eta ", {
 
 test_that("Adding covariates to lin models", {
 
+
     one.cmpt.adderr <- function() {
         ini({
             tcl <- log(2.7) # Cl
-            tv <- log(30) # V
+            tv <- 30 # V
             tka <- log(1.56) #  Ka
             eta.cl ~ 0.3
             eta.v ~ 0.1
@@ -441,7 +442,29 @@ test_that("Adding covariates to lin models", {
         model({
             ka <- exp(tka + eta.ka)
             cl <- exp(tcl + eta.cl)
-            v <- exp(tv + eta.v)
+            v <- tv*exp(eta.v)
+            d / dt(depot) <- -ka * depot
+            d / dt(center) <- ka * depot - cl / v * center
+            cp <- center / v
+            cp ~ add(add.sd)
+        })
+    }
+    one.cmpt.adderr.cov <- function() {
+        ini({
+            tcl <- log(2.7) # Cl
+            tv <- 30 # V
+            tka <- log(1.56) #  Ka
+            WTVTheta <- 1.5
+            eta.cl ~ 0.3
+            eta.v ~ 0.1
+            eta.ka ~ 0.6
+            add.sd <- 0.7
+        })
+        model({
+            WTVCOV = (WT/70)^WTVTheta
+            ka <- exp(tka + eta.ka)
+            cl <- exp(tcl + eta.cl)
+            v <- tv*exp(eta.v)* WTVCOV
             d / dt(depot) <- -ka * depot
             d / dt(center) <- ka * depot - cl / v * center
             cp <- center / v
@@ -449,9 +472,26 @@ test_that("Adding covariates to lin models", {
         })
     }
 
-    fit <- nlmixr(one.cmpt.adderr, nlmixr2data::theo_md, est = "focei")
-    fitLin <- linearize(fit)
-    addCovariate.nlmixr2Linearize(fitLin, eta.cl~WT/70, effect = "power")
+    set.seed(42)
+    ev <- rxode2::et(amountUnits = "mg", timeUnits = "hours") |>
+        rxode2::et(amt = 200, cmt = "depot") |> 
+        rxode2::et(time = c(0.25, 0.5, 1,2,3,6,8,12,16,24)) |> 
+        rxode2::et(id = 1:200)
+    theo_sd <- rxode2::rxSolve(one.cmpt.adderr.cov, ev, nSub = 200, addDosing = TRUE, 
+        iCov=data.frame(id=1:200, WT=rnorm(200, 70, 10)))
+    theo_sd$dv <- theo_sd$sim
+    theo_sd <- theo_sd[,c("id", "time", "amt", "dv", "evid", "WT")]
 
+    nlfitNoCov <- nlmixr(one.cmpt.adderr, theo_sd, est = "focei")
+    fitLinNoCov <- linearize(nlfitNoCov)
+    fitLinCov <- addCovariate(fitLinNoCov, eta.v~WT/70, effect = "power")
+    fitLinCov <- nlmixr(fitLinCov, nlme::getData(fitLinNoCov), est = "focei")
+    nlfitCov <- nlmixr(one.cmpt.adderr.cov, nlme::getData(nlfitNoCov), est = "focei")
 
+    nlfitCov$parFixed # FIXME why 0.5 and not 1.5?
+    fitLinCov$parFixed
+
+    expect_true(fitLinCov$objDf$OBJF < fitLinNoCov$objDf$OBJF)
+    expect_true(nlfitCov$objDf$OBJF < nlfitNoCov$objDf$OBJF)
+    expect_equal(nlfitCov$objDf$OBJF, fitLinCov$objDf$OBJF, tolerance = 0.1)
 })

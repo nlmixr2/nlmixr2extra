@@ -485,13 +485,13 @@ parseCovExpr <- function(expr, oData, effect){
                                     normfactor <- currentCovDf$normfactor[x]
                                     covTheta <- paste0("theta", param, covName)
                                     if(effect == "power"){
-                                        paste0(param, covName,  "= (" ,  covName, "/", normfactor, ")^",  covTheta)
+                                        xpr <- paste0(param, covName,  "= (" ,  covName, "/", normfactor, ")^",  covTheta)
                                     }
                                     if(effect == "exp"){
-                                        paste0(param, covName,  "= exp(", covTheta, "* (", covName, "-", normfactor, "))")
+                                        xpr <- paste0(param, covName,  "= exp(", covTheta, "* (", covName, "-", normfactor, "))")
                                     }
                                     if(effect == "linear"){
-                                        paste0(param, covName,  "= 1 + ", covTheta, "* (", covName, "-", normfactor, ")")
+                                        xpr <- paste0(param, covName,  "= 1 + ", covTheta, "* (", covName, "-", normfactor, ")")
                                     }
                                     if(effect == "hockyStick"){
                                         # TODO 
@@ -501,6 +501,7 @@ parseCovExpr <- function(expr, oData, effect){
                                     # TODO cat
                                     stop("Categorical covariates are not supported yet")
                                 }
+                                xpr 
     }))
 
     currentCovDf$effect <- effect
@@ -539,7 +540,7 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect) {
         stop("For linearized models, covariates are added to eta parameters only")
     }
     covParseDf$Deriv <- paste0("D_", covParseDf$param)
-    
+    browser()
     covRef <- paste0("cov", covParseDf$param, " = ", 
         covParseDf$Deriv, "*1*(" , covParseDf$param, covParseDf$covariate , " - 1)")
     covTermLine <- paste0("covTerms = ", 
