@@ -487,9 +487,19 @@ parseCovExpr <- function(expr, oData, effect){
                                     if(effect == "power"){
                                         paste0(param, covName,  "= (" ,  covName, "/", normfactor, ")^",  covTheta)
                                     }
+                                    if(effect == "exp"){
+                                        paste0(param, covName,  "= exp(", covTheta, "* (", covName, "-", normfactor, "))")
+                                    }
+                                    if(effect == "linear"){
+                                        paste0(param, covName,  "= 1 + ", covTheta, "* (", covName, "-", normfactor, ")")
+                                    }
+                                    if(effect == "hockyStick"){
+                                        # TODO 
+                                        stop("Effect 'hockyStick' is not implemented yet")
+                                    }
                                 } else{
                                     # TODO cat
-                                    NA
+                                    stop("Categorical covariates are not supported yet")
                                 }
     }))
 
@@ -504,7 +514,6 @@ parseCovExpr <- function(expr, oData, effect){
 #' @param fit Model fit object
 #' @param expr Expression eg. CL ~ WT/70 + AGE/80 + ... .
 #' @param normDefault Default normalization for continuous covariates. "mean", "median" or NA. Default "median"
-#' @param mutiply boolean. If TRUE, multiply the covariate by the parameter, if FALSE, add the covariate to the parameter.
 #' @param effect character or list of characters of "linear", "piece_lin", "exp", "power". see details 
 #' 
 #' `effect` and `normaDefault` are only used if covariate is continuous.
