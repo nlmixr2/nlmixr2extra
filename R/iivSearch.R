@@ -150,8 +150,10 @@ addFixedEtas <- function(ui){
     newMod <- nlmixr2lib::addEta(ui, thetaNames)
 
     # fix all random effects to 10^-4
-    newMod$iniDf$fix[newMod$iniDf$name %in% newMod$ui$eta] <- TRUE
-    newMod$iniDf$est[newMod$iniDf$name %in% newMod$ui$eta] <- 1e-4
+    iniDf <- newMod$iniDf
+    iniDf$fix[!is.na(iniDf$neta1)] <- TRUE
+    iniDf$est[!is.na(iniDf$neta1)] <- 1e-4
+    ini(newMod) <- iniDf
 
     newMod
 
