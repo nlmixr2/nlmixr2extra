@@ -565,7 +565,7 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect) {
     newMod <- newMod()
 
     newMod <- newMod %>% model(y = BASE_TERMS+ OPRED + covTerms)
-    newMod
+    newMod # FIXME reattach the data so it become pipe friendly
 }
 
 

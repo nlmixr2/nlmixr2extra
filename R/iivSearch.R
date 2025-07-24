@@ -15,7 +15,7 @@ iivSearch.default <- function(fit){
 
 #'@export 
 iivSearch.nlmixr2Linearize <- function(fit){
-    stopifnot(!hasUnFixedEta(fit))
+    if(hasUnFixedEta(fit)){stop("This model has unfixed IIV and not suitable for this procedure")}
     # get eta names
     etaAll <- fit$iniDf[!is.na(fit$iniDf$neta1), ]
     etaNoCorr <- etaAll[etaAll$neta1 == etaAll$neta2,]
@@ -89,7 +89,7 @@ hasAnyEta <- function(ui){
 #' This function is used to ensure that the model is suitable for linearization intended for IIV search.
 #' @author Omar Elashkar
 #' @noRd
-hasUnfixedEta <- function(ui){
+hasUnFixedEta <- function(ui){
     etadf <- ui$iniDf[!is.na(ui$iniDf$neta1) & !ui$iniDf$fix,]
     # thetadf <- ui$iniDf[is.na(ui$iniDf$neta1) & is.na(ui$iniDf$condition),]
 
