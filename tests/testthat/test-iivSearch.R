@@ -4,15 +4,15 @@ test_that("linearized eta search", {
             tcl <- log(2.7) # Cl
             tv <- log(30) # V
             tka <- log(1.56) #  Ka
-            eta.cl ~ 0.3
-            eta.v ~ 0.1
-            eta.ka ~ 0.6
+            # eta.cl ~ 0.3
+            # eta.v ~ 0.1
+            # eta.ka ~ 0.6
             add.sd <- 0.7
         })
         model({
-            ka <- exp(tka + eta.ka)
-            cl <- exp(tcl + eta.cl)
-            v <- exp(tv + eta.v)
+            ka <- exp(tka)
+            cl <- exp(tcl)
+            v <- exp(tv)
             d / dt(depot) <- -ka * depot
             d / dt(center) <- ka * depot - cl / v * center
             cp <- center / v
@@ -20,17 +20,12 @@ test_that("linearized eta search", {
         })
     }
 
-    # rxode2::rxode(one.cmpt.adderr)$linearizeError
-    fit <- nlmixr(one.cmpt.adderr, nlmixr2data::theo_md, est = "focei")
-    
-
-
-    fitLin <- linearize(fit)
-    
-    # start: model with no eta ==> stop if has eta
+    # start: model with no eta parameters
     # add random effects with small var
-    fitLin <- linearizeVar(model)
-    nlmixr2lib::addEta()
+    fit <- addFixedEtas(one.cmpt.adderr) |> 
+        nlmixr(nlmixr2data::theo_md, est = "focei") 
+    
+    fitLin <- linearize(fit)
 
     iivSearch(fitLin)
 })
