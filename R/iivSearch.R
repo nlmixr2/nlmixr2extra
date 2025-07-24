@@ -48,7 +48,9 @@ iivSearch.nlmixr2Linearize <- function(fit){
     }
     finalVarCov <- filterEtaMat(varCovMat, iivSpace[[which.min(objDfAll$BIC)]])
     finalOFit <- fit$env$originalUi |> ini(finalVarCov)
-    finalFit <- nlmixr(fit$env$originalUi, nlme::getData(fit), est = "focei")
+    finalFit <- nlmixr(fit$env$originalUi, nlme::getData(fit), est = "focei", 
+            control = nlmixr2est::foceiControl(mceta=10, covMethod = "", calcTables=FALSE))
+
 
     list(res = res, summary = objDfAll, finalFit = finalFit)
 }
@@ -58,7 +60,7 @@ iivSearch.nlmixr2Linearize <- function(fit){
 #' @param filterStr single string with pattern of "-" between entities and "," for within entity correlation
 #' @author Omar Elashkar
 #' @noRd 
-filterEtaMat <- function(oMat, filterStr){
+filterEtaMat <- function(oMat, filterStr, minIni=0.1){
         stopifnot(length(filterStr) == 1)
         resMat <- oMat
         resMat[] <- 0
@@ -69,6 +71,7 @@ filterEtaMat <- function(oMat, filterStr){
             y <- ifelse(length(elem2) == 1, elem2[1], elem2[2])
             resMat[x,y] <- oMat[x, y]
         }
+        resMat[resMat < minIni] <- minIni
         resMat
     }
 
