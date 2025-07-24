@@ -98,12 +98,12 @@ renameCol <- function(df, new, old){
 }
 
 #' Generate a Linearization Model From Previous Fit 
-#' @param ui nlmixr2 model
+#' @param ui nlmixr2 fit, not only model.
 #' @param focei boolean. If TRUE, use FOCEI linearization with individual and residual linearization. Default is TRUE.
 #' @param derivFct boolean. If TRUE, use normalization derivative factors. Default is FALSE.
 #' @author Omar Elashkar
 #' @noRd
-linModGen <- function(ui, focei = TRUE, derivFct = FALSE){
+linModGen <- function(ui, focei = TRUE, derivFct = FALSE){ # TODO it would be better if totatlly indep of fit
     rxode2::assertRxUiMixedOnly(ui, " for the procedure routine 'linerize'", .var.name=ui$modelName)
 
     # errSym <- rxode2:::.rxGetVarianceForErrorType(rxUiDecompress(ui), ui$predDf)
