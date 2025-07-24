@@ -50,7 +50,7 @@ iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC"){
     if(any(duplicated(objDfAll$BIC))){
         warning("Multiple models have the same BIC. Consider using a different search space.")
     }
-    finalVarCov <- filterEtaMat(varCovMat, iivSpace[[which.min(objDfAll[sortBy]) & which.min(objDfAll$nParams)]])
+    finalVarCov <- filterEtaMat(varCovMat, iivSpace[[which.min(objDfAll[[sortBy]]) & which.min(objDfAll$nParams)]])
     finalOFit <- fit$env$originalUi |> ini(finalVarCov)
     finalFit <- nlmixr(fit$env$originalUi, nlme::getData(fit), est = "focei", 
             control = nlmixr2est::foceiControl(mceta=10, covMethod = "", calcTables=FALSE))
