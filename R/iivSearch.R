@@ -74,8 +74,12 @@ filterEtaMat <- function(oMat, filterStr, minIni=0.1){
             x <- elem2[1]
             y <- ifelse(length(elem2) == 1, elem2[1], elem2[2])
             resMat[x,y] <- oMat[x, y]
+            resMat[y, x] <- oMat[y, x]  # Ensure symmetry
         }
         resMat[resMat < minIni & resMat !=0] <- minIni
+
+        stopifnot(isSymmetric(resMat))
+
         resMat
     }
 
