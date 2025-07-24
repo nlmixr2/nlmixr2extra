@@ -75,7 +75,7 @@ filterEtaMat <- function(oMat, filterStr, minIni=0.1){
             y <- ifelse(length(elem2) == 1, elem2[1], elem2[2])
             resMat[x,y] <- oMat[x, y]
         }
-        resMat[resMat < minIni] <- minIni
+        resMat[resMat < minIni & resMat !=0] <- minIni
         resMat
     }
 
