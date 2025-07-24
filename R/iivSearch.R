@@ -14,7 +14,7 @@ iivSearch.default <- function(fit){
 
 
 #'@export 
-iivSearch.nlmixr2Linearize <- function(fit){
+iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC"){
     if(hasUnFixedEta(fit)){stop("This model has unfixed IIV and not suitable for this procedure")}
     # get eta names
     etaAll <- fit$iniDf[!is.na(fit$iniDf$neta1), ]
@@ -41,7 +41,7 @@ iivSearch.nlmixr2Linearize <- function(fit){
         fit <- nlmixr(newMod, nlme::getData(fit), est = "focei")
         summ <- fit$objDf[, c("OBJF", "AIC", "BIC")]
         summ$search <- x
-        summ$nParams <- nrow(fit$iniDf)
+        summ$nParams <- nrow(fit$iniDf[fit$iniDf$est != 0,])
         list(fit = fit, objDf = summ, search = x)
     })
 
@@ -50,7 +50,7 @@ iivSearch.nlmixr2Linearize <- function(fit){
     if(any(duplicated(objDfAll$BIC))){
         warning("Multiple models have the same BIC. Consider using a different search space.")
     }
-    finalVarCov <- filterEtaMat(varCovMat, iivSpace[[which.min(objDfAll$BIC)]])
+    finalVarCov <- filterEtaMat(varCovMat, iivSpace[[which.min(objDfAll[sortBy]) & which.min(objDfAll$nParams)]])
     finalOFit <- fit$env$originalUi |> ini(finalVarCov)
     finalFit <- nlmixr(fit$env$originalUi, nlme::getData(fit), est = "focei", 
             control = nlmixr2est::foceiControl(mceta=10, covMethod = "", calcTables=FALSE))
