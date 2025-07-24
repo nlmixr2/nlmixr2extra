@@ -34,6 +34,10 @@ iivSearch.nlmixr2Linearize <- function(fit){
             newMod <- eval(str2lang(paste0("model(newMod, base_", i, " = 0)")))
             newMod <- eval(str2lang(paste0("model(newMod, err_", i, " = 0)")))
         }
+        unfixedIni <- newMod$iniDf 
+        unfixedIni$fix[!is.na(unfixedIni$neta1)] <- FALSE
+        ini(newMod) <- unfixedIni
+
         fit <- nlmixr(newMod, nlme::getData(fit), est = "focei")
         summ <- fit$objDf[, c("OBJF", "AIC", "BIC")]
         summ$search <- x
