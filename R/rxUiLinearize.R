@@ -34,9 +34,9 @@
     }
   }
   if (pred1$variance) {
-    bquote(fct <- .(.p1)/(.plast))
+    bquote(fct <- .(.p1)/.(.plast))
   } else {
-    bquote(fct <- (.(.p1))^2/((.plast)^2))
+    bquote(fct <- (.(.p1))^2/(.(.plast))^2)
   }
 }
 #' Get the factor for the power error
@@ -61,11 +61,31 @@
     }
   }
   if (pred1$variance) {
-    bquote(fct <- .(.p1)/(.plast))
+    bquote(fct <- .(.p1)/.(.plast))
   } else {
-    bquote(fct <- (.(.p1))^2/((.plast)^2))
+    bquote(fct <- (.(.p1))^2/(.(.plast)^2))
   }
 }
+
+
+### Should be replaced with rxode2::.rxGetVarianceForErrorPropOrPowF
+### Because of DRY, but putting here is OK for now
+.getVarianceForErrorPropOrPowF <- function(env, pred1) {
+  .f <- pred1$f
+  .type <- as.character(pred1$errTypeF)
+  if (.type == "f") {
+    if (is.na(.f)) {
+      stop("for propF() or powF(), f must be part of the model and not estimated",
+           call.=FALSE)
+    }
+  }
+  switch(.type,
+         untransformed=quote(rx_pred_f_),
+         transformed=quote(rx_pred_),
+         f=str2lang(.f),
+         none=quote(rx_pred_f_))
+}
+
 
 #' Get the additive + proportional factor
 #'
@@ -102,21 +122,23 @@
     }
   }
   if (pred1$addProp == "default") {
-    .addProp <- rxGetControl(env, "addProp", getOption("rxode2.addProp", "combined2"))
+    .addProp <- rxode2::rxGetControl(env, "addProp", getOption("rxode2.addProp", "combined2"))
   } else {
     .addProp <- pred1$addProp
   }
+  .f <- .replaceFwithOpred(.getVarianceForErrorPropOrPowF(env, pred1),
+                           env, pred1)
   if (pred1$variance) {
     if (.addProp == "combined2") {
       bquote(fct <- .(.p2)/.(.p2last))
     } else {
-      bquote(fct <- (.(.p2)*OPRED + sqrt(.(.p2)*(.p1)))/(.(.p2last)*OPRED + sqrt(.(.p2last)*(.p1last))))
+      bquote(fct <- (.(.p2)*(.(.f))+ sqrt(.(.p2)*.(.p1)))/(.(.p2last)*(.(.f)) + sqrt(.(.p2last)*.(.p1last))))
     }
   } else {
     if (.addProp == "combined2") {
-      bquote(fct <- .(p2)^2 / (.p2last)^2)
+      bquote(fct <- .(.p2)^2 / .(.p2last)^2)
     } else {
-      bquote(fct <- (.(.p2)^2*OPRED + .(.p2)*(.p1))/(.(.p2last)^2*OPRED + .(.p2last)*(.p1last)))
+      bquote(fct <- (.(.p2)^2*(.(.f)) + .(.p2)*.(.p1))/(.(.p2last)^2*(.(.f)) + .(.p2last)*.(.p1last)))
     }
   }
 }
@@ -243,6 +265,12 @@ linearizeErrorLines.rxUi <- function(line) {
 
 rxUiGet.linearizeError <- function(x, ...) {
   .ui <- x[[1]]
+  if (!exists("derivFct", envir=.ui)) {
+    .ui$derivFct <- TRUE
+    on.exit({
+      rm("derivFct", envir=.ui)
+    }, add=TRUE)
+  }
   .errLines <- linearizeErrorLines(.ui)
   .predDf <- .ui$predDf
   .expr <-
