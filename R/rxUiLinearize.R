@@ -1,3 +1,169 @@
+#' Factor for the additive expression
+#'
+#' @param env environment for the rxode2 model
+#'
+#' @param pred1 The pred1 endpoint that is being considered
+#'
+#' @return quote(fct<-0), since with additive error, the residuals do
+#'   not depend on the predictions.
+#' @noRd
+#' @author Matthew L. Fidler
+.rxGetFctForErrorAdd <- function(env, pred1) {
+  str2lang("fct <- 0")
+}
+
+#' Get the variance factor for the proportional error
+#'
+#' @param env rxode2 environment
+#' @param pred1 prediction endpoint that is being considered
+#' @return factor for the proportional error
+#' @noRd
+#' @author Matthew L. Fidler
+.rxGetFctForErrorProp <- function(env, pred1) {
+  .f <- .rxGetVarianceForErrorPropOrPowF(env, pred1)
+  if (!is.na(pred1$b)) {
+    .p1 <- str2lang(pred1$b)
+  } else {
+    .cnd <- pred1$cond
+    .w <- which(env$iniDf$err %in% c("prop", "propF", "propT") & env$iniDf$condition == .cnd)
+    if (length(.w) == 1L) {
+      .p1 <- str2lang(env$iniDf$name[.w])
+      .plast <- str2lang(paste0(env$iniDf$name[.w], ".l"))
+    } else {
+      stop("cannot find proportional standard deviation", call.=FALSE)
+    }
+  }
+  if (pred1$variance) {
+    bquote(fct <- .(.p1)/.(.plast))
+  } else {
+    bquote(fct <- (.(.p1))^2/(.(.plast))^2)
+  }
+}
+#' Get the factor for the power error
+#'
+#' @param env environment of the rxode2 model
+#' @param pred1 The pred1 endpoint that is being considered
+#' @return A expression for the current factor for linearization
+#' @noRd
+#' @author Matthew L. Fidler
+.rxGetFctForErrorPow <- function(env, pred1) {
+  .f <- .rxGetVarianceForErrorPropOrPowF(env, pred1)
+  .cnd <- pred1$cond
+  if (!is.na(pred1$b)) {
+    .p1 <- str2lang(pred1$b)
+  } else {
+    .w <- which(env$iniDf$err %in% c("pow", "powF", "powT") & env$iniDf$condition == .cnd)
+    if (length(.w) == 1L) {
+      .p1 <- str2lang(env$iniDf$name[.w])
+      .plast <- str2lang(paste0(env$iniDf$name[.w], ".l"))
+    } else {
+      stop("cannot find power standard deviation", call.=FALSE)
+    }
+  }
+  if (pred1$variance) {
+    bquote(fct <- .(.p1)/.(.plast))
+  } else {
+    bquote(fct <- (.(.p1))^2/(.(.plast)^2))
+  }
+}
+
+
+### Should be replaced with rxode2::.rxGetVarianceForErrorPropOrPowF
+### Because of DRY, but putting here is OK for now
+.getVarianceForErrorPropOrPowF <- function(env, pred1) {
+  .f <- pred1$f
+  .type <- as.character(pred1$errTypeF)
+  if (.type == "f") {
+    if (is.na(.f)) {
+      stop("for propF() or powF(), f must be part of the model and not estimated",
+           call.=FALSE)
+    }
+  }
+  switch(.type,
+         untransformed=quote(rx_pred_f_),
+         transformed=quote(rx_pred_),
+         f=str2lang(.f),
+         none=quote(rx_pred_f_))
+}
+
+
+#' Get the additive + proportional factor
+#'
+#' @param env environment of the rxode2 model
+#' @param pred1 The pred1 endpoint that is being considered
+#' @return A expression for the current factor for linearization
+#' @noRd
+#' @author Matthew L. Fidler
+.rxGetFctForErrorAddProp <- function(env, pred1) {
+  if (!is.na(pred1$a)) {
+    .p1 <- str2lang(pred1$a)
+    .p1last <- str2lang(paste0(pred1$a, ".l"))
+  } else {
+    .cnd <- pred1$cond
+    .w <- which(env$iniDf$err %in% c("add", "lnorm", "probitNorm", "logitNorm") & env$iniDf$condition == .cnd)
+    if (length(.w) == 1L) {
+      .p1 <- str2lang(env$iniDf$name[.w])
+      .p1last <- str2lang(paste0(env$iniDf$name[.w], ".l"))
+    } else {
+      stop("cannot find additive standard deviation", call.=FALSE)
+    }
+  }
+  if (!is.na(pred1$b)) {
+    .p2 <- str2lang(pred1$b)
+    .p2last <- str2lang(paste0(pred1$b, ".l"))
+  } else {
+    .cnd <- pred1$cond
+    .w <- which(env$iniDf$err %in% c("prop", "propT", "propF") & env$iniDf$condition == .cnd)
+    if (length(.w) == 1L) {
+      .p2 <- str2lang(env$iniDf$name[.w])
+      .p2last <- str2lang(paste0(env$iniDf$name[.w], ".l"))
+    } else {
+      stop("cannot find proportional standard deviation", call.=FALSE)
+    }
+  }
+  if (pred1$addProp == "default") {
+    .addProp <- rxode2::rxGetControl(env, "addProp", getOption("rxode2.addProp", "combined2"))
+  } else {
+    .addProp <- pred1$addProp
+  }
+  .f <- .replaceFwithOpred(.getVarianceForErrorPropOrPowF(env, pred1),
+                           env, pred1)
+  if (pred1$variance) {
+    if (.addProp == "combined2") {
+      bquote(fct <- .(.p2)/.(.p2last))
+    } else {
+      bquote(fct <- (.(.p2)*(.(.f))+ sqrt(.(.p2)*.(.p1)))/(.(.p2last)*(.(.f)) + sqrt(.(.p2last)*.(.p1last))))
+    }
+  } else {
+    if (.addProp == "combined2") {
+      bquote(fct <- .(.p2)^2 / .(.p2last)^2)
+    } else {
+      bquote(fct <- (.(.p2)^2*(.(.f)) + .(.p2)*.(.p1))/(.(.p2last)^2*(.(.f)) + .(.p2last)*.(.p1last)))
+    }
+  }
+}
+
+#' Get the factor adjustment for a specific error type
+#'
+#' @param env  environment of the rxode2 model
+#' @param pred1 The pred1 endpoint that is being considered
+#' @return A expression for the current factor for linearization
+#' @noRd
+#' @author Matthew L. Fidler
+.rxGetFctForErrorType <- function (env, pred1) {
+  if (env$derivFct) {
+    switch(as.character(pred1$errType),
+           add = .rxGetFctForErrorAdd(env, pred1),
+           prop = .rxGetFctForErrorProp(env, pred1),
+           pow = .rxGetFctForErrorPow(env, pred1),
+           `add + prop` = .rxGetFctForErrorAddProp(env, pred1),
+           `add + pow` = quote(fct <- 1))
+  } else {
+    quote(fct <- 1)
+  }
+}
+
+
 #' Replace rx_pred_f and rx_pred_ with the right OPRED values
 #'
 #' @param expr expression to replace
@@ -63,8 +229,8 @@ linearizeErrorLines.norm <- function(line) {
   pred1 <- line[[2]]
   ret <- vector("list", 1)
   list(
-    bquote(rxR2 <- .(.replaceFwithOpred(rxode2::.rxGetVarianceForErrorType(env, pred1), env=env, pred1=pred1, y="OPRED"))), 
-    str2lang("fct <- 1"))
+    bquote(rxR2 <- .(.replaceFwithOpred(rxode2::.rxGetVarianceForErrorType(env, pred1), env=env, pred1=pred1, y="OPRED"))),
+    .rxGetFctForErrorType(env, pred1))
 }
 
 #' @rdname linearizeErrorLines
@@ -99,6 +265,12 @@ linearizeErrorLines.rxUi <- function(line) {
 
 rxUiGet.linearizeError <- function(x, ...) {
   .ui <- x[[1]]
+  if (!exists("derivFct", envir=.ui)) {
+    .ui$derivFct <- TRUE
+    on.exit({
+      rm("derivFct", envir=.ui)
+    }, add=TRUE)
+  }
   .errLines <- linearizeErrorLines(.ui)
   .predDf <- .ui$predDf
   .expr <-
