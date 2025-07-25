@@ -485,6 +485,7 @@ test_that("Adding covariates to lin models", {
     nlfitNoCov <- nlmixr(one.cmpt.adderr, theo_sd, est = "focei")
     fitLinNoCov <- linearize(nlfitNoCov)
     fitLinCov <- addCovariate(fitLinNoCov, eta.v~WT/70, effect = "power")
+      
     fitLinCov <- nlmixr(fitLinCov, nlme::getData(fitLinNoCov), est = "focei")
     
     nlfitCov <- nlmixr(one.cmpt.adderr.cov, nlme::getData(nlfitNoCov), est = "focei")

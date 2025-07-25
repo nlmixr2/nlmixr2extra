@@ -292,7 +292,9 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA,
         "\n", paste(finalEval$message, collapse = "\n"),
         "\nFitted Linear OFV: ", lObj,
         "\nRelative OFV Dev: ", round(relDev, 4) * 100, "%\n",
-        "\nmceta: ", mceta[i]
+        "\nmceta: ", mceta[i], 
+        "\nLinearized Model Runtime:", NA, 
+        "\nNon-Linearized Model Runtime:", NA
     )
     message("Linearization Summary:")
     message(m)
@@ -549,7 +551,7 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect) {
     covParseDf$Deriv <- paste0("D_", covParseDf$param)
     
     covRef <- paste0("cov", covParseDf$param, " = ", 
-        covParseDf$Deriv, "*1*(" , covParseDf$param, covParseDf$covariate , " - 1)")
+        covParseDf$Deriv, "*1*(" , covParseDf$param, covParseDf$covariate , " - 1)") # TODO support more covariate effects
     covTermLine <- paste0("covTerms = ", 
         paste0("cov", covParseDf$param, collapse = "+"))
 
@@ -565,7 +567,9 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect) {
     newMod <- newMod()
 
     newMod <- newMod %>% model(y = BASE_TERMS+ OPRED + covTerms)
-    newMod # FIXME reattach the data so it become pipe friendly
+    nlmixr(newMod, getData(fit), 
+          foceiControl(maxInnerIterations = 0, maxOuterIterations = 0, etaMat=fit))
+    # newMod # FIXME reattach the data so it become pipe friendly
 }
 
 
@@ -622,7 +626,7 @@ covExprDf <- function(expr) {
 #' @return updated initial parameter data frame with the new theta added
 #' @author Omar Elashkar
 #' @noRd
-addThetaToIniDf <- function(iniDf, thetaname, ini, fix = FALSE){
+addThetaToIniDf <- function(iniDf, thetaname, ini, fix = TRUE){
     checkmate::assertCharacter(thetaname, any.missing = FALSE, min.len = 1)
     stopifnot(!any(thetaname %in% iniDf$name))
 

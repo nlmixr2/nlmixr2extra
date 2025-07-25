@@ -24,25 +24,39 @@ iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC"){
     iivSpace <- iivCombn(etaNames)
 
     varCovMat <- cov(fit$eta[,-1])
-    res <- lapply(iivSpace, function(x){
+    res <- lapply(cli::cli_progress_along(iivSpace, "IIV Search"), function(x){
+        x <- iivSpace[x]
+        message(x)
         omegaMat <- filterEtaMat(varCovMat, x)
         newMod <- fit %>% ini(omegaMat) 
         noCorrSpace <- unlist(strsplit(x, "-"))
         noCorrSpace <- grep(",", noCorrSpace, invert = TRUE, value = TRUE)
         etaToRemove <- setdiff(etaNames, noCorrSpace)
-        for(i in etaToRemove){
-            newMod <- eval(str2lang(paste0("model(newMod, base_", i, " = 0)")))
-            newMod <- eval(str2lang(paste0("model(newMod, err_", i, " = 0)")))
-        }
+        # for(i in etaToRemove){ # deriviatives are to be kept not removed
+        #     newMod <- eval(str2lang(paste0("model(newMod, base_", i, " = 0)")))
+        #     newMod <- eval(str2lang(paste0("model(newMod, err_", i, " = 0)")))
+        # }
         unfixedIni <- newMod$iniDf 
-        unfixedIni$fix[!is.na(unfixedIni$neta1)] <- FALSE
+        unfixedIni$fix[!is.na(unfixedIni$neta1) & !(unfixedIni$name %in% etaToRemove)] <- FALSE
+        unfixedIni$upper[!is.na(unfixedIni$ntheta) &  unfixedIni$fix == FALSE] <-  unfixedIni$est[!is.na(unfixedIni$ntheta) &  unfixedIni$fix == FALSE]*2  # set upper to residual to 2x
         ini(newMod) <- unfixedIni
-
-        fit <- nlmixr(newMod, nlme::getData(fit), est = "focei")
-        summ <- fit$objDf[, c("OBJF", "AIC", "BIC")]
-        summ$search <- x
-        summ$nParams <- nrow(fit$iniDf[fit$iniDf$est != 0,])
-        list(fit = fit, objDf = summ, search = x)
+        tryCatch({
+          fit <- nlmixr(newMod, nlme::getData(fit), est = "focei", 
+              control = nlmixr2est::foceiControl(mceta=5, 
+                                                 maxInnerIterations = 9999,
+                                                 etaMat = as.matrix(fit$eta[,c(noCorrSpace)])))
+          
+          summ <- fit$objDf[, c("OBJF", "AIC", "BIC")]
+          summ$search <- x
+          summ$nParams <- nrow(fit$iniDf[fit$iniDf$est != 0,])
+          summ$covMethod  <- fit$covMethod
+          summ$outerOptTxt <- fit$control$outerOptTxt
+          
+          list(fit = fit, objDf = summ, search = x)
+        }, error = function(y){
+            return(list(fit = NULL, objDf = NA, search = x))
+          }
+        )
     })
 
     objDfAll <- do.call(rbind, lapply(res, function(x) x$objDf))
@@ -50,13 +64,13 @@ iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC"){
     if(any(duplicated(objDfAll$BIC))){
         warning("Multiple models have the same BIC. Consider using a different search space.")
     }
-    finalVarCov <- filterEtaMat(varCovMat, iivSpace[[which.min(objDfAll[[sortBy]]) & which.min(objDfAll$nParams)]])
-    finalOFit <- fit$env$originalUi |> ini(finalVarCov)
-    finalFit <- nlmixr(fit$env$originalUi, nlme::getData(fit), est = "focei", 
-            control = nlmixr2est::foceiControl(mceta=10, covMethod = "", calcTables=FALSE))
+    # finalVarCov <- filterEtaMat(varCovMat, iivSpace[[which.min(objDfAll[[sortBy]])]])
+    # finalFit <- fit$env$originalUi |> ini(finalVarCov) # TODO set initial estimates
+    # finalFit <- nlmixr(fit$env$originalUi, nlme::getData(fit), est = "focei", 
+    #         control = nlmixr3est::foceiControl(mceta=5, etaMat = fit, covMethod = "", calcTables=FALSE))
 
-
-    list(res = res, summary = objDfAll, finalFit = finalFit)
+    # TODO re-run the top 3 that did not fail and see ==> implement a function to rerun top n 
+    list(res = res, summary = objDfAll)
 }
 
 #' Filter covariance matrix
@@ -79,6 +93,14 @@ filterEtaMat <- function(oMat, filterStr, minIni=0.1){
         resMat[resMat < minIni & resMat !=0] <- minIni
 
         stopifnot(isSymmetric(resMat))
+        resMat <- lotri::lotriNearPD(resMat)
+        
+        etaToRemove <-  setdiff(colnames(oMat), elem)
+        if(length(etaToRemove > 0)){
+          resMat[etaToRemove, ] <- 0
+          resMat[,etaToRemove ] <- 0
+          resMat[etaToRemove, etaToRemove ] <- 0
+        }
 
         resMat
     }
@@ -145,7 +167,7 @@ iivCombn <- function(params) {
 #' @return nlmixr2 fit with individual random effects added on all fixed effects and fixed.
 #' @author Omar Elashkar
 #' @export 
-addFixedEtas <- function(ui){ 
+addAllEtas <- function(ui, fix = FALSE){ 
     if(inherits(ui, "nlmixr2FitCore")){ui <- ui$ui}
     if(inherits(ui, "function")){ui <- ui()}
     
@@ -162,10 +184,16 @@ addFixedEtas <- function(ui){
 
     # fix all random effects to 10^-4
     iniDf <- newMod$iniDf
-    iniDf$fix[!is.na(iniDf$neta1)] <- TRUE
+    iniDf$fix[!is.na(iniDf$neta1)] <- fix
     iniDf$est[!is.na(iniDf$neta1)] <- 1e-4
     ini(newMod) <- iniDf
 
     newMod
 
+}
+
+addCorr <- function(ui, expr){
+  
+  # if each element of expr does not exist ==> addEtas
+  
 }
