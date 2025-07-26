@@ -6,7 +6,7 @@
 #' @noRd
 getDeriv <- function(fit){
     # if(fit$method != "FOCE") stop("This method requires FOCE method")
-    rxode2::assertRxUiMixedOnly(fit, " for the procedure routine 'linerize'", .var.name=fit$modelName)
+    rxode2::assertRxUiMixedOnly(fit, " for the procedure routine 'linearize'", .var.name=fit$modelName)
 
     ui <- rxode2::assertRxUi(fit)
     innerModel <- ui$foceiModel
@@ -98,13 +98,23 @@ renameCol <- function(df, new, old){
 }
 
 #' Generate a Linearization Model From Previous Fit
-#' @param ui nlmixr2 fit, not only model.
+#' @param ui rx model or fit object.
 #' @param focei boolean. If TRUE, use FOCEI linearization with individual and residual linearization. Default is TRUE.
 #' @param derivFct boolean. If TRUE, use normalization derivative factors. Default is FALSE.
 #' @author Omar Elashkar
-#' @noRd
-linModGen <- function(ui, focei = TRUE, derivFct = FALSE){ # TODO it would be better if totatlly indep of fit
-    rxode2::assertRxUiMixedOnly(ui, " for the procedure routine 'linerize'", .var.name=ui$modelName)
+#' @export
+linModGen <- function(ui, focei = TRUE, derivFct = FALSE){
+
+    if(is.function(ui)){
+        ui <- ui()
+    }
+    if(inherits(ui, "nlmixr2FitCore")){
+        stopifnot(all(ui$iniDf == ui$ui$iniDf))
+        ui <- ui$ui
+    }
+    nlmod <- ui
+    
+    rxode2::assertRxUiMixedOnly(ui, " for the procedure routine 'linearize'", .var.name=ui$modelName)
 
     # errSym <- rxode2:::.rxGetVarianceForErrorType(rxUiDecompress(ui), ui$predDf)
     uiEnv <- rxode2::assertRxUi(ui)
@@ -117,8 +127,7 @@ linModGen <- function(ui, focei = TRUE, derivFct = FALSE){ # TODO it would be be
     # fitui <- rxode2::rxUiCompress(fitui)
     epStr <- ui$predDf$var
     errNames <- ui$iniDf$name[!is.na(ui$iniDf$err)]
-    nlmod <- ui$finalUi
-    etaNames <- ui$ui$eta
+    etaNames <- ui$eta
 
     modelStr <- list()
 

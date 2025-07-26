@@ -171,7 +171,7 @@ test_that("Linearize add err model ", {
 
     # rxode2::rxode(one.cmpt.adderr)$linearizeError
     fit <- nlmixr(one.cmpt.adderr, nlmixr2data::theo_md, est = "focei")
-    linModGen(fit)
+    linModGen(fit, T, T)
     derv <- getDeriv(fit)
 
     sum(grepl("O_ETA\\d+", names(derv))) |> expect_equal(ncol(fit$eta) - 1)
@@ -210,21 +210,21 @@ test_that("Linearize prop err model ", {
             cp ~ prop(prop.sd)
         })
     }
-    # set.seed(42)
-    # ev <- rxode2::et(amountUnits = "mg", timeUnits = "hours") |>
-    #     rxode2::et(amt = 300, cmt = "depot") |>
-    #     rxode2::et(time = c(0.25, 0.5, 1,2,3,6,8,12,16,24))
-    # sim <- rxode2::rxSolve(one.cmpt.properr, ev, nSub = 200, addDosing = TRUE)
-    # sim$dv <- sim$sim
-    # sim$id <- sim$sim.id
-    # sim$sim.id <- NULL
-    # sim <- sim[,c("id", "time", "amt", "dv", "evid")]
+    set.seed(42)
+    ev <- rxode2::et(amountUnits = "mg", timeUnits = "hours") |>
+        rxode2::et(amt = 300, cmt = "depot") |>
+        rxode2::et(time = c(0.25, 0.5, 1,2,3,6,8,12,16,24))
+    sim <- rxode2::rxSolve(one.cmpt.properr, ev, nSub = 200, addDosing = TRUE)
+    sim$dv <- sim$sim
+    sim$id <- sim$sim.id
+    sim$sim.id <- NULL
+    sim <- sim[,c("id", "time", "amt", "dv", "evid")]
 
     # saveRDS(sim, "one.cmpt.properr_data.RDS")
     sim <- readRDS(system.file("one.cmpt.properr_data.RDS", package="nlmixr2extra"))
     fit <- nlmixr(one.cmpt.properr, sim, est = "focei",
             control = nlmixr2est::foceiControl(mceta=10))
-    # linMod <- linModGen(fit, FALSE)
+    linMod <- linModGen(fit, FALSE)
     # derv <- getDeriv(fit)
 
     # fitLin <- nlmixr(linMod, derv, est="focei",
@@ -531,4 +531,36 @@ test_that("Adding covariates to lin models", {
     expect_true(fitLinCov$objDf$OBJF < fitLinNoCov$objDf$OBJF)
     expect_true(nlfitCov$objDf$OBJF < nlfitNoCov$objDf$OBJF)
     expect_equal(nlfitCov$objDf$OBJF, fitLinCov$objDf$OBJF, tolerance = 0.1)
+})
+
+test_that("linModGen from any object", {
+    one.cmpt.adderr <- function() {
+        ini({
+            tcl <- log(2.7) # Cl
+            tv <- log(30) # V
+            tka <- log(1.56) #  Ka
+            eta.cl ~ 0.3
+            eta.v ~ 0.1
+            eta.ka ~ 0.6
+            add.sd <- 0.7
+        })
+        model({
+            ka <- exp(tka + eta.ka)
+            cl <- exp(tcl + eta.cl)
+            v <- exp(tv + eta.v)
+            d / dt(depot) <- -ka * depot
+            d / dt(center) <- ka * depot - cl / v * center
+            cp <- center / v
+            cp ~ add(add.sd)
+        })
+    }
+
+    # call 
+    linModGen(one.cmpt.adderr) |> expect_no_error()
+
+    # rxUi 
+    linModGen(one.cmpt.adderr()) |> expect_no_error()
+
+    # fit => in models
+
 })
