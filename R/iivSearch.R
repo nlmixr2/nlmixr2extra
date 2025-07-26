@@ -66,8 +66,10 @@ iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC"){
 #' @noRd 
 filterEtaMat <- function(oMat, filterStr, minIni=0.1){
         stopifnot(length(filterStr) == 1)
+        stopifnot(isSymmetric(oMat))
+
         resMat <- oMat
-        resMat[] <- 0
+        resMat[] <- 0 
         elem <- unlist(strsplit(filterStr, "-"))
         for(i in elem){
             elem2 <- unlist(strsplit(i, ","))
@@ -75,6 +77,7 @@ filterEtaMat <- function(oMat, filterStr, minIni=0.1){
             y <- ifelse(length(elem2) == 1, elem2[1], elem2[2])
             resMat[x,y] <- oMat[x, y]
             resMat[y, x] <- oMat[y, x]  # Ensure symmetry
+
         }
         resMat[resMat < minIni & resMat !=0] <- minIni
 
