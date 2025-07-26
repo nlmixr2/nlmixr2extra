@@ -17,8 +17,6 @@ addCovariate(fit, expr, effect)
 \code{normaDefault} call will be skipped if what covpar expression is normalized by other value}
 
 \item{normDefault}{Default normalization for continuous covariates. "mean", "median" or NA. Default "median"}
-
-\item{mutiply}{boolean. If TRUE, multiply the covariate by the parameter, if FALSE, add the covariate to the parameter.}
 }
 \description{
 Add Covariate to Model Fit (Generic)

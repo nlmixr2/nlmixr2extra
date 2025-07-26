@@ -29,7 +29,7 @@ getDeriv <- function(fit){
     oData <- nlme::getData(fit)
     names(oData) <- toupper(names(oData))
 
-    
+
     stopifnot(all(c("rx_pred_", "rx_r_") %in% innerModel$inner$lhs))
     stopifnot(sum(grepl("rx__sens_rx_pred__BY_ETA_\\d+___", innerModel$inner$lhs)) == ncol(eta))
     stopifnot(sum(grepl("rx__sens_rx_r__BY_ETA_\\d+___", innerModel$inner$lhs)) >= ncol(eta))
@@ -37,7 +37,7 @@ getDeriv <- function(fit){
     derv <- rxode2::rxSolve(innerModel$innerOeta, oData, params=params_df,
         addDosing=FALSE,
         keep = c("DV", setdiff(names(oData),  c("DV", "ID", "TIME", "DVID", "ADDL", "EVID", "AMT", "CMT")))) # add covariates
-    
+
     eta <- fit$eta[,-1]
     # OPRED
     derv <- renameCol(derv, "OPRED", "rx_pred_")
@@ -57,7 +57,7 @@ getDeriv <- function(fit){
     #O_EPS
     derv <- renameCol(derv, "O_ResVar", "rx_r_")
 
-    # O_IRES 
+    # O_IRES
     derv$O_IRES <- fit$IRES
 
     # D_EPS
@@ -80,13 +80,13 @@ getDeriv <- function(fit){
         predDf$OCMT <- predDf$cmt
         cmtDf <- merge(cmtDf, predDf)
         cmtDf <- cmtDf[,c("OCMT", "CMT", "dvid")]
-        
+
         derv$rxRow <- seq_along(derv$id) # dummy sort
-        derv <- merge(derv, cmtDf) 
+        derv <- merge(derv, cmtDf)
         derv <- derv[order(derv$rxRow), ]
         derv$rxRow <- NULL
         derv$CMT <- NULL
- 
+
     }
 
     derv
@@ -97,7 +97,7 @@ renameCol <- function(df, new, old){
     df
 }
 
-#' Generate a Linearization Model From Previous Fit 
+#' Generate a Linearization Model From Previous Fit
 #' @param ui nlmixr2 fit, not only model.
 #' @param focei boolean. If TRUE, use FOCEI linearization with individual and residual linearization. Default is TRUE.
 #' @param derivFct boolean. If TRUE, use normalization derivative factors. Default is FALSE.
@@ -110,13 +110,15 @@ linModGen <- function(ui, focei = TRUE, derivFct = FALSE){ # TODO it would be be
     uiEnv <- rxode2::assertRxUi(ui)
     uiEnv <- rxode2::rxUiDecompress(uiEnv)
     assign("derivFct", derivFct, envir = uiEnv)
+    on.exit({
+      rm("derivFct", envir = uiEnv)
+    })
     extractError <- uiEnv$linearizeError
     # fitui <- rxode2::rxUiCompress(fitui)
-    rm(uiEnv)
     epStr <- ui$predDf$var
     errNames <- ui$iniDf$name[!is.na(ui$iniDf$err)]
     nlmod <- ui$finalUi
-    etaNames <- ui$ui$eta 
+    etaNames <- ui$ui$eta
 
     modelStr <- list()
 
@@ -153,7 +155,7 @@ linModGen <- function(ui, focei = TRUE, derivFct = FALSE){ # TODO it would be be
 
     modelStr$baseEps[i+ii+1] <- "r <- sqrt(rxR2)"
     modelStr$baseEps[i+ii+2] <- paste0("foceiLin <- ", ifelse(focei, 1, 0))
-    modelStr$baseEps[i+ii+3] <- paste("BASE_ERROR = foceiLin * fct * (", paste(paste0("err_", etaNames), 
+    modelStr$baseEps[i+ii+3] <- paste("BASE_ERROR = foceiLin * fct * (", paste(paste0("err_", etaNames),
         collapse = " + "), ")/(2*r) + r")
     modelStr$baseEps[i+ii+4] <- "rxR = BASE_ERROR"
 
@@ -171,8 +173,8 @@ linModGen <- function(ui, focei = TRUE, derivFct = FALSE){ # TODO it would be be
 
     nlmod <- rxode2::rxUiDecompress(nlmod)
     assign("iniDf", iniDf, envir = nlmod)
-    v <- c(modelStr$muRef, modelStr$baseEta, modelStr$baseEps, 
-                        extractError$tipred, modelStr$basePred) 
+    v <- c(modelStr$muRef, modelStr$baseEta, modelStr$baseEps,
+                        extractError$tipred, modelStr$basePred)
 
     nlmod$lstExpr <- as.list(str2lang(paste0("{", paste(v, collapse="\n"), "}"))[-1])
     nlmod <- nlmod$fun
@@ -188,29 +190,29 @@ linModGen <- function(ui, focei = TRUE, derivFct = FALSE){ # TODO it would be be
 #' @param focei Default is NA for automatic switch from FOCEI to FOCE if failed. See details.
 #' @param derivFct boolean. If TRUE, turn on derivatives for linearization. Default is FALSE.
 #' @param plot boolean. Print plot of linearized vs original
-#' 
+#'
 #' @details
-#' 
-#' mceta vector will be iterated over to find the best linearization if linearization failed. 
+#'
+#' mceta vector will be iterated over to find the best linearization if linearization failed.
 #' Escalating to next mceta will depend on the relative deviation `relTol` of the original and linearized models objective functions.
-#' 
-#' If `focei` is set to `NA`, the function will first try to linearize using FOCEI. 
+#'
+#' If `focei` is set to `NA`, the function will first try to linearize using FOCEI.
 #' If the relative deviation between original and linearized models objective functions is greater than `relTol`, it will switch to FOCE where residual linearization is skipped.
 #' If `focei` is set to `TRUE`, the function will use FOCEI linearization with individual and residual linearization.
 #' If `focei` is set to `FALSE`, the function will use FOCE linearization with residual linearization skipped.
-#' 
-#' If `derivFct` is set to `TRUE`, the function will use derivatives for linearization. 
+#'
+#' If `derivFct` is set to `TRUE`, the function will use derivatives for linearization.
 #' This might be usefull to try with FOCEI.
-#' 
-#' `plot` argument can only print ggplot figure with default settings. 
-#' If a user wish to capture the plot, one might use `linearizePlot()` call. 
-#' 
-#' 
-#' 
+#'
+#' `plot` argument can only print ggplot figure with default settings.
+#' If a user wish to capture the plot, one might use `linearizePlot()` call.
+#'
+#'
+#'
 #' @author Omar Elashkar
-#' @export 
-linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA, 
-    derivFct = FALSE, plot = FALSE){ 
+#' @export
+linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA,
+    derivFct = FALSE, plot = FALSE){
     checkmate::assertIntegerish(mceta, lower = -1, upper = 2000,  unique = TRUE)
     checkmate::assertNumeric(relTol, lower=0, upper=0.6)
     checkmate::assertLogical(plot)
@@ -226,17 +228,17 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA,
         fitL <- evalLinModel(fit, linMod, derv)
         fitL_map <- evalLinModel(fit, linMod, derv, 1000)
 
-        
+
         lObj_exact <- fitL$objDf$OBJF
         lObj_map <- fitL_map$objDf$OBJF
         oObj <- fit$objDf$OBJF
-        
+
         list(
             lObj_exact = lObj_exact,
             lObj_map = lObj_map,
             oObj = oObj,
-            message = paste("Non-Linear OFV: ", oObj, 
-            "\n Eval Linear OFV (Exact):", lObj_exact, 
+            message = paste("Non-Linear OFV: ", oObj,
+            "\n Eval Linear OFV (Exact):", lObj_exact,
             "\n Eval Linear OFV (MAP):", lObj_map)
         )
     }
@@ -248,7 +250,7 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA,
     } else{
         message("Linearization evaluation mismatched by deltaOFV > 2%. Linearization might be difficult")
         message("Switching to linearization around predictions only (Variance linearization skipped)")
-        linMod <- linMod |> model(foceiLin <- 0) 
+        linMod <- linMod |> model(foceiLin <- 0)
         secondEval <- evalFun()
     }
 
@@ -284,15 +286,17 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA,
         finalEval <- firstEval
     }
     m <- paste(
-        "Linearization method: ", ifelse(is.na(focei), 
+        "Linearization method: ", ifelse(is.na(focei),
             "Auto", ifelse(focei, "FOCE (individual + residual)", "Variance Skipped")), "\n",
         "Linearization Relative Tolerance: ", relTol, "\n",
-        ifelse(is.na(focei) & exists("secondEval"), 
+        ifelse(is.na(focei) & exists("secondEval"),
             "Linearization method switched automatically to FOCE (residual linearization skipped)", ""),
         "\n", paste(finalEval$message, collapse = "\n"),
         "\nFitted Linear OFV: ", lObj,
         "\nRelative OFV Dev: ", round(relDev, 4) * 100, "%\n",
-        "\nmceta: ", mceta[i]
+        "\nmceta: ", mceta[i], 
+        "\nLinearized Model Runtime:", NA, 
+        "\nNon-Linearized Model Runtime:", NA
     )
     message("Linearization Summary:")
     message(m)
@@ -304,11 +308,11 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA,
     v <- c("nlmixr2Linearize", class(fitL))
     attr(v, ".foceiEnv") <- tmpEnv
     class(fitL) <- v
-    
+
     if(plot){
         print(linearizePlot(fit, fitL))
     }
-    
+
     fitL
 }
 
@@ -331,49 +335,49 @@ linearizePlot <- function(nl, lin){
     originalIval <- l(nl$etaObf, "original")
     linearIval <- l(lin$etaObf, "linear")
 
-    fig <- rbind(originalIval, linearIval) |> 
-        tidyr::pivot_longer(cols = c(-c("ID", "factor")), names_to = "parameter", 
-        values_to = "value") |> 
-        tidyr::pivot_wider(names_from = "factor", values_from = "value") |> 
+    fig <- rbind(originalIval, linearIval) |>
+        tidyr::pivot_longer(cols = c(-c("ID", "factor")), names_to = "parameter",
+        values_to = "value") |>
+        tidyr::pivot_wider(names_from = "factor", values_from = "value") |>
         ggplot2::ggplot(aes(x = .data[["original"]], y=.data[["linear"]])) +
         ggplot2::geom_smooth(se = FALSE, method = "lm") +
-        ggplot2::geom_point() + 
-        ggplot2::facet_wrap("parameter", scales = "free") 
+        ggplot2::geom_point() +
+        ggplot2::facet_wrap("parameter", scales = "free")
     fig
 }
 
-#' Evaluate A Linear Model Without Estimation 
+#' Evaluate A Linear Model Without Estimation
 #' @param fit fit of nonlinear model.
 #' @param linMod linear model to evaluate
 #' @param derv data frame of derivatives
-#' @param innerIter number of inner iterations to use. Default is 0. 
-#' 
-#' `evalLinModel()` evaluates a linear model without estimation. 
-#' This is useful for checking the linearization feasibility under given non-linear model and its fit. 
+#' @param innerIter number of inner iterations to use. Default is 0.
+#'
+#' `evalLinModel()` evaluates a linear model without estimation.
+#' This is useful for checking the linearization feasibility under given non-linear model and its fit.
 #' `innerIter=0` is equivalent to NONMEM `$ESTIMATION MAXITER=0` and will not perform any inner iterations.
-#' 
+#'
 #' @author Omar Elashkar
-#' @noRd 
+#' @noRd
 evalLinModel <- function(fit, linMod, derv, innerIter = 0, covMethod = ""){
-    fitL <- nlmixr(linMod, derv, est="focei", 
-            control = nlmixr2est::foceiControl(etaMat = fit, mceta=-1, 
-            covMethod = covMethod, calcTables=TRUE, 
+    fitL <- nlmixr(linMod, derv, est="focei",
+            control = nlmixr2est::foceiControl(etaMat = fit, mceta=-1,
+            covMethod = covMethod, calcTables=TRUE,
             maxInnerIterations=innerIter, maxOuterIterations=0L))
     fitL
 }
 
-#' Check Linearization Match 
+#' Check Linearization Match
 #' @param fit fit of nonlinear model.
 #' @param linFit fit of linear model.
 #' @param tol relative tolerance for matching. Default is 0.05.
 #' @author Omar Elashkar
 #' @noRd
 isLinearizeMatch <- function(fit, linFit, tol = 0.05){
-    
+
     est <-setNames(fit$iniDf$est, fit$iniDf$name)
     estLin <- setNames(linFit$iniDf$est, linFit$iniDf$name)
     est <- est[names(estLin)]
-    
+
     deltaOfv <- all.equal(fit$objDf$OBJF, linFit$objDf$OBJF, tol = tol)
     deltaOmega <- all.equal(fit$omega, linFit$omega, tol = tol)
     deltaEta <- all.equal(fit$eta, linFit$eta, tol = tol)
@@ -400,28 +404,28 @@ isLinearizeMatch <- function(fit, linFit, tol = 0.05){
 #'@param effect character of effect type. One of "linear", "power", "exp", "hockyStick"
 #'@return data frame with columns: param, covariate, normfactor, type, levels, min, max, expr, effect
 #'@author Omar Elashkar
-#'@noRd 
+#'@noRd
 parseCovExpr <- function(expr, oData, effect, normDefault){
     checkmate::assertFormula(expr)
     checkmate::assertDataFrame(oData)
     checkmate::assertChoice(effect, c("linear", "power", "exp", "hockyStick"))
     checkmate::assertChoice(normDefault, c("mean", "median"))
-    
-    # ensure all functions are either + or / 
+
+    # ensure all functions are either + or /
     if (expr[[1]] != as.name("~")){
         stop("Expression must be a formula using '~'")
         }
 
     currentCovDf <- covExprDf(expr)
 
-    # assert all cov in df 
+    # assert all cov in df
     if(!all(currentCovDf$covariate %in% names(oData))) {
         stop("Not all covariates are present in the data")
         } else {
         message("All covariates exists in the model data")
         }
-    
-    ## type is extracted from getData() ==> cont or cat only 
+
+    ## type is extracted from getData() ==> cont or cat only
     currentCovDf$type <- sapply(currentCovDf$covariate, function(x) class(oData[[x]]))
     if(!(currentCovDf$type %in% c("numeric", "logical", "factor", "character"))){
         stop("Covariate type cannot be identified")
@@ -447,7 +451,7 @@ parseCovExpr <- function(expr, oData, effect, normDefault){
                                     NA
                                 }
     }))
-    
+
     currentCovDf$max <- unlist(lapply(1:nrow(currentCovDf), function(x){
                                 if(currentCovDf$type[x] == "cont"){
                                     covName <- currentCovDf$covariate[x]
@@ -457,7 +461,7 @@ parseCovExpr <- function(expr, oData, effect, normDefault){
                                 }
     }))
 
-    
+
     currentCovDf$mean <- unlist(lapply(1:nrow(currentCovDf), function(x){
                                 if(currentCovDf$type[x] == "cont"){
                                     covName <- currentCovDf$covariate[x]
@@ -467,7 +471,7 @@ parseCovExpr <- function(expr, oData, effect, normDefault){
                                 }
     }))
 
-    
+
     currentCovDf$median <- unlist(lapply(1:nrow(currentCovDf), function(x){
                                 if(currentCovDf$type[x] == "cont"){
                                     covName <- currentCovDf$covariate[x]
@@ -477,7 +481,7 @@ parseCovExpr <- function(expr, oData, effect, normDefault){
                                 }
     }))
 
-    ## each of normfactor must be either numeric parse, summary stat or 1 if cont  
+    ## each of normfactor must be either numeric parse, summary stat or 1 if cont
     currentCovDf$normfactor <- ifelse(is.na(currentCovDf$normfactor), 1, currentCovDf$normfactor)
     # TODO support mean/median/NA=1
     if(any(currentCovDf$normfactor != 1 &  currentCovDf$normfactor == "cat")){
@@ -501,14 +505,14 @@ parseCovExpr <- function(expr, oData, effect, normDefault){
                                         xpr <- paste0(param, covName,  "= 1 + ", covTheta, "* (", covName, "-", normfactor, ")")
                                     }
                                     if(effect == "hockyStick"){
-                                        # TODO 
+                                        # TODO
                                         stop("Effect 'hockyStick' is not implemented yet")
                                     }
                                 } else{
                                     # TODO cat
                                     stop("Categorical covariates are not supported yet")
                                 }
-                                xpr 
+                                xpr
     }))
 
     currentCovDf$effect <- effect
@@ -522,22 +526,22 @@ parseCovExpr <- function(expr, oData, effect, normDefault){
 #' @param fit Model fit object
 #' @param expr Expression eg. CL ~ WT/70 + AGE/80 + ... .
 #' @param normDefault Default normalization for continuous covariates. "mean", "median" or NA. Default "median"
-#' @param effect character or list of characters of "linear", "piece_lin", "exp", "power". see details 
-#' 
+#' @param effect character or list of characters of "linear", "piece_lin", "exp", "power". see details
+#'
 #' `effect` and `normaDefault` are only used if covariate is continuous.
 #' `normaDefault` call will be skipped if what covpar expression is normalized by other value
-#' 
+#'
 #' @export
 addCovariate <- function(fit, expr, effect) {
     UseMethod("addCovariate")
 }
 
-#'@export 
+#'@export
 addCovariate.default <- function(fit, expr, effect) {
     stop("addCovariate is not supported for this object")
 }
 
-#'@export 
+#'@export
 addCovariate.nlmixr2Linearize <- function(fit, expr, effect) {
 
     covParseDf <- parseCovExpr(expr, nlme::getData(fit), effect = effect)
@@ -549,7 +553,7 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect) {
     covParseDf$Deriv <- paste0("D_", covParseDf$param)
     
     covRef <- paste0("cov", covParseDf$param, " = ", 
-        covParseDf$Deriv, "*1*(" , covParseDf$param, covParseDf$covariate , " - 1)")
+        covParseDf$Deriv, "*1*(" , covParseDf$param, covParseDf$covariate , " - 1)") # TODO support more covariate effects
     covTermLine <- paste0("covTerms = ", 
         paste0("cov", covParseDf$param, collapse = "+"))
 
@@ -565,7 +569,9 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect) {
     newMod <- newMod()
 
     newMod <- newMod %>% model(y = BASE_TERMS+ OPRED + covTerms)
-    newMod # FIXME reattach the data so it become pipe friendly
+    nlmixr(newMod, getData(fit), 
+          foceiControl(maxInnerIterations = 0, maxOuterIterations = 0, etaMat=fit))
+    # newMod # FIXME reattach the data so it become pipe friendly
 }
 
 
@@ -580,7 +586,7 @@ covExprDf <- function(expr) {
 
     # Extract covariate and normfactor parts
     cov_norm <- expr[[3]]
-    
+
     # A helper function to handle nested calls inside the expression
     handle_part <- function(part, covariates, normfactors) {
         if (inherits(part, "call")) {
@@ -622,7 +628,7 @@ covExprDf <- function(expr) {
 #' @return updated initial parameter data frame with the new theta added
 #' @author Omar Elashkar
 #' @noRd
-addThetaToIniDf <- function(iniDf, thetaname, ini, fix = FALSE){
+addThetaToIniDf <- function(iniDf, thetaname, ini, fix = TRUE){
     checkmate::assertCharacter(thetaname, any.missing = FALSE, min.len = 1)
     stopifnot(!any(thetaname %in% iniDf$name))
 
@@ -641,6 +647,6 @@ addThetaToIniDf <- function(iniDf, thetaname, ini, fix = FALSE){
         err = NA_character_
     )
     iniDf <- rbind(iniDf, newTheta)
-    
+
     iniDf[order(iniDf$ntheta), ]
 }

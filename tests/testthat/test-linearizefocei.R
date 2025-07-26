@@ -1,3 +1,5 @@
+
+
 test_that("linearize error models", {
 
   pk.turnover.emax3 <- function() {
@@ -58,24 +60,28 @@ test_that("linearize error models", {
   expect_equal(f$linearizeError,
                list(rxR2 = c("if (OCMT == 5) {",
                              "    rxR2 <- (pkadd.err)^2 + (OPRED)^2 * (prop.err)^2",
+                             "    fct <- prop.err^2/prop.err.l^2",
                              "}",
                              "if (OCMT == 6) {",
                              "    rxR2 <- (pdadd.err)^2",
+                             "    fct <- 0",
                              "}"),
                     tipred = "TIPRED <- y",
                     err = c("y1 <- y",
                             "y2 <- y",
-                            "y1 ~ add(rxR) + var()",
-                            "y2 ~ add(rxR) + var()")))
+                            "y1 ~ add(rxR)",
+                            "y2 ~ add(rxR)")))
 
   f1 <- f %>% model(effect ~ lnorm(pdadd.err) + prop(pdprop.err))
 
   expect_equal(f1$linearizeError,
                list(rxR2 = c("if (OCMT == 5) {",
                              "    rxR2 <- (pkadd.err)^2 + (OPRED)^2 * (prop.err)^2",
+                             "    fct <- prop.err^2/prop.err.l^2",
                              "}",
                              "if (OCMT == 4) {",
                              "    rxR2 <- (pdadd.err)^2 + (exp(OPRED))^2 * (pdprop.err)^2",
+                             "    fct <- pdprop.err^2/pdprop.err.l^2",
                              "}"),
                     tipred = c("if (OCMT == 5) {",
                                "    TIPRED <- y",
@@ -84,18 +90,20 @@ test_that("linearize error models", {
                                "}"),
                     err = c("y1 <- y",
                             "y2 <- y",
-                            "y1 ~ add(rxR) + var()",
-                            "y2 ~ lnorm(rxR) + var() + dv()")))
+                            "y1 ~ add(rxR)",
+                            "y2 ~ lnorm(rxR) + dv()")))
 
   f1 <- f %>% model(effect ~ logitNorm(pdadd.err, 10, 20) + prop(pdprop.err) + yeoJohnson(lambda))
 
   expect_equal(f1$linearizeError,
                list(rxR2 = c("if (OCMT == 5) {",
                              "    rxR2 <- (pkadd.err)^2 + (OPRED)^2 * (prop.err)^2",
+                             "    fct <- prop.err^2/prop.err.l^2",
                              "}",
                              "if (OCMT == 4) {",
                              "    rxR2 <- (pdadd.err)^2 + (rxTBSi(OPRED, lambda, 5, 10, 20))^2 * ",
                              "        (pdprop.err)^2",
+                             "    fct <- pdprop.err^2/pdprop.err.l^2",
                              "}"),
                     tipred = c("if (OCMT == 5) {",
                                "    TIPRED <- y",
@@ -105,9 +113,36 @@ test_that("linearize error models", {
                                "}"),
                     err = c("y1 <- y",
                             "y2 <- y",
-                            "y1 ~ add(rxR) + var()",
-                            "y2 ~ logitNorm(rxR, 10, 20) + var() + yeoJohnson(lambda) + dv()"))
+                            "y1 ~ add(rxR)",
+                            "y2 ~ logitNorm(rxR, 10, 20) + yeoJohnson(lambda) + dv()"))
                )
+
+  f1 <- f %>% model(effect ~ logitNorm(pdadd.err, 10, 20) + prop(pdprop.err) + yeoJohnson(lambda) + comb1())
+
+  expect_equal(f1$linearizeError,
+               list(rxR2 = c("if (OCMT == 5) {",
+                             "    rxR2 <- (pkadd.err)^2 + (OPRED)^2 * (prop.err)^2",
+                             "    fct <- prop.err^2/prop.err.l^2",
+                             "}",
+                             "if (OCMT == 4) {",
+                             "    rxR2 <- ((pdadd.err) + (rxTBSi(OPRED, lambda, 5, 10, 20)) * ",
+                             "        (pdprop.err))^2",
+                             "    fct <- (pdprop.err^2 * (rxTBSi(OPRED, lambda, 5, 10, 20)) + ",
+                             "        pdprop.err * pdadd.err)/(pdprop.err.l^2 * (rxTBSi(OPRED, ",
+                             "        lambda, 5, 10, 20)) + pdprop.err.l * pdadd.err.l)",
+                             "}"),
+                    tipred = c("if (OCMT == 5) {",
+                               "    TIPRED <- y",
+                               "}",
+                               "if (OCMT == 4) {",
+                               "    TIPRED <- rxTBSi(y, lambda, 5, 10, 20)",
+                               "}"),
+                    err = c("y1 <- y",
+                            "y2 <- y",
+                            "y1 ~ add(rxR)",
+                            "y2 ~ logitNorm(rxR, 10, 20) + yeoJohnson(lambda) + dv()"))
+               )
+
 
 
 })
@@ -147,7 +182,7 @@ test_that("Linearize add err model ", {
 
     fitLin <- linearize(fit)
 
-    linearizePlot(fit, fitLin) 
+    linearizePlot(fit, fitLin)
     isLinearizeMatch(fit, fitLin)$ofv[[1]] |> expect_true()
 
     # derv2 <- getDeriv(fitLin)
@@ -177,7 +212,7 @@ test_that("Linearize prop err model ", {
     }
     # set.seed(42)
     # ev <- rxode2::et(amountUnits = "mg", timeUnits = "hours") |>
-    #     rxode2::et(amt = 300, cmt = "depot") |> 
+    #     rxode2::et(amt = 300, cmt = "depot") |>
     #     rxode2::et(time = c(0.25, 0.5, 1,2,3,6,8,12,16,24))
     # sim <- rxode2::rxSolve(one.cmpt.properr, ev, nSub = 200, addDosing = TRUE)
     # sim$dv <- sim$sim
@@ -187,23 +222,23 @@ test_that("Linearize prop err model ", {
 
     # saveRDS(sim, "one.cmpt.properr_data.RDS")
     sim <- readRDS(system.file("one.cmpt.properr_data.RDS", package="nlmixr2extra"))
-    fit <- nlmixr(one.cmpt.properr, sim, est = "focei", 
+    fit <- nlmixr(one.cmpt.properr, sim, est = "focei",
             control = nlmixr2est::foceiControl(mceta=10))
     # linMod <- linModGen(fit, FALSE)
     # derv <- getDeriv(fit)
-    
-    # fitLin <- nlmixr(linMod, derv, est="focei", 
-    #         control = nlmixr2est::foceiControl(etaMat = fit, mceta=10, 
-    #         covMethod = "", 
+
+    # fitLin <- nlmixr(linMod, derv, est="focei",
+    #         control = nlmixr2est::foceiControl(etaMat = fit, mceta=10,
+    #         covMethod = "",
     #         calcTables=FALSE,
     #         maxInnerIterations=100, maxOuterIterations=100))
-            
+
 
     # fit$scaleInfo$scaleC
     # fitLin$scaleInfo$scaleC
     # INNER ETA
-    # OUTER THETA OMEGA 
-    # 
+    # OUTER THETA OMEGA
+    #
 
     fitLin <- linearize(fit, relTol = 0.2, mceta = c(-1, 10, 100))
     isLinearizeMatch(fit, fitLin, tol = 0.15)$ofv[[1]] |> expect_true()
@@ -331,7 +366,7 @@ test_that("Linearize multiple endpoints ", {
     # y <- linModGen(pk.turnover.emax3)
     # set.seed(999)
     # ev <- rxode2::et(amountUnits = "mg", timeUnits = "hours") |>
-    #     rxode2::et(amt = 100, cmt = "depot") |> 
+    #     rxode2::et(amt = 100, cmt = "depot") |>
     #     rxode2::et(time =  c(0, 0.5, 1, 1.5, 2, 3, 6, 9, 12, 24, 36, 48, 72, 96, 120) , cmt="cp")|>
     #     rxode2::et(time = c(0, 24, 36, 48, 72, 96, 120, 144), cmt="pca")
     # sim <- rxode2::rxSolve(pk.turnover.emax3, ev, nSub = 50, addDosing = TRUE)
@@ -344,13 +379,13 @@ test_that("Linearize multiple endpoints ", {
     # sim <- sim[,c("id", "time", "amt", "dv", "dvid", "evid")]
     # # sim <- sim[,c("id", "time", "amt", "dv",  "evid")]
 
-    # fit <- nlmixr(pk.turnover.emax3, sim, est = "focei", 
-    #         control = nlmixr2est::foceiControl(mceta=10, 
+    # fit <- nlmixr(pk.turnover.emax3, sim, est = "focei",
+    #         control = nlmixr2est::foceiControl(mceta=10,
     #         calcTables=TRUE))
     # # saveRDS(fit, "warfarin.RDS")
     fit <- readRDS(system.file("warfarin.RDS", package="nlmixr2extra"))
 
-    # derv <- getDeriv(fit) 
+    # derv <- getDeriv(fit)
     # # derv$CMT <- NULL
 
     # lmod <- linModGen(fit, TRUE)
@@ -406,7 +441,7 @@ test_that("linearize correlated eta ", {
             tcl <- log(2.7) # Cl
             tv <- log(30) # V
             tka <- log(1.56) #  Ka
-            eta.cl + eta.v ~ c(0.3, 
+            eta.cl + eta.v ~ c(0.3,
                                 0.1, 0.1)
             eta.ka ~ 0.6
             add.sd <- 0.7
@@ -474,10 +509,10 @@ test_that("Adding covariates to lin models", {
 
     set.seed(42)
     ev <- rxode2::et(amountUnits = "mg", timeUnits = "hours") |>
-        rxode2::et(amt = 200, cmt = "depot") |> 
-        rxode2::et(time = c(0.25, 0.5, 1,2,3,6,8,12,16,24)) |> 
+        rxode2::et(amt = 200, cmt = "depot") |>
+        rxode2::et(time = c(0.25, 0.5, 1,2,3,6,8,12,16,24)) |>
         rxode2::et(id = 1:200)
-    theo_sd <- rxode2::rxSolve(one.cmpt.adderr.cov, ev, nSub = 200, addDosing = TRUE, 
+    theo_sd <- rxode2::rxSolve(one.cmpt.adderr.cov, ev, nSub = 200, addDosing = TRUE,
         iCov=data.frame(id=1:200, WT=rnorm(200, 70, 10)))
     theo_sd$dv <- theo_sd$sim
     theo_sd <- theo_sd[,c("id", "time", "amt", "dv", "evid", "WT")]
@@ -485,8 +520,9 @@ test_that("Adding covariates to lin models", {
     nlfitNoCov <- nlmixr(one.cmpt.adderr, theo_sd, est = "focei")
     fitLinNoCov <- linearize(nlfitNoCov)
     fitLinCov <- addCovariate(fitLinNoCov, eta.v~WT/70, effect = "power")
+      
     fitLinCov <- nlmixr(fitLinCov, nlme::getData(fitLinNoCov), est = "focei")
-    
+
     nlfitCov <- nlmixr(one.cmpt.adderr.cov, nlme::getData(nlfitNoCov), est = "focei")
 
     nlfitCov$parFixed # FIXME why 0.5 and not 1.5?
