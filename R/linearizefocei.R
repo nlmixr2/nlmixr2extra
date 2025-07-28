@@ -109,7 +109,7 @@ linModGen <- function(ui, focei = TRUE, derivFct = FALSE){
         ui <- ui()
     }
     if(inherits(ui, "nlmixr2FitCore")){
-        stopifnot(all(ui$iniDf == ui$ui$iniDf))
+        stopifnot(all(ui$iniDf == ui$ui$iniDf, na.rm = TRUE))
         ui <- ui$ui
     }
     nlmod <- ui
@@ -332,10 +332,10 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA,
 #' @author Omar Elashkar
 #' @export
 linearizePlot <- function(nl, lin){
-    # TODO assertion that both objects are siblings. Random effects and errors names same
-
     stopifnot(inherits(nl, "nlmixr2FitCore"))
     stopifnot(inherits(lin, "nlmixr2Linearize"))
+
+    stopifnot(all(nl$iniDf$name[!is.na(nl$iniDf$neta1)] == lin$iniDf$name[!is.na(lin$iniDf$neta1)]))
 
     l <- function(x, descr) {
         x$factor <- descr
@@ -414,11 +414,11 @@ isLinearizeMatch <- function(fit, linFit, tol = 0.05){
 #'@return data frame with columns: param, covariate, normfactor, type, levels, min, max, expr, effect
 #'@author Omar Elashkar
 #'@noRd
-parseCovExpr <- function(expr, oData, effect, normDefault){
+parseCovExpr <- function(expr, oData, effect, ref ="median"){
     checkmate::assertFormula(expr)
     checkmate::assertDataFrame(oData)
     checkmate::assertChoice(effect, c("linear", "power", "exp", "hockyStick"))
-    checkmate::assertChoice(normDefault, c("mean", "median"))
+    checkmate::assertChoice(ref , c("mean", "median"))
 
     # ensure all functions are either + or /
     if (expr[[1]] != as.name("~")){
@@ -431,7 +431,7 @@ parseCovExpr <- function(expr, oData, effect, normDefault){
     if(!all(currentCovDf$covariate %in% names(oData))) {
         stop("Not all covariates are present in the data")
         } else {
-        message("All covariates exists in the model data")
+        cli::cli_alert_info("All covariates exists in the model data")
         }
 
     ## type is extracted from getData() ==> cont or cat only
@@ -503,7 +503,7 @@ parseCovExpr <- function(expr, oData, effect, normDefault){
                                     param <- currentCovDf$param[x]
                                     covName <- currentCovDf$covariate[x]
                                     normfactor <- currentCovDf$normfactor[x]
-                                    covTheta <- paste0("theta", param, covName)
+                                    covTheta <- paste0("cov.", param, covName)
                                     if(effect == "power"){
                                         xpr <- paste0(param, covName,  "= (" ,  covName, "/", normfactor, ")^",  covTheta)
                                     }
@@ -534,24 +534,27 @@ parseCovExpr <- function(expr, oData, effect, normDefault){
 #'
 #' @param fit Model fit object
 #' @param expr Expression eg. CL ~ WT/70 + AGE/80 + ... .
-#' @param normDefault Default normalization for continuous covariates. "mean", "median" or NA. Default "median"
+#' @param ref  Default normalization for continuous covariates. "mean", "median" or NA. Default "median"
 #' @param effect character or list of characters of "linear", "piece_lin", "exp", "power". see details
 #'
 #' `effect` and `normaDefault` are only used if covariate is continuous.
 #' `normaDefault` call will be skipped if what covpar expression is normalized by other value
-#'
+#' @author Omar Elashkar
 #' @export
-addCovariate <- function(fit, expr, effect) {
+addCovariate <- function(fit, expr, effect, ref ) {
     UseMethod("addCovariate")
 }
 
+
+#'@rdname addCovariate
 #'@export
-addCovariate.default <- function(fit, expr, effect) {
+addCovariate.default <- function(fit, expr, effect="power", ref  = "median") {
     stop("addCovariate is not supported for this object")
 }
 
+#'@rdname addCovariate
 #'@export
-addCovariate.nlmixr2Linearize <- function(fit, expr, effect) {
+addCovariate.nlmixr2Linearize <- function(fit, expr, effect="power", ref  = "median") {
 
     covParseDf <- parseCovExpr(expr, nlme::getData(fit), effect = effect)
 
@@ -568,7 +571,7 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect) {
 
     v <- c(covParseDf$expr, covRef, covTermLine, fit$ui$lstChr)
 
-    iniDf <- addThetaToIniDf(fit$iniDf, paste0("theta", covParseDf$param, covParseDf$covariate), 1)
+    iniDf <- addThetaToIniDf(fit$iniDf, paste0("cov.", covParseDf$param, covParseDf$covariate), 1, fix = FALSE)
     newMod <- fit$ui
     newMod <- rxode2::rxUiDecompress(newMod)
     assign("iniDf", iniDf, envir = newMod)
@@ -578,9 +581,19 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect) {
     newMod <- newMod()
 
     newMod <- newMod %>% model(y = BASE_TERMS+ OPRED + covTerms)
-    nlmixr(newMod, getData(fit), 
-          foceiControl(maxInnerIterations = 0, maxOuterIterations = 0, etaMat=fit))
-    # newMod # FIXME reattach the data so it become pipe friendly
+
+    # need to recover odata and reset class
+    newMod <- nlmixr(newMod, getData(fit), est = "focei", # FIXME this setup is extremely slow
+          nlmixr2est::foceiControl(maxInnerIterations = 0, 
+                maxOuterIterations = 0, etaMat=fit, 
+                covMethod = "", calcTables=FALSE))
+    tmpEnv <- newMod$env
+    assign("message", fit$message, envir=tmpEnv)
+    assign("originalUi", fit$originalUi, envir=tmpEnv)
+    v <- class(fit)
+    attr(v, ".foceiEnv") <- tmpEnv
+    class(newMod) <- v
+    newMod
 }
 
 

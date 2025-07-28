@@ -2,9 +2,15 @@
 % Please edit documentation in R/linearizefocei.R
 \name{addCovariate}
 \alias{addCovariate}
+\alias{addCovariate.default}
+\alias{addCovariate.nlmixr2Linearize}
 \title{Add Covariate to Model Fit (Generic)}
 \usage{
-addCovariate(fit, expr, effect)
+addCovariate(fit, expr, effect, ref)
+
+\method{addCovariate}{default}(fit, expr, effect = "power", ref = "median")
+
+\method{addCovariate}{nlmixr2Linearize}(fit, expr, effect = "power", ref = "median")
 }
 \arguments{
 \item{fit}{Model fit object}
@@ -16,8 +22,11 @@ addCovariate(fit, expr, effect)
 \code{effect} and \code{normaDefault} are only used if covariate is continuous.
 \code{normaDefault} call will be skipped if what covpar expression is normalized by other value}
 
-\item{normDefault}{Default normalization for continuous covariates. "mean", "median" or NA. Default "median"}
+\item{ref}{Default normalization for continuous covariates. "mean", "median" or NA. Default "median"}
 }
 \description{
 Add Covariate to Model Fit (Generic)
+}
+\author{
+Omar Elashkar
 }

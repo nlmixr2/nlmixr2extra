@@ -246,6 +246,35 @@ test_that("Linearize prop err model ", {
 })
 
 
+test_that("Linearization phenobarital prop err", {
+    one.cmpt.prop <- function() {
+        ini({
+            tcl <- log(1) # Cl
+            tv <- log(2) # V
+            eta.cl ~ 0.3
+            eta.v ~ 0.1
+            prop.sd <- 0.1
+        })
+        model({
+            cl <- exp(tcl + eta.cl)
+            v <- exp(tv + eta.v)
+            d / dt(center) <- - cl / v * center
+            cp <- center / v
+            cp ~ prop(prop.sd) 
+        })
+    }
+
+    fit <- nlmixr(one.cmpt.prop, nlmixr2data::pheno_sd, est = "focei")
+
+    fitLin <- linearize(fit, derivFct = FALSE)
+    expect_true(isLinearizeMatch(fit, fitLin)$ofv[[1]])
+
+    fitLin <- linearize(fit, derivFct = TRUE)
+
+})
+
+
+
 test_that("Linearize combined2 model ", {
     one.cmpt.combinederr <- function() {
         ini({
@@ -519,7 +548,8 @@ test_that("Adding covariates to lin models", {
 
     nlfitNoCov <- nlmixr(one.cmpt.adderr, theo_sd, est = "focei")
     fitLinNoCov <- linearize(nlfitNoCov)
-    fitLinCov <- addCovariate(fitLinNoCov, eta.v~WT/70, effect = "power")
+    fitLinCov <- addCovariate(fitLinNoCov, eta.v~WT/70, effect = "power") |> 
+        addCovariate(eta.cl~WT/80)
       
     fitLinCov <- nlmixr(fitLinCov, nlme::getData(fitLinNoCov), est = "focei")
 
