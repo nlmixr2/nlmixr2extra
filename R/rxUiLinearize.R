@@ -262,7 +262,7 @@ linearizeErrorLines.rxUi <- function(line) {
   })
 }
 
-
+#' @export
 rxUiGet.linearizeError <- function(x, ...) {
   .ui <- x[[1]]
   if (!exists("derivFct", envir=.ui)) {
