@@ -20,7 +20,7 @@
 #' @noRd
 #' @author Matthew L. Fidler
 .rxGetFctForErrorProp <- function(env, pred1) {
-  .f <- .rxGetVarianceForErrorPropOrPowF(env, pred1)
+  .f <- .getVarianceForErrorPropOrPowF(env, pred1)
   if (!is.na(pred1$b)) {
     .p1 <- str2lang(pred1$b)
   } else {
@@ -47,7 +47,7 @@
 #' @noRd
 #' @author Matthew L. Fidler
 .rxGetFctForErrorPow <- function(env, pred1) {
-  .f <- .rxGetVarianceForErrorPropOrPowF(env, pred1)
+  .f <- .getVarianceForErrorPropOrPowF(env, pred1)
   .cnd <- pred1$cond
   if (!is.na(pred1$b)) {
     .p1 <- str2lang(pred1$b)
