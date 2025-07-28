@@ -183,7 +183,10 @@ linModGen <- function(ui, focei = TRUE, derivFct = FALSE){
     iniDf$ntheta[!is.na(iniDf$ntheta)] <- seq_along(na.omit(iniDf$ntheta)) # remove thetas except for err
     # add theta.etaname
     iniDf <- addThetaToIniDf(iniDf, paste0("theta.", etaNames), ini=0, fix = TRUE)
-    iniDf <- addThetaToIniDf(iniDf, paste0(noAdderrNames, ".l"), ini=noAdderrEstim , fix = TRUE)
+    if(derivFct){
+        if(derivFct & length(noAdderrNames) < 1){stop("Having `derivFct= TRUE` is irrelevant for this error model")}
+        iniDf <- addThetaToIniDf(iniDf, paste0(noAdderrNames, ".l"), ini=noAdderrEstim , fix = TRUE)
+    }
 
     nlmod <- rxode2::rxUiDecompress(nlmod)
     assign("iniDf", iniDf, envir = nlmod)
@@ -281,12 +284,29 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA,
         if(relDev <=relTol){
             break
         } else{
-            message(paste("Non-Linear OFV: ", oObj, "Linear OFV:", lObj, "mceta:", mceta[i], "Relative OFV Dev", relDev*100, "%"))
+            cli::cli_alert_info(paste("Non-Linear OFV: ", oObj, "Linear OFV:", lObj, "mceta:", mceta[i], "Relative OFV Dev", relDev*100, "%"))
             if(i != length(mceta)){
-                message(paste("Using mceta = ", mceta[i], "provided inadequate linearization. Trying mceta = ", mceta[i+1], "..."))
+                cli::cli_alert_info(paste("Using mceta = ", mceta[i], "provided inadequate linearization. Trying mceta = ", mceta[i+1], "..."))
             } else{
-                warning("Linearization was inadequate for the given tolerance. Try increasing the tolerance, refine the model or fit with mceta")
-                # TODO automatically switch to FOCE if not already
+                if(is.na(focei) & !exists("secondEval")){ # final switch iteration (after estimation) 
+                    cli::cli_alert_info("Switching to FOCE after full FOCEI estimation failed ...")
+                    secondEval <- evalFun()
+                    linMod <- linMod |> model(foceiLin <- 0)
+                    fitL <- nlmixr(linMod, derv, est="focei",
+                        control = nlmixr2est::foceiControl(etaMat = fit, mceta=10, covMethod = "", calcTables=FALSE))
+                    oObj <- fit$objDf$OBJF
+                    lObj <- fitL$objDf$OBJF
+
+                    relDev <- abs((oObj-lObj)/lObj)
+                    
+                    if(relDev <=relTol){
+                        cli::cli_alert_warning("FOCE Linearization was inadequate for the given tolerance. Try increasing the tolerance, refine the model or fit with mceta")
+                    }
+
+                } else{
+                    cli::cli_alert_warning("Linearization was inadequate for the given tolerance. Try increasing the tolerance, refine the model or fit with mceta")
+
+                }
             }
         }
     }
@@ -384,19 +404,22 @@ evalLinModel <- function(fit, linMod, derv, innerIter = 0, covMethod = ""){
 #' @param fit fit of nonlinear model.
 #' @param linFit fit of linear model.
 #' @param tol relative tolerance for matching. Default is 0.05.
+#' @return match list for OFV, omega, eta, and residual variance terms
 #' @author Omar Elashkar
-#' @noRd
+#' @export
 isLinearizeMatch <- function(fit, linFit, tol = 0.05){
 
     est <-setNames(fit$iniDf$est, fit$iniDf$name)
     estLin <- setNames(linFit$iniDf$est, linFit$iniDf$name)
-    est <- est[names(estLin)]
+    # est <- est[names(estLin)]
+
+    estErrNl <- est[!is.na(fit$iniDf$err)]
+    estErrLin <- estLin[!is.na(linFit$iniDf$ntheta) &  linFit$iniDf$fix == FALSE]
 
     deltaOfv <- all.equal(fit$objDf$OBJF, linFit$objDf$OBJF, tol = tol)
     deltaOmega <- all.equal(fit$omega, linFit$omega, tol = tol)
     deltaEta <- all.equal(fit$eta, linFit$eta, tol = tol)
-    deltaErr <- all.equal(est, estLin, tol = tol)
-
+    deltaErr <- all.equal(estErrNl, estErrLin, tol = tol)
     list(
         ofv = list(isTRUE(deltaOfv), deltaOfv),
         omega = list(isTRUE(deltaOmega), deltaOmega),
