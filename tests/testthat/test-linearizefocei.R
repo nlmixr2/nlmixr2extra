@@ -269,8 +269,6 @@ test_that("Linearization phenobarital prop err", {
     fitLin <- linearize(fit, derivFct = FALSE)
     expect_true(isLinearizeMatch(fit, fitLin)$ofv[[1]])
 
-    fitLin <- linearize(fit, derivFct = TRUE)
-
 })
 
 
@@ -303,7 +301,7 @@ test_that("Linearize combined2 model ", {
     # sum(grepl("O_ETA\\d+", names(derv))) |> expect_equal(ncol(fit$eta) - 1)
     # all(derv$D_ResVar == 1) |> expect_equal(TRUE)
 
-    fitLin <- linearize(fit)
+    fitLin <- linearize(fit, derivFct = TRUE)
     isLinearizeMatch(fit, fitLin)$ofv[[1]] |> expect_true()
 })
 

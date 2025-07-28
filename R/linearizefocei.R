@@ -127,6 +127,10 @@ linModGen <- function(ui, focei = TRUE, derivFct = FALSE){
     # fitui <- rxode2::rxUiCompress(fitui)
     epStr <- ui$predDf$var
     errNames <- ui$iniDf$name[!is.na(ui$iniDf$err)]
+    errEstim <- ui$iniDf$est[!is.na(ui$iniDf$err)]
+    
+    noAdderrNames <- ui$iniDf$name[!is.na(ui$iniDf$err) & ui$iniDf$err != "add"]
+    noAdderrEstim <- ui$iniDf$est[!is.na(ui$iniDf$err) & ui$iniDf$err != "add"]
     etaNames <- ui$eta
 
     modelStr <- list()
@@ -179,6 +183,7 @@ linModGen <- function(ui, focei = TRUE, derivFct = FALSE){
     iniDf$ntheta[!is.na(iniDf$ntheta)] <- seq_along(na.omit(iniDf$ntheta)) # remove thetas except for err
     # add theta.etaname
     iniDf <- addThetaToIniDf(iniDf, paste0("theta.", etaNames), ini=0, fix = TRUE)
+    iniDf <- addThetaToIniDf(iniDf, paste0(noAdderrNames, ".l"), ini=noAdderrEstim , fix = TRUE)
 
     nlmod <- rxode2::rxUiDecompress(nlmod)
     assign("iniDf", iniDf, envir = nlmod)
