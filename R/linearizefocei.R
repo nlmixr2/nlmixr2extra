@@ -13,16 +13,16 @@ getDeriv <- function(fit){
 
     eta <- fit$eta
 
-    eta <- eta[,-1]
+    eta <- eta[,-1, drop=FALSE]
     eta <- setNames(eta, paste0("ETA[", seq_along(eta), "]"))
 
     theta <- fit$theta
     reps <- ceiling(nrow(eta) / nrow(theta))
     # theta <- as.data.frame(theta)
-    theta <- setNames(fit$theta, paste0("THETA[", seq_along(fit$theta), "]")) |>
-        t() |>
+    theta <- setNames(fit$theta, paste0("THETA[", seq_along(fit$theta), "]")) %>% 
+        t() %>% 
         as.data.frame()
-
+    
     theta <- theta[rep(1, nrow(eta)),,drop=FALSE]
     params_df <- cbind(theta, eta)
 
@@ -36,9 +36,10 @@ getDeriv <- function(fit){
 
     derv <- rxode2::rxSolve(innerModel$innerOeta, oData, params=params_df,
         addDosing=FALSE,
-        keep = c("DV", setdiff(names(oData),  c("DV", "ID", "TIME", "DVID", "ADDL", "EVID", "AMT", "CMT")))) # add covariates
+        keep = c("DV", setdiff(names(oData),  c("DV", "ID", "TIME", "DVID", 
+                                                "ADDL", "EVID", "AMT", "CMT", "RATE", "OCC")))) # add covariates
 
-    eta <- fit$eta[,-1]
+    eta <- fit$eta[,-1, drop=FALSE]
     # OPRED
     derv <- renameCol(derv, "OPRED", "rx_pred_")
 
@@ -70,9 +71,7 @@ getDeriv <- function(fit){
     }
 
     # add OCMT col
-    if(length(unique(fit$predDf$cond)) > 1){
-        # derv$OCMT <- as.integer(derv$CMT)
-
+    #if(length(unique(fit$predDf$cond)) > 1){
         mv <- rxode2::rxModelVars(innerModel$inner) # model variables
         cmtName <- c(mv$state, mv$stateExtra) # + cmt names (states)
         cmtDf <- data.frame(CMT=seq_along(cmtName), cond=cmtName)
@@ -86,8 +85,8 @@ getDeriv <- function(fit){
         derv <- derv[order(derv$rxRow), ]
         derv$rxRow <- NULL
         derv$CMT <- NULL
+    #}
 
-    }
 
     derv
 }
@@ -263,11 +262,11 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA,
     firstEval <- evalFun()
 
     if(isTRUE(all.equal(firstEval$oObj, firstEval$lObj_map, tolerance = relTol))){
-        message("Linearization evaluation matched. Linearization might be feasible ...")
+        cli::cli_alert_info("Linearization evaluation matched. Linearization might be feasible ...")
     } else{
-        message("Linearization evaluation mismatched by deltaOFV > 2%. Linearization might be difficult")
-        message("Switching to linearization around predictions only (Variance linearization skipped)")
-        linMod <- linMod |> model(foceiLin <- 0)
+        cli::cli_alert_warning("Linearization evaluation mismatched by deltaOFV > 2%. Linearization might be difficult")
+        cli::cli_alert_warning("Switching to linearization around predictions only (Variance linearization skipped)")
+        linMod <- linMod %>%  model(foceiLin <- 0)
         secondEval <- evalFun()
     }
 
@@ -291,7 +290,7 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA,
                 if(is.na(focei) & !exists("secondEval")){ # final switch iteration (after estimation) 
                     cli::cli_alert_info("Switching to FOCE after full FOCEI estimation failed ...")
                     secondEval <- evalFun()
-                    linMod <- linMod |> model(foceiLin <- 0)
+                    linMod <- linMod %>%  model(foceiLin <- 0)
                     fitL <- nlmixr(linMod, derv, est="focei",
                         control = nlmixr2est::foceiControl(etaMat = fit, mceta=10, covMethod = "", calcTables=FALSE))
                     oObj <- fit$objDf$OBJF
@@ -332,8 +331,8 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA,
         "\nLinearized Model Runtime:", NA, 
         "\nNon-Linearized Model Runtime:", NA
     )
-    message("Linearization Summary:")
-    message(m)
+    cli::cli_alert_info("Linearization Summary:")
+    cli::cli_alert_info(m)
 
     tmpEnv <- fitL$env
     assign("message", c(fitL$message, m), envir=tmpEnv)
@@ -369,10 +368,10 @@ linearizePlot <- function(nl, lin){
     originalIval <- l(nl$etaObf, "original")
     linearIval <- l(lin$etaObf, "linear")
 
-    fig <- rbind(originalIval, linearIval) |>
+    fig <- rbind(originalIval, linearIval) %>% 
         tidyr::pivot_longer(cols = c(-c("ID", "factor")), names_to = "parameter",
-        values_to = "value") |>
-        tidyr::pivot_wider(names_from = "factor", values_from = "value") |>
+        values_to = "value") %>% 
+        tidyr::pivot_wider(names_from = "factor", values_from = "value") %>% 
         ggplot2::ggplot(aes(x = .data[["original"]], y=.data[["linear"]])) +
         ggplot2::geom_smooth(se = FALSE, method = "lm") +
         ggplot2::geom_point() +
@@ -608,7 +607,7 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect="power", ref  = "med
     }
 
     if(!any(covParseDf$param %in% ui$eta)){
-        message("eta parameters: ", paste(ui$eta, collapse = ", "))
+        cli::cli_alert_info("eta parameters: ", paste(ui$eta, collapse = ", "))
         stop("For linearized models, covariates are added to eta parameters only")
     }
     covParseDf$Deriv <- paste0("D_", covParseDf$param)
