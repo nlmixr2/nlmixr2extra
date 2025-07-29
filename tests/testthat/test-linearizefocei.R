@@ -185,7 +185,7 @@ test_that("Linearize add err model ", {
 
     linearizePlot(fit, fitLin) %>% expect_no_error()
     expect_true(
-        all(sapply(isLinearizeMatch(fit, fitLin), function(x){x[[2]]}))
+        all(sapply(isLinearizeMatch(fit, fitLin), function(x){x[[1]]}))
     )
 
 })
@@ -254,7 +254,7 @@ test_that("Linearization phenobarbital prop err", {
     one.cmpt.prop.iv <- function() {
         ini({
             tcl <- log(0.01) # Cl
-            tv <- log(1) # V
+            tv <- log(0.9) # V
             eta.cl ~ 0.1
             eta.v ~ 0.1
             prop.sd <- 0.1
@@ -264,10 +264,10 @@ test_that("Linearization phenobarbital prop err", {
             v <- exp(tv + eta.v)
             d / dt(center) <- - cl / v * center
             cp <- center / v
+            cp <- cp
             cp ~ prop(prop.sd) 
         })
     }
-
     fit <- nlmixr(one.cmpt.prop.iv, nlmixr2data::pheno_sd, est = "focei")
 
     suppressWarnings(
@@ -276,7 +276,7 @@ test_that("Linearization phenobarbital prop err", {
     
     # increase error to 10% for few outliers
     expect_true( 
-        all(sapply(isLinearizeMatch(fit, fitLin, 0.1), function(x){x[[2]]}))
+        all(sapply(isLinearizeMatch(fit, fitLin, 0.1), function(x){x[[1]]}))
     )
 
 })
@@ -314,7 +314,7 @@ test_that("Linearize combined2 model ", {
     )
 
     expect_true( 
-        all(sapply(isLinearizeMatch(fit, fitLin, 0.1), function(x){x[[2]]}))
+        all(sapply(isLinearizeMatch(fit, fitLin, 0.1), function(x){x[[1]]}))
     )
 })
 
@@ -347,7 +347,7 @@ test_that("Linearize combined1 model ", {
     )
 
     expect_true( 
-        all(sapply(isLinearizeMatch(fit, fitLin, 0.1), function(x){x[[2]]}))
+        all(sapply(isLinearizeMatch(fit, fitLin, 0.1), function(x){x[[1]]}))
     )
 })
 
@@ -431,9 +431,9 @@ test_that("Linearize multiple endpoints ", {
         fitLin <- linearize(fit, mceta = 10)
     )
 
-    expect_true(isLinearizeMatch(fit, fitLin)$ofv[[2]])
+    expect_true(isLinearizeMatch(fit, fitLin)$ofv[[1]])
 
-    # linearizePlot(fit, fitLin)
+    linearizePlot(fit, fitLin)
 })
 
 
@@ -459,8 +459,15 @@ test_that("linearize correlated eta ", {
         })
     }
     fit <- nlmixr(one.cmpt.adderr, nlmixr2data::theo_md, est = "focei")
-    fitLin <- linearize(fit)
+    suppressWarnings(
+        fitLin <- linearize(fit)
+    )
     isLinearizeMatch(fit, fitLin)$ofv[[1]] |> expect_true()
+    
+    expect_true( 
+        all(sapply(isLinearizeMatch(fit, fitLin, 0.1), function(x){x[[2]]}))
+    )
+
 })
 
 test_that("Adding covariates to lin models", {
@@ -519,8 +526,20 @@ test_that("Adding covariates to lin models", {
 
     nlfitNoCov <- nlmixr(one.cmpt.adderr, theo_sd, est = "focei")
     fitLinNoCov <- linearize(nlfitNoCov)
-    fitLinCov <- addCovariate(fitLinNoCov, eta.v~WT/70, effect = "power") |> 
-        addCovariate(eta.cl~WT/80)
+    expect_no_error(
+        addCovariate(fitLinNoCov, eta.v~WT/70, effect = "power") |> 
+            addCovariate(eta.cl~WT/80)
+    )
+    expect_error(
+        addCovariate(fitLinNoCov, eta.v~WT/70, effect = "power") |> 
+            addCovariate(eta.v~WT/70), 
+            "Duplicated names found"
+    )
+    expect_error(
+        addCovariate(fitLinNoCov, eta.v~AGPR/70, effect = "power") |> 
+            addCovariate(eta.v~WT/70)
+    )
+    fitLinCov <- addCovariate(fitLinNoCov, eta.v~WT/70, effect = "power") 
       
     fitLinCov <- nlmixr(fitLinCov, nlme::getData(fitLinNoCov), est = "focei")
 
@@ -529,6 +548,7 @@ test_that("Adding covariates to lin models", {
     nlfitCov$parFixed # FIXME why 0.5 and not 1.5?
     fitLinCov$parFixed
 
+    expect_true(sum(nlfitCov$time) > sum(fitLinCov$time))
     expect_true(fitLinCov$objDf$OBJF < fitLinNoCov$objDf$OBJF)
     expect_true(nlfitCov$objDf$OBJF < nlfitNoCov$objDf$OBJF)
     expect_equal(nlfitCov$objDf$OBJF, fitLinCov$objDf$OBJF, tolerance = 0.1)

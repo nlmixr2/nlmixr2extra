@@ -3,6 +3,8 @@
 \name{addCovariate}
 \alias{addCovariate}
 \alias{addCovariate.default}
+\alias{addCovariate.rxUi}
+\alias{addCovariate.nlmixr2FitCore}
 \alias{addCovariate.nlmixr2Linearize}
 \title{Add Covariate to Model Fit (Generic)}
 \usage{
@@ -10,12 +12,16 @@ addCovariate(fit, expr, effect, ref)
 
 \method{addCovariate}{default}(fit, expr, effect = "power", ref = "median")
 
+\method{addCovariate}{rxUi}(fit, expr, effect = "power", ref = "median")
+
+\method{addCovariate}{nlmixr2FitCore}(fit, expr, effect = "power", ref = "median")
+
 \method{addCovariate}{nlmixr2Linearize}(fit, expr, effect = "power", ref = "median")
 }
 \arguments{
 \item{fit}{Model fit object}
 
-\item{expr}{Expression eg. CL ~ WT/70 + AGE/80 + ... .}
+\item{expr}{Expression, or vector or list of expressions. eg. CL ~ WT/70 + AGE/80 + ... .}
 
 \item{effect}{character or list of characters of "linear", "piece_lin", "exp", "power". see details
 

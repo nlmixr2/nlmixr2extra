@@ -577,14 +577,24 @@ addCovariate.default <- function(fit, expr, effect="power", ref  = "median") {
     stop("addCovariate is not supported for this object")
 }
 
-addCovariate.rxUi <- function(){
+#'@rdname addCovariate
+#'@export
+addCovariate.rxUi <- function(fit, expr, effect = "power", ref = "median"){
+    if(is.null(oData)){
+        stop("Use addData2Rx() first to get covariate adding from this model.")
+    }
+    
+    stop("addCovariate is not supported for this object") # TODO covariate adding with normal models
 
 }
 
-addCovariate.nlmixr2FitCore <- function(){
+#'@rdname addCovariate
+#'@export
+addCovariate.nlmixr2FitCore <- function(fit, expr, effect = "power", ref = "median"){
     ui <- fit$ui
-
+    addCovariate(ui)
 }
+
 #'@rdname addCovariate
 #'@export
 addCovariate.nlmixr2Linearize <- function(fit, expr, effect="power", ref  = "median") {
@@ -605,15 +615,19 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect="power", ref  = "med
     
     covRef <- paste0("cov", covParseDf$param, " = ", 
         covParseDf$Deriv, "*1*(" , covParseDf$param, covParseDf$covariate , " - 1)") # TODO support more covariate effects
-    covTermsPrev <- grep("covTerms = ", modelExtract(ui), value = TRUE)
-    if(length(covTermsPrev) == 0){
+    covTermsPrev <- grep("covTerms = ", ui$lstChr, value = F)
+    if(length(covTermsPrev) == 0){ # first time add
         covTermLine <- paste0("covTerms = ", 
             paste0("cov", covParseDf$param, collapse = "+"))
-    } else {
-        covTermLine <- paste0(covTermsPrev, " + ", paste0("cov", covParseDf$param, collapse = "+"))
+            
+        v <- c(covParseDf$expr, covRef, covTermLine, ui$lstChr)
+    } else { # second time
+        covTermLineModel <- ui$lstChr
+        # replace line 
+        covTermLineModel[covTermsPrev] <- paste0(covTermLineModel[covTermsPrev], " + ", paste0("cov", covParseDf$param, collapse = "+"))
+        v <- c(covParseDf$expr, covRef, covTermLineModel)
     }
 
-    v <- c(covParseDf$expr, covRef, covTermLine, ui$lstChr)
 
     iniDf <- addThetaToIniDf(fit$iniDf, paste0("cov.", covParseDf$param, covParseDf$covariate), 1, fix = FALSE)
     newMod <- fit$ui
@@ -700,7 +714,13 @@ covExprDf <- function(expr) {
 #' @noRd
 addThetaToIniDf <- function(iniDf, thetaname, ini, fix = TRUE){
     checkmate::assertCharacter(thetaname, any.missing = FALSE, min.len = 1)
-    stopifnot(!any(thetaname %in% iniDf$name))
+    tryCatch({
+        stopifnot(!any(thetaname %in% iniDf$name))
+        }, error = function(e) {
+            duplicated_names <- thetaname[thetaname %in% iniDf$name]
+            stop(paste("Duplicated names found:", paste(duplicated_names, collapse = ", ")))
+})
+
 
     newTheta <- data.frame(
         ntheta = seq_along(thetaname) + max(iniDf$ntheta, na.rm = TRUE),
