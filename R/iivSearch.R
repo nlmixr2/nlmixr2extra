@@ -41,10 +41,11 @@ iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC"){
         unfixedIni$upper[!is.na(unfixedIni$ntheta) &  unfixedIni$fix == FALSE] <-  unfixedIni$est[!is.na(unfixedIni$ntheta) &  unfixedIni$fix == FALSE]*2  # set upper to residual to 2x
         ini(newMod) <- unfixedIni
         tryCatch({
-          fit <- nlmixr(newMod, nlme::getData(fit), est = "focei", 
-              control = nlmixr2est::foceiControl(mceta=5, 
-                                                 maxInnerIterations = 9999,
-                                                 etaMat = as.matrix(fit$eta[,c(noCorrSpace)])))
+            fit <- nlmixr(newMod, nlme::getData(fit), est = "focei",
+                control = nlmixr2est::foceiControl(mceta=5, 
+                                                    print = 10,
+                                                    maxInnerIterations = 9999,
+                                                    etaMat = as.matrix(fit$eta[,c(noCorrSpace)])))
           
           summ <- fit$objDf[, c("OBJF", "AIC", "BIC")]
           summ$search <- x
