@@ -12,7 +12,6 @@ getDeriv <- function(fit){
     innerModel <- ui$foceiModel
 
     eta <- fit$eta
-
     eta <- eta[,-1, drop=FALSE]
     eta <- setNames(eta, paste0("ETA[", seq_along(eta), "]"))
 
@@ -328,8 +327,8 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA,
         "\nFitted Linear OFV: ", lObj,
         "\nRelative OFV Dev: ", round(relDev, 4) * 100, "%\n",
         "\nmceta: ", mceta[i], 
-        "\nLinearized Model Runtime:", NA, 
-        "\nNon-Linearized Model Runtime:", NA
+        "\nLinearized Model Runtime:", sum(fit$time),
+        "\nNon-Linearized Model Runtime:", sum(fitL$time)
     )
     cli::cli_alert_info("Linearization Summary:")
     cli::cli_alert_info(m)
@@ -357,6 +356,7 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA,
 #' @export
 linearizePlot <- function(nl, lin){
     stopifnot(inherits(nl, "nlmixr2FitCore"))
+    stopifnot(inherits(lin, "nlmixr2FitCore"))
     stopifnot(inherits(lin, "nlmixr2Linearize"))
 
     stopifnot(all(nl$iniDf$name[!is.na(nl$iniDf$neta1)] == lin$iniDf$name[!is.na(lin$iniDf$neta1)]))
@@ -375,7 +375,8 @@ linearizePlot <- function(nl, lin){
         ggplot2::ggplot(aes(x = .data[["original"]], y=.data[["linear"]])) +
         ggplot2::geom_smooth(se = FALSE, method = "lm") +
         ggplot2::geom_point() +
-        ggplot2::facet_wrap("parameter", scales = "free")
+        ggplot2::facet_wrap("parameter", scales = "free") + 
+        ggplot2::labs(title = paste("Model OBJ:", nl$objDf$OBJF, "Linear OBJ:", lin$objDf$OBJF))
     fig
 }
 
@@ -441,11 +442,10 @@ isLinearizeMatch <- function(fit, linFit, tol = 0.05){
 #'@return data frame with columns: param, covariate, normfactor, type, levels, min, max, expr, effect
 #'@author Omar Elashkar
 #'@noRd
-parseCovExpr <- function(expr, oData, effect, ref ="median"){
+parseCovExpr <- function(expr, oData, effect){
     checkmate::assertFormula(expr)
     checkmate::assertDataFrame(oData)
     checkmate::assertChoice(effect, c("linear", "power", "exp", "hockyStick"))
-    checkmate::assertChoice(ref , c("mean", "median"))
 
 
     currentCovDf <- covExprDf(expr)
@@ -459,21 +459,39 @@ parseCovExpr <- function(expr, oData, effect, ref ="median"){
 
     ## type is extracted from getData() ==> cont or cat only
     currentCovDf$type <- sapply(currentCovDf$covariate, function(x) class(oData[[x]]))
-    if(!(currentCovDf$type %in% c("numeric", "logical", "factor", "character"))){
+    if(!all(currentCovDf$type %in% c("numeric", "logical", "factor", "character"))){
         stop("Covariate type cannot be identified")
     }
     currentCovDf$type <- ifelse(currentCovDf$type == "numeric", "cont", "cat")
 
+
     ## add col levels for cat covars
-    currentCovDf$levels <- unlist(lapply(1:nrow(currentCovDf), function(x){
+    refCalc <- lapply(1:nrow(currentCovDf), function(x){
                                 if(currentCovDf$type[x] == "cat"){
                                     covName <- currentCovDf$covariate[x]
-                                    unique(oData[[covName]])
+                                    freqTable <- prop.table(table(oData[[covName]]))
+                                    refLevel <- names(freqTable)[which.max(freqTable)]
+                                    refFreq <- freqTable[refLevel]
+                                    list(refLevel=refLevel, refFreq=refFreq)
+                                } else{
+                                    list(refLevel=NA, refFreq=NA)
+                                }
+    })
+
+    currentCovDf$refLevel <- lapply(refCalc, function(x) x$refLevel)
+    currentCovDf$refFreq <- unlist(lapply(refCalc, function(x) x$refFreq))
+    
+    currentCovDf$levels <- lapply(1:nrow(currentCovDf), function(x){
+                                if(currentCovDf$type[x] == "cat"){
+                                    covName <- currentCovDf$covariate[x]
+                                    list(unique(oData[[covName]]))
                                 } else{
                                     NA
                                 }
-    }))
+    })
+    
 
+    # cont covariaties
     ## add cols min and max for cont
     currentCovDf$min <- unlist(lapply(1:nrow(currentCovDf), function(x){
                                 if(currentCovDf$type[x] == "cont"){
@@ -513,39 +531,73 @@ parseCovExpr <- function(expr, oData, effect, ref ="median"){
                                 }
     }))
 
+
+
     ## each of normfactor must be either numeric parse, summary stat or 1 if cont
-    currentCovDf$normfactor <- ifelse(is.na(currentCovDf$normfactor), 1, currentCovDf$normfactor)
-    # TODO support mean/median/NA=1
-    if(any(currentCovDf$normfactor != 1 &  currentCovDf$normfactor == "cat")){
+    currentCovDf$normFactor <- ifelse(is.na(currentCovDf$normFactor), "1", currentCovDf$normFactor)
+    currentCovDf$normFactor <- ifelse(currentCovDf$normFactor == "median", currentCovDf$median, currentCovDf$normFactor)
+    currentCovDf$normFactor <- ifelse(currentCovDf$normFactor == "mean", currentCovDf$mean, currentCovDf$normFactor)
+    currentCovDf$normFactor <- as.numeric(currentCovDf$normFactor)
+    if(any(currentCovDf$normFactor != 1 &  currentCovDf$normFactor == "cat")){
         stop("Categorical covariates does not have normalization factor")
     }
 
 
-    currentCovDf$expr <- unlist(lapply(1:nrow(currentCovDf), function(x){
+    currentCovDf$expr <- lapply(1:nrow(currentCovDf), function(x){
+                                param <- currentCovDf$param[x]
+                                covName <- currentCovDf$covariate[x]
+                                normFactor <- currentCovDf$normFactor[x]
+                                covTheta <- paste0("cov.", param, covName)
+                                eqName <- paste0("eq.", covTheta)
+
+
                                 if(currentCovDf$type[x] == "cont"){
-                                    param <- currentCovDf$param[x]
-                                    covName <- currentCovDf$covariate[x]
-                                    normfactor <- currentCovDf$normfactor[x]
-                                    covTheta <- paste0("cov.", param, covName)
+
                                     if(effect == "power"){
-                                        xpr <- paste0(param, covName,  "= (" ,  covName, "/", normfactor, ")^",  covTheta)
+                                        xpr <- paste0(param, covName,  "= (" ,  covName, "/", normFactor, ")^",  covTheta)
                                     }
                                     if(effect == "exp"){
-                                        xpr <- paste0(param, covName,  "= exp(", covTheta, "* (", covName, "-", normfactor, "))")
+                                        xpr <- paste0(param, covName,  "= exp(", covTheta, "* (", covName, "-", normFactor, "))")
                                     }
                                     if(effect == "linear"){
-                                        xpr <- paste0(param, covName,  "= 1 + ", covTheta, "* (", covName, "-", normfactor, ")")
+                                        xpr <- paste0(param, covName,  "= 1 + ", covTheta, "* (", covName, "-", normFactor, ")")
                                     }
                                     if(effect == "hockyStick"){
-                                        # TODO
-                                        stop("Effect 'hockyStick' is not implemented yet")
+                                        # FIXME must have 2 covTheta
+                                        xpr <- substitute({
+                                            if (covName <= normFactor) covIndicator <- 1+ covTheta * (covName - normFactor)
+                                            if (covName > normFactor) covIndicator <-  1+ covTheta * (covName - normFactor)
+                                                },
+                                            list(covName = as.name(covName), covIndicator = as.name(covIndicator))
+                                        )
+                                        xpr
                                     }
                                 } else{
-                                    # TODO cat
-                                    stop("Categorical covariates are not supported yet")
+                                    # FIXME Cat is not fully working model. Need to standarize if must be factor to start with to avoid manual work
+                                    refLevel <- currentCovDf$refLevel[x]
+                                    refFreq <- currentCovDf$refFreq[x]
+                                    catLevels <- unlist(currentCovDf$levels[x])
+                                    covIndicator <- paste0(param, covName, ".Ind") 
+                                    
+                                    if_exprs <- lapply(catLevels, function(lvl) {
+                                        substitute(
+                                            if (covName == L) covIndicator <- L,
+                                                list(L = lvl, covName = as.name(covName), covIndicator = as.name(covIndicator))
+                                                )
+                                            
+                                        })
+
+                                    cov_eq <- substitute( paramcovName <- 1 + covTheta * (refFreq - covIndicator), 
+                                        list(covTheta = as.name(covTheta), 
+                                            refFreq = refFreq, 
+                                            covIndicator = as.name(covIndicator)
+
+                                        ))
+
+                                    xpr <- c(if_exprs, list(cov_eq))
                                 }
                                 xpr
-    }))
+    })
 
     currentCovDf$effect <- effect
 
@@ -671,31 +723,31 @@ covExprDf <- function(expr) {
     cov_norm <- expr[[3]]
 
     # A helper function to handle nested calls inside the expression
-    handle_part <- function(part, covariates, normfactors) {
+    handle_part <- function(part, covariates, normFactors) {
         if (inherits(part, "call")) {
             if (as.character(part[[1]]) == "/") {
             covariates <- c(covariates, as.character(part[[2]]))
-            normfactors <- c(normfactors, as.numeric(as.character(part[[3]])))
+            normFactors <- c(normFactors, as.character(part[[3]]))
         } else if (as.character(part[[1]]) == "+") {
-            results1 <- handle_part(part[[2]], covariates, normfactors)
-            results2 <- handle_part(part[[3]], results1$covariates, results1$normfactors)
+            results1 <- handle_part(part[[2]], covariates, normFactors)
+            results2 <- handle_part(part[[3]], results1$covariates, results1$normFactors)
             covariates <- results2$covariates
-            normfactors <- results2$normfactors
+            normFactors <- results2$normFactors
         }
         } else {
             covariates <- c(covariates, as.character(part))
-            normfactors <- c(normfactors, NA)
+            normFactors <- c(normFactors, NA)
         }
-        return(list(covariates = covariates, normfactors = normfactors))
+        return(list(covariates = covariates, normFactors = normFactors))
 }
 
-    results <- handle_part(cov_norm, covariates = c(), normfactors = c())
+    results <- handle_part(cov_norm, covariates = c(), normFactors = c())
 
     # Create a data frame with param, covariates, and normfactors
     result <- data.frame(
         param = param,
         covariate = results$covariates,
-        normfactor = results$normfactors,
+        normFactor = results$normFactors,
         stringsAsFactors = FALSE
     )
 
@@ -771,3 +823,56 @@ addData2Rx <- function(ui, data){
     ui$origData <- data
     rxUiCompress(ui)
 }
+
+#' @export 
+removeCovariate <- function(ui, covName){
+    UseMethod("removeCovariate")
+}
+
+
+#' @export 
+removeCovariate.default <- function(ui, covName){
+    stop("No Supported object")
+}
+
+#' @export 
+removeCovariate.rxUi <- function(ui, covName){
+    stop("No Supported object")
+}
+
+#' @export 
+removeCovariate.nlmixr2FitCore <- function(ui, covName){
+    removeCovariate(ui$ui, covName)
+}
+
+#' @export 
+removeCovariate.nlmixr2Linearize <- function(ui, covName){
+    # assert must be fixed effect in iniDf
+    stopifnot(all(covName %in% ui$iniDf$name))
+    iniDf <- ui$iniDf[covName != ui$iniDf$name, ]
+
+    # remove cov transform term
+    v <- grep(covName, ui$lstChr, invert = TRUE, value = TRUE)
+
+    # FIXME implment all comments after finishing addCovariate
+    # remove from covTerms. 
+    ## remove trailing (or leading add)
+
+    # remove covTerms is assigned nothing
+
+    ini(ui) <- iniDf
+    model(ui) <- v
+
+    stopifnot(inherits(ui, "nlmixr2Linearize"))
+    ui
+}
+
+
+#' Covariate Finding Using Different Algorithms
+#'@author Omar Elashkar
+#'@noRd
+# TODO 
+covSearch <- function(ui, covSpace, method = "scm", pValBack=0.01, pValForward=0.05){
+    UseMethod("covSearch")
+}
+

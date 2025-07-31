@@ -466,6 +466,21 @@ test_that("linearize correlated eta ", {
 
 })
 
+test_that("covariate parse", {
+    dat <- nlmixr2data::warfarin
+    
+   expect_error(parseCovExpr(eta.v~wt/70+BMI, dat, effect = "power"), 
+    "Not all covariates are present"
+   )
+
+    parseCovExpr(eta.v~wt/70+sex, dat, effect = "power")
+
+    expect_error(parseCovExpr(eta.v~wt/70+sex/70, dat, effect = "power"))
+
+    parseCovExpr(eta.v~WT/median, nlmixr2data::theo_sd, effect = "power")
+
+})
+
 test_that("Adding covariates to lin models", {
     one.cmpt.adderr <- function() {
         ini({
@@ -523,8 +538,11 @@ test_that("Adding covariates to lin models", {
     nlfitNoCov <- nlmixr(one.cmpt.adderr, theo_sd, est = "focei")
     fitLinNoCov <- linearize(nlfitNoCov)
     expect_no_error(
-        addCovariate(fitLinNoCov, eta.v~WT/70, effect = "power") %>% 
-            addCovariate(eta.cl~WT/80)
+        x <- addCovariate(fitLinNoCov, eta.v~WT/70, effect = "power") %>% 
+            addCovariate(eta.cl~WT/80) 
+        
+        removeCovariate.nlmixr2Linearize(x, "cov.eta.clWT")
+        removeCovariate(x, c("cov.eta.clWT", "cov.eta.vWT"))
     )
     expect_error(
         addCovariate(fitLinNoCov, eta.v~WT/70, effect = "power") %>% 
