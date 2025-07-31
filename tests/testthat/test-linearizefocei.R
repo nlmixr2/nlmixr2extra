@@ -474,10 +474,11 @@ test_that("covariate parse", {
    )
 
     parseCovExpr(eta.v~wt/70+sex, dat, effect = "power")
+    x <- parseCovExpr(eta.v~wt/70+sex, dat, effect = "hockyStick")
 
     expect_error(parseCovExpr(eta.v~wt/70+sex/70, dat, effect = "power"))
 
-    parseCovExpr(eta.v~WT/median, nlmixr2data::theo_sd, effect = "power")
+    expect_true(parseCovExpr(eta.v~WT/median, nlmixr2data::theo_sd, effect = "power")$normFactor == 70.5)
 
 })
 

@@ -554,21 +554,24 @@ parseCovExpr <- function(expr, oData, effect){
                                 if(currentCovDf$type[x] == "cont"){
 
                                     if(effect == "power"){
-                                        xpr <- paste0(param, covName,  "= (" ,  covName, "/", normFactor, ")^",  covTheta)
+                                        xpr <- paste0(eqName,  "= (" ,  covName, "/", normFactor, ")^",  covTheta)
                                     }
                                     if(effect == "exp"){
-                                        xpr <- paste0(param, covName,  "= exp(", covTheta, "* (", covName, "-", normFactor, "))")
+                                        xpr <- paste0(eqName,  "= exp(", covTheta, "* (", covName, "-", normFactor, "))")
                                     }
                                     if(effect == "linear"){
-                                        xpr <- paste0(param, covName,  "= 1 + ", covTheta, "* (", covName, "-", normFactor, ")")
+                                        xpr <- paste0(eqName,  "= 1 + ", covTheta, "* (", covName, "-", normFactor, ")")
                                     }
                                     if(effect == "hockyStick"){
                                         # FIXME must have 2 covTheta
                                         xpr <- substitute({
-                                            if (covName <= normFactor) covIndicator <- 1+ covTheta * (covName - normFactor)
-                                            if (covName > normFactor) covIndicator <-  1+ covTheta * (covName - normFactor)
+                                            if (covName <= normFactor) eqName <- 1+ covTheta * (covName - normFactor)
+                                            if (covName > normFactor) eqName <-  1+ covTheta * (covName - normFactor)
                                                 },
-                                            list(covName = as.name(covName), covIndicator = as.name(covIndicator))
+                                            list(covName = as.name(covName),  
+                                                eqName = as.name(eqName), 
+                                                covTheta=as.name(covTheta), 
+                                                normFactor = normFactor)
                                         )
                                         xpr
                                     }
