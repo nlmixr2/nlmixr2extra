@@ -827,49 +827,6 @@ addData2Rx <- function(ui, data){
     rxUiCompress(ui)
 }
 
-#' @export 
-removeCovariate <- function(ui, covName){
-    UseMethod("removeCovariate")
-}
-
-
-#' @export 
-removeCovariate.default <- function(ui, covName){
-    stop("No Supported object")
-}
-
-#' @export 
-removeCovariate.rxUi <- function(ui, covName){
-    stop("No Supported object")
-}
-
-#' @export 
-removeCovariate.nlmixr2FitCore <- function(ui, covName){
-    removeCovariate(ui$ui, covName)
-}
-
-#' @export 
-removeCovariate.nlmixr2Linearize <- function(ui, covName){
-    # assert must be fixed effect in iniDf
-    stopifnot(all(covName %in% ui$iniDf$name))
-    iniDf <- ui$iniDf[covName != ui$iniDf$name, ]
-
-    # remove cov transform term
-    v <- grep(covName, ui$lstChr, invert = TRUE, value = TRUE)
-
-    # FIXME implment all comments after finishing addCovariate
-    # remove from covTerms. 
-    ## remove trailing (or leading add)
-
-    # remove covTerms is assigned nothing
-
-    ini(ui) <- iniDf
-    model(ui) <- v
-
-    stopifnot(inherits(ui, "nlmixr2Linearize"))
-    ui
-}
-
 
 #' Covariate Finding Using Different Algorithms
 #'@author Omar Elashkar
