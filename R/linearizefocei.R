@@ -273,7 +273,7 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA,
     # fit linearized model
     for(i in seq_along(mceta)){
         fitL <- nlmixr(linMod, derv, est="focei",
-            control = nlmixr2est::foceiControl(etaMat = fit, mceta=mceta[i], covMethod = "", calcTables=FALSE))
+            control = nlmixr2est::foceiControl(etaMat = fit, mceta=mceta[i], covMethod = "", calcTables = FALSE, print = 20))
         oObj <- fit$objDf$OBJF
         lObj <- fitL$objDf$OBJF
 
@@ -291,7 +291,7 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA,
                     secondEval <- evalFun()
                     linMod <- linMod %>%  model(foceiLin <- 0)
                     fitL <- nlmixr(linMod, derv, est="focei",
-                        control = nlmixr2est::foceiControl(etaMat = fit, mceta=10, covMethod = "", calcTables=FALSE))
+                        control = nlmixr2est::foceiControl(etaMat = fit, mceta=10, covMethod = "", calcTables = FALSE, print = 20))
                     oObj <- fit$objDf$OBJF
                     lObj <- fitL$objDf$OBJF
 
@@ -543,12 +543,12 @@ parseCovExpr <- function(expr, oData, effect){
     }
 
 
-    currentCovDf$expr <- lapply(1:nrow(currentCovDf), function(x){
+    exprNthetaNames <- lapply(1:nrow(currentCovDf), function(x){
                                 param <- currentCovDf$param[x]
                                 covName <- currentCovDf$covariate[x]
                                 normFactor <- currentCovDf$normFactor[x]
-                                covTheta <- paste0("cov.", param, covName)
-                                eqName <- paste0("eq.", covTheta)
+                                eqName <- paste0("eq.", param, covName)
+                                covTheta <- paste0("cov.", param, covName) # FIXME list in the DF, could be multiple
 
 
                                 if(currentCovDf$type[x] == "cont"){
@@ -599,8 +599,10 @@ parseCovExpr <- function(expr, oData, effect){
 
                                     xpr <- c(if_exprs, list(cov_eq))
                                 }
-                                xpr
+                                list(xpr = xpr, covEffectsThetas = covEffectsThetas)
     })
+    currentCovDf$covEffectsThetas <- lapply(exprNthetaNames, function(x) x[["covEffectsThetas"]])
+    currentCovDf$expr <- lapply(exprNthetaNames, function(x) x[["xpr"]])
 
     currentCovDf$effect <- effect
 
@@ -729,8 +731,12 @@ covExprDf <- function(expr) {
     handle_part <- function(part, covariates, normFactors) {
         if (inherits(part, "call")) {
             if (as.character(part[[1]]) == "/") {
-            covariates <- c(covariates, as.character(part[[2]]))
-            normFactors <- c(normFactors, as.character(part[[3]]))
+                covariates <- c(covariates, as.character(part[[2]]))
+                tmpNormFac <- part[[3]]
+                if (!(grepl("^\\d*\\.?\\d+$", tmpNormFac) || as.character(tmpNormFac) %in% c("mean", "median"))) {
+                    stop("Divide only by number, 'mean', or 'median'.")
+                    }
+                normFactors <- c(normFactors, as.character(tmpNormFac)) 
         } else if (as.character(part[[1]]) == "+") {
             results1 <- handle_part(part[[2]], covariates, normFactors)
             results2 <- handle_part(part[[3]], results1$covariates, results1$normFactors)

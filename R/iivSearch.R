@@ -3,7 +3,7 @@
 #' 
 #' @author Omar Elashkar
 #' @export 
-iivSearch <- function(fit){
+iivSearch <- function(fit, ...){
     UseMethod("iivSearch")
 }
 
@@ -14,7 +14,7 @@ iivSearch.default <- function(fit){
 
 
 #'@export 
-iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC"){
+iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC", rerun_n=3){
     if(hasUnFixedEta(fit)){stop("This model has unfixed IIV and not suitable for this procedure")}
     # get eta names
     etaAll <- fit$iniDf[!is.na(fit$iniDf$neta1), ]
@@ -70,7 +70,6 @@ iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC"){
     # finalFit <- nlmixr(fit$env$originalUi, nlme::getData(fit), est = "focei", 
     #         control = nlmixr3est::foceiControl(mceta=5, etaMat = fit, covMethod = "", calcTables=FALSE))
 
-    # TODO re-run the top 3 that did not fail and see ==> implement a function to rerun top n 
     list(res = res, summary = objDfAll)
 }
 

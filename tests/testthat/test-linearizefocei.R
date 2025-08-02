@@ -224,6 +224,8 @@ test_that("Linearize prop err model ", {
     sim$sim.id <- NULL
     sim <- sim[,c("id", "time", "amt", "dv", "evid")]
 
+    fit <- nlmixr(one.cmpt.properr, sim, est = "saem")
+
     fit <- nlmixr(one.cmpt.properr, sim, est = "focei",
             control = nlmixr2est::foceiControl(mceta=10))
     linMod <- linModGen(fit, FALSE)
@@ -477,6 +479,7 @@ test_that("covariate parse", {
     x <- parseCovExpr(eta.v~wt/70+sex, dat, effect = "hockyStick")
 
     expect_error(parseCovExpr(eta.v~wt/70+sex/70, dat, effect = "power"))
+    expect_error(parseCovExpr(eta.v~wt/med+sex, dat, effect = "power"), "Divide only by")
 
     expect_true(parseCovExpr(eta.v~WT/median, nlmixr2data::theo_sd, effect = "power")$normFactor == 70.5)
 
