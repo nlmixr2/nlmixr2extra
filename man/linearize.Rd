@@ -7,7 +7,7 @@
 linearize(
   fit,
   mceta = c(-1, 10, 100, 1000),
-  relTol = 0.4,
+  relTol = 0.25,
   focei = NA,
   derivFct = FALSE,
   plot = FALSE

@@ -4,7 +4,7 @@
 \alias{iivSearch}
 \title{Automated Inter-Individual Variability Search}
 \usage{
-iivSearch(fit)
+iivSearch(fit, ...)
 }
 \arguments{
 \item{fit}{a model fit}

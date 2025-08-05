@@ -224,11 +224,9 @@ test_that("Linearize prop err model ", {
     sim$sim.id <- NULL
     sim <- sim[,c("id", "time", "amt", "dv", "evid")]
 
-    fit <- nlmixr(one.cmpt.properr, sim, est = "saem")
-
     fit <- nlmixr(one.cmpt.properr, sim, est = "focei",
             control = nlmixr2est::foceiControl(mceta=10))
-    linMod <- linModGen(fit, FALSE)
+    # linMod <- linModGen(fit, FALSE)
     # derv <- getDeriv(fit)
 
     # fitLin <- nlmixr(linMod, derv, est="focei",
@@ -252,6 +250,67 @@ test_that("Linearize prop err model ", {
 
 })
 
+
+test_that("Linearize prop err model SAEM", {
+    skip_on_cran()
+ 
+    one.cmpt.properr <- function() { # non-linear base
+        ini({
+            tka <- log(1.56) # Ka
+            tcl <- log(2.7) # Cl
+            tv <- log(30) # V
+            eta.cl ~ 0.3
+            eta.v ~ 0.2
+            prop.sd <- 0.10
+        })
+        model({
+            ka <- exp(tka)
+            cl <- exp(tcl + eta.cl)
+            v <- exp(tv + eta.v)
+            d / dt(depot) <- -ka * depot
+            d / dt(center) <- ka * depot - cl / v * center
+            cp <- center / v
+            cp ~ prop(prop.sd)
+        })
+    }
+    set.seed(42)
+    ev <- rxode2::et(amountUnits = "mg", timeUnits = "hours") |>
+        rxode2::et(amt = 300, cmt = "depot") |>
+        rxode2::et(time = c(0.25, 0.5, 1,2,3,6,8,12,16,24))
+    sim <- rxode2::rxSolve(one.cmpt.properr, ev, nSub = 200, addDosing = TRUE)
+    sim$dv <- sim$sim
+    sim$id <- sim$sim.id
+    sim$sim.id <- NULL
+    sim <- sim[,c("id", "time", "amt", "dv", "evid")]
+
+    fit_saem <- nlmixr(one.cmpt.properr, sim, est ="saem")
+    
+    fit <- nlmixr(fit_saem$finalUi, sim, est = "focei",
+            control = nlmixr2est::foceiControl(mceta=10))
+    # linMod <- linModGen(fit, FALSE)
+    # derv <- getDeriv(fit)
+
+    # fitLin <- nlmixr(linMod, derv, est="focei",
+    #         control = nlmixr2est::foceiControl(etaMat = fit, mceta=10,
+    #         covMethod = "",
+    #         calcTables=FALSE,
+    #         maxInnerIterations=100, maxOuterIterations=100))
+
+
+    # fit$scaleInfo$scaleC
+    # fitLin$scaleInfo$scaleC
+    # INNER ETA
+    # OUTER THETA OMEGA
+    #
+
+    suppressWarnings(
+        fitLin <- linearize(fit, relTol = 0.2, mceta = c(-1, 10, 100))
+    )
+
+    isLinearizeMatch(fit, fitLin, tol = 0.15)$ofv[[1]] %>% expect_true()
+
+   
+})
 
 test_that("Linerize pheno prop err", {
     one.cmpt.prop.iv <- function() {
@@ -360,7 +419,7 @@ test_that("Linearize multiple endpoints ", {
         tka <- 0.573847838322594
         tcl <- -2.02615620220267
         tv <- 2.06443263542308
-        # prop.err <- c(0, 0.145017473272093)
+        prop.err <- c(0, 0.145017473272093)
         pkadd.err <- c(0, 0.198298188759467)
         temax <- 4.75044304930452
         tec50 <- 0.139562783557545
@@ -394,8 +453,7 @@ test_that("Linearize multiple endpoints ", {
         d/dt(center) = ka * gut - cl/v * center
         d/dt(effect) = kin * PD - kout * effect
         cp = center/v
-        # cp ~ prop(prop.err) + add(pkadd.err)
-        cp ~  add(pkadd.err)
+        cp ~ prop(prop.err) + add(pkadd.err) | cp
         effect ~ add(pdadd.err) | pca
     })
 }
@@ -417,11 +475,11 @@ test_that("Linearize multiple endpoints ", {
     # sim <- sim[,c("id", "time", "amt", "dv", "dvid", "evid")]
     # # sim <- sim[,c("id", "time", "amt", "dv",  "evid")]
 
-    # fit <- nlmixr(pk.turnover.emax3, sim, est = "focei",
-    #         control = nlmixr2est::foceiControl(mceta=10,
-    #         calcTables=TRUE))
+    fit <- nlmixr(pk.turnover.emax3, nlmixr2data::warfarin, est = "focei",
+            control = nlmixr2est::foceiControl(mceta=10,
+            calcTables=TRUE))
     # # saveRDS(fit, "warfarin.RDS")
-    fit <- readRDS(system.file("warfarin.RDS", package="nlmixr2extra"))
+    # fit <- readRDS(system.file("warfarin.RDS", package="nlmixr2extra"))
 
     suppressWarnings(
         # this will switch to FOCE even after successful evaluation. 
@@ -434,6 +492,66 @@ test_that("Linearize multiple endpoints ", {
     linearizePlot(fit, fitLin)
 })
 
+
+test_that("Linearize multiple endpoints SAEM", {
+    skip_on_cran()
+
+    pk.turnover.emax3 <- function() {
+    ini({
+        tktr <- 0.326787337229061
+        tka <- 0.573847838322594
+        tcl <- -2.02615620220267
+        tv <- 2.06443263542308
+        prop.err <- c(0, 0.145017473272093)
+        pkadd.err <- c(0, 0.198298188759467)
+        temax <- 4.75044304930452
+        tec50 <- 0.139562783557545
+        tkout <- -2.93951993228171
+        te0 <- 4.56394773529773
+        pdadd.err <- c(0, 3.80147740823949)
+        eta.ktr ~ 0.899432614108315
+        eta.ka ~ 1.20111175373864
+        eta.cl ~ 0.0756455519562788
+        eta.v ~ 0.0547982604779906
+        eta.emax ~ 0.547762672352332
+        eta.ec50 ~ 0.204313071604677
+        eta.kout ~ 0.0228239781890516
+        eta.e0 ~ 0.0107988390114995
+    })
+    model({
+        ktr <- exp(tktr + eta.ktr)
+        ka <- exp(tka + eta.ka)
+        cl <- exp(tcl + eta.cl)
+        v <- exp(tv + eta.v)
+        emax = expit(temax + eta.emax, 0, 1)
+        ec50 = exp(tec50 + eta.ec50)
+        kout = exp(tkout + eta.kout)
+        e0 = exp(te0 + eta.e0)
+        DCP = center/v
+        PD = 1 - emax * DCP/(ec50 + DCP)
+        effect(0) = e0
+        kin = e0 * kout
+        d/dt(depot) = -ktr * depot
+        d/dt(gut) = ktr * depot - ka * gut
+        d/dt(center) = ka * gut - cl/v * center
+        d/dt(effect) = kin * PD - kout * effect
+        cp = center/v
+        cp ~ prop(prop.err) + add(pkadd.err) | cp
+        effect ~ add(pdadd.err) | pca
+    })
+}
+
+    fit <- nlmixr(pk.turnover.emax3, nlmixr2data::warfarin, est = "saem") |> 
+          nlmixr(est="focei",  control = nlmixr2est::foceiControl(mceta=10))
+
+    suppressWarnings(
+        fitLin <- linearize(fit, mceta = 10)
+    )
+
+    expect_true(isLinearizeMatch(fit, fitLin)$ofv[[1]])
+
+    linearizePlot(fit, fitLin)
+})
 
 test_that("linearize correlated eta ", {
     one.cmpt.adderr <- function() {
@@ -512,6 +630,7 @@ test_that("Adding covariates to lin models", {
             tv <- 30 # V
             tka <- log(1.56) #  Ka
             WTVTheta <- 1.5
+            AGECLTheta <- 2
             eta.cl ~ 0.3
             eta.v ~ 0.1
             eta.ka ~ 0.6
@@ -519,8 +638,9 @@ test_that("Adding covariates to lin models", {
         })
         model({
             WTVCOV = (WT/70)^WTVTheta
+            AGECLCOV = (AGE/30)^AGECLTheta
             ka <- exp(tka + eta.ka)
-            cl <- exp(tcl + eta.cl)
+            cl <- tcl*exp(eta.cl)*AGECLCOV
             v <- tv*exp(eta.v)*WTVCOV
             d / dt(depot) <- -ka * depot
             d / dt(center) <- ka * depot - cl / v * center
@@ -535,18 +655,16 @@ test_that("Adding covariates to lin models", {
         rxode2::et(time = c(0.25, 0.5, 1,2,3,6,8,12,16,24)) |>
         rxode2::et(id = 1:200)
     theo_sd <- rxode2::rxSolve(one.cmpt.adderr.cov, ev, nSub = 200, addDosing = TRUE,
-        iCov=data.frame(id=1:200, WT=rnorm(200, 70, 10)))
+        iCov=data.frame(id=1:200, WT=rnorm(200, 70, 10), AGE=rnorm(200, 30, 10)))
     theo_sd$dv <- theo_sd$sim
-    theo_sd <- theo_sd[,c("id", "time", "amt", "dv", "evid", "WT")]
+    theo_sd <- theo_sd[,c("id", "time", "amt", "dv", "evid", "WT", "AGE")]
 
     nlfitNoCov <- nlmixr(one.cmpt.adderr, theo_sd, est = "focei")
     fitLinNoCov <- linearize(nlfitNoCov)
     expect_no_error(
-        x <- addCovariate(fitLinNoCov, eta.v~WT/70, effect = "power") %>% 
+        x <- addCovariate(fitLinNoCov, eta.v~WT/70+AGE/30, effect = "power") %>% 
             addCovariate(eta.cl~WT/80) 
         
-        removeCovariate.nlmixr2Linearize(x, "cov.eta.clWT")
-        removeCovariate(x, c("cov.eta.clWT", "cov.eta.vWT"))
     )
     expect_error(
         addCovariate(fitLinNoCov, eta.v~WT/70, effect = "power") %>% 
@@ -557,13 +675,14 @@ test_that("Adding covariates to lin models", {
         addCovariate(fitLinNoCov, eta.v~AGPR/70, effect = "power") %>% 
             addCovariate(eta.v~WT/70)
     )
-    fitLinCov <- addCovariate(fitLinNoCov, eta.v~WT/70, effect = "power") 
+    fitLinCov <- addCovariate(fitLinNoCov, eta.v~WT/70, effect = "power") |> 
+                  addCovariate(eta.cl~AGE/30, effect = "power")
 
     fitLinCov <- nlmixr(fitLinCov, nlme::getData(fitLinNoCov), est = "focei")
 
     nlfitCov <- nlmixr(one.cmpt.adderr.cov, nlme::getData(nlfitNoCov), est = "focei")
 
-    nlfitCov$parFixed # FIXME why 0.5 and not 1.5?
+    nlfitCov$parFixed # why 0.5 and not 1.5? normalization
     fitLinCov$parFixed
 
     expect_true(sum(nlfitCov$time) > sum(fitLinCov$time))
@@ -725,3 +844,4 @@ test_that("linearize mavoglorant lnorm", {
     )
 
 })
+

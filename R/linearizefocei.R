@@ -226,10 +226,10 @@ linModGen <- function(ui, focei = TRUE, derivFct = FALSE){
 #'
 #' @author Omar Elashkar
 #' @export
-linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA,
+linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.25, focei = NA,
     derivFct = FALSE, plot = FALSE){
     checkmate::assertIntegerish(mceta, lower = -1, upper = 2000,  unique = TRUE)
-    checkmate::assertNumeric(relTol, lower=0, upper=0.6)
+    checkmate::assertNumeric(relTol, lower=0, upper=1.0)
     checkmate::assertLogical(plot)
     checkmate::assertLogical(derivFct)
     checkmate::assertLogical(focei, max.len = 1, any.missing=TRUE)
@@ -298,11 +298,11 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA,
                     relDev <- abs((oObj-lObj)/lObj)
                     
                     if(relDev <=relTol){
-                        cli::cli_alert_warning("FOCE Linearization was inadequate for the given tolerance. Try increasing the tolerance, refine the model or fit with mceta")
+                        cli::cli_alert_danger("FOCE Linearization was inadequate for the given tolerance. Try increasing the tolerance, refine the model or fit with mceta")
                     }
 
                 } else{
-                    cli::cli_alert_warning("Linearization was inadequate for the given tolerance. Try increasing the tolerance, refine the model or fit with mceta")
+                    cli::cli_alert_danger("Linearization was inadequate for the given tolerance. Try increasing the tolerance, refine the model or fit with mceta")
 
                 }
             }
@@ -318,20 +318,24 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.4, focei = NA,
         finalEval <- firstEval
     }
     m <- paste(
-        "Linearization method: ", ifelse(is.na(focei),
-            "Auto", ifelse(focei, "FOCE (individual + residual)", "Variance Skipped")), "\n",
-        "Linearization Relative Tolerance: ", relTol, "\n",
-        ifelse(is.na(focei) & exists("secondEval"),
-            "Linearization method switched automatically to FOCE (residual linearization skipped)", ""),
-        "\n", paste(finalEval$message, collapse = "\n"),
-        "\nFitted Linear OFV: ", lObj,
-        "\nRelative OFV Dev: ", round(relDev, 4) * 100, "%\n",
-        "\nmceta: ", mceta[i], 
-        "\nLinearized Model Runtime:", sum(fit$time),
-        "\nNon-Linearized Model Runtime:", sum(fitL$time)
-    )
+        "Linearization method: {
+              ifelse(is.na(focei), 'Auto', ifelse(focei, 'FOCE (individual + residual)', 'Variance Skipped'))
+              }
+        Linearization Relative Tolerance: {relTol}
+        {
+          ifelse(is.na(focei) & exists('secondEval'), 
+            'Linearization method switched automatically to FOCE (residual linearization skipped)', 
+              ifelse(is.na(focei) & !exists('secondEval'), 'FOCEI Linearization', ifelse(focei, 'FOCEI Linearization', 'FOCE Linearization')))
+          }
+        {paste(finalEval$message, collapse = '')}
+        Fitted Linear OFV: {lObj}
+        Relative OFV Dev: {round(relDev, 4) * 100} %
+        mceta: {mceta[i]}
+        Non-Linearized Model Runtime: {sum(fit$time)}
+        Linearized Model Runtime: {sum(fitL$time)}"
+      )
     cli::cli_alert_info("Linearization Summary:")
-    cli::cli_alert_info(m)
+    cli::cli_alert(m)
 
     tmpEnv <- fitL$env
     assign("message", c(fitL$message, m), envir=tmpEnv)
@@ -376,7 +380,10 @@ linearizePlot <- function(nl, lin){
         ggplot2::geom_smooth(se = FALSE, method = "lm") +
         ggplot2::geom_point() +
         ggplot2::facet_wrap("parameter", scales = "free") + 
-        ggplot2::labs(title = paste("Model OBJ:", nl$objDf$OBJF, "Linear OBJ:", lin$objDf$OBJF))
+        ggplot2::labs(title = paste("Original OBJ:", round(nl$objDf$OBJF,3), "Linearized OBJ:", round(lin$objDf$OBJF,3)),
+                      x = "Original Model",
+                      y = "Linearized Model"
+                      )
     fig
 }
 
@@ -555,15 +562,17 @@ parseCovExpr <- function(expr, oData, effect){
 
                                     if(effect == "power"){
                                         xpr <- paste0(eqName,  "= (" ,  covName, "/", normFactor, ")^",  covTheta)
+                                        covEffectsThetas <- list(covTheta)
                                     }
                                     if(effect == "exp"){
                                         xpr <- paste0(eqName,  "= exp(", covTheta, "* (", covName, "-", normFactor, "))")
+                                        covEffectsThetas <- list(covTheta)
                                     }
                                     if(effect == "linear"){
                                         xpr <- paste0(eqName,  "= 1 + ", covTheta, "* (", covName, "-", normFactor, ")")
+                                        covEffectsThetas <- list(covTheta)
                                     }
                                     if(effect == "hockyStick"){
-                                        # FIXME must have 2 covTheta
                                         xpr <- substitute({
                                             if (covName <= normFactor) eqName <- 1+ covTheta * (covName - normFactor)
                                             if (covName > normFactor) eqName <-  1+ covTheta * (covName - normFactor)
@@ -573,7 +582,8 @@ parseCovExpr <- function(expr, oData, effect){
                                                 covTheta=as.name(covTheta), 
                                                 normFactor = normFactor)
                                         )
-                                        xpr
+                                        # FIXME must have 2 covTheta
+                                        covEffectsThetas <- list(covTheta)
                                     }
                                 } else{
                                     # FIXME Cat is not fully working model. Need to standarize if must be factor to start with to avoid manual work
@@ -598,6 +608,7 @@ parseCovExpr <- function(expr, oData, effect){
                                         ))
 
                                     xpr <- c(if_exprs, list(cov_eq))
+                                    covEffectsThetas <- list(covTheta)
                                 }
                                 list(xpr = xpr, covEffectsThetas = covEffectsThetas)
     })
@@ -656,6 +667,7 @@ addCovariate.nlmixr2FitCore <- function(fit, expr, effect = "power", ref = "medi
 addCovariate.nlmixr2Linearize <- function(fit, expr, effect="power", ref  = "median") {
 
     ui <- fit$ui
+    modelLinesRaw <- ui$lstChr
     if(is.list(expr)){
         covParseDf <- lapply(expr, function(x) parseCovExpr(x, oData = nlme::getData(fit), effect = effect))
         covParseDf <- do.call(rbind, covParseDf)
@@ -667,21 +679,40 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect="power", ref  = "med
         cli::cli_alert_info("eta parameters: ", paste(ui$eta, collapse = ", "))
         stop("For linearized models, covariates are added to eta parameters only")
     }
-    covParseDf$Deriv <- paste0("D_", covParseDf$param)
+    # equations terms (could be multi-lines)
+    modelLinesRaw <- c(covParseDf$expr, modelLinesRaw)
     
-    covRef <- paste0("cov", covParseDf$param, " = ", 
-        covParseDf$Deriv, "*1*(" , covParseDf$param, covParseDf$covariate , " - 1)") # TODO support more covariate effects
-    covTermsPrev <- grep("covTerms = ", ui$lstChr, value = F)
+    # Relation and Derivative terms
+    covParseDf$Deriv <- paste0("D_", covParseDf$param)
+    for(i in seq_along(covParseDf$covariate)){
+      covRelEntity <- paste0("covrel.", covParseDf$param[i])
+      covEqEntity <- paste0("eq.", covParseDf$param[i], covParseDf$covariate[i])
+      covRelPrev <- grep(covRelEntity, modelLinesRaw, value = F)
+      if(length(covRelPrev) == 0){ # first time add on parameter
+        # covrel.eta.v <- eq1*eq2*eq3 ...
+        lastexprIdx <- lastLocate(unlist(modelLinesRaw), "eq.")
+        covRel <- paste0(covRelEntity, " <- ", covEqEntity)
+        modelLinesRaw <- append(modelLinesRaw, covRel, after = lastexprIdx)
+        
+        # coveta.v = D_ETA * 1 * (covrel.eta.v - 1)
+        # only added once
+        lastexprIdx <- lastLocate(unlist(modelLinesRaw), "covrel.")
+        covEffectDerivEntity <- paste0("cov.", covParseDf$param[i], " <- ", covParseDf$Deriv[i])
+        covRef <- paste0(covEffectDerivEntity, "*1*(" , covRelEntity , " - 1)")
+        modelLinesRaw <- append(modelLinesRaw, covRef, after = lastexprIdx)
+      } else {
+        modelLinesRaw[covRelPrev] <- paste0(modelLinesRaw[covRelPrev], "*", covEqEntity)
+      }
+    }
+    # covTerms = coveta.v + coveta.cl + ... 
+    covTermsPrev <- grep("covTerms = ", modelLinesRaw, value = F)
     if(length(covTermsPrev) == 0){ # first time add
-        covTermLine <- paste0("covTerms = ", 
-            paste0("cov", covParseDf$param, collapse = "+"))
-            
-        v <- c(covParseDf$expr, covRef, covTermLine, ui$lstChr)
-    } else { # second time
-        covTermLineModel <- ui$lstChr
+        covTermLine <- paste0("covTerms = ",  paste0("cov.", covParseDf$param, collapse = "+"))
+        lastexprIdx <- lastLocate(unlist(modelLinesRaw), "cov.")
+        modelLinesRaw <- append(modelLinesRaw, covTermLine, after = lastexprIdx)
+    } else {
         # replace line 
-        covTermLineModel[covTermsPrev] <- paste0(covTermLineModel[covTermsPrev], " + ", paste0("cov", covParseDf$param, collapse = "+"))
-        v <- c(covParseDf$expr, covRef, covTermLineModel)
+        modelLinesRaw[covTermsPrev] <- paste0(modelLinesRaw[covTermsPrev], " + ", paste0("cov.", covParseDf$param, collapse = "+"))
     }
 
 
@@ -690,7 +721,7 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect="power", ref  = "med
     newMod <- rxode2::rxUiDecompress(newMod)
     assign("iniDf", iniDf, envir = newMod)
 
-    newMod$lstExpr <- as.list(str2lang(paste0("{", paste(v, collapse="\n"), "}"))[-1])
+    newMod$lstExpr <- as.list(str2lang(paste0("{", paste(modelLinesRaw, collapse="\n"), "}"))[-1])
     newMod <- newMod$fun
     newMod <- newMod()
 
@@ -842,3 +873,26 @@ covSearch <- function(ui, covSpace, method = "scm", pValBack=0.01, pValForward=0
     UseMethod("covSearch")
 }
 
+
+#' Return last position of pattern in a vector
+#' @author Omar Elashkar
+#' @noRd
+lastLocate <- function(text, pattern) {
+  # Check if the input is valid
+  if (!is.character(text)) {
+    stop("The 'text' argument must be a character vector.")
+  }
+  if (!is.character(pattern) || length(pattern) != 1) {
+    stop("The 'pattern' argument must be a single character string (regex).")
+  }
+  
+  # Find matches of the pattern in text
+  matches <- grep(pattern, text)
+  
+  # Return the last occurrence (if any match was found)
+  if (length(matches) > 0) {
+    return(max(matches))
+  } else {
+    return(NA)  # Return NA if no match was found
+  }
+}
