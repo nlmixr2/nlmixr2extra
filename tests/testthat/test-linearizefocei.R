@@ -287,18 +287,6 @@ test_that("Linearize prop err model SAEM", {
     
     fit <- nlmixr(fit_saem$finalUi, sim, est = "focei",
             control = nlmixr2est::foceiControl(mceta=10))
-    # linMod <- linModGen(fit, FALSE)
-    # derv <- getDeriv(fit)
-
-    # fitLin <- nlmixr(linMod, derv, est="focei",
-    #         control = nlmixr2est::foceiControl(etaMat = fit, mceta=10,
-    #         covMethod = "",
-    #         calcTables=FALSE,
-    #         maxInnerIterations=100, maxOuterIterations=100))
-
-
-    # fit$scaleInfo$scaleC
-    # fitLin$scaleInfo$scaleC
     # INNER ETA
     # OUTER THETA OMEGA
     #
@@ -662,7 +650,7 @@ test_that("Adding covariates to lin models", {
     nlfitNoCov <- nlmixr(one.cmpt.adderr, theo_sd, est = "focei")
     fitLinNoCov <- linearize(nlfitNoCov)
     expect_no_error(
-        x <- addCovariate(fitLinNoCov, eta.v~WT/70+AGE/30, effect = "power") %>% 
+        x <- addCovariate(fitLinNoCov, eta.v~WT/70+AGE/median, effect = "power") %>% 
             addCovariate(eta.cl~WT/80) 
         
     )

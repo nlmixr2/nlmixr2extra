@@ -664,7 +664,7 @@ addCovariate.nlmixr2FitCore <- function(fit, expr, effect = "power", ref = "medi
 
 #'@rdname addCovariate
 #'@export
-addCovariate.nlmixr2Linearize <- function(fit, expr, effect="power", ref  = "median") {
+addCovariate.nlmixr2Linearize <- function(fit, expr, effect="power") {
 
     ui <- fit$ui
     modelLinesRaw <- ui$lstChr

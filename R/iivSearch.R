@@ -14,7 +14,7 @@ iivSearch.default <- function(fit){
 
 
 #'@export 
-iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC", rerun_n=3){
+iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC", rerun_n=3, mceta=5){
     if(hasUnFixedEta(fit)){stop("This model has unfixed IIV and not suitable for this procedure")}
     # get eta names
     etaAll <- fit$iniDf[!is.na(fit$iniDf$neta1), ]
@@ -42,7 +42,7 @@ iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC", rerun_n=3){
         ini(newMod) <- unfixedIni
         tryCatch({
             fit <- nlmixr(newMod, nlme::getData(fit), est = "focei",
-                control = nlmixr2est::foceiControl(mceta=5, 
+                control = nlmixr2est::foceiControl(mceta=mceta, 
                                                     print = 10,
                                                     maxInnerIterations = 9999,
                                                     etaMat = as.matrix(fit$eta[,c(noCorrSpace)])))
@@ -195,8 +195,3 @@ addAllEtas <- function(ui, fix = FALSE){
 
 }
 
-addCorr <- function(ui, expr){
-  
-  # if each element of expr does not exist ==> addEtas
-  
-}
