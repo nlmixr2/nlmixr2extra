@@ -16,7 +16,7 @@ addCovariate(fit, expr, effect, ref)
 
 \method{addCovariate}{nlmixr2FitCore}(fit, expr, effect = "power", ref = "median")
 
-\method{addCovariate}{nlmixr2Linearize}(fit, expr, effect = "power", ref = "median")
+\method{addCovariate}{nlmixr2Linearize}(fit, expr, effect = "power")
 }
 \arguments{
 \item{fit}{Model fit object}

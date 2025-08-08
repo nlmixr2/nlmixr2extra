@@ -5,7 +5,7 @@
 #' @author Omar Elashkar
 #' @noRd
 getDeriv <- function(fit){
-    # if(fit$method != "FOCE") stop("This method requires FOCE method")
+    if(fit$method != "FOCE") stop("This method requires FOCE method")
     rxode2::assertRxUiMixedOnly(fit, " for the procedure routine 'linearize'", .var.name=fit$modelName)
 
     ui <- rxode2::assertRxUi(fit)
@@ -531,6 +531,8 @@ parseCovExpr <- function(expr, oData, effect){
 
     currentCovDf$median <- unlist(lapply(1:nrow(currentCovDf), function(x){
                                 if(currentCovDf$type[x] == "cont"){
+                                  
+                                  
                                     covName <- currentCovDf$covariate[x]
                                     median(oData[[covName]])
                                 } else{
@@ -554,8 +556,8 @@ parseCovExpr <- function(expr, oData, effect){
                                 param <- currentCovDf$param[x]
                                 covName <- currentCovDf$covariate[x]
                                 normFactor <- currentCovDf$normFactor[x]
-                                eqName <- paste0("eq.", param, covName)
-                                covTheta <- paste0("cov.", param, covName) # FIXME list in the DF, could be multiple
+                                eqName <- paste0("rx.eq.", param, covName)
+                                covTheta <- paste0("rx.cov.", param, covName) # FIXME list in the DF, could be multiple
 
 
                                 if(currentCovDf$type[x] == "cont"){
@@ -685,8 +687,8 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect="power") {
     # Relation and Derivative terms
     covParseDf$Deriv <- paste0("D_", covParseDf$param)
     for(i in seq_along(covParseDf$covariate)){
-      covRelEntity <- paste0("covrel.", covParseDf$param[i])
-      covEqEntity <- paste0("eq.", covParseDf$param[i], covParseDf$covariate[i])
+      covRelEntity <- paste0("rx.covrel.", covParseDf$param[i])
+      covEqEntity <- paste0("rx.eq.", covParseDf$param[i], covParseDf$covariate[i])
       covRelPrev <- grep(covRelEntity, modelLinesRaw, value = F)
       if(length(covRelPrev) == 0){ # first time add on parameter
         # covrel.eta.v <- eq1*eq2*eq3 ...
@@ -694,7 +696,7 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect="power") {
         covRel <- paste0(covRelEntity, " <- ", covEqEntity)
         modelLinesRaw <- append(modelLinesRaw, covRel, after = lastexprIdx)
         
-        # coveta.v = D_ETA * 1 * (covrel.eta.v - 1)
+        # coveta.v = D_ETA * 1 * (rx.covrel.eta.v - 1)
         # only added once
         lastexprIdx <- lastLocate(unlist(modelLinesRaw), "covrel.")
         covEffectDerivEntity <- paste0("cov.", covParseDf$param[i], " <- ", covParseDf$Deriv[i])
@@ -705,18 +707,18 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect="power") {
       }
     }
     # covTerms = coveta.v + coveta.cl + ... 
-    covTermsPrev <- grep("covTerms = ", modelLinesRaw, value = F)
+    covTermsPrev <- grep("^covTerms = ", modelLinesRaw, value = F)
     if(length(covTermsPrev) == 0){ # first time add
-        covTermLine <- paste0("covTerms = ",  paste0("cov.", covParseDf$param, collapse = "+"))
-        lastexprIdx <- lastLocate(unlist(modelLinesRaw), "cov.")
+        covTermLine <- paste0("covTerms = ",  paste0("rx.cov.", covParseDf$param, collapse = "+"))
+        lastexprIdx <- lastLocate(unlist(modelLinesRaw), "rx.cov.")
         modelLinesRaw <- append(modelLinesRaw, covTermLine, after = lastexprIdx)
     } else {
         # replace line 
-        modelLinesRaw[covTermsPrev] <- paste0(modelLinesRaw[covTermsPrev], " + ", paste0("cov.", covParseDf$param, collapse = "+"))
+        modelLinesRaw[covTermsPrev] <- paste0(modelLinesRaw[covTermsPrev], " + ", paste0("rx.cov.", covParseDf$param, collapse = "+"))
     }
 
 
-    iniDf <- addThetaToIniDf(fit$iniDf, paste0("cov.", covParseDf$param, covParseDf$covariate), 1, fix = FALSE)
+    iniDf <- addThetaToIniDf(fit$iniDf, paste0("rx.cov.", covParseDf$param, covParseDf$covariate), 1, fix = FALSE)
     newMod <- fit$ui
     newMod <- rxode2::rxUiDecompress(newMod)
     assign("iniDf", iniDf, envir = newMod)
