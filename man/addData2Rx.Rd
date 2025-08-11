@@ -19,5 +19,5 @@ rxUi.
 Add Data to RxUi model
 }
 \author{
-Omar Elashkar
+Omar I. Elashkar
 }

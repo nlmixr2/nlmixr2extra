@@ -17,5 +17,5 @@ linModGen(ui, focei = TRUE, derivFct = FALSE)
 Generate a Linearization Model From Previous Fit
 }
 \author{
-Omar Elashkar
+Omar I. Elashkar
 }

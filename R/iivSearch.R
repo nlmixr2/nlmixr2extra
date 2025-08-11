@@ -1,7 +1,7 @@
 #' Automated Inter-Individual Variability Search
 #' @param fit a model fit
 #' 
-#' @author Omar Elashkar
+#' @author Omar I. Elashkar
 #' @export 
 iivSearch <- function(fit, ...){
     UseMethod("iivSearch")
@@ -14,8 +14,8 @@ iivSearch.default <- function(fit){
 
 
 #'@export 
-iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC", rerun_n=3, mceta=5){
-    if(hasUnFixedEta(fit)){stop("This model has unfixed IIV and not suitable for this procedure")}
+iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC", mceta=5){
+    if(!hasAnyEta(fit)){stop("Use `addEtas=TRUE` while linearizing this model")}
     # get eta names
     etaAll <- fit$iniDf[!is.na(fit$iniDf$neta1), ]
     etaNoCorr <- etaAll[etaAll$neta1 == etaAll$neta2,]
@@ -65,18 +65,17 @@ iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC", rerun_n=3, mceta=5){
     if(any(duplicated(objDfAll$BIC))){
         warning("Multiple models have the same BIC. Consider using a different search space.")
     }
-    # finalVarCov <- filterEtaMat(varCovMat, iivSpace[[which.min(objDfAll[[sortBy]])]])
-    # finalFit <- fit$env$originalUi |> ini(finalVarCov) # TODO set initial estimates
-    # finalFit <- nlmixr(fit$env$originalUi, nlme::getData(fit), est = "focei", 
-    #         control = nlmixr3est::foceiControl(mceta=5, etaMat = fit, covMethod = "", calcTables=FALSE))
+    
 
-    list(res = res, summary = objDfAll)
+    finalRes <- list(res = res, summary = objDfAll, linearFit = fit)
+    class(finalRes) <- "linIIVSearch"
+    finalRes
 }
 
 #' Filter covariance matrix
 #' @param oMat covariance matrix 
 #' @param filterStr single string with pattern of "-" between entities and "," for within entity correlation
-#' @author Omar Elashkar
+#' @author Omar I. Elashkar
 #' @noRd 
 filterEtaMat <- function(oMat, filterStr, minIni=0.1){
         stopifnot(length(filterStr) == 1)
@@ -110,7 +109,7 @@ filterEtaMat <- function(oMat, filterStr, minIni=0.1){
 
 #' Check if a model has any individual variability (eta) parameters
 #' @return TRUE if any eta parameters are present, FALSE otherwise
-#' @author Omar Elashkar
+#' @author Omar I. Elashkar
 #' @noRd
 hasAnyEta <- function(ui){
     etadf <- ui$iniDf[!is.na(ui$iniDf$neta1),]
@@ -123,19 +122,17 @@ hasAnyEta <- function(ui){
 #' @param ui rxode2 ui or fit
 #' @return TRUE if any eta parameters are unfixed, FALSE otherwise
 #' This function is used to ensure that the model is suitable for linearization intended for IIV search.
-#' @author Omar Elashkar
+#' @author Omar I. Elashkar
 #' @noRd
 hasUnFixedEta <- function(ui){
     etadf <- ui$iniDf[!is.na(ui$iniDf$neta1) & !ui$iniDf$fix,]
-    # thetadf <- ui$iniDf[is.na(ui$iniDf$neta1) & is.na(ui$iniDf$condition),]
-
     nrow(etadf) > 0
 }
 
 
 #' Generate all combinations of input parameters
 #' @param params character vector of parameter names
-#' @author Omar Elashkar
+#' @author Omar I. Elashkar
 #' @return char vector of possible combinations separated by "-". Correlations are marked by ",".
 #' @noRd 
 iivCombn <- function(params) {
@@ -168,22 +165,25 @@ iivCombn <- function(params) {
 #' Add Individual Random Effects and Fix them to Small Value
 #' @param ui model with no individual random effects added
 #' @return nlmixr2 fit with individual random effects added on all fixed effects and fixed.
-#' @author Omar Elashkar
+#' @author Omar I. Elashkar
 #' @export 
 addAllEtas <- function(ui, fix = FALSE){ 
     if(inherits(ui, "nlmixr2FitCore")){ui <- ui$ui}
     if(inherits(ui, "function")){ui <- ui()}
     
-    if(hasAnyEta(ui)){stop("Model already has IIV parameters. Must provide a model without etas.")}
+    if(!is.null(ui$noMuEtas)){stop("Some Etas are not mu referenced")}
     if(!inherits(ui, "rxUi")){stop("`ui` must be a model or fit")}
 
     # ui$singleTheta 
     # ui$muRefDataFrame
-    # ui$noMuEtas
 
     thetaNames <- ui$iniDf[is.na(ui$iniDf$neta1) & is.na(ui$ini$condition), "name"]
-    # add random effects 
-    newMod <- nlmixr2lib::addEta(ui, thetaNames)
+    freeTheta <- setdiff(thetaNames, ui$muRefDataFrame$theta)
+    if(length(freeTheta) > 0){
+      newMod <- nlmixr2lib::addEta(ui, freeTheta)
+    } else{
+      newMod <- ui
+    }
 
     # fix all random effects to 10^-4
     iniDf <- newMod$iniDf
@@ -195,3 +195,53 @@ addAllEtas <- function(ui, fix = FALSE){
 
 }
 
+#' Print Summary Table For Linearized IIV Search
+#' @author Omar I. Elashkar
+#' @export
+print.linIIVSearch <- function(x){
+  df <- x$summary
+  df[order(df$BIC), ]
+}
+
+#' Rerun Top N Original Models From A Search
+#' @param x a Search object
+#' @param ... Other Parameters
+#' @author Omar I. Elashkar
+#' @export
+rerunTopN <- function(x, ...){
+  UseMethod("rerunTopN")
+}
+  
+#' @export
+rerunTopN.default <- function(x, ...){
+  stop("Method not supported")
+}
+
+#' Rerun Top N Original Models From IIV Search
+#' @param x Linearized iivSearch results
+#' @param n number of models to rerun
+#' @author Omar I. Elashkar
+#' @export
+rerunTopN.linIIVSearch <- function(x, n = 5){
+  passed <- x$summary[res$summary$covMethod=="r,s",]
+  topCand <- passed[order(passed$BIC), ]$search[1:n]
+  
+  cli::cli_alert_info("Starting refitting original models")
+  origData <- x$linearFit$env$origData # FIXME 
+  nlui <- x$linearFit$env$originalUi  
+  nlui <- addAllEtas(nlui)
+  resOrig <- lapply(topCand, function(x){
+    omegaMat <- filterEtaMat(cov(fitLin$eta[,-1]), x)
+    iniDf <- nlui$iniDf
+    iniDf[!is.na(iniDf$neta1), "fix"] <- FALSE 
+    ini(nlui) <- iniDf
+    nlui <- nlui %>% ini(omegaMat)
+    nlmixr(nlui, origData, est="focei", control = foceiControl())
+  })
+  
+  resOrigSummary <- do.call(rbind, lapply(resOrig, function(x) x$objDf))
+  colnames(resOrigSummary) <- paste0("O.", colnames(resOrigSummary))
+  resOrigSummary$search <- topCand
+  
+  list(summary = resOrigSummary, fits = resOrig)
+}

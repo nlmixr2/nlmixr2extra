@@ -16,5 +16,5 @@ nlmixr2 fit with individual random effects added on all fixed effects and fixed.
 Add Individual Random Effects and Fix them to Small Value
 }
 \author{
-Omar Elashkar
+Omar I. Elashkar
 }

@@ -1,3 +1,152 @@
+test_that("add missing etas", {
+  
+  mod <- function() {
+      ini({
+          tktr <- 0.326787337229061
+          tka <- 0.573847838322594
+          tcl <- -2.02615620220267
+          tv <- 2.06443263542308
+          prop.err <- c(0, 0.145017473272093)
+          pkadd.err <- c(0, 0.198298188759467)
+          temax <- 4.75044304930452
+          tec50 <- 0.139562783557545
+          tkout <- -2.93951993228171
+          te0 <- 4.56394773529773
+          pdadd.err <- c(0, 3.80147740823949)
+          # eta.ktr ~ 0.899432614108315
+          # eta.ka ~ 1.20111175373864
+          # eta.cl ~ 0.0756455519562788
+          # eta.v ~ 0.0547982604779906
+          # eta.emax ~ 0.547762672352332
+          # eta.ec50 ~ 0.204313071604677
+          # eta.kout ~ 0.0228239781890516
+          # eta.e0 ~ 0.0107988390114995
+      })
+      model({
+          ktr <- exp(tktr)
+          ka <- exp(tka)
+          cl <- exp(tcl)
+          v <- exp(tv)
+          emax = expit(temax, 0, 1)
+          ec50 = exp(tec50)
+          kout = exp(tkout)
+          e0 = exp(te0)
+          DCP = center/v
+          PD = 1 - emax * DCP/(ec50 + DCP)
+          effect(0) = e0
+          kin = e0 * kout
+          d/dt(depot) = -ktr * depot
+          d/dt(gut) = ktr * depot - ka * gut
+          d/dt(center) = ka * gut - cl/v * center
+          d/dt(effect) = kin * PD - kout * effect
+          cp = center/v
+          cp ~ prop(prop.err) + add(pkadd.err) | cp
+          effect ~ add(pdadd.err) | pca
+      })
+  }
+  # no etas
+  modupdate <- addAllEtas(mod)
+  expect_true(length(modupdate$eta) == 8)
+  
+  # one etas 
+  mod <- function() {
+      ini({
+          tktr <- 0.326787337229061
+          tka <- 0.573847838322594
+          tcl <- -2.02615620220267
+          tv <- 2.06443263542308
+          prop.err <- c(0, 0.145017473272093)
+          pkadd.err <- c(0, 0.198298188759467)
+          temax <- 4.75044304930452
+          tec50 <- 0.139562783557545
+          tkout <- -2.93951993228171
+          te0 <- 4.56394773529773
+          pdadd.err <- c(0, 3.80147740823949)
+          # eta.ktr ~ 0.899432614108315
+          # eta.ka ~ 1.20111175373864
+          # eta.cl ~ 0.0756455519562788
+          # eta.v ~ 0.0547982604779906
+          eta.emax ~ 0.547762672352332
+          eta.ec50 ~ 0.204313071604677
+          # eta.kout ~ 0.0228239781890516
+          # eta.e0 ~ 0.0107988390114995
+      })
+      model({
+          ktr <- exp(tktr)
+          ka <- exp(tka)
+          cl <- exp(tcl)
+          v <- exp(tv)
+          emax = expit(temax + eta.emax, 0, 1)
+          ec50 = exp(tec50 + eta.ec50)
+          kout = exp(tkout)
+          e0 = exp(te0)
+          DCP = center/v
+          PD = 1 - emax * DCP/(ec50 + DCP)
+          effect(0) = e0
+          kin = e0 * kout
+          d/dt(depot) = -ktr * depot
+          d/dt(gut) = ktr * depot - ka * gut
+          d/dt(center) = ka * gut - cl/v * center
+          d/dt(effect) = kin * PD - kout * effect
+          cp = center/v
+          cp ~ prop(prop.err) + add(pkadd.err) | cp
+          effect ~ add(pdadd.err) | pca
+      })
+  }
+  mod <- mod()
+  modupdate <- addAllEtas(mod)
+  expect_true(length(modupdate$eta) == 8)
+  
+  # all etas
+  mod <- function() {
+      ini({
+          tktr <- 0.326787337229061
+          tka <- 0.573847838322594
+          tcl <- -2.02615620220267
+          tv <- 2.06443263542308
+          prop.err <- c(0, 0.145017473272093)
+          pkadd.err <- c(0, 0.198298188759467)
+          temax <- 4.75044304930452
+          tec50 <- 0.139562783557545
+          tkout <- -2.93951993228171
+          te0 <- 4.56394773529773
+          pdadd.err <- c(0, 3.80147740823949)
+          eta.ktr ~ 0.899432614108315
+          eta.ka ~ 1.20111175373864
+          eta.cl ~ 0.0756455519562788
+          eta.v ~ 0.0547982604779906
+          eta.emax ~ 0.547762672352332
+          eta.ec50 ~ 0.204313071604677
+          eta.kout ~ 0.0228239781890516
+          eta.e0 ~ 0.0107988390114995
+      })
+      model({
+          ktr <- exp(tktr + eta.ktr)
+          ka <- exp(tka + eta.ka)
+          cl <- exp(tcl + eta.cl)
+          v <- exp(tv + eta.v)
+          emax = expit(temax + eta.emax, 0, 1)
+          ec50 = exp(tec50 + eta.ec50)
+          kout = exp(tkout + eta.kout)
+          e0 = exp(te0 + eta.e0)
+          DCP = center/v
+          PD = 1 - emax * DCP/(ec50 + DCP)
+          effect(0) = e0
+          kin = e0 * kout
+          d/dt(depot) = -ktr * depot
+          d/dt(gut) = ktr * depot - ka * gut
+          d/dt(center) = ka * gut - cl/v * center
+          d/dt(effect) = kin * PD - kout * effect
+          cp = center/v
+          cp ~ prop(prop.err) + add(pkadd.err) | cp
+          effect ~ add(pdadd.err) | pca
+      })
+  }
+  
+  modupdate <- addAllEtas(mod)
+  expect_true(length(modupdate$eta) == 8)
+})
+
 test_that("linearized eta search", {
     one.cmpt.adderr <- function() {
   ini({
@@ -49,7 +198,7 @@ one.cmpt.adderr <- function() {
     cp ~ add(add.sd)
   })
 }
-fit <- addFixedEtas(one.cmpt.adderr)
+fit <- addAllEtas(one.cmpt.adderr)
 expect_false(hasUnFixedEta(fit))
 fit <- nlmixr(fit, sim, est = "focei")
 

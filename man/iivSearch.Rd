@@ -13,5 +13,5 @@ iivSearch(fit, ...)
 Automated Inter-Individual Variability Search
 }
 \author{
-Omar Elashkar
+Omar I. Elashkar
 }

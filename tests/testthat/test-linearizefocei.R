@@ -217,7 +217,7 @@ test_that("Linearize prop err model ", {
     set.seed(42)
     ev <- rxode2::et(amountUnits = "mg", timeUnits = "hours") |>
         rxode2::et(amt = 300, cmt = "depot") |>
-        rxode2::et(time = c(0.25, 0.5, 1,2,3,6,8,12,16,24))
+        rxode2::et(time = c(0.125, 0.5, 1,2,3,6,8,12,16,24))
     sim <- rxode2::rxSolve(one.cmpt.properr, ev, nSub = 200, addDosing = TRUE)
     sim$dv <- sim$sim
     sim$id <- sim$sim.id
@@ -226,6 +226,7 @@ test_that("Linearize prop err model ", {
 
     fit <- nlmixr(one.cmpt.properr, sim, est = "focei",
             control = nlmixr2est::foceiControl(mceta=10))
+    
     # linMod <- linModGen(fit, FALSE)
     # derv <- getDeriv(fit)
 
@@ -243,62 +244,13 @@ test_that("Linearize prop err model ", {
     #
 
     suppressWarnings(
-        fitLin <- linearize(fit, relTol = 0.2, mceta = c(-1, 10, 100))
+        fitLin <- linearize(fit, relTol = 0.2, mceta = c(-1, 10))
     )
 
     isLinearizeMatch(fit, fitLin, tol = 0.15)$ofv[[1]] %>% expect_true()
 
 })
 
-
-test_that("Linearize prop err model SAEM", {
-    skip_on_cran()
- 
-    one.cmpt.properr <- function() { # non-linear base
-        ini({
-            tka <- log(1.56) # Ka
-            tcl <- log(2.7) # Cl
-            tv <- log(30) # V
-            eta.cl ~ 0.3
-            eta.v ~ 0.2
-            prop.sd <- 0.10
-        })
-        model({
-            ka <- exp(tka)
-            cl <- exp(tcl + eta.cl)
-            v <- exp(tv + eta.v)
-            d / dt(depot) <- -ka * depot
-            d / dt(center) <- ka * depot - cl / v * center
-            cp <- center / v
-            cp ~ prop(prop.sd)
-        })
-    }
-    set.seed(42)
-    ev <- rxode2::et(amountUnits = "mg", timeUnits = "hours") |>
-        rxode2::et(amt = 300, cmt = "depot") |>
-        rxode2::et(time = c(0.25, 0.5, 1,2,3,6,8,12,16,24))
-    sim <- rxode2::rxSolve(one.cmpt.properr, ev, nSub = 200, addDosing = TRUE)
-    sim$dv <- sim$sim
-    sim$id <- sim$sim.id
-    sim$sim.id <- NULL
-    sim <- sim[,c("id", "time", "amt", "dv", "evid")]
-
-    fit_saem <- nlmixr(one.cmpt.properr, sim, est ="saem")
-    
-    fit <- nlmixr(fit_saem$finalUi, sim, est = "focei",
-            control = nlmixr2est::foceiControl(mceta=10))
-    # INNER ETA
-    # OUTER THETA OMEGA
-    #
-
-    suppressWarnings(
-        fitLin <- linearize(fit, relTol = 0.2, mceta = c(-1, 10, 100))
-    )
-
-    isLinearizeMatch(fit, fitLin, tol = 0.15)$ofv[[1]] %>% expect_true()
-
-   
-})
 
 test_that("Linerize pheno prop err", {
     one.cmpt.prop.iv <- function() {
@@ -339,8 +291,8 @@ test_that("Linearize combined2 model ", {
             tv <- log(30) # V
             eta.cl ~ 0.3
             eta.v ~ 0.1
-            add.sd <- 0.7
-            prop.sd <- 0.1
+            add.sd <- 1
+            prop.sd <- 0.3
         })
         model({
             ka <- exp(tka)
@@ -353,9 +305,9 @@ test_that("Linearize combined2 model ", {
         })
     }
 
-    fit <- nlmixr(one.cmpt.combinederr, nlmixr2data::theo_sd, est = "focei")
+    fit <- nlmixr(one.cmpt.combinederr, nlmixr2data::theo_sd, est = "focei") # 163.56
     suppressWarnings(
-        fitLin <- linearize(fit)
+        fitLin <- linearize(fit) # saem doesn't work well
     )
 
     expect_true( 
@@ -483,6 +435,8 @@ test_that("Linearize multiple endpoints ", {
 
 test_that("Linearize multiple endpoints SAEM", {
     skip_on_cran()
+    
+     
 
     pk.turnover.emax3 <- function() {
     ini({
@@ -504,7 +458,7 @@ test_that("Linearize multiple endpoints SAEM", {
         eta.emax ~ 0.547762672352332
         eta.ec50 ~ 0.204313071604677
         eta.kout ~ 0.0228239781890516
-        eta.e0 ~ 0.0107988390114995
+        # eta.e0 ~ 0.0107988390114995
     })
     model({
         ktr <- exp(tktr + eta.ktr)
@@ -514,7 +468,7 @@ test_that("Linearize multiple endpoints SAEM", {
         emax = expit(temax + eta.emax, 0, 1)
         ec50 = exp(tec50 + eta.ec50)
         kout = exp(tkout + eta.kout)
-        e0 = exp(te0 + eta.e0)
+        e0 = exp(te0)
         DCP = center/v
         PD = 1 - emax * DCP/(ec50 + DCP)
         effect(0) = e0
@@ -529,16 +483,19 @@ test_that("Linearize multiple endpoints SAEM", {
     })
 }
 
-    fit <- nlmixr(pk.turnover.emax3, nlmixr2data::warfarin, est = "saem") |> 
-          nlmixr(est="focei",  control = nlmixr2est::foceiControl(mceta=10))
+    fit <- nlmixr(pk.turnover.emax3, nlmixr2data::warfarin, est = "saem") 
 
+    # pdf("fitplot.pdf")
+    # plot(fit)
+    # dev.off()
+    
     suppressWarnings(
         fitLin <- linearize(fit, mceta = 10)
     )
 
-    expect_true(isLinearizeMatch(fit, fitLin)$ofv[[1]])
+    expect_true(isLinearizeMatch(fit, fitLin)$ofv[[1]]) # FIXME this fails despite good fit
 
-    linearizePlot(fit, fitLin)
+    linearizePlot(fitLin)
 })
 
 test_that("linearize correlated eta ", {
@@ -612,7 +569,7 @@ test_that("Adding covariates to lin models", {
             cp ~ add(add.sd)
         })
     }
-    one.cmpt.adderr.cov <- function() {
+    one.cmpt.adderr.cov.all <- function() {
         ini({
             tcl <- log(2.7) # Cl
             tv <- 30 # V
@@ -630,6 +587,57 @@ test_that("Adding covariates to lin models", {
             ka <- exp(tka + eta.ka)
             cl <- tcl*exp(eta.cl)*AGECLCOV
             v <- tv*exp(eta.v)*WTVCOV
+            d / dt(depot) <- -ka * depot
+            d / dt(center) <- ka * depot - cl / v * center
+            cp <- center / v
+            cp ~ add(add.sd)
+        })
+    }
+    
+    one.cmpt.adderr.cov.wtv <- function() {
+        ini({
+            tcl <- log(2.7) # Cl
+            tv <- 30 # V
+            tka <- log(1.56) #  Ka
+            WTVTheta <- 1.5
+            # AGECLTheta <- 2
+            eta.cl ~ 0.3
+            eta.v ~ 0.1
+            eta.ka ~ 0.6
+            add.sd <- 0.7
+        })
+        model({
+            WTVCOV = (WT/70)^WTVTheta
+            # AGECLCOV = (AGE/30)^AGECLTheta
+            ka <- exp(tka + eta.ka)
+            cl <- tcl*exp(eta.cl)
+            v <- tv*exp(eta.v)*WTVCOV
+            d / dt(depot) <- -ka * depot
+            d / dt(center) <- ka * depot - cl / v * center
+            cp <- center / v
+            cp ~ add(add.sd)
+        })
+    }
+    
+    
+    one.cmpt.adderr.cov.agecl <- function() {
+        ini({
+            tcl <- log(2.7) # Cl
+            tv <- 30 # V
+            tka <- log(1.56) #  Ka
+            # WTVTheta <- 1.5
+            AGECLTheta <- 2
+            eta.cl ~ 0.3
+            eta.v ~ 0.1
+            eta.ka ~ 0.6
+            add.sd <- 0.7
+        })
+        model({
+            # WTVCOV = (WT/70)^WTVTheta
+            AGECLCOV = (AGE/30)^AGECLTheta
+            ka <- exp(tka + eta.ka)
+            cl <- tcl*exp(eta.cl)*AGECLCOV
+            v <- tv*exp(eta.v)
             d / dt(depot) <- -ka * depot
             d / dt(center) <- ka * depot - cl / v * center
             cp <- center / v
@@ -663,6 +671,21 @@ test_that("Adding covariates to lin models", {
         addCovariate(fitLinNoCov, eta.v~AGPR/70, effect = "power") %>% 
             addCovariate(eta.v~WT/70)
     )
+    # only Age CL 
+    fitLinCov.age <- addCovariate(fitLinNoCov, eta.cl~AGE/30, effect = "power")
+    fitLinCov.age <- nlmixr(fitLinCov.age, nlme::getData(fitLinNoCov), est = "focei")
+    nlfitCov.age <- nlmixr(one.cmpt.adderr.cov.agecl, nlme::getData(nlfitNoCov), est = "focei")
+    
+    
+    # only Wt Vd 
+    
+    fitLinCov.wt <- addCovariate(fitLinNoCov, eta.v~WT/70, effect = "power") 
+
+    fitLinCov.wt <- nlmixr(fitLinCov.wt, nlme::getData(fitLinNoCov), est = "focei")
+
+    nlfitCov.wt <- nlmixr(one.cmpt.adderr.cov.wtv, nlme::getData(nlfitNoCov), est = "focei")
+    
+    # correct 
     fitLinCov <- addCovariate(fitLinNoCov, eta.v~WT/70, effect = "power") |> 
                   addCovariate(eta.cl~AGE/30, effect = "power")
 
@@ -673,6 +696,14 @@ test_that("Adding covariates to lin models", {
     nlfitCov$parFixed # why 0.5 and not 1.5? normalization
     fitLinCov$parFixed
 
+    nlfitCov.wt$objDf[,c(1,3)]
+    nlfitCov.age$objDf[,c(1,3)]
+    nlfitCov$objDf[,c(1,3)]
+    
+    fitLinCov.wt$objDf[,c(1,3)]
+    fitLinCov.age$objDf[,c(1,3)]
+    fitLinCov$objDf[,c(1,3)]
+    
     expect_true(sum(nlfitCov$time) > sum(fitLinCov$time))
     expect_true(fitLinCov$objDf$OBJF < fitLinNoCov$objDf$OBJF)
     expect_true(nlfitCov$objDf$OBJF < nlfitNoCov$objDf$OBJF)

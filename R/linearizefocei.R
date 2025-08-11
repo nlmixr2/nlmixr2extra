@@ -2,10 +2,10 @@
 #'
 #' @param fit object fitted with nlmixr2 of class nlmixr2.focei
 #'
-#' @author Omar Elashkar
+#' @author Omar I. Elashkar
 #' @noRd
 getDeriv <- function(fit){
-    if(fit$method != "FOCE") stop("This method requires FOCE method")
+    if(fit$est != "focei") stop("This method requires FOCEI method")
     rxode2::assertRxUiMixedOnly(fit, " for the procedure routine 'linearize'", .var.name=fit$modelName)
 
     ui <- rxode2::assertRxUi(fit)
@@ -99,7 +99,7 @@ renameCol <- function(df, new, old){
 #' @param ui rx model or fit object.
 #' @param focei boolean. If TRUE, use FOCEI linearization with individual and residual linearization. Default is TRUE.
 #' @param derivFct boolean. If TRUE, use normalization derivative factors. Default is FALSE.
-#' @author Omar Elashkar
+#' @author Omar I. Elashkar
 #' @export
 linModGen <- function(ui, focei = TRUE, derivFct = FALSE){
 
@@ -199,42 +199,60 @@ linModGen <- function(ui, focei = TRUE, derivFct = FALSE){
 }
 
 #' Perform linearization of a model fitted using FOCEI
-#' @param fit fit of nonlinear model.
-#' @param mceta a numeric vector for mceta to try. See decription.
+#' @param fit fit of nonlinear model fitted using any method with at least one eta. See details.
+#' @param mceta a numeric vector for mceta to try. See details.
 #' @param relTol relative deviation tolerance between original and linearized models objective functions. Used for switching if focei = NA. See details.
 #' @param focei Default is NA for automatic switch from FOCEI to FOCE if failed. See details.
+#' @param addEtas boolean. If TRUE, add etas on every theta and fix it to small value to get derivatives. Default is FALSE.
 #' @param derivFct boolean. If TRUE, turn on derivatives for linearization. Default is FALSE.
 #' @param plot boolean. Print plot of linearized vs original
+#' @param est Character. The estimation method used for the linearized model fit. Only 'focei' is supported.
 #'
 #' @details
 #'
-#' mceta vector will be iterated over to find the best linearization if linearization failed.
+#' The function accepts a fit object fitted using any method. However, if the method is not FOCE+I, the model is going to be evaluated first. 
+#' 
+#' `mceta` vector will be iterated over to find the best linearization if linearization failed.
 #' Escalating to next mceta will depend on the relative deviation `relTol` of the original and linearized models objective functions.
 #'
 #' If `focei` is set to `NA`, the function will first try to linearize using FOCEI.
 #' If the relative deviation between original and linearized models objective functions is greater than `relTol`, it will switch to FOCE where residual linearization is skipped.
 #' If `focei` is set to `TRUE`, the function will use FOCEI linearization with individual and residual linearization.
-#' If `focei` is set to `FALSE`, the function will use FOCE linearization with residual linearization skipped.
+#' If `focei` is set to `FALSE`, the function will use FOCE linearization with residual interaction linearization skipped.
 #'
-#' If `derivFct` is set to `TRUE`, the function will use derivatives for linearization.
-#' This might be usefull to try with FOCEI.
+#' If `derivFct` is set to `TRUE`, the function will use an extra factor for linearization that might help in stabilization.
+#' This might be useful to try with FOCEI.
 #'
 #' `plot` argument can only print ggplot figure with default settings.
 #' If a user wish to capture the plot, one might use `linearizePlot()` call.
 #'
 #'
 #'
-#' @author Omar Elashkar
+#' @author Omar I. Elashkar
 #' @export
-linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.25, focei = NA,
-    derivFct = FALSE, plot = FALSE){
+linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.25, focei = NA, addEtas = FALSE,
+    derivFct = FALSE, plot = FALSE, est = "focei"){
     checkmate::assertIntegerish(mceta, lower = -1, upper = 2000,  unique = TRUE)
     checkmate::assertNumeric(relTol, lower=0, upper=1.0)
     checkmate::assertLogical(plot)
     checkmate::assertLogical(derivFct)
     checkmate::assertLogical(focei, max.len = 1, any.missing=TRUE)
+    checkmate::assertChoice(est, c("focei"))
 
 
+    ofit <- fit
+    odata <- nlme::getData(fit)
+    if(addEtas){
+      tmpUi <- addAllEtas(fit, fix = TRUE)
+      fit <- nlmixr2est::nlmixr(tmpUi, odata , est = "focei", 
+                                control = foceiControl(mceta=5, maxOuterIterations = 0, maxInnerIterations = 0, covMethod = ""))
+    }
+    if(fit$method != "FOCE"){
+      cli::cli_alert_info("Evaluating the model with FOCE+I")
+      fit <- nlmixr2est::nlmixr(ofit$finalUi, odata , est = "focei", 
+                                control = foceiControl(mceta=5, maxOuterIterations = 0, maxInnerIterations = 0, covMethod = ""))
+    }
+    
     derv <- getDeriv(fit)
     linMod <- linModGen(fit, focei = ifelse(is.na(focei), TRUE, focei), derivFct = derivFct)
 
@@ -261,19 +279,24 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.25, focei = NA,
     firstEval <- evalFun()
 
     if(isTRUE(all.equal(firstEval$oObj, firstEval$lObj_map, tolerance = relTol))){
+        cli::cli_alert_info("{firstEval$oObj} MAP:{firstEval$lObj_map}")
         cli::cli_alert_info("Linearization evaluation matched. Linearization might be feasible ...")
     } else{
-        cli::cli_alert_warning("Linearization evaluation mismatched by deltaOFV > 2%. Linearization might be difficult")
-        cli::cli_alert_warning("Switching to linearization around predictions only (Variance linearization skipped)")
+        cli::cli_alert_warning("Linearization evaluation mismatched by deltaOFV > {relTol}. Linearization might be difficult")
+        cli::cli_alert_warning("Switching to linearization around predictions only (Variance interaction linearization skipped)")
         linMod <- linMod %>%  model(foceiLin <- 0)
         secondEval <- evalFun()
+        cli::cli_alert_info("{secondEval$oObj} MAP:{secondEval$lObj_map}")
     }
 
 
     # fit linearized model
     for(i in seq_along(mceta)){
-        fitL <- nlmixr(linMod, derv, est="focei",
+        fitL <- nlmixr(linMod, derv, est=est,
             control = nlmixr2est::foceiControl(etaMat = fit, mceta=mceta[i], covMethod = "", calcTables = FALSE, print = 20))
+        
+        if(est != "focei"){break} # obj are not comparable
+        
         oObj <- fit$objDf$OBJF
         lObj <- fitL$objDf$OBJF
 
@@ -319,12 +342,12 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.25, focei = NA,
     }
     m <- paste(
         "Linearization method: {
-              ifelse(is.na(focei), 'Auto', ifelse(focei, 'FOCE (individual + residual)', 'Variance Skipped'))
+              ifelse(is.na(focei), 'Auto', ifelse(focei, 'FOCE (individual + residual)', 'Variance interaction skipped'))
               }
         Linearization Relative Tolerance: {relTol}
         {
           ifelse(is.na(focei) & exists('secondEval'), 
-            'Linearization method switched automatically to FOCE (residual linearization skipped)', 
+            'Linearization method switched automatically to FOCE approximation (residuals interaction linearization ignored)', 
               ifelse(is.na(focei) & !exists('secondEval'), 'FOCEI Linearization', ifelse(focei, 'FOCEI Linearization', 'FOCE Linearization')))
           }
         {paste(finalEval$message, collapse = '')}
@@ -339,37 +362,39 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.25, focei = NA,
 
     tmpEnv <- fitL$env
     assign("message", c(fitL$message, m), envir=tmpEnv)
-    assign("originalUi", fit$finalUi, envir=tmpEnv)
+    assign("originalUi", ofit$finalUi, envir=tmpEnv)
+    assign("originaletaObf", ofit$etaObf, envir=tmpEnv)
+    assign("originalObjDf", fit$objDf, envir=tmpEnv)
 
     v <- c("nlmixr2Linearize", class(fitL))
     attr(v, ".foceiEnv") <- tmpEnv
     class(fitL) <- v
 
     if(plot){
-        print(linearizePlot(fit, fitL))
+        print(linearizePlot(fitL))
     }
 
     fitL
 }
 
 #' Plot Original Versus Linear Models iObj and Etas
-#' @param nl non-linear fitting object
 #' @param l linear fitting object
+#' 
+#' @details
+#' If the non-linear fit was not FOCEI, the objective functions are not comparable, hence can be ignored upon comparison.
+#' 
 #' @return ggplot object
-#' @author Omar Elashkar
+#' @author Omar I. Elashkar
 #' @export
-linearizePlot <- function(nl, lin){
-    stopifnot(inherits(nl, "nlmixr2FitCore"))
+linearizePlot <- function(lin){
     stopifnot(inherits(lin, "nlmixr2FitCore"))
     stopifnot(inherits(lin, "nlmixr2Linearize"))
-
-    stopifnot(all(nl$iniDf$name[!is.na(nl$iniDf$neta1)] == lin$iniDf$name[!is.na(lin$iniDf$neta1)]))
 
     l <- function(x, descr) {
         x$factor <- descr
         x
     }
-    originalIval <- l(nl$etaObf, "original")
+    originalIval <- l(lin$env$originaletaObf, "original")
     linearIval <- l(lin$etaObf, "linear")
 
     fig <- rbind(originalIval, linearIval) %>% 
@@ -380,7 +405,7 @@ linearizePlot <- function(nl, lin){
         ggplot2::geom_smooth(se = FALSE, method = "lm") +
         ggplot2::geom_point() +
         ggplot2::facet_wrap("parameter", scales = "free") + 
-        ggplot2::labs(title = paste("Original OBJ:", round(nl$objDf$OBJF,3), "Linearized OBJ:", round(lin$objDf$OBJF,3)),
+        ggplot2::labs(title = paste("Original OBJ:", round(lin$env$originalObjDf$OBJF,3), "Linearized OBJ:", round(lin$objDf$OBJF,3)),
                       x = "Original Model",
                       y = "Linearized Model"
                       )
@@ -397,7 +422,7 @@ linearizePlot <- function(nl, lin){
 #' This is useful for checking the linearization feasibility under given non-linear model and its fit.
 #' `innerIter=0` is equivalent to NONMEM `$ESTIMATION MAXITER=0` and will not perform any inner iterations.
 #'
-#' @author Omar Elashkar
+#' @author Omar I. Elashkar
 #' @noRd
 evalLinModel <- function(fit, linMod, derv, innerIter = 0, covMethod = ""){
     fitL <- nlmixr(linMod, derv, est="focei",
@@ -412,7 +437,7 @@ evalLinModel <- function(fit, linMod, derv, innerIter = 0, covMethod = ""){
 #' @param linFit fit of linear model.
 #' @param tol relative tolerance for matching. Default is 0.05.
 #' @return match list for OFV, omega, eta, and residual variance terms
-#' @author Omar Elashkar
+#' @author Omar I. Elashkar
 #' @export
 isLinearizeMatch <- function(fit, linFit, tol = 0.05){
 
@@ -447,7 +472,7 @@ isLinearizeMatch <- function(fit, linFit, tol = 0.05){
 #'@param oData dataframe
 #'@param effect character of effect type. One of "linear", "power", "exp", "hockyStick"
 #'@return data frame with columns: param, covariate, normfactor, type, levels, min, max, expr, effect
-#'@author Omar Elashkar
+#'@author Omar I. Elashkar
 #'@noRd
 parseCovExpr <- function(expr, oData, effect){
     checkmate::assertFormula(expr)
@@ -633,7 +658,7 @@ parseCovExpr <- function(expr, oData, effect){
 #' `effect` and `normaDefault` are only used if covariate is continuous.
 #' `normaDefault` call will be skipped if what covpar expression is normalized by other value
 #' 
-#' @author Omar Elashkar
+#' @author Omar I. Elashkar
 #' @export
 addCovariate <- function(fit, expr, effect, ref ) {
     UseMethod("addCovariate")
@@ -698,8 +723,8 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect="power") {
         
         # coveta.v = D_ETA * 1 * (rx.covrel.eta.v - 1)
         # only added once
-        lastexprIdx <- lastLocate(unlist(modelLinesRaw), "covrel.")
-        covEffectDerivEntity <- paste0("cov.", covParseDf$param[i], " <- ", covParseDf$Deriv[i])
+        lastexprIdx <- lastLocate(unlist(modelLinesRaw), "rx.covrel.")
+        covEffectDerivEntity <- paste0("rx.cov.", covParseDf$param[i], " <- ", covParseDf$Deriv[i])
         covRef <- paste0(covEffectDerivEntity, "*1*(" , covRelEntity , " - 1)")
         modelLinesRaw <- append(modelLinesRaw, covRef, after = lastexprIdx)
       } else {
@@ -746,7 +771,7 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect="power") {
 #' Parse covariate expression into a data frame
 #' @param expr expression to parse
 #' @return data frame with columns: param, covariate, normfactor
-#' @author Omar Elashkar
+#' @author Omar I. Elashkar
 #' @noRd
 covExprDf <- function(expr) {
     # ensure all functions are either + or /
@@ -803,7 +828,7 @@ covExprDf <- function(expr) {
 #' @param ini initial value for the theta
 #' @param fix boolean. If TRUE, the theta will be fixed. Default is FALSE.
 #' @return updated initial parameter data frame with the new theta added
-#' @author Omar Elashkar
+#' @author Omar I. Elashkar
 #' @noRd
 addThetaToIniDf <- function(iniDf, thetaname, ini, fix = TRUE){
     checkmate::assertCharacter(thetaname, any.missing = FALSE, min.len = 1)
@@ -850,7 +875,7 @@ getData.rxUi <- function(x){
 #' @param data a data frame to attach.
 #' The data can then be accessed via `nlme::getData(ui)`
 #' @return rxUi.
-#' @author Omar Elashkar
+#' @author Omar I. Elashkar
 #' @export
 addData2Rx <- function(ui, data){
     
@@ -868,7 +893,7 @@ addData2Rx <- function(ui, data){
 
 
 #' Covariate Finding Using Different Algorithms
-#'@author Omar Elashkar
+#'@author Omar I. Elashkar
 #'@noRd
 # TODO 
 covSearch <- function(ui, covSpace, method = "scm", pValBack=0.01, pValForward=0.05){
@@ -877,7 +902,7 @@ covSearch <- function(ui, covSpace, method = "scm", pValBack=0.01, pValForward=0
 
 
 #' Return last position of pattern in a vector
-#' @author Omar Elashkar
+#' @author Omar I. Elashkar
 #' @noRd
 lastLocate <- function(text, pattern) {
   # Check if the input is valid

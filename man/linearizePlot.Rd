@@ -4,11 +4,9 @@
 \alias{linearizePlot}
 \title{Plot Original Versus Linear Models iObj and Etas}
 \usage{
-linearizePlot(nl, lin)
+linearizePlot(lin)
 }
 \arguments{
-\item{nl}{non-linear fitting object}
-
 \item{l}{linear fitting object}
 }
 \value{
@@ -17,6 +15,9 @@ ggplot object
 \description{
 Plot Original Versus Linear Models iObj and Etas
 }
+\details{
+If the non-linear fit was not FOCEI, the objective functions are not comparable, hence can be ignored upon comparison.
+}
 \author{
-Omar Elashkar
+Omar I. Elashkar
 }

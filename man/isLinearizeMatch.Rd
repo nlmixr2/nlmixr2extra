@@ -20,5 +20,5 @@ match list for OFV, omega, eta, and residual variance terms
 Check Linearization Match
 }
 \author{
-Omar Elashkar
+Omar I. Elashkar
 }

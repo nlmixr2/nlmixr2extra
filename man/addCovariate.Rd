@@ -34,5 +34,5 @@ addCovariate(fit, expr, effect, ref)
 Add Covariate to Model Fit (Generic)
 }
 \author{
-Omar Elashkar
+Omar I. Elashkar
 }
