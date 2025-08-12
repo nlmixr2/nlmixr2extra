@@ -247,10 +247,12 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.25, focei = NA, 
       fit <- nlmixr2est::nlmixr(tmpUi, odata , est = "focei", 
                                 control = foceiControl(mceta=5, maxOuterIterations = 0, maxInnerIterations = 0, covMethod = ""))
     }
-    if(fit$method != "FOCE"){
+    if(fit$est != "focei"){
       cli::cli_alert_info("Evaluating the model with FOCE+I")
-      fit <- nlmixr2est::nlmixr(ofit$finalUi, odata , est = "focei", 
-                                control = foceiControl(mceta=5, maxOuterIterations = 0, maxInnerIterations = 0, covMethod = ""))
+      # maxOuterIterations might enhance the OBJ but not needed so far
+      fit <- nlmixr2est::nlmixr(ofit$finalUi, odata, est = "focei", 
+                                control = foceiControl(etaMat = ofit$etas, 
+                                                       maxOuterIterations = 0, maxInnerIterations = 1000, covMethod = ""))
     }
     
     derv <- getDeriv(fit)
@@ -362,9 +364,7 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.25, focei = NA, 
 
     tmpEnv <- fitL$env
     assign("message", c(fitL$message, m), envir=tmpEnv)
-    assign("originalUi", ofit$finalUi, envir=tmpEnv)
-    assign("originaletaObf", ofit$etaObf, envir=tmpEnv)
-    assign("originalObjDf", fit$objDf, envir=tmpEnv)
+    assign("originalFit", fit, envir=tmpEnv) # the one last evaluated
 
     v <- c("nlmixr2Linearize", class(fitL))
     attr(v, ".foceiEnv") <- tmpEnv
@@ -394,8 +394,13 @@ linearizePlot <- function(lin){
         x$factor <- descr
         x
     }
-    originalIval <- l(lin$env$originaletaObf, "original")
+    originalIval <- l(lin$env$originalFit$etaObf, "original")
     linearIval <- l(lin$etaObf, "linear")
+    
+    oObj <- round(lin$env$originalFit$objDf$OBJF,3)
+    lObj <- round(lin$objDf$OBJF,3)
+    relDev <- abs((oObj-lObj)/lObj)
+    relDev <- round(relDev*100, 2)
 
     fig <- rbind(originalIval, linearIval) %>% 
         tidyr::pivot_longer(cols = c(-c("ID", "factor")), names_to = "parameter",
@@ -405,7 +410,8 @@ linearizePlot <- function(lin){
         ggplot2::geom_smooth(se = FALSE, method = "lm") +
         ggplot2::geom_point() +
         ggplot2::facet_wrap("parameter", scales = "free") + 
-        ggplot2::labs(title = paste("Original OBJ:", round(lin$env$originalObjDf$OBJF,3), "Linearized OBJ:", round(lin$objDf$OBJF,3)),
+        ggplot2::labs(title = paste("Original OBJ:", oObj , "Linearized OBJ:", lObj ),
+                      subtitle = paste("Rel. Dev: ", relDev , "%"),
                       x = "Original Model",
                       y = "Linearized Model"
                       )
@@ -433,24 +439,25 @@ evalLinModel <- function(fit, linMod, derv, innerIter = 0, covMethod = ""){
 }
 
 #' Check Linearization Match
-#' @param fit fit of nonlinear model.
 #' @param linFit fit of linear model.
 #' @param tol relative tolerance for matching. Default is 0.05.
 #' @return match list for OFV, omega, eta, and residual variance terms
 #' @author Omar I. Elashkar
 #' @export
-isLinearizeMatch <- function(fit, linFit, tol = 0.05){
+isLinearizeMatch <- function(linFit, tol = 0.05){
+    stopifnot(inherits(linFit, "nlmixr2Linearize"))
 
-    est <-setNames(fit$iniDf$est, fit$iniDf$name)
+    originalFit <- linFit$env$originalFit
+    est <-setNames(originalFit$iniDf$est, originalFit$iniDf$name)
     estLin <- setNames(linFit$iniDf$est, linFit$iniDf$name)
     # est <- est[names(estLin)]
 
-    estErrNl <- est[!is.na(fit$iniDf$err)]
+    estErrNl <- est[!is.na(originalFit$iniDf$err)]
     estErrLin <- estLin[!is.na(linFit$iniDf$ntheta) &  linFit$iniDf$fix == FALSE]
 
-    deltaOfv <- all.equal(fit$objDf$OBJF, linFit$objDf$OBJF, tol = tol)
-    deltaOmega <- all.equal(fit$omega, linFit$omega, tol = tol)
-    deltaEta <- all.equal(fit$eta, linFit$eta, tol = tol)
+    deltaOfv <- all.equal(originalFit$objDf$OBJF, linFit$objDf$OBJF, tol = tol)
+    deltaOmega <- all.equal(originalFit$omega, linFit$omega, tol = tol)
+    deltaEta <- all.equal(originalFit$eta, linFit$eta, tol = tol)
     deltaErr <- all.equal(estErrNl, estErrLin, tol = tol)
     list(
         ofv = list(isTRUE(deltaOfv), deltaOfv),
@@ -757,7 +764,7 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect="power") {
     
     linEnv <- rxUiDecompress(newMod)
     linEnv$ui <- newMod
-    linEnv$originalUi <- fit$originalUi
+    linEnv$originalFit <- fit$originalFit
     linEnv$origData <- nlme::getData(fit)
     linEnv$message <- fit$message
     linEnv <- rxUiCompress(linEnv)

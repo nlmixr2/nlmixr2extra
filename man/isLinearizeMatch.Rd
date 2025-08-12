@@ -4,11 +4,9 @@
 \alias{isLinearizeMatch}
 \title{Check Linearization Match}
 \usage{
-isLinearizeMatch(fit, linFit, tol = 0.05)
+isLinearizeMatch(linFit, tol = 0.05)
 }
 \arguments{
-\item{fit}{fit of nonlinear model.}
-
 \item{linFit}{fit of linear model.}
 
 \item{tol}{relative tolerance for matching. Default is 0.05.}

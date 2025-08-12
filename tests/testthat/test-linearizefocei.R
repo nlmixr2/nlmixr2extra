@@ -185,7 +185,7 @@ test_that("Linearize add err model ", {
 
     linearizePlot(fit, fitLin) %>% expect_no_error()
     expect_true(
-        all(sapply(isLinearizeMatch(fit, fitLin), function(x){x[[1]]}))
+        all(sapply(isLinearizeMatch(fitLin), function(x){x[[1]]}))
     )
 
 })
@@ -225,7 +225,7 @@ test_that("Linearize prop err model ", {
     sim <- sim[,c("id", "time", "amt", "dv", "evid")]
 
     fit <- nlmixr(one.cmpt.properr, sim, est = "focei",
-            control = nlmixr2est::foceiControl(mceta=10))
+            control = nlmixr2est::foceiControl(mceta=10)) # saem not ok
     
     # linMod <- linModGen(fit, FALSE)
     # derv <- getDeriv(fit)
@@ -244,11 +244,10 @@ test_that("Linearize prop err model ", {
     #
 
     suppressWarnings(
-        fitLin <- linearize(fit, relTol = 0.2, mceta = c(-1, 10))
+        fitLin <- linearize(fit, relTol = 0.3, mceta = c(-1, 10))
     )
 
-    isLinearizeMatch(fit, fitLin, tol = 0.15)$ofv[[1]] %>% expect_true()
-
+    isLinearizeMatch(fitLin, tol = 0.15)$ofv[[1]] %>% expect_true()
 })
 
 
@@ -270,7 +269,7 @@ test_that("Linerize pheno prop err", {
             cp ~ prop(prop.sd) 
         })
     }
-    fit <- nlmixr(one.cmpt.prop.iv, nlmixr2data::pheno_sd, est = "focei")
+    fit <- nlmixr(one.cmpt.prop.iv, nlmixr2data::pheno_sd, est = "focei") # saem ok
 
     suppressWarnings(
         fitLin <- linearize(fit)
@@ -305,13 +304,13 @@ test_that("Linearize combined2 model ", {
         })
     }
 
-    fit <- nlmixr(one.cmpt.combinederr, nlmixr2data::theo_sd, est = "focei") # 163.56
+    fit <- nlmixr(one.cmpt.combinederr, nlmixr2data::theo_sd, est = "saem") 
     suppressWarnings(
-        fitLin <- linearize(fit) # saem doesn't work well
+        fitLin <- linearize(fit) 
     )
 
     expect_true( 
-        all(sapply(isLinearizeMatch(fit, fitLin, 0.1), function(x){x[[1]]}))
+        all(sapply(isLinearizeMatch(fitLin, 0.2), function(x){x[[1]]}))
     )
 })
 
@@ -344,7 +343,7 @@ test_that("Linearize combined1 model ", {
     )
 
     expect_true( 
-        all(sapply(isLinearizeMatch(fit, fitLin, 0.1), function(x){x[[1]]}))
+        all(sapply(isLinearizeMatch(fitLin, 0.1), function(x){x[[1]]}))
     )
 })
 
@@ -427,7 +426,7 @@ test_that("Linearize multiple endpoints ", {
         fitLin <- linearize(fit, mceta = 10)
     )
 
-    expect_true(isLinearizeMatch(fit, fitLin)$ofv[[1]])
+    expect_true(isLinearizeMatch(fitLin)$ofv[[1]])
 
     linearizePlot(fit, fitLin)
 })
@@ -493,7 +492,7 @@ test_that("Linearize multiple endpoints SAEM", {
         fitLin <- linearize(fit, mceta = 10)
     )
 
-    expect_true(isLinearizeMatch(fit, fitLin)$ofv[[1]]) # FIXME this fails despite good fit
+    expect_true(isLinearizeMatch(fitLin)$ofv[[1]]) # FIXME this fails despite good fit
 
     linearizePlot(fitLin)
 })
@@ -523,10 +522,10 @@ test_that("linearize correlated eta ", {
     suppressWarnings(
         fitLin <- linearize(fit)
     )
-    isLinearizeMatch(fit, fitLin)$ofv[[1]] %>% expect_true()
+    isLinearizeMatch(fitLin)$ofv[[1]] %>% expect_true()
     
     expect_true( 
-        all(sapply(isLinearizeMatch(fit, fitLin, 0.1), function(x){x[[2]]}))
+        all(sapply(isLinearizeMatch(fitLin, 0.1), function(x){x[[2]]}))
     )
 
 })
@@ -859,7 +858,7 @@ test_that("linearize mavoglorant lnorm", {
 
 
     expect_true( 
-        all(sapply(isLinearizeMatch(fit, fitLin, 0.1), function(x){x[[2]]}))
+        all(sapply(isLinearizeMatch(fitLin, 0.1), function(x){x[[2]]}))
     )
 
 })

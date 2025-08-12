@@ -247,11 +247,13 @@ fitLin$env$origData
 
 
 res <- iivSearch(fitLin)
-res$summary |> arrange(BIC)  |> select(1, 3, 4, 5, 6)
+res$summary |> arrange(BIC)  |> select(4, 1, 3, 5, 6) |> 
+    mutate(covMethod = ifelse(covMethod == "r,s", "success", "fail")) |> 
+    rename(covariance = covMethod) |> gt()
 
 
 
 
 x <- rerunTopN(res, 5)
 
-x$summary |> arrange(O.BIC) |> select(1,3,7)
+x$summary |> arrange(O.BIC) |> select(7, 1,3) |> gt()
