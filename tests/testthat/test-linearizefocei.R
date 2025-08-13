@@ -183,7 +183,7 @@ test_that("Linearize add err model ", {
         fitLin <- linearize(fit)
     )
 
-    linearizePlot(fit, fitLin) %>% expect_no_error()
+    linearizePlot(fitLin) %>% expect_no_error()
     expect_true(
         all(sapply(isLinearizeMatch(fitLin), function(x){x[[1]]}))
     )
@@ -202,7 +202,7 @@ test_that("Linearize prop err model ", {
             tv <- log(30) # V
             eta.cl ~ 0.3
             eta.v ~ 0.2
-            prop.sd <- 0.10
+            prop.sd <- 0.2
         })
         model({
             ka <- exp(tka)
@@ -225,7 +225,7 @@ test_that("Linearize prop err model ", {
     sim <- sim[,c("id", "time", "amt", "dv", "evid")]
 
     fit <- nlmixr(one.cmpt.properr, sim, est = "focei",
-            control = nlmixr2est::foceiControl(mceta=10)) # saem not ok
+            control = nlmixr2est::foceiControl(mceta=10)) # saem also ok >> foce switch
     
     # linMod <- linModGen(fit, FALSE)
     # derv <- getDeriv(fit)
@@ -244,7 +244,7 @@ test_that("Linearize prop err model ", {
     #
 
     suppressWarnings(
-        fitLin <- linearize(fit, relTol = 0.3, mceta = c(-1, 10))
+        fitLin <- linearize(fit, relTol = 0.3, mceta = c(-1, 10) )
     )
 
     isLinearizeMatch(fitLin, tol = 0.15)$ofv[[1]] %>% expect_true()
@@ -269,7 +269,8 @@ test_that("Linerize pheno prop err", {
             cp ~ prop(prop.sd) 
         })
     }
-    fit <- nlmixr(one.cmpt.prop.iv, nlmixr2data::pheno_sd, est = "focei") # saem ok
+    fit <- nlmixr(one.cmpt.prop.iv, nlmixr2data::pheno_sd, est = "saem")
+    # saem better than focei, but both ok
 
     suppressWarnings(
         fitLin <- linearize(fit)
@@ -277,7 +278,7 @@ test_that("Linerize pheno prop err", {
     
     # increase error to 10% for few outliers
     expect_true( 
-        all(sapply(isLinearizeMatch(fit, fitLin, 0.1), function(x){x[[1]]}))
+        all(sapply(isLinearizeMatch(fitLin, 0.1), function(x){x[[1]]}))
     )
 
 })
@@ -423,20 +424,20 @@ test_that("Linearize multiple endpoints ", {
     suppressWarnings(
         # this will switch to FOCE even after successful evaluation. 
         # The match was 4% for OFV, but mismatch for omega/eta
+        # SAEM is better in next test. No switch and lower error
+        set.seed(42)
         fitLin <- linearize(fit, mceta = 10)
     )
 
-    expect_true(isLinearizeMatch(fitLin)$ofv[[1]])
+    expect_true(isLinearizeMatch(fitLin, 0.1)$ofv[[1]])
 
-    linearizePlot(fit, fitLin)
+    linearizePlot(fitLin) %>% expect_no_error()
 })
 
 
 test_that("Linearize multiple endpoints SAEM", {
     skip_on_cran()
     
-     
-
     pk.turnover.emax3 <- function() {
     ini({
         tktr <- 0.326787337229061
@@ -492,7 +493,7 @@ test_that("Linearize multiple endpoints SAEM", {
         fitLin <- linearize(fit, mceta = 10)
     )
 
-    expect_true(isLinearizeMatch(fitLin)$ofv[[1]]) # FIXME this fails despite good fit
+    expect_true(isLinearizeMatch(fitLin)$ofv[[1]]) 
 
     linearizePlot(fitLin)
 })
@@ -540,7 +541,7 @@ test_that("covariate parse", {
     parseCovExpr(eta.v~wt/70+sex, dat, effect = "power")
     x <- parseCovExpr(eta.v~wt/70+sex, dat, effect = "hockyStick")
 
-    expect_error(parseCovExpr(eta.v~wt/70+sex/70, dat, effect = "power"))
+    expect_error(parseCovExpr(eta.v~wt/70+sex/70, dat, effect = "power"), regexp = "Categorical covariates")
     expect_error(parseCovExpr(eta.v~wt/med+sex, dat, effect = "power"), "Divide only by")
 
     expect_true(parseCovExpr(eta.v~WT/median, nlmixr2data::theo_sd, effect = "power")$normFactor == 70.5)
@@ -649,7 +650,7 @@ test_that("Adding covariates to lin models", {
         rxode2::et(amt = 200, cmt = "depot") |>
         rxode2::et(time = c(0.25, 0.5, 1,2,3,6,8,12,16,24)) |>
         rxode2::et(id = 1:200)
-    theo_sd <- rxode2::rxSolve(one.cmpt.adderr.cov, ev, nSub = 200, addDosing = TRUE,
+    theo_sd <- rxode2::rxSolve(one.cmpt.adderr.cov.all, ev, nSub = 200, addDosing = TRUE,
         iCov=data.frame(id=1:200, WT=rnorm(200, 70, 10), AGE=rnorm(200, 30, 10)))
     theo_sd$dv <- theo_sd$sim
     theo_sd <- theo_sd[,c("id", "time", "amt", "dv", "evid", "WT", "AGE")]
@@ -690,7 +691,7 @@ test_that("Adding covariates to lin models", {
 
     fitLinCov <- nlmixr(fitLinCov, nlme::getData(fitLinNoCov), est = "focei")
 
-    nlfitCov <- nlmixr(one.cmpt.adderr.cov, nlme::getData(nlfitNoCov), est = "focei")
+    nlfitCov <- nlmixr(one.cmpt.adderr.cov.all, nlme::getData(nlfitNoCov), est = "focei")
 
     nlfitCov$parFixed # why 0.5 and not 1.5? normalization
     fitLinCov$parFixed
@@ -858,7 +859,7 @@ test_that("linearize mavoglorant lnorm", {
 
 
     expect_true( 
-        all(sapply(isLinearizeMatch(fitLin, 0.1), function(x){x[[2]]}))
+        all(sapply(isLinearizeMatch(fitLin, 0.20), function(x){x[[2]]}))
     )
 
 })

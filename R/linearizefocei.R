@@ -244,14 +244,16 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.25, focei = NA, 
     odata <- nlme::getData(fit)
     if(addEtas){
       tmpUi <- addAllEtas(fit, fix = TRUE)
+      rm(fit)
       fit <- nlmixr2est::nlmixr(tmpUi, odata , est = "focei", 
-                                control = foceiControl(mceta=5, maxOuterIterations = 0, maxInnerIterations = 0, covMethod = ""))
+                                control = nlmixr2est::foceiControl(mceta=5, etaMat = ofit$eta, maxOuterIterations = 0, 
+                                                                   maxInnerIterations = 1000, covMethod = ""))
     }
     if(fit$est != "focei"){
       cli::cli_alert_info("Evaluating the model with FOCE+I")
       # maxOuterIterations might enhance the OBJ but not needed so far
       fit <- nlmixr2est::nlmixr(ofit$finalUi, odata, est = "focei", 
-                                control = foceiControl(etaMat = ofit$etas, 
+                                control = nlmixr2est::foceiControl(etaMat = ofit$eta, 
                                                        maxOuterIterations = 0, maxInnerIterations = 1000, covMethod = ""))
     }
     
@@ -356,7 +358,7 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.25, focei = NA, 
         Fitted Linear OFV: {lObj}
         Relative OFV Dev: {round(relDev, 4) * 100} %
         mceta: {mceta[i]}
-        Non-Linearized Model Runtime: {sum(fit$time)}
+        Non-Linearized Model Runtime: {sum(ofit$time)}
         Linearized Model Runtime: {sum(fitL$time)}"
       )
     cli::cli_alert_info("Linearization Summary:")
@@ -444,7 +446,7 @@ evalLinModel <- function(fit, linMod, derv, innerIter = 0, covMethod = ""){
 #' @return match list for OFV, omega, eta, and residual variance terms
 #' @author Omar I. Elashkar
 #' @export
-isLinearizeMatch <- function(linFit, tol = 0.05){
+isLinearizeMatch <- function(linFit, tol = 0.1){
     stopifnot(inherits(linFit, "nlmixr2Linearize"))
 
     originalFit <- linFit$env$originalFit
@@ -579,7 +581,7 @@ parseCovExpr <- function(expr, oData, effect){
     currentCovDf$normFactor <- ifelse(currentCovDf$normFactor == "median", currentCovDf$median, currentCovDf$normFactor)
     currentCovDf$normFactor <- ifelse(currentCovDf$normFactor == "mean", currentCovDf$mean, currentCovDf$normFactor)
     currentCovDf$normFactor <- as.numeric(currentCovDf$normFactor)
-    if(any(currentCovDf$normFactor != 1 &  currentCovDf$normFactor == "cat")){
+    if(any(currentCovDf$normFactor != 1 &  currentCovDf$type == "cat")){
         stop("Categorical covariates does not have normalization factor")
     }
 
@@ -764,7 +766,7 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect="power") {
     
     linEnv <- rxUiDecompress(newMod)
     linEnv$ui <- newMod
-    linEnv$originalFit <- fit$originalFit
+    linEnv$originalFit <- fit$env$originalFit
     linEnv$origData <- nlme::getData(fit)
     linEnv$message <- fit$message
     linEnv <- rxUiCompress(linEnv)

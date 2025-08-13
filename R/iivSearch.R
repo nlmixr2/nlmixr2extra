@@ -29,8 +29,8 @@ iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC", mceta=5){
         message(x)
         omegaMat <- filterEtaMat(varCovMat, x)
         newMod <- fit %>% ini(omegaMat) 
-        noCorrSpace <- unlist(strsplit(x, "-"))
-        noCorrSpace <- grep(",", noCorrSpace, invert = TRUE, value = TRUE)
+        noCorrSpace <- unlist(strsplit(x, "\\+"))
+        noCorrSpace <- grep("~", noCorrSpace, invert = TRUE, value = TRUE)
         etaToRemove <- setdiff(etaNames, noCorrSpace)
         # for(i in etaToRemove){ # deriviatives are to be kept not removed
         #     newMod <- eval(str2lang(paste0("model(newMod, base_", i, " = 0)")))
@@ -49,7 +49,7 @@ iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC", mceta=5){
           
           summ <- fit$objDf[, c("OBJF", "AIC", "BIC")]
           summ$search <- x
-          summ$nParams <- nrow(fit$iniDf[fit$iniDf$est != 0,])
+          summ$nParams <- nrow(fit$iniDf[fit$iniDf$est != 0,]) # including res + etas
           summ$covMethod  <- fit$covMethod
           summ$outerOptTxt <- fit$control$outerOptTxt
           
@@ -74,7 +74,7 @@ iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC", mceta=5){
 
 #' Filter covariance matrix
 #' @param oMat covariance matrix 
-#' @param filterStr single string with pattern of "-" between entities and "," for within entity correlation
+#' @param filterStr single string with pattern of "+" between entities and "~" for within entity correlation
 #' @author Omar I. Elashkar
 #' @noRd 
 filterEtaMat <- function(oMat, filterStr, minIni=0.1){
@@ -83,9 +83,9 @@ filterEtaMat <- function(oMat, filterStr, minIni=0.1){
 
         resMat <- oMat
         resMat[] <- 0 
-        elem <- unlist(strsplit(filterStr, "-"))
+        elem <- unlist(strsplit(filterStr, "\\+"))
         for(i in elem){
-            elem2 <- unlist(strsplit(i, ","))
+            elem2 <- unlist(strsplit(i, "\\~"))
             x <- elem2[1]
             y <- ifelse(length(elem2) == 1, elem2[1], elem2[2])
             resMat[x,y] <- oMat[x, y]
@@ -133,30 +133,30 @@ hasUnFixedEta <- function(ui){
 #' Generate all combinations of input parameters
 #' @param params character vector of parameter names
 #' @author Omar I. Elashkar
-#' @return char vector of possible combinations separated by "-". Correlations are marked by ",".
+#' @return char vector of possible combinations separated by "+". Correlations are marked by "~".
 #' @noRd 
 iivCombn <- function(params) {
     # Generate all combinations of input parameters
     all_combinations <- unlist(lapply(1:length(params), function(i) {
-    combn(params, i, FUN = function(x) paste(x, collapse = "-"), simplify = TRUE)
+    combn(params, i, FUN = function(x) paste(x, collapse = "+"), simplify = TRUE)
     }))
 
     # Generate results with/without all possible corr per all available etas
     all_results <- unlist(lapply(all_combinations, function(combo) {
-        individual <- strsplit(combo, "-")[[1]]
+        individual <- strsplit(combo, "\\+")[[1]]
         if (length(individual) == 1) {
             return(combo)
         }
         # Generate all pairwise correlations
-        all_corr <- combn(individual, 2, FUN = function(x) paste(x, collapse = ","), simplify = TRUE)
+        all_corr <- combn(individual, 2, FUN = function(x) paste(x, collapse = "~"), simplify = TRUE)
         
         # Generate subsets of correlations
         corr_subsets <- unlist(lapply(0:length(all_corr), function(k) {
-            combn(all_corr, k, FUN = function(x) paste(x, collapse = "-"), simplify = TRUE)
+            combn(all_corr, k, FUN = function(x) paste(x, collapse = "+"), simplify = TRUE)
         }))
         
         # Combine the base combination with each correlation subset
-        paste0(combo, "-", corr_subsets)
+        paste0(combo, "+", corr_subsets)
     }))
 
     all_results
@@ -227,8 +227,8 @@ rerunTopN.linIIVSearch <- function(x, n = 5){
   topCand <- passed[order(passed$BIC), ]$search[1:n]
   
   cli::cli_alert_info("Starting refitting original models")
-  origData <- x$linearFit$env$origData # FIXME 
-  nlui <- x$linearFit$env$originalUi  
+  origData <- nlme::getData(x$linearFit$env$originalFit)
+  nlui <- x$linearFit$env$originalFit$finalUi
   nlui <- addAllEtas(nlui)
   resOrig <- lapply(topCand, function(x){
     omegaMat <- filterEtaMat(cov(fitLin$eta[,-1]), x)

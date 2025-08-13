@@ -257,3 +257,11 @@ res$summary |> arrange(BIC)  |> select(4, 1, 3, 5, 6) |>
 x <- rerunTopN(res, 5)
 
 x$summary |> arrange(O.BIC) |> select(7, 1,3) |> gt()
+
+
+
+
+#### Test Residual Model Search 
+
+
+
