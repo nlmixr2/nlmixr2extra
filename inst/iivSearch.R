@@ -262,8 +262,7 @@ x <- rerunTopN(res, 7)
 x$summary |> arrange(O.BIC) |> select(7, 1,3) |> gt()
 
 # - [x] additive 
-# - [x] combined2 
-
+# - [x] combined2 > FOCEI seems better
 
 
 #### Test Residual Model Search 
@@ -300,26 +299,13 @@ fit.combined2 <- one.cmpt.adderr |> model(cp ~ add(add.sd) + prop(prop.sd) + com
 fit.combined1 <- one.cmpt.adderr |> model(cp ~ add(add.sd) + prop(prop.sd) + combined1()) |> 
                 nlmixr(nlmixr2data::theo_sd, est = "focei")
         
+c(fit.add$objDf$OBJF, fit.prop$objDf$OBJF,  fit.combined1$objDf$OBJF, fit.combined2$objDf$OBJF)
 
 # deriv <- getDeriv(fit.add)
 
 linFit <- linearize(fit.add, focei = FALSE)
 
+resRes <- resSearch(linFit)
+resRes$summary
 
-
-linFit.prop <- linFit |>  
-              model(rxR2 <- (prop.sd^2*OPRED^2)) |> ini(prop.sd <- 0.1) |> 
-              nlmixr(getData(linFit), est = "focei")
-  
-linFit.combined2 <- linFit |> 
-                  model(rxR2 <- (prop.sd^2*OPRED^2 + add.sd^2)) |> ini(prop.sd <- 0.1) |>
-                  nlmixr(getData(linFit), est = "focei")
-
-linFit.combined1 <- linFit |> 
-                    model(rxR2 <- (prop.sd*OPRED + add.sd)^2) |> ini(prop.sd <- 0.1) |>
-                    nlmixr(getData(linFit), est = "focei")
-
-
-c(linFit$objDf$OBJF,  linFit.prop$objDf$OBJF,  linFit.combined1$objDf$OBJF, linFit.combined2$objDf$OBJF)
-c(fit.add$objDf$OBJF, fit.prop$objDf$OBJF,  fit.combined1$objDf$OBJF, fit.combined2$objDf$OBJF)
                     
