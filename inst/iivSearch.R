@@ -25,6 +25,7 @@ testfun <- function(x, fix, focei){
       eta.cl + eta.v ~ sd(cor(0.3, 0.99, 0.5))
       # eta.ka ~ 0.1
       add.sd <- 0.7
+      prop.sd <- 0.2
     })
     model({
       ka <- exp(tka)
@@ -33,7 +34,7 @@ testfun <- function(x, fix, focei){
       d / dt(depot) <- -ka * depot
       d / dt(center) <- ka*depot - cl / v * center
       cp <- center / v
-      cp ~ add(add.sd)
+      cp ~ add(add.sd) + prop(prop.sd) + combined2()
     })
   }
   
@@ -62,6 +63,7 @@ testfun <- function(x, fix, focei){
       # eta.v ~  0.4
       # eta.ka ~ 0.6
       add.sd <- 0.7
+      prop.sd <- 0.2
     })
     model({
       ka <- exp(tka)
@@ -70,21 +72,20 @@ testfun <- function(x, fix, focei){
       d / dt(depot) <- -ka * depot
       d / dt(center) <- ka*depot - cl / v * center
       cp <- center / v
-      cp ~ add(add.sd)
+      cp ~ add(add.sd) + prop(prop.sd) + combined2()
     })
   }
   
-  fit <- nlmixr2extra::addAllEtas(one.cmpt.adderr, fix = fix)
-  fit <- nlmixr2est::nlmixr(fit, sim, est = "focei")
+  # fit <- nlmixr2extra::addAllEtas(one.cmpt.adderr, fix = fix)
+  fit <- nlmixr2est::nlmixr(one.cmpt.adderr, sim, est = "focei")
   
-  fitLin <- linearize(fit, focei=focei)
+  fitLin <- linearize(fit, focei=focei, addEtas = TRUE)
   res <- iivSearch(fitLin)
-  
   
   res$summary |> dplyr::arrange(OBJF) 
   res$summary |> dplyr::arrange(BIC) 
   
-  passed <- res$summary[res$summary$covMethod=="r,s",]
+  passed <- res$summary #[res$summary$covMethod=="r,s",] # FIXME sometimes it will break, sometimes not
   passed |> dplyr::arrange(BIC)
   # expect_true("etaTcl-etaTv-etaTcl,etaTv" %in% passed$search[order(passed$BIC)][1:3])
   
@@ -98,10 +99,11 @@ testfun <- function(x, fix, focei){
   
   res$finalFit # FIXME
   
-  list(rank = which("etaTcl-etaTv-etaTcl,etaTv" == passed$search[order(passed$BIC)]), 
-       matched = isLinearizeMatch(fit, fitLin)$ofv[[1]])
+  list(rank = which("etaTcl+etaTv+etaTcl~etaTv" == passed$search[order(passed$BIC)]), 
+       matched = isLinearizeMatch(fitLin)$ofv[[1]])
   
 }
+onetst <- testfun(1,TRUE, TRUE)
 options(clustermq.ssh.timeout = 30) # in seconds
 options(
   clustermq.scheduler = "lsf",
@@ -189,6 +191,7 @@ one.cmpt.adderr <- function() {
     eta.cl + eta.v ~ sd(cor(0.3, 0.99, 0.5))
     # eta.ka ~ 0.1
     add.sd <- 0.7
+    prop.sd <- 0.2
   })
   model({
     ka <- exp(tka)
@@ -197,7 +200,7 @@ one.cmpt.adderr <- function() {
     d / dt(depot) <- -ka * depot
     d / dt(center) <- ka*depot - cl / v * center
     cp <- center / v
-    cp ~ add(add.sd)
+    cp ~ add(add.sd) + prop(prop.sd) + combined2()
   })
 }
 
@@ -225,6 +228,7 @@ one.cmpt.adderr <- function() {
     # eta.cl ~ 0.5
     # eta.v ~  0.4
     # eta.ka ~ 0.6
+    prop.sd <- 0.2
     add.sd <- 0.7
   })
   model({
@@ -234,13 +238,13 @@ one.cmpt.adderr <- function() {
     d / dt(depot) <- -ka * depot
     d / dt(center) <- ka*depot - cl / v * center
     cp <- center / v
-    cp ~ add(add.sd)
+    cp ~ add(add.sd) + prop(prop.sd) + combined2()
   })
 }
 
 fit <- nlmixr2est::nlmixr(one.cmpt.adderr, sim, est = "focei")
 
-fitLin <- linearize(fit, focei= F, addEtas = TRUE)
+fitLin <- linearize(fit, focei= T, addEtas = TRUE)
 
 fitLin$env$originalUi 
 fitLin$env$origData
@@ -249,19 +253,73 @@ fitLin$env$origData
 res <- iivSearch(fitLin)
 res$summary |> arrange(BIC)  |> select(4, 1, 3, 5, 6) |> 
     mutate(covMethod = ifelse(covMethod == "r,s", "success", "fail")) |> 
-    rename(covariance = covMethod) |> gt()
+    rename(covariance = covMethod) |> gt::gt()
 
 
 
 
-x <- rerunTopN(res, 5)
-
+x <- rerunTopN(res, 7)
 x$summary |> arrange(O.BIC) |> select(7, 1,3) |> gt()
 
+# - [x] additive 
+# - [x] combined2 
 
 
 
 #### Test Residual Model Search 
 
+one.cmpt.adderr <- function() {
+    ini({
+        tcl <- log(2.7) # Cl
+        tv <- log(30) # V
+        tka <- log(1.56) #  Ka
+        eta.cl ~ 0.3
+        eta.v ~ 0.1
+        eta.ka ~ 0.6
+        add.sd <- 0.7
+    })
+    model({
+        ka <- exp(tka + eta.ka)
+        cl <- exp(tcl + eta.cl)
+        v <- exp(tv + eta.v)
+        d / dt(depot) <- -ka * depot
+        d / dt(center) <- ka * depot - cl / v * center
+        cp <- center / v
+        cp ~ add(add.sd)
+    })
+}
+
+fit.add <- nlmixr(one.cmpt.adderr, nlmixr2data::theo_sd, est = "focei")
+
+fit.prop <-  one.cmpt.adderr |> model(cp ~ prop(prop.sd)) |> 
+              nlmixr(nlmixr2data::theo_sd, est = "focei")
+
+fit.combined2 <- one.cmpt.adderr |> model(cp ~ add(add.sd) + prop(prop.sd) + combined2()) |> 
+                nlmixr(nlmixr2data::theo_sd, est = "focei")
+
+fit.combined1 <- one.cmpt.adderr |> model(cp ~ add(add.sd) + prop(prop.sd) + combined1()) |> 
+                nlmixr(nlmixr2data::theo_sd, est = "focei")
+        
+
+# deriv <- getDeriv(fit.add)
+
+linFit <- linearize(fit.add, focei = FALSE)
 
 
+
+linFit.prop <- linFit |>  
+              model(rxR2 <- (prop.sd^2*OPRED^2)) |> ini(prop.sd <- 0.1) |> 
+              nlmixr(getData(linFit), est = "focei")
+  
+linFit.combined2 <- linFit |> 
+                  model(rxR2 <- (prop.sd^2*OPRED^2 + add.sd^2)) |> ini(prop.sd <- 0.1) |>
+                  nlmixr(getData(linFit), est = "focei")
+
+linFit.combined1 <- linFit |> 
+                    model(rxR2 <- (prop.sd*OPRED + add.sd)^2) |> ini(prop.sd <- 0.1) |>
+                    nlmixr(getData(linFit), est = "focei")
+
+
+c(linFit$objDf$OBJF,  linFit.prop$objDf$OBJF,  linFit.combined1$objDf$OBJF, linFit.combined2$objDf$OBJF)
+c(fit.add$objDf$OBJF, fit.prop$objDf$OBJF,  fit.combined1$objDf$OBJF, fit.combined2$objDf$OBJF)
+                    

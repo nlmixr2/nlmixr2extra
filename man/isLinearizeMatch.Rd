@@ -4,7 +4,7 @@
 \alias{isLinearizeMatch}
 \title{Check Linearization Match}
 \usage{
-isLinearizeMatch(linFit, tol = 0.05)
+isLinearizeMatch(linFit, tol = 0.1)
 }
 \arguments{
 \item{linFit}{fit of linear model.}

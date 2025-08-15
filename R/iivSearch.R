@@ -185,10 +185,10 @@ addAllEtas <- function(ui, fix = FALSE){
       newMod <- ui
     }
 
-    # fix all random effects to 10^-4
+    # fix all random effects to 10^-3
     iniDf <- newMod$iniDf
     iniDf$fix[!is.na(iniDf$neta1)] <- fix
-    iniDf$est[!is.na(iniDf$neta1)] <- 1e-4
+    iniDf$est[!is.na(iniDf$neta1)] <- 0.001
     ini(newMod) <- iniDf
 
     newMod
@@ -223,14 +223,24 @@ rerunTopN.default <- function(x, ...){
 #' @author Omar I. Elashkar
 #' @export
 rerunTopN.linIIVSearch <- function(x, n = 5){
-  passed <- x$summary[res$summary$covMethod=="r,s",]
+  
+  oObj <- x$linearFit$env$originalFit$objDf$OBJF
+  
+  passed <- x$summary 
+  passed <- passed[passed$OBJF >= oObj/2,] # more than that, likely combination
+  
   topCand <- passed[order(passed$BIC), ]$search[1:n]
   
   cli::cli_alert_info("Starting refitting original models")
+  cli::cli_alert_info("Starting refit: {topCand}")
+  stopifnot(!any(is.na(topCand)))
+  
   origData <- nlme::getData(x$linearFit$env$originalFit)
   nlui <- x$linearFit$env$originalFit$finalUi
   nlui <- addAllEtas(nlui)
-  resOrig <- lapply(topCand, function(x){
+  resOrig <- lapply(cli::cli_progress_along(topCand), function(x){
+    x <- topCand[x]
+    cli::cli_alert_info("Fitting Original Model with {x}")
     omegaMat <- filterEtaMat(cov(fitLin$eta[,-1]), x)
     iniDf <- nlui$iniDf
     iniDf[!is.na(iniDf$neta1), "fix"] <- FALSE 
