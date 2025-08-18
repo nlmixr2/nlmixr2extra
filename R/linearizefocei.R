@@ -246,14 +246,14 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.25, focei = NA, 
       tmpUi <- addAllEtas(fit, fix = TRUE)
       rm(fit)
       fit <- nlmixr2est::nlmixr(tmpUi, odata , est = "focei", 
-                                control = nlmixr2est::foceiControl(mceta=5, etaMat = ofit$eta, maxOuterIterations = 0, 
+                                control = nlmixr2est::foceiControl(mceta=5, etaMat = NULL, maxOuterIterations = 0, 
                                                                    maxInnerIterations = 1000, covMethod = ""))
     }
     if(fit$est != "focei"){
       cli::cli_alert_info("Evaluating the model with FOCE+I")
       # maxOuterIterations might enhance the OBJ but not needed so far
       fit <- nlmixr2est::nlmixr(ofit$finalUi, odata, est = "focei", 
-                                control = nlmixr2est::foceiControl(etaMat = ofit$eta, 
+                                control = nlmixr2est::foceiControl(etaMat = as.matrix(ofit$eta[,-1]), 
                                                        maxOuterIterations = 0, maxInnerIterations = 1000, covMethod = ""))
     }
     

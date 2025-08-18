@@ -21,19 +21,19 @@ resSearch.nlmixr2Linearize <- function(fit){
   
   basefit <- getobjDf(fit, "base fit") # TODO extract type and avoid repeat
   
-  linFit.prop <- linFit |>  
+  linFit.prop <- fit |>  
                 model(rxR2 <- (prop.sd^2*OPRED^2)) |> ini(prop.sd <- 0.1) |> 
-                nlmixr(getData(linFit), est = "focei")
+                nlmixr(nlme::getData(fit), est = "focei")
   linFit.prop <- getobjDf(linFit.prop, "prop")
     
-  linFit.combined2 <- linFit |> 
+  linFit.combined2 <- fit |> 
                     model(rxR2 <- (prop.sd^2*OPRED^2 + add.sd^2)) |> ini(prop.sd <- 0.1) |>
-                    nlmixr(getData(linFit), est = "focei")
+                    nlmixr(nlme::getData(fit), est = "focei")
   linFit.combined2 <- getobjDf(linFit.combined2, "combined2")
   
-  linFit.combined1 <- linFit |> 
+  linFit.combined1 <- fit |> 
                       model(rxR2 <- (prop.sd*OPRED + add.sd)^2) |> ini(prop.sd <- 0.1) |>
-                      nlmixr(getData(linFit), est = "focei")
+                      nlmixr(nlme::getData(fit), est = "focei")
   linFit.combined1 <- getobjDf(linFit.combined1, "combined1")
   
   

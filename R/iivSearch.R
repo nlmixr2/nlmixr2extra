@@ -28,7 +28,7 @@ iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC", mceta=5){
         x <- iivSpace[x]
         message(x)
         omegaMat <- filterEtaMat(varCovMat, x)
-        newMod <- fit %>% ini(omegaMat) 
+        newMod <- fit %>% rxode2::ini(omegaMat) 
         noCorrSpace <- unlist(strsplit(x, "\\+"))
         noCorrSpace <- grep("~", noCorrSpace, invert = TRUE, value = TRUE)
         etaToRemove <- setdiff(etaNames, noCorrSpace)
@@ -39,7 +39,7 @@ iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC", mceta=5){
         unfixedIni <- newMod$iniDf 
         unfixedIni$fix[!is.na(unfixedIni$neta1) & !(unfixedIni$name %in% etaToRemove)] <- FALSE
         unfixedIni$upper[!is.na(unfixedIni$ntheta) &  unfixedIni$fix == FALSE] <-  unfixedIni$est[!is.na(unfixedIni$ntheta) &  unfixedIni$fix == FALSE]*2  # set upper to residual to 2x
-        ini(newMod) <- unfixedIni
+        rxode2::ini(newMod) <- unfixedIni
         tryCatch({
             fit <- nlmixr(newMod, nlme::getData(fit), est = "focei",
                 control = nlmixr2est::foceiControl(mceta=mceta, 
@@ -189,7 +189,7 @@ addAllEtas <- function(ui, fix = FALSE){
     iniDf <- newMod$iniDf
     iniDf$fix[!is.na(iniDf$neta1)] <- fix
     iniDf$est[!is.na(iniDf$neta1)] <- 0.001
-    ini(newMod) <- iniDf
+    rxode2::ini(newMod) <- iniDf
 
     newMod
 
@@ -238,15 +238,15 @@ rerunTopN.linIIVSearch <- function(x, n = 5){
   origData <- nlme::getData(x$linearFit$env$originalFit)
   nlui <- x$linearFit$env$originalFit$finalUi
   nlui <- addAllEtas(nlui)
-  resOrig <- lapply(cli::cli_progress_along(topCand), function(x){
-    x <- topCand[x]
+  resOrig <- lapply(cli::cli_progress_along(topCand), function(i){
+    i <- topCand[i]
     cli::cli_alert_info("Fitting Original Model with {x}")
-    omegaMat <- filterEtaMat(cov(fitLin$eta[,-1]), x)
+    omegaMat <- filterEtaMat(cov(x$linearFit$eta[,-1]), i)
     iniDf <- nlui$iniDf
     iniDf[!is.na(iniDf$neta1), "fix"] <- FALSE 
-    ini(nlui) <- iniDf
-    nlui <- nlui %>% ini(omegaMat)
-    nlmixr(nlui, origData, est="focei", control = foceiControl())
+    rxode2::ini(nlui) <- iniDf
+    nlui <- nlui %>% rxode2::ini(omegaMat)
+    nlmixr(nlui, origData, est="focei", control = nlmixr2est::foceiControl())
   })
   
   resOrigSummary <- do.call(rbind, lapply(resOrig, function(x) x$objDf))

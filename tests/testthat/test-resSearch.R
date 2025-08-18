@@ -1,4 +1,5 @@
 test_that("Test residual search on linearized models", {
+    skip_on_cran()
     one.cmpt.adderr <- function() {
         ini({
             tcl <- log(2.7) # Cl
@@ -19,6 +20,12 @@ test_that("Test residual search on linearized models", {
             cp ~ add(add.sd)
         })
     }
-    
-  
+   
+ 
+fit <- nlmixr(one.cmpt.adderr, nlmixr2data::theo_sd, est = "focei")
+supressWarning({
+  linFit <- linearize(fit)
+  resRes <- resSearch(linFit)
+})
+
 })

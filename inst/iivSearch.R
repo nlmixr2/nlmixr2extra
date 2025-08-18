@@ -200,7 +200,7 @@ one.cmpt.adderr <- function() {
     d / dt(depot) <- -ka * depot
     d / dt(center) <- ka*depot - cl / v * center
     cp <- center / v
-    cp ~ add(add.sd) + prop(prop.sd) + combined2()
+    cp ~ add(add.sd) + prop(prop.sd)# + combined2()
   })
 }
 
@@ -238,7 +238,7 @@ one.cmpt.adderr <- function() {
     d / dt(depot) <- -ka * depot
     d / dt(center) <- ka*depot - cl / v * center
     cp <- center / v
-    cp ~ add(add.sd) + prop(prop.sd) + combined2()
+    cp ~ add(add.sd) + prop(prop.sd) #+ combined2()
   })
 }
 
@@ -258,8 +258,8 @@ res$summary |> arrange(BIC)  |> select(4, 1, 3, 5, 6) |>
 
 
 
-x <- rerunTopN(res, 7)
-x$summary |> arrange(O.BIC) |> select(7, 1,3) |> gt()
+x <- rerunTopN(res, 6)
+x$summary |> arrange(O.BIC) |> select(7, 1,3) |> gt::gt()
 
 # - [x] additive 
 # - [x] combined2 > FOCEI seems better
@@ -307,5 +307,15 @@ linFit <- linearize(fit.add, focei = FALSE)
 
 resRes <- resSearch(linFit)
 resRes$summary
+
+
+
+## Linearize 
+### flowchart 
+### Validation 
+
+## IIV 
+## Covariate search 
+## Residual Search 
 
                     

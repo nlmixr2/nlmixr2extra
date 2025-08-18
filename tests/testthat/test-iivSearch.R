@@ -208,15 +208,17 @@ one.cmpt.adderr <- function() {
 # one.cmpt.adderr <- addAllEtas(one.cmpt.adderr)
 fit <- nlmixr(one.cmpt.adderr, sim, est = "focei")
 
-fitLin <- linearize(fit, addEtas = TRUE, focei = TRUE)
+suppressWarnings(
+  fitLin <- linearize(fit, addEtas = TRUE, focei = TRUE)
+)
 isLinearizeMatch(fitLin, 0.2)
 linearizePlot(fitLin)
 
 res <- iivSearch(fitLin)
 expect_true(inherits(res, "linIIVSearch"))
-res$summary[order(res$summary$BIC),] |> gt()
+res$summary[order(res$summary$BIC),]
 
 resLast <- rerunTopN(res)
-resLast$summary 
+resLast$summary  |> expect_no_error()
 
 })

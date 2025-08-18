@@ -425,8 +425,11 @@ test_that("Linearize multiple endpoints ", {
         # this will switch to FOCE even after successful evaluation. 
         # The match was 4% for OFV, but mismatch for omega/eta
         # SAEM is better in next test. No switch and lower error
+      {
         set.seed(42)
         fitLin <- linearize(fit, mceta = 10)
+        
+      }
     )
 
     expect_true(isLinearizeMatch(fitLin, 0.1)$ofv[[1]])
