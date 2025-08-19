@@ -141,9 +141,15 @@ listModelsTested <- function(fitList, caption, excludeBoundary = TRUE, k = 2) {
   dAICPretty[dAICValues > 0] <- sprintf("%.3f", dAICValues[dAICValues > 0])
   dAICPretty[dAICValues > 10] <- sprintf("%.2f", dAICValues[dAICValues > 10])
   dAICPretty[dAICValues > 100] <- sprintf("%.1f", dAICValues[dAICValues > 100])
-  dAICPretty[dAICValues > 1000] <- ">1000"
-  dAICPretty[dAICValues < 0.001] <- "<0.001"
-  dAICPretty[dAICValues %in% 0] <- "0"
+  if (any(dAICValues > 1000)) {
+    dAICPretty[dAICValues > 1000] <- ">1000"
+  }
+  if (any(dAICValues < 0.001)) {
+    dAICPretty[dAICValues < 0.001] <- "<0.001"
+  }
+  if (any(dAICValues %in% 0)) {
+    dAICPretty[dAICValues %in% 0] <- "0"
+  }
 
   ret$dAIC[calcdAIC] <- dAICPretty
 
