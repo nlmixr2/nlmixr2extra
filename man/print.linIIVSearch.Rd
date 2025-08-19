@@ -4,10 +4,12 @@
 \alias{print.linIIVSearch}
 \title{Print Summary Table For Linearized IIV Search}
 \usage{
-\method{print}{linIIVSearch}(x)
+\method{print}{linIIVSearch}(x, ...)
 }
 \arguments{
 \item{x}{IIV search results object}
+
+\item{...}{Other arguments passed to print}
 }
 \description{
 Print Summary Table For Linearized IIV Search

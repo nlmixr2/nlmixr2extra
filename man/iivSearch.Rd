@@ -2,14 +2,24 @@
 % Please edit documentation in R/iivSearch.R
 \name{iivSearch}
 \alias{iivSearch}
+\alias{iivSearch.default}
+\alias{iivSearch.nlmixr2Linearize}
 \title{Automated Inter-Individual Variability Search}
 \usage{
 iivSearch(fit, ...)
+
+\method{iivSearch}{default}(fit, ...)
+
+\method{iivSearch}{nlmixr2Linearize}(fit, sortBy = "BIC", mceta = 5, ...)
 }
 \arguments{
 \item{fit}{a model fit}
 
 \item{...}{parameters for sub functions}
+
+\item{sortBy}{either "BIC" or "OBJ". Default is "BIC"}
+
+\item{mceta}{an integer specifying mceta during fitting.}
 }
 \description{
 Automated Inter-Individual Variability Search

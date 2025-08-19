@@ -1,5 +1,7 @@
 #' Automated Inter-Individual Variability Search
 #' @param fit a model fit
+#' @param sortBy either "BIC" or "OBJ". Default is "BIC"
+#' @param mceta an integer specifying mceta during fitting.
 #' @param ... parameters for sub functions
 #' 
 #' @author Omar I. Elashkar
@@ -8,14 +10,20 @@ iivSearch <- function(fit, ...){
     UseMethod("iivSearch")
 }
 
+
+#'@rdname iivSearch
 #'@export 
-iivSearch.default <- function(fit){
+iivSearch.default <- function(fit, ...){
     stop("Currently supports only linearized models")
 }
 
 
+#'@rdname iivSearch
 #'@export 
-iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC", mceta=5){
+iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC", mceta=5, ...){
+    checkmate::assertChoice(sortBy, c("OBJ", "BIC"))
+    checkmate::assertInteger(mceta, lower = -1, upper = 1000)
+  
     if(!hasAnyEta(fit)){stop("Use `addEtas=TRUE` while linearizing this model")}
     # get eta names
     etaAll <- fit$iniDf[!is.na(fit$iniDf$neta1), ]
@@ -199,15 +207,17 @@ addAllEtas <- function(ui, fix = FALSE){
 
 #' Print Summary Table For Linearized IIV Search
 #' @param x IIV search results object
+#' @param ... Other arguments passed to print
 #' @author Omar I. Elashkar
 #' @export
-print.linIIVSearch <- function(x){
+print.linIIVSearch <- function(x, ...){
   df <- x$summary
   df[order(df$BIC), ]
 }
 
 #' Rerun Top N Original Models From A Search
 #' @param x a Search object
+#' @param n number of models to rerun
 #' @param ... Other Parameters
 #' @author Omar I. Elashkar
 #' @export
@@ -220,12 +230,10 @@ rerunTopN.default <- function(x, ...){
   stop("Method not supported")
 }
 
-#' Rerun Top N Original Models From IIV Search
-#' @param x Linearized iivSearch results
-#' @param n number of models to rerun
-#' @author Omar I. Elashkar
+
+#' @rdname rerunTopN
 #' @export
-rerunTopN.linIIVSearch <- function(x, n = 5){
+rerunTopN.linIIVSearch <- function(x, n = 5, ...){
   
   oObj <- x$linearFit$env$originalFit$objDf$OBJF
   

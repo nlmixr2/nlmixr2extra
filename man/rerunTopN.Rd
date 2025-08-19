@@ -2,14 +2,19 @@
 % Please edit documentation in R/iivSearch.R
 \name{rerunTopN}
 \alias{rerunTopN}
+\alias{rerunTopN.linIIVSearch}
 \title{Rerun Top N Original Models From A Search}
 \usage{
 rerunTopN(x, ...)
+
+\method{rerunTopN}{linIIVSearch}(x, n = 5, ...)
 }
 \arguments{
 \item{x}{a Search object}
 
 \item{...}{Other Parameters}
+
+\item{n}{number of models to rerun}
 }
 \description{
 Rerun Top N Original Models From A Search

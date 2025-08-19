@@ -663,27 +663,29 @@ parseCovExpr <- function(expr, oData, effect){
 #' @param expr Expression, or vector or list of expressions. eg. CL ~ WT/70 + AGE/80 + ... .
 #' @param ref  Default normalization for continuous covariates. "mean", "median" or NA. Default "median"
 #' @param effect character or list of characters of "linear", "piece_lin", "exp", "power". see details
+#' @param ... other parameters passed to each specific signature
 #'
 #' `effect` and `normaDefault` are only used if covariate is continuous.
 #' `normaDefault` call will be skipped if what covpar expression is normalized by other value
 #' 
 #' @author Omar I. Elashkar
 #' @export
-addCovariate <- function(fit, expr, effect, ref ) {
+addCovariate <- function(fit, expr, effect, ref, ... ) {
     UseMethod("addCovariate")
 }
 
 
 #'@rdname addCovariate
 #'@export
-addCovariate.default <- function(fit, expr, effect="power", ref  = "median") {
+addCovariate.default <- function(fit, expr, effect="power", ref  = "median", ...) {
     stop("addCovariate is not supported for this object")
 }
 
 #'@rdname addCovariate
 #'@export
-addCovariate.rxUi <- function(fit, expr, effect = "power", ref = "median"){
-    if(is.null(oData)){
+addCovariate.rxUi <- function(fit, expr, effect = "power", ref = "median", ...){
+    ui <- rxode2::rxUiDecompress(fit)
+    if(is.null(ui$env$origData)){
         stop("Use addData2Rx() first to get covariate adding from this model.")
     }
     
@@ -693,14 +695,14 @@ addCovariate.rxUi <- function(fit, expr, effect = "power", ref = "median"){
 
 #'@rdname addCovariate
 #'@export
-addCovariate.nlmixr2FitCore <- function(fit, expr, effect = "power", ref = "median"){
+addCovariate.nlmixr2FitCore <- function(fit, expr, effect = "power", ref = "median", ...){
     ui <- fit$ui
     addCovariate(ui)
 }
 
 #'@rdname addCovariate
 #'@export
-addCovariate.nlmixr2Linearize <- function(fit, expr, effect="power") {
+addCovariate.nlmixr2Linearize <- function(fit, expr, effect="power", ...) {
 
     ui <- fit$ui
     modelLinesRaw <- ui$lstChr
@@ -761,15 +763,18 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect="power") {
     newMod <- newMod$fun
     newMod <- newMod()
 
+    BASE_TERMS <- NULL 
+    OPRED <- NULL
+    covTerms <- NULL
     newMod <- newMod %>% model(y = BASE_TERMS+ OPRED + covTerms)
     # rxUi
     
-    linEnv <- rxUiDecompress(newMod)
+    linEnv <- rxode2::rxUiDecompress(newMod)
     linEnv$ui <- newMod
     linEnv$originalFit <- fit$env$originalFit
     linEnv$origData <- nlme::getData(fit)
     linEnv$message <- fit$message
-    linEnv <- rxUiCompress(linEnv)
+    linEnv <- rxode2::rxUiCompress(linEnv)
 
     class(linEnv) <- c("nlmixr2Linearize", class(linEnv))
 
@@ -893,11 +898,11 @@ addData2Rx <- function(ui, data){
     }
 
     checkmate::assertClass(ui, "RxUi")
-    checkmate::assertDataframe(data)
+    checkmate::assertDataFrame(data)
     
-    ui <- rxUiDecompress(ui)
+    ui <- rxode2::rxUiDecompress(ui)
     ui$origData <- data
-    rxUiCompress(ui)
+    rxode2::rxUiCompress(ui)
 }
 
 

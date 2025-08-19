@@ -21,6 +21,10 @@ resSearch.nlmixr2Linearize <- function(fit){
   
   basefit <- getobjDf(fit, "base fit") # TODO extract type and avoid repeat
   
+  OPRED <- NULL
+  add.sd <- NULL
+  prop.sd <- NULL
+  
   linFit.prop <- fit |>  
                 model(rxR2 <- (prop.sd^2*OPRED^2)) |> ini(prop.sd <- 0.1) |> 
                 nlmixr(nlme::getData(fit), est = "focei")
