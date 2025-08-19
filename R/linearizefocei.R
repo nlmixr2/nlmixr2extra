@@ -99,6 +99,7 @@ renameCol <- function(df, new, old){
 #' @param ui rx model or fit object.
 #' @param focei boolean. If TRUE, use FOCEI linearization with individual and residual linearization. Default is TRUE.
 #' @param derivFct boolean. If TRUE, use normalization derivative factors. Default is FALSE.
+#' @return rxUi model
 #' @author Omar I. Elashkar
 #' @export
 linModGen <- function(ui, focei = TRUE, derivFct = FALSE){
@@ -227,7 +228,7 @@ linModGen <- function(ui, focei = TRUE, derivFct = FALSE){
 #' If a user wish to capture the plot, one might use `linearizePlot()` call.
 #'
 #'
-#'
+#' @return a fit object with subclass nlmixr2linearize
 #' @author Omar I. Elashkar
 #' @export
 linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.25, focei = NA, addEtas = FALSE,
