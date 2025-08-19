@@ -1,5 +1,6 @@
 #' Automated Inter-Individual Variability Search
 #' @param fit a model fit
+#' @param ... parameters for sub functions
 #' 
 #' @author Omar I. Elashkar
 #' @export 
@@ -164,6 +165,7 @@ iivCombn <- function(params) {
 
 #' Add Individual Random Effects and Fix them to Small Value
 #' @param ui model with no individual random effects added
+#' @param fix If TRUE, the added etas will be fixed (not estimatable). Default is FALSE.
 #' @return nlmixr2 fit with individual random effects added on all fixed effects and fixed.
 #' @author Omar I. Elashkar
 #' @export 
@@ -196,6 +198,7 @@ addAllEtas <- function(ui, fix = FALSE){
 }
 
 #' Print Summary Table For Linearized IIV Search
+#' @param x IIV search results object
 #' @author Omar I. Elashkar
 #' @export
 print.linIIVSearch <- function(x){

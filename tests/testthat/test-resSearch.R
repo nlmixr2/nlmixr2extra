@@ -23,7 +23,7 @@ test_that("Test residual search on linearized models", {
    
  
 fit <- nlmixr(one.cmpt.adderr, nlmixr2data::theo_sd, est = "focei")
-supressWarning({
+suppressWarnings({
   linFit <- linearize(fit)
   resRes <- resSearch(linFit)
 })

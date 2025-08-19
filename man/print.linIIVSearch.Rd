@@ -6,6 +6,9 @@
 \usage{
 \method{print}{linIIVSearch}(x)
 }
+\arguments{
+\item{x}{IIV search results object}
+}
 \description{
 Print Summary Table For Linearized IIV Search
 }

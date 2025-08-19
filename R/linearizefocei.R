@@ -380,7 +380,7 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.25, focei = NA, 
 }
 
 #' Plot Original Versus Linear Models iObj and Etas
-#' @param l linear fitting object
+#' @param lin linear fitting object
 #' 
 #' @details
 #' If the non-linear fit was not FOCEI, the objective functions are not comparable, hence can be ignored upon comparison.

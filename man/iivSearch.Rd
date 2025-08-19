@@ -8,6 +8,8 @@ iivSearch(fit, ...)
 }
 \arguments{
 \item{fit}{a model fit}
+
+\item{...}{parameters for sub functions}
 }
 \description{
 Automated Inter-Individual Variability Search

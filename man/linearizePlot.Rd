@@ -7,7 +7,7 @@
 linearizePlot(lin)
 }
 \arguments{
-\item{l}{linear fitting object}
+\item{lin}{linear fitting object}
 }
 \value{
 ggplot object

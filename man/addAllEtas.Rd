@@ -8,6 +8,8 @@ addAllEtas(ui, fix = FALSE)
 }
 \arguments{
 \item{ui}{model with no individual random effects added}
+
+\item{fix}{If TRUE, the added etas will be fixed (not estimatable). Default is FALSE.}
 }
 \value{
 nlmixr2 fit with individual random effects added on all fixed effects and fixed.
