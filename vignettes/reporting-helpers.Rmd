@@ -87,7 +87,7 @@ fitLinear <- nlmixr2est::nlmixr2(modLinear, data = d_noec50, est = "focei", cont
 By putting the models in a named list, the functions below can build more parts
 of the report.
 
-```{r}
+```{r allFit-setup}
 allFits <-
   list(
     "Emax model with additive residual error" = fitEmaxBoundaryIssue,
@@ -98,23 +98,23 @@ allFits <-
 
 ## Find your best model by AIC
 
-```{r}
+```{r bestFit-choose}
 bestFit <- getMinAICFit(allFits)
 ```
 
 ## Summarize the best model with its equations and parameters
 
-```{r}
+```{r bestFit-eqn}
 knit_print(bestFit, inline = FALSE)
 ```
 
-```{r}
+```{r bestFit-param}
 pander::pander(bestFit$parFixed, caption = "Model parameters for the best-fit model")
 ```
 
 ## Summarize all models tested
 
-```{r}
+```{r list-models}
 pander::pander(
   listModelsTested(allFits, caption = "Listing of all models tested.")
 )

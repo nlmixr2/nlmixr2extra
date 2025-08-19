@@ -63,7 +63,7 @@ getMinAICFit <- function(..., excludeBoundary = TRUE, k = 2) {
   args <- list(...)
   fitList <- list()
   for (currentArg in args) {
-    if (is.list(fitList) && inherits(try(AIC(currentArg), silent = TRUE), "try-error")) {
+    if (is.list(currentArg) && inherits(try(AIC(currentArg), silent = TRUE), "try-error")) {
       fitList <- append(fitList, currentArg)
     } else {
       fitList <- append(fitList, list(currentArg))
