@@ -238,7 +238,7 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.25, focei = NA, 
     checkmate::assertLogical(plot)
     checkmate::assertLogical(derivFct)
     checkmate::assertLogical(focei, max.len = 1, any.missing=TRUE)
-    checkmate::assertChoice(est, c("focei"))
+    checkmate::assertChoice(est, "focei")
 
 
     ofit <- fit
@@ -592,7 +592,7 @@ parseCovExpr <- function(expr, oData, effect){
                                 covName <- currentCovDf$covariate[x]
                                 normFactor <- currentCovDf$normFactor[x]
                                 eqName <- paste0("rx.eq.", param, covName)
-                                covTheta <- paste0("rx.cov.", param, covName) # FIXME list in the DF, could be multiple
+                                covTheta <- paste0("rx.cov.", param, covName) # need to have list in the DF, could be multiple
 
 
                                 if(currentCovDf$type[x] == "cont"){
@@ -619,11 +619,11 @@ parseCovExpr <- function(expr, oData, effect){
                                                 covTheta=as.name(covTheta), 
                                                 normFactor = normFactor)
                                         )
-                                        # FIXME must have 2 covTheta
+                                        # implement  have 2 covTheta
                                         covEffectsThetas <- list(covTheta)
                                     }
                                 } else{
-                                    # FIXME Cat is not fully working model. Need to standarize if must be factor to start with to avoid manual work
+                                    # Cat is not fully working model. Need to standarize if must be factor to start with to avoid manual work
                                     refLevel <- currentCovDf$refLevel[x]
                                     refFreq <- currentCovDf$refFreq[x]
                                     catLevels <- unlist(currentCovDf$levels[x])
@@ -690,7 +690,7 @@ addCovariate.rxUi <- function(fit, expr, effect = "power", ref = "median", ...){
         stop("Use addData2Rx() first to get covariate adding from this model.")
     }
     
-    stop("addCovariate is not supported for this object") # TODO covariate adding with normal models
+    stop("addCovariate is not supported for this object") # support covariate adding with normal models
 
 }
 
@@ -820,10 +820,10 @@ covExprDf <- function(expr) {
             covariates <- c(covariates, as.character(part))
             normFactors <- c(normFactors, NA)
         }
-        return(list(covariates = covariates, normFactors = normFactors))
+        list(covariates = covariates, normFactors = normFactors)
 }
 
-    results <- handle_part(cov_norm, covariates = c(), normFactors = c())
+    results <- handle_part(cov_norm, covariates = NULL, normFactors = NULL)
 
     # Create a data frame with param, covariates, and normfactors
     result <- data.frame(
@@ -910,7 +910,6 @@ addData2Rx <- function(ui, data){
 #' Covariate Finding Using Different Algorithms
 #'@author Omar I. Elashkar
 #'@noRd
-# TODO 
 covSearch <- function(ui, covSpace, method = "scm", pValBack=0.01, pValForward=0.05){
     UseMethod("covSearch")
 }
@@ -933,8 +932,8 @@ lastLocate <- function(text, pattern) {
   
   # Return the last occurrence (if any match was found)
   if (length(matches) > 0) {
-    return(max(matches))
+    max(matches)
   } else {
-    return(NA)  # Return NA if no match was found
+    NA  # Return NA if no match was found
   }
 }

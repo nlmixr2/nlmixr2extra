@@ -64,7 +64,7 @@ iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC", mceta=5, ...){
           
           list(fit = fit, objDf = summ, search = x)
         }, error = function(y){
-            return(list(fit = NULL, objDf = NA, search = x))
+            list(fit = NULL, objDf = NA, search = x)
           }
         )
     })
@@ -146,7 +146,7 @@ hasUnFixedEta <- function(ui){
 #' @noRd 
 iivCombn <- function(params) {
     # Generate all combinations of input parameters
-    all_combinations <- unlist(lapply(1:length(params), function(i) {
+    all_combinations <- unlist(lapply(seq_along(params), function(i) {
     combn(params, i, FUN = function(x) paste(x, collapse = "+"), simplify = TRUE)
     }))
 
@@ -154,7 +154,7 @@ iivCombn <- function(params) {
     all_results <- unlist(lapply(all_combinations, function(combo) {
         individual <- strsplit(combo, "\\+")[[1]]
         if (length(individual) == 1) {
-            return(combo)
+            combo
         }
         # Generate all pairwise correlations
         all_corr <- combn(individual, 2, FUN = function(x) paste(x, collapse = "~"), simplify = TRUE)

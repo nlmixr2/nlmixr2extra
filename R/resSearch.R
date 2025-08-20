@@ -11,7 +11,7 @@ resSearch <- function(fit){
 
 #' @export
 resSearch.nlmixr2Linearize <- function(fit){
-  # TODO assert FOCE linearization 
+  # assert FOCE linearization 
   
   getobjDf <- function(fit, name){
     objDf <- fit$objDf[,c("OBJF", "AIC", "BIC")]
@@ -19,7 +19,7 @@ resSearch.nlmixr2Linearize <- function(fit){
     objDf
   }
   
-  basefit <- getobjDf(fit, "base fit") # TODO extract type and avoid repeat
+  basefit <- getobjDf(fit, "base fit") # extract type and avoid repeat
   
   OPRED <- NULL
   add.sd <- NULL
@@ -41,9 +41,9 @@ resSearch.nlmixr2Linearize <- function(fit){
   linFit.combined1 <- getobjDf(linFit.combined1, "combined1")
   
   
-  # TODO time-varying
+  # time-varying
   
-  # TODO transformations
+  # transformations
   
   
   list(summary = rbind(basefit, linFit.prop, linFit.combined2, linFit.combined1) ,
