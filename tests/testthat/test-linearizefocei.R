@@ -769,7 +769,7 @@ test_that("linearize mavoglorant lnorm", {
         KbRB = exp(lKbRB)
 
         ## Regional blood flows
-        CO  = (187.00*WT^0.81)*60/1000;         # Cardiac output (L/h) from White et al (1968)
+        CO  = (187.00*WT^0.81)*60/1000         # Cardiac output (L/h) from White et al (1968)
         QHT = 4.0 *CO/100
         QBR = 12.0*CO/100
         QMU = 17.0*CO/100
@@ -850,7 +850,7 @@ test_that("linearize mavoglorant lnorm", {
     dat = subset(dat, occ==1)
     dat = subset(dat, ID<812) ## First 20
     dat = subset(dat, EVID>0 | DV>0)
-    dat$CMT[dat$CMT == 0]  <- 1;
+    dat$CMT[dat$CMT == 0]  <- 1
     dat$CMT[dat$EVID == 1]  <- "Venous_Blood" ## Compartment dosed to is Venous Blood
     dat$CMT[dat$EVID != 1]  <- "C15" ## Observing C15
 
