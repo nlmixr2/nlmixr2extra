@@ -154,71 +154,72 @@ test_that("iiv combinations", {
 
 
 test_that("linearized eta search", {
-    one.cmpt.adderr <- function() {
-  ini({
-    tcl <- log(2.7) # Cl
-    tv <- log(30) # V
-    tka <- log(1.56) #  Ka
-    eta.cl + eta.v ~ sd(cor(0.3, 0.99, 0.5))
-    eta.ka ~ 0
-    add.sd <- 0.7
-  })
-  model({
-    ka <- exp(tka + eta.ka)
-    cl <- exp(tcl + eta.cl)
-    v <- exp(tv + eta.v)
-    d / dt(depot) <- -ka * depot
-    d / dt(center) <- ka * depot - cl / v * center
-    cp <- center / v
-    cp ~ add(add.sd)
-  })
+  skip_on_cran()
+  one.cmpt.adderr <- function() {
+    ini({
+      tcl <- log(2.7) # Cl
+      tv <- log(30) # V
+      tka <- log(1.56) #  Ka
+      eta.cl + eta.v ~ sd(cor(0.3, 0.99, 0.5))
+      eta.ka ~ 0
+      add.sd <- 0.7
+    })
+    model({
+      ka <- exp(tka + eta.ka)
+      cl <- exp(tcl + eta.cl)
+      v <- exp(tv + eta.v)
+      d / dt(depot) <- -ka * depot
+      d / dt(center) <- ka * depot - cl / v * center
+      cp <- center / v
+      cp ~ add(add.sd)
+    })
     }
-set.seed(42)
-ev <- rxode2::et(amountUnits = "mg", timeUnits = "hours") |>
-    rxode2::et(amt = 350, cmt = "depot") |>
-    rxode2::et(time = c(0.25, 0.5, 1,2,3,6,8,12,16,24))
-sim <- rxode2::rxSolve(one.cmpt.adderr, ev, nSub = 200, addDosing = TRUE)
-# plot(sim)
-sim$dv <- sim$sim
-sim$id <- sim$sim.id
-sim$sim.id <- NULL
-sim <- sim[,c("id", "time", "amt", "dv", "evid")]
+  set.seed(42)
+  ev <- rxode2::et(amountUnits = "mg", timeUnits = "hours") |>
+      rxode2::et(amt = 350, cmt = "depot") |>
+      rxode2::et(time = c(0.25, 0.5, 1,2,3,6,8,12,16,24))
+  sim <- rxode2::rxSolve(one.cmpt.adderr, ev, nSub = 200, addDosing = TRUE)
+  # plot(sim)
+  sim$dv <- sim$sim
+  sim$id <- sim$sim.id
+  sim$sim.id <- NULL
+  sim <- sim[,c("id", "time", "amt", "dv", "evid")]
+  
 
-
-one.cmpt.adderr <- function() {
-  ini({
-    tcl <- log(2.7) # Cl
-    tv <- log(30) # V
-    tka <- log(1.56) #  Ka
-    # eta.cl ~ 0.5
-    # eta.v ~  0.4
-    # eta.ka ~ 0.6
-    add.sd <- 0.7
-  })
-  model({
-    ka <- exp(tka)
-    cl <- exp(tcl)
-    v <- exp(tv)
-    d / dt(depot) <- -ka * depot
-    d / dt(center) <- ka * depot - cl / v * center
-    cp <- center / v
-    cp ~ add(add.sd)
-  })
-}
-# one.cmpt.adderr <- addAllEtas(one.cmpt.adderr)
-fit <- nlmixr(one.cmpt.adderr, sim, est = "focei")
-
-suppressWarnings(
-  fitLin <- linearize(fit, addEtas = TRUE, focei = TRUE)
-)
-isLinearizeMatch(fitLin, 0.2)
-linearizePlot(fitLin)
-
-res <- iivSearch(fitLin)
-expect_true(inherits(res, "linIIVSearch"))
-res$summary[order(res$summary$BIC),]
-
-resLast <- rerunTopN(res)
-resLast$summary  |> expect_no_error()
+  one.cmpt.adderr <- function() {
+    ini({
+        tcl <- log(2.7) # Cl
+        tv <- log(30) # V
+        tka <- log(1.56) #  Ka
+        # eta.cl ~ 0.5
+        # eta.v ~  0.4
+        # eta.ka ~ 0.6
+        add.sd <- 0.7
+      })
+      model({
+        ka <- exp(tka)
+        cl <- exp(tcl)
+        v <- exp(tv)
+        d / dt(depot) <- -ka * depot
+        d / dt(center) <- ka * depot - cl / v * center
+        cp <- center / v
+        cp ~ add(add.sd)
+      })
+    }
+  # one.cmpt.adderr <- addAllEtas(one.cmpt.adderr)
+  fit <- nlmixr(one.cmpt.adderr, sim, est = "focei")
+  
+  suppressWarnings(
+    fitLin <- linearize(fit, addEtas = TRUE, focei = TRUE)
+  )
+  isLinearizeMatch(fitLin, 0.2)
+  linearizePlot(fitLin)
+  
+  res <- iivSearch(fitLin)
+  expect_true(inherits(res, "linIIVSearch"))
+  res$summary[order(res$summary$BIC),]
+  
+  resLast <- rerunTopN(res)
+  resLast$summary  |> expect_no_error()
 
 })

@@ -148,6 +148,7 @@ test_that("linearize error models", {
 })
 
 test_that("Linearize add err model ", {
+    skip_on_cran()
     one.cmpt.adderr <- function() {
         ini({
             tcl <- log(2.7) # Cl
@@ -252,6 +253,7 @@ test_that("Linearize prop err model ", {
 
 
 test_that("Linerize pheno prop err", {
+    skip_on_cran()
     one.cmpt.prop.iv <- function() {
         ini({
             tcl <- log(0.01) # Cl
@@ -284,6 +286,7 @@ test_that("Linerize pheno prop err", {
 })
 
 test_that("Linearize combined2 model ", {
+    skip_on_cran()
     one.cmpt.combinederr <- function() {
         ini({
             tka <- log(1.56) # Ka
@@ -317,6 +320,7 @@ test_that("Linearize combined2 model ", {
 
 
 test_that("Linearize combined1 model ", {
+    skip_on_cran()
     one.cmpt.combinederr <- function() {
         ini({
             tka <- log(1.56) # Ka
@@ -502,6 +506,7 @@ test_that("Linearize multiple endpoints SAEM", {
 })
 
 test_that("linearize correlated eta ", {
+    skip_on_cran()
     one.cmpt.adderr <- function() {
         ini({
             tcl <- log(2.7) # Cl
@@ -552,6 +557,7 @@ test_that("covariate parse", {
 })
 
 test_that("Adding covariates to lin models", {
+    skip_on_cran()
     one.cmpt.adderr <- function() {
         ini({
             tcl <- log(2.7) # Cl
@@ -748,6 +754,7 @@ test_that("linModGen from any object", {
 
 
 test_that("linearize mavoglorant lnorm", {
+    skip_on_cran()
     pbpk <- function(){
       ini({
         ##theta=exp(c(1.1, .3, 2, 7.6, .003, .3))
