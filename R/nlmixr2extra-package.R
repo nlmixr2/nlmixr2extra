@@ -8,7 +8,5 @@
 #' @importFrom rxode2 rxUiCompress
 #' @importFrom rxode2 rxUiDecompress
 #' @importFrom stats na.omit
-#' @importFrom tidyr pivot_longer
-#' @importFrom tidyr pivot_wider
 ## usethis namespace: end
 NULL

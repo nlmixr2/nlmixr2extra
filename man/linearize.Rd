@@ -32,6 +32,9 @@ linearize(
 
 \item{est}{Character. The estimation method used for the linearized model fit. Only 'focei' is supported.}
 }
+\value{
+a fit object with subclass nlmixr2linearize
+}
 \description{
 Perform linearization of a model fitted using FOCEI
 }

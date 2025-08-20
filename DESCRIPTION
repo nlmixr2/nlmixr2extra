@@ -38,6 +38,7 @@ Imports:
     ggtext,
     knitr,
     lotri,
+    magrittr,
     methods,
     nlme,
     nlmixr2est (>= 2.1.1),
@@ -49,7 +50,6 @@ Imports:
 Suggests:
     brms,
     nlmixr2data,
-    magrittr,
     tidyr,
     nlmixr2lib,
     testthat (>= 3.0.0),

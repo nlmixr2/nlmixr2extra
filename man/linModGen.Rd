@@ -13,6 +13,9 @@ linModGen(ui, focei = TRUE, derivFct = FALSE)
 
 \item{derivFct}{boolean. If TRUE, use normalization derivative factors. Default is FALSE.}
 }
+\value{
+rxUi model
+}
 \description{
 Generate a Linearization Model From Previous Fit
 }
