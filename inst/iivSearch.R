@@ -85,7 +85,7 @@ testfun <- function(x, fix, focei){
   res$summary |> dplyr::arrange(OBJF) 
   res$summary |> dplyr::arrange(BIC) 
   
-  passed <- res$summary #[res$summary$covMethod=="r,s",] # FIXME sometimes it will break, sometimes not
+  passed <- res$summary #[res$summary$covMethod=="r,s",] # sometimes it will break, sometimes not
   passed |> dplyr::arrange(BIC)
   # expect_true("etaTcl-etaTv-etaTcl,etaTv" %in% passed$search[order(passed$BIC)][1:3])
   
@@ -97,7 +97,7 @@ testfun <- function(x, fix, focei){
   res$res[[5]]$fit$parFixed
   res$res[[5]]$search
   
-  res$finalFit # FIXME
+  res$finalFit 
   
   list(rank = which("etaTcl+etaTv+etaTcl~etaTv" == passed$search[order(passed$BIC)]), 
        matched = isLinearizeMatch(fitLin)$ofv[[1]])
