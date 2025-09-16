@@ -2,14 +2,19 @@
 % Please edit documentation in R/nlmixrFormula.R
 \name{.nlmixrFormulaSetupIniFixed}
 \alias{.nlmixrFormulaSetupIniFixed}
+\alias{.nlmixrFormulaSetupIniRandom}
 \title{Setup the ini() part of the model for fixed effects}
 \usage{
 .nlmixrFormulaSetupIniFixed(start, base = str2lang("{}"))
+
+.nlmixrFormulaSetupIniRandom(ranefDefinition, base = str2lang("{}"))
 }
 \arguments{
 \item{start}{The starting estimates for the model}
 
 \item{base}{The initial basis for the ini definition}
+
+\item{ranefDefinition}{The random effect definitions}
 }
 \value{
 The inside of the ini() part of the model
@@ -17,4 +22,9 @@ The inside of the ini() part of the model
 \description{
 Setup the ini() part of the model for fixed effects
 }
+\section{Functions}{
+\itemize{
+\item \code{.nlmixrFormulaSetupIniRandom()}: Setup the ini() part of the model for fixed effects
+
+}}
 \keyword{Internal}

@@ -31,9 +31,18 @@ should not be included here.  If a parameter should have a separate
 estimate per level of a factor, give that as the two-sided formula here.}
 
 \item{...}{
-  Arguments passed on to \code{\link[nlmixr2:reexports]{nlmixr2::nlmixr}}
+  Arguments passed on to \code{\link[nlmixr2est:nlmixr2]{nlmixr2est::nlmixr}}
   \describe{
-    \item{\code{}}{}
+    \item{\code{est}}{estimation method (all methods are shown by
+`nlmixr2AllEst()`). Methods can be added for other tools}
+    \item{\code{control}}{The estimation control object.  These are expected
+to be different for each type of estimation method}
+    \item{\code{table}}{The output table control object (like
+`tableControl()`)}
+    \item{\code{save}}{Boolean to save a nlmixr2 object in a rds file in the
+working directory.  If \code{NULL}, uses option "nlmixr2.save"}
+    \item{\code{envir}}{Environment where the nlmixr object/function is
+evaluated before running the estimation routine.}
   }}
 
 \item{residualModel}{The residual model formula to use as a one-sided formula.}

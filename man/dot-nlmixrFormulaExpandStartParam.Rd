@@ -2,9 +2,12 @@
 % Please edit documentation in R/nlmixrFormula.R
 \name{.nlmixrFormulaExpandStartParam}
 \alias{.nlmixrFormulaExpandStartParam}
+\alias{.nlmixrFormulaExpandStartParamSingle}
 \title{Expand parameters to include their factor representations, if applicable.}
 \usage{
 .nlmixrFormulaExpandStartParam(start, param, data)
+
+.nlmixrFormulaExpandStartParamSingle(startName, startValue, param, data)
 }
 \arguments{
 \item{start}{the starting values for the model}
@@ -23,4 +26,9 @@ A list with the ini and model parts needed to use the parameter
 \description{
 Expand parameters to include their factor representations, if applicable.
 }
+\section{Functions}{
+\itemize{
+\item \code{.nlmixrFormulaExpandStartParamSingle()}: Expand a single parameter in a model using dataset factors, if applicable
+
+}}
 \keyword{Internal}
