@@ -14,7 +14,8 @@ bootstrapFit(
   pvalues = NULL,
   restart = FALSE,
   plotHist = FALSE,
-  fitName = as.character(substitute(fit))
+  fitName = as.character(substitute(fit)),
+  returnType = c("model", "fitList", "modelList")
 )
 }
 \arguments{
@@ -57,6 +58,16 @@ how well the bootstrap is doing.  By default this is turned off
 \item{fitName}{is the fit name that is used for the name of the
 boostrap files.  By default it is the fit provided though it
 could be something else.}
+
+\item{returnType}{this describes the return type
+\itemize{
+\item \code{model} this is the default and returns an updated model boostrapped
+confidence intervals and standard errors updated in the estimates.
+\item \code{fitList} this returns the list of the full fits from the bootstrap.
+\item \code{modelList} this returns the model list (which abbreviates the
+parameters and messages) used for the bootstrap summary
+statistics.
+}}
 }
 \value{
 Nothing, called for the side effects; The original fit is
@@ -67,6 +78,7 @@ Bootstrap input dataset and rerun the model to get confidence bounds and aggrega
 }
 \examples{
 \dontrun{
+
 one.cmt <- function() {
   ini({
     tka <- 0.45; label("Ka")

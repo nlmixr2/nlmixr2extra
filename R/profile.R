@@ -135,6 +135,7 @@ profileNlmixr2FitCoreRet <- function(fitted, which, fixedVal) {
 #'   of the fitted value to fix (one row per set of parameters to estimate)
 #' @param control A list passed to `fixedControl()` (currently unused)
 #' @inherit profileNlmixr2FitCoreRet return
+#' @author Bill Denney (changed by Matt Fidler to take out R 4.1 specific code)
 #' @family Profiling
 #' @export
 profileFixed <- function(fitted, which, control = list()) {
@@ -142,7 +143,9 @@ profileFixed <- function(fitted, which, control = list()) {
   checkmate::assert_data_frame(which, types = "numeric", any.missing = FALSE, min.rows = 1)
   dplyr::bind_rows(lapply(
     X = seq_len(nrow(which)),
-    FUN = \(idx, fitted) profileFixedSingle(fitted = fitted, which = which[idx, , drop = FALSE]),
+    FUN = function(idx, fitted) {
+      profileFixedSingle(fitted = fitted, which = which[idx, , drop = FALSE])
+    },
     fitted = fitted
   ))
 }
@@ -156,6 +159,7 @@ profileFixed <- function(fitted, which, control = list()) {
 #' @returns `which` with a column named `OFV` added with the objective function
 #'   value of the fitted estimate fixing the parameters in the other columns
 #' @family Profiling
+#' @author Bill Denney (changed by Matt Fidler to take out R 4.1 specific code)
 #' @export
 profileFixedSingle <- function(fitted, which) {
   checkmate::assert_data_frame(which, types = "numeric", any.missing = FALSE, nrows = 1)
@@ -163,7 +167,10 @@ profileFixedSingle <- function(fitted, which) {
 
   message("Profiling ", paste(names(which), "=", unlist(which), collapse = ", "))
   # Update the model by fixing all of the parameters
-  paramToFix <- lapply(X = which, FUN = \(x) str2lang(sprintf("fixed(%s)", x)))
+  paramToFix <- lapply(X = which,
+                       FUN = function(x) {
+                         str2lang(sprintf("fixed(%s)", x))
+                       })
   iniArgs <- append(list(x = fitted), paramToFix)
   modelToFit <- suppressMessages(do.call(rxode2::ini, iniArgs))
   controlFit <- fitted$control

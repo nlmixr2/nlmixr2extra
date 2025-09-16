@@ -48,4 +48,7 @@ Other Profiling:
 \code{\link{profileLlp}()},
 \code{\link{profileNlmixr2FitCoreRet}()}
 }
+\author{
+Bill Denney (changed by Matt Fidler to take out R 4.1 specific code)
+}
 \concept{Profiling}
