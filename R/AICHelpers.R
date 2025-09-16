@@ -61,35 +61,44 @@
 #' @export
 getMinAICFit <- function(..., excludeBoundary = TRUE, k = 2) {
   args <- list(...)
-  fitList <- list()
-  for (currentArg in args) {
-    if (is.list(currentArg) && inherits(try(AIC(currentArg), silent = TRUE), "try-error")) {
-      fitList <- append(fitList, currentArg)
-    } else {
-      fitList <- append(fitList, list(currentArg))
-    }
+  if (length(args) == 0) {
+    stop("No models given")
   }
-  hadFits <- length(fitList) > 0
+  fitAIC <- vapply(X = args, FUN = tryAIC, FUN.VALUE = 1)
   if (excludeBoundary) {
+    boundaryModelCount <- 0
     # Remove models at the boundary
-    for (idx in rev(seq_along(fitList))) {
-      if (isBoundaryFit(fitList[[idx]])) {
-        message("Removing model with a parameter at the boundary")
-        fitList[[idx]] <- NULL
+    for (idx in seq_along(args)) {
+      if (isBoundaryFit(args[[idx]])) {
+        boundaryModelCount <- boundaryModelCount + 1
+        fitAIC[idx] <- NA_real_
       }
     }
+    if (boundaryModelCount > 0) {
+      message(
+        "Removing ",
+        boundaryModelCount, " ",
+        ngettext(boundaryModelCount, "model", "models"),
+        " with a parameter at the boundary"
+      )
+    }
   }
-  if (length(fitList) > 0) {
-    fitAIC <- vapply(X = fitList, FUN = AIC, FUN.VALUE = 1)
-    ret <- fitList[[which(fitAIC %in% min(fitAIC, na.rm = TRUE))[1]]]
-  } else if (!hadFits) {
-    warning("No model fits in input list")
+  browser()
+  stop()
+  if (any(!is.na(fitAIC))) {
+    ret <- args[[which(fitAIC %in% min(fitAIC, na.rm = TRUE))[1]]]
+  } else if (all(is.na(fitAIC))) {
+    warning("No model fits with an AIC in input list")
     ret <- NULL
   } else {
     warning("No model fits in input after excluding models")
     ret <- NULL
   }
   ret
+}
+
+tryAIC <- function(object, ..., silent = TRUE) {
+  try(AIC(object, ...), silent = silent)
 }
 
 #' Detect if a fit has any parameter at the boundary

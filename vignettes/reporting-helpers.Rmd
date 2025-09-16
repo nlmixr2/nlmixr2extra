@@ -75,7 +75,7 @@ modLinear <- function() {
 }
 
 # Fit the models
-fitEmaxBoundaryIssue <- nlmixr2est::nlmixr2(modEmax, data = d_noec50, est = "focei", control = list(print = 0))
+fitEmaxBoundaryIssue <- try(nlmixr2est::nlmixr2(modEmax, data = d_noec50, est = "focei", control = list(print = 0))
 fitStep <- nlmixr2est::nlmixr2(modStep, data = d_noec50, est = "focei", control = list(print = 0))
 fitLinear <- nlmixr2est::nlmixr2(modLinear, data = d_noec50, est = "focei", control = list(print = 0))
 ```

@@ -44,22 +44,32 @@ test_that("isBoundaryFit, getMinAICFit, listModelsTested work", {
     })
   }
 
-  fitEmaxBoundaryIssue <- nlmixr2est::nlmixr2(modEmax, data = d_noec50, est = "focei", control = list(print = 0))
-  fitStep <- nlmixr2est::nlmixr2(modStep, data = d_noec50, est = "focei", control = list(print = 0))
-  fitLinear <- nlmixr2est::nlmixr2(modLinear, data = d_noec50, est = "focei", control = list(print = 0))
+  fitEmaxBoundaryIssue <-
+    suppressMessages(
+      nlmixr2est::nlmixr2(modEmax, data = d_noec50, est = "focei", control = list(print = 0))
+    )
+  fitStep <-
+    suppressMessages(
+      nlmixr2est::nlmixr2(modStep, data = d_noec50, est = "focei", control = list(print = 0))
+    )
+  fitLinear <-
+    suppressMessages(
+      nlmixr2est::nlmixr2(modLinear, data = d_noec50, est = "focei", control = list(print = 0))
+    )
+  fitError <- try(stop("Model did not converge"), silent = TRUE)
   # Boundary conditions are accurately caught
   expect_true(isBoundaryFit(fitEmaxBoundaryIssue))
   expect_false(isBoundaryFit(fitStep))
   # The correct model is returned
   expect_message(
-    minAICfit <- getMinAICFit(fitEmaxBoundaryIssue, fitStep, fitLinear),
+    minAICfit <- getMinAICFit(fitEmaxBoundaryIssue, fitStep, fitLinear, fitError),
     regexp = "Removing model with a parameter at the boundary"
   )
   expect_equal(minAICfit, fitLinear)
 
   # getMinAICFit gives NULL when expected
   expect_warning(
-    getMinAICFit(fitEmaxBoundaryIssue, fitEmaxBoundaryIssue),
+    getMinAICFit(fitEmaxBoundaryIssue, fitEmaxBoundaryIssue, fitError),
     regexp = "No model fits in input after excluding models"
   )
   expect_warning(
@@ -68,17 +78,19 @@ test_that("isBoundaryFit, getMinAICFit, listModelsTested work", {
   )
 
   # listModelsTested ----
+  tabTested <- listModelsTested(list(Emax = fitEmaxBoundaryIssue, Step = fitStep, Linear = fitLinear, "Model error" = fitError), caption = "Listing of models tested.")
   expect_equal(
-    listModelsTested(list(Emax = fitEmaxBoundaryIssue, Step = fitStep, Linear = fitLinear), caption = "Listing of models tested."),
-    structure(
-      data.frame(
-        Description = c("Emax", "Step", "Linear"),
-        AIC = c(-1832.41345872027, 545.60562057833, 521.880978234241),
-        dAIC = c("-", "23.72", "0"),
-        Exclude = c("parameter at boundary", "", "")
-      ),
-      caption = "Listing of models tested. Abbreviations: AIC = Akaike's Information Criterion; dAIC = change from minimum AIC"
-    ),
-    tolerance = 0.1
+    tabTested$Description,
+    c("Emax", "Step", "Linear", "Model error")
+  )
+  # system differences may cause different AIC values over time, so cannot test
+  # those directly
+  expect_type(tabTested$AIC, "double")
+  expect_equal(tabTested$AIC[4], NA_real_)
+  expect_equal(tabTested$dAIC[c(1, 4)], c("-", "-"))
+  expect_equal(tabTested$Exclude, c("parameter at boundary", "", "", ""))
+  expect_equal(
+    attr(tabTested, "caption"),
+    "Listing of models tested. Abbreviations: AIC = Akaike's Information Criterion; dAIC = change from minimum AIC"
   )
 })
