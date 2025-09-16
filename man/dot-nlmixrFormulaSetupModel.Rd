@@ -9,7 +9,6 @@
   predictor,
   residualModel,
   predictorVar = "value",
-  param,
   data
 )
 }

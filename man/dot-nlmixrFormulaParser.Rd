@@ -19,6 +19,8 @@ Parse the formula to extract the dependent variable, predictor, and random
 effects
 }
 \examples{
+\dontrun{
 .nlmixrFormulaParser(a~b+c~(c|id))
+}
 }
 \keyword{Internal}

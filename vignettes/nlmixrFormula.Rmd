@@ -33,11 +33,11 @@ of the nlmixr2 formula interface.
 
 ```{r quickstart-setup, class.source = 'fold-show'}
 library(nlmixr2extra)
+library(dplyr)
+library(ggplot2)
 ```
 
 ```{r quickstart-data-gen}
-library(tidyverse)
-
 # Simulate the equation y = 3*x + 5 with normally-distributed residual error
 # having a standard deviation of 5
 withr::with_seed(
@@ -62,7 +62,7 @@ mod <-
   nlmixrFormula(
     y~m*x + b,
     data = dSim,
-    start = c(m = 3, b = 5),
+    start = c(m = 2.5, b = 4, addErr = 2),
     est = "focei"
   )
 ```
@@ -98,8 +98,8 @@ withr::with_seed(
 
 # Modify the simulated results to be ready for fitting
 dSimNlme <-
-  dSimNlmePrep %>%
-  as.data.frame() %>%
+  dSimNlmePrep |>
+  as.data.frame() |>
   select(id, time, x, y=sim)
 
 ggplot(dSimNlme, aes(x=x, y=y, colour=factor(id))) + geom_point()

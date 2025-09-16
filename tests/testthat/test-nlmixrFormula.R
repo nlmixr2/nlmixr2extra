@@ -31,14 +31,14 @@ test_that(".nlmixrFormulaParser gives expected errors for invalid formula", {
     .nlmixrFormulaParser(object = ~ m*x + b),
     regexp = "formula must be two-sided"
   )
-  
+
   # a weird amalgam of one-sided and two-sided formula that looks like a
   # two-sided formula with simple parsing
   expect_error(
     .nlmixrFormulaParser(object = ~ m*x + b ~ c),
     regexp = "formula left-hand-side must be a single variable"
   )
-  
+
   expect_error(
     .nlmixrFormulaParser(object = m*x + b ~ c),
     regexp = "formula left-hand-side must be a single variable, not m * x + b",
@@ -145,7 +145,7 @@ test_that("nlmixrFormula creates factor parameters correctly", {
       model=list(str2lang('myest <- myest.A.A + myest.A.B * (A == "B")'))
     )
   )
-  
+
   # do not reorder when the factors are ordered
   d_factor <- data.frame(A=ordered(c("A", "B", "B")))
   expect_message(
@@ -161,6 +161,26 @@ test_that("nlmixrFormula creates factor parameters correctly", {
           str2lang('myest.A.B <- 0')
         ),
       model=list(str2lang('myest <- myest.A.A + myest.A.B * (A == "B")'))
+    )
+  )
+})
+
+test_that(".nlmixrFormulaSetupIniRandom", {
+  expect_equal(
+    .nlmixrFormulaSetupIniRandom(NULL),
+    str2lang("{}")
+  )
+  expect_equal(
+    .nlmixrFormulaSetupIniRandom(
+      list(
+        list(ranefVar = "foo", start = 1.1),
+        list(ranefVar = "bar", start = 2.2)
+      )
+    ),
+    str2lang("{
+             foo ~ 1.1
+             bar ~ 2.2
+             }"
     )
   )
 })

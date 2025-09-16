@@ -68,8 +68,7 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
     .nlmixrFormulaSetupModel(
       start=startAll,
       predictor=parsedFormula$predictor,
-      residualModel=residualModel,
-      param=param
+      residualModel=residualModel
     )
 
   # Build up the model function
@@ -102,7 +101,9 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
   # Setup DV
   data <- .renameOrOverwrite(data, newName="DV", oldName=dvName)
   # Setup ID
-  data <- .renameOrOverwrite(data, newName="ID", oldName=idName)
+  if (length(idName) != 0) {
+    data <- .renameOrOverwrite(data, newName="ID", oldName=idName)
+  }
   data
 }
 
@@ -136,7 +137,9 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
 #'   part of the formula broken down into calls
 #' @keywords Internal
 #' @examples
+#' \dontrun{
 #' .nlmixrFormulaParser(a~b+c~(c|id))
+#' }
 .nlmixrFormulaParser <- function(object) {
   stopifnot(inherits(object, "formula"))
   # Confirm that the formula looks like it should
@@ -356,10 +359,12 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
 #' @describeIn dot-nlmixrFormulaSetupIniFixed Setup the ini() part of the model for fixed effects
 #' @param ranefDefinition The random effect definitions
 .nlmixrFormulaSetupIniRandom <- function(ranefDefinition, base=str2lang("{}")) {
-  stopifnot(is.list(ranefDefinition))
-  for (currentRanef in ranefDefinition) {
-    base[[length(base) + 1]] <-
-      str2lang(paste(currentRanef$ranefVar, "~", currentRanef$start))
+  if (!is.null(ranefDefinition)) {
+    stopifnot(is.list(ranefDefinition))
+    for (currentRanef in ranefDefinition) {
+      base[[length(base) + 1]] <-
+        str2lang(paste(currentRanef$ranefVar, "~", currentRanef$start))
+    }
   }
   base
 }
@@ -374,7 +379,7 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
 #' @param data The data used in the model
 #' @return the interior of the model()
 #' @keywords Internal
-.nlmixrFormulaSetupModel <- function(start, predictor, residualModel, predictorVar="value", param, data) {
+.nlmixrFormulaSetupModel <- function(start, predictor, residualModel, predictorVar="value", data) {
   stopifnot(inherits(residualModel, "formula"))
   # a one-sided formula
   stopifnot(length(residualModel) == 2)
