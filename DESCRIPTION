@@ -21,7 +21,7 @@ Description: Fit and compare nonlinear mixed-effects models in
     <doi:10.1208/s12248-016-9866-5>, boostrap and stepwise covariate
     selection.
 Depends:
-    R (>= 4.0)
+    R (>= 4.1)
 License: GPL (>= 3)
 URL: https://nlmixr2.github.io/nlmixr2extra/,
     https://github.com/nlmixr2/nlmixr2extra/
