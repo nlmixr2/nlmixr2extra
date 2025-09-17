@@ -389,14 +389,16 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
 
 #' Setup the model() part of the model
 #'
-#' @param start The starting estimates (used when fixed effects need more
-#'   definition like for factors)
+#' @param start The starting estimates (used when fixed effects need
+#'   more definition like for factors)
 #' @param predictor The predictor from the formula
 #' @param residualModel The residual model definition
 #' @param predictorVar The variable in the data for the predictor
 #' @param data The data used in the model
 #' @return the interior of the model()
 #' @keywords Internal
+#' @noRd
+#' @author William Denney
 .nlmixrFormulaSetupModel <- function(start, predictor, residualModel, predictorVar="value", data) {
   stopifnot(inherits(residualModel, "formula"))
   # a one-sided formula
@@ -417,4 +419,20 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
   base[[length(base) + 1]] <- predLine
   base[[length(base) + 1]] <- residualLine
   base
+}
+
+#' @export
+nlmixr2.formula <- function(object, data=NULL, est = NULL, control = NULL,
+                            table = nlmixr2est::tableControl(), ...,
+                            start=NULL, param=NULL,
+                            residualModel=~add(addSd),
+                            save = NULL, envir = parent.frame()) {
+  .lst <- c(list(object=object,
+                 data=data,
+                 start=start, param=param,
+                 est=est, control=control, table=table),
+            list(...),
+            list(save=save, envir=envir,
+                 residualModel=residualModel))
+  do.call(`nlmixrFormula`, .lst)
 }

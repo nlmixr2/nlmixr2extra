@@ -62,7 +62,21 @@ mod <-
   nlmixrFormula(
     y~m*x + b,
     data = dSim,
-    start = c(m = 2.5, b = 4, addErr = 2),
+    start = c(m = 2.5, b = 4, addSd = 2),
+    est = "focei"
+  )
+```
+
+You can also use a call to `nlmixr` or `nlmixr2`, the arguments are
+the same as `nlmixrFormula`:
+
+
+```{r quickstart-fit2, class.source = 'fold-show'}
+mod <-
+  nlmixr(
+    y ~ m*x + b,
+    data = dSim,
+    start = c(m = 2.5, b = 4, addSd = 2),
     est = "focei"
   )
 ```
@@ -71,7 +85,6 @@ mod <-
 
 A more typical use case for nlmixr2 is a mixed-effects model.  It adds
 (subject-level) random effects to the model.
-
 ```{r quickstart-data-gen-nlme}
 # Setup the dataset for nonlinear mixed-effects fitting
 

@@ -10,7 +10,7 @@ nlmixrFormula(
   start,
   param = NULL,
   ...,
-  residualModel = ~add(addErr)
+  residualModel = ~add(addSd)
 )
 }
 \arguments{
@@ -18,17 +18,19 @@ nlmixrFormula(
 
 \item{data}{The data to fit}
 
-\item{start}{A named list of starting estimates.  The names define the
-parameters in the model.  If a single parameter estimate is desired, it can
-be given here.  If a parameter estimate per factor level is desired, either
-a single starting estimate can be given across all factor levels or one
-estimate may be given per factor level.  (Specify the factors with the
-\code{param} argument.)}
+\item{start}{A named list of starting estimates.  The names define
+the parameters in the model.  If a single parameter estimate is
+desired, it can be given here.  If a parameter estimate per
+factor level is desired, either a single starting estimate can be
+given across all factor levels or one estimate may be given per
+factor level.  (Specify the factors with the \code{param}
+argument.)}
 
-\item{param}{A formula or list of two-sided formulas giving the model used
-for parameters.  If a parameter is a simple fixed effect, only, then it
-should not be included here.  If a parameter should have a separate
-estimate per level of a factor, give that as the two-sided formula here.}
+\item{param}{A formula or list of two-sided formulas giving the
+model used for parameters.  If a parameter is a simple fixed
+effect, only, then it should not be included here.  If a
+parameter should have a separate estimate per level of a factor,
+give that as the two-sided formula here.}
 
 \item{...}{
   Arguments passed on to \code{\link[nlmixr2est:nlmixr2]{nlmixr2est::nlmixr}}
@@ -45,36 +47,40 @@ working directory.  If \code{NULL}, uses option "nlmixr2.save"}
 evaluated before running the estimation routine.}
   }}
 
-\item{residualModel}{The residual model formula to use as a one-sided formula.}
+\item{residualModel}{The residual model formula to use as a
+one-sided formula.}
 }
 \value{
-The model fit from \code{nlmixr()}
+The model fit from \code{nlmixr2est::nlmixr2()}
 }
 \description{
 A simple formula-based interface for nlmixr2
 }
 \details{
-The formula is given with different notation than typical formulas.  The
-formula notation is inspired by and similar to \code{lme4::nlmer()}.  It is a
-3-part formula: \code{dependentVariable~predictorEquation~randomEffects}.
+The formula is given with different notation than typical formulas.
+The formula notation is inspired by and similar to
+\code{lme4::nlmer()}.  It is a 3-part formula:
+\code{dependentVariable~predictorEquation~randomEffects}.
 
-The \code{dependentVariable} is any variable in the dataset.  It may not
-include any math; for example, \code{log(DV)} is not allowed.
+The \code{dependentVariable} is any variable in the dataset.  It
+may not include any math; for example, \code{log(DV)} is not
+allowed.
 
-The \code{predictorEquation} is any valid math, and it will be used directly
-in the nlmixr2 model.
+The \code{predictorEquation} is any valid math, and it will be used
+directly in the nlmixr2 model.
 
-The \code{randomEffects} are one or more random effect parameters defined by
-putting the parameter in parentheses and putting a vertical bar and the
-grouping parameter.  Only one grouping parameter is allowed for all random
-effects.  An example would be \code{(slope|ID)} to estimate a random effect
-parameter named "slope" for each "ID" in the data.
+The \code{randomEffects} are one or more random effect parameters
+defined by putting the parameter in parentheses and putting a
+vertical bar and the grouping parameter.  Only one grouping
+parameter is allowed for all random effects.  An example would be
+\code{(slope|ID)} to estimate a random effect parameter named
+"slope" for each "ID" in the data.
 }
 \examples{
 nlmixrFormula(
   height ~ (Asym+AsymRe)+(R0-(Asym+AsymRe))*exp(-exp(lrc)*age) ~ (AsymRe|Seed),
   data = Loblolly,
-  start = list(Asym = 103, R0 = -8.5, lrc = -3.3, addErr=1),
+  start = list(Asym = 103, R0 = -8.5, lrc = -3.3, addSd=1),
   est="focei"
 )
 }
