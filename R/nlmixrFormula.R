@@ -429,10 +429,14 @@ nlmixr2.formula <- function(object, data=NULL, est = NULL, control = NULL,
                             save = NULL, envir = parent.frame()) {
   .lst <- c(list(object=object,
                  data=data,
-                 start=start, param=param,
-                 est=est, control=control, table=table),
+                 start=start,
+                 param=param,
+                 est=est,
+                 control=control,
+                 table=table),
             list(...),
-            list(save=save, envir=envir,
+            list(save=save,
+                 envir=envir,
                  residualModel=residualModel))
-  do.call(`nlmixrFormula`, .lst)
+  do.call("nlmixrFormula", .lst)
 }
