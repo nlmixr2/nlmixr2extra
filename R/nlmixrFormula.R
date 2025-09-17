@@ -376,7 +376,7 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
 #' Setup the model() part of the model
 #'
 #' @param start The starting estimates (used when fixed effects need more
-#'   defition like for factors)
+#'   definition like for factors)
 #' @param predictor The predictor from the formula
 #' @param residualModel The residual model definition
 #' @param predictorVar The variable in the data for the predictor
