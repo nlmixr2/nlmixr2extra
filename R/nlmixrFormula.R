@@ -115,7 +115,9 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
 #' @return data with \code{data[[newName]] <- data[[charOld]]}
 #' @keywords Internal
 #' @examples
+#' \dontrun{
 #' .renameOrOverwrite(data.frame(A=1), newName="B", oldName="A")
+#' }
 .renameOrOverwrite <- function(data, newName, oldName) {
   charOld <- as.character(oldName)
   stopifnot(charOld %in% names(data))
@@ -191,7 +193,9 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
 #'   effect.
 #' @keywords Internal
 #' @examples
+#' \dontrun{
 #' .nlmixrFormulaParserRanef(str2lang("(c|id)+(d|id2)"))
+#' }
 .nlmixrFormulaParserRanef <- function(object) {
   stopifnot(is.call(object))
   if (object[[1]] == as.name("+")) {

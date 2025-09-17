@@ -20,6 +20,8 @@ Rename a column in a dataset, optionally overwriting it if the column does
 not exist
 }
 \examples{
+\dontrun{
 .renameOrOverwrite(data.frame(A=1), newName="B", oldName="A")
+}
 }
 \keyword{Internal}

@@ -20,6 +20,8 @@ effect.
 Parse the random effects part of a formula
 }
 \examples{
+\dontrun{
 .nlmixrFormulaParserRanef(str2lang("(c|id)+(d|id2)"))
+}
 }
 \keyword{Internal}
