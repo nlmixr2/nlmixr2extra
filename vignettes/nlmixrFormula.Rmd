@@ -102,7 +102,7 @@ withr::with_seed(
     dSimNlmePrep <-
       nlmixrFormula(
         y~m*x + b + bRe ~ bRe|id,
-        start = c(m=3, b=5, addErr=5),
+        start = c(m=3, b=5, addSd=5),
         data = dSimSetup,
         est = "rxSolve"
       )
@@ -120,9 +120,9 @@ ggplot(dSimNlme, aes(x=x, y=y, colour=factor(id))) + geom_point()
 
 ```{r quickstart-fit-nlme, class.source = 'fold-show'}
 mod <-
-  nlmixrFormula(
+  nlmixr(
     y~m*x + b + bRe ~ bRe|id,
-    start = c(m=3, b=5, addErr=5),
+    start = c(m=3, b=5, addSd=5),
     data = dSimNlme,
     est = "focei"
   )
