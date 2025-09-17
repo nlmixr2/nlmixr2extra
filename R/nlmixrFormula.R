@@ -64,14 +64,8 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
       ranefGroup <- currentRanef$ranefGroup
     } else {
       # only one random effect grouping variable is allowed
-      if (currentRanef$ranefGroup != ranefGroup) {
-        stop(
-          sprintf(
-            "Only one random effect grouping variable is allowed per model. Found both '%s' and '%s'.",
-            ranefGroup, currentRanef$ranefGroup
-          )
-        )
-      }
+      stopifnot(currentRanef$ranefGroup == ranefGroup)
+    }
   }
   if (missing(data)) {
     data <- NULL
