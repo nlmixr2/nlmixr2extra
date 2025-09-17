@@ -290,7 +290,7 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
     stopifnot(length(param) == 1)
     stopifnot(param %in% names(data))
     if (any(is.na(data[[param]]))) {
-      stop("NA found in data column:", param)
+      stop("NA found in data column: ", param)
     }
     if (is.factor(data[[param]])) {
       .nlmixrFormulaExpandStartParamFactor(startName, startValue, param, data)
