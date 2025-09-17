@@ -8,7 +8,8 @@ Authors@R: c(
     person("Vipul", "Mann",email="vm2583@columbia.edu", role = "aut"),
     person("Vishal", "Sarsani", email="vsarsani@umass.edu", comment=c(ORCID = "0000-0002-9272-3438"), role="aut"),
     person("Christian", "Bartels", email="christian.bartels@novartis.com", role="ctb"),
-    person("Bill", "Denney", email="wdenney@humanpredictions.com", role="aut", comment=c(ORCID="0000-0002-5759-428X"))
+    person("Bill", "Denney", email="wdenney@humanpredictions.com", role="aut", comment=c(ORCID="0000-0002-5759-428X")), 
+    person("Omar", "Elashkar", email="omar.i.elashkar@gmail.com", role="ctb", comment=c(ORCID="0000-0002-5505-778X")) 
   )
 Maintainer: Matthew Fidler <matthew.fidler@gmail.com>
 Description: Fit and compare nonlinear mixed-effects models in
@@ -37,17 +38,20 @@ Imports:
     ggtext,
     knitr,
     lotri,
+    magrittr,
     methods,
     nlme,
     nlmixr2est (>= 2.1.1),
     Rcpp,
-    rxode2 (>= 2.0.10),
+    rxode2 (>= 4.0.3),
     stats,
     symengine,
     utils
 Suggests:
     brms,
     nlmixr2data,
+    tidyr,
+    nlmixr2lib,
     testthat (>= 3.0.0),
     withr,
     devtools
