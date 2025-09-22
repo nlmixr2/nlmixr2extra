@@ -85,6 +85,7 @@ mod <-
 
 A more typical use case for nlmixr2 is a mixed-effects model.  It adds
 (subject-level) random effects to the model.
+
 ```{r quickstart-data-gen-nlme}
 # Setup the dataset for nonlinear mixed-effects fitting
 
@@ -132,6 +133,60 @@ mod
 
 In this model, the fixed effects of `m` and `b` were estimated along with the
 random effect of `bRe`.
+
+## Quick start, automatic parameter fixed effects
+
+```{r quickstart-data-gen-param}
+# Setup the dataset for nonlinear mixed-effects fitting with different types of
+# parameters.
+
+# Simulate the equation y = 3*x + 4(when z = 'a') or 6(when z = 'b') with normally-distributed residual error
+# having a standard deviation of 5
+withr::with_seed(
+  5, # standardize the random seed so that the results are reproducible
+  {
+    dSimSetup <-
+      data.frame(
+        id = rep(1:10, each=10),
+        x = rep(1:10, 10),
+        y = 1,
+        z = sample(factor(c("a", "b")), size = 100, replace = TRUE)
+      )
+    # Note that we need to give `start` as a list so that 
+    dSimNlmePrep <-
+      nlmixrFormula(
+        y~m*x + b + bRe ~ bRe|id,
+        start = list(m=3, b=c(4, 2), addSd=5),
+        param = list(b ~ z),
+        data = dSimSetup,
+        est = "rxSolve"
+      )
+  }
+)
+
+# Modify the simulated results to be ready for fitting
+dSimNlme <-
+  dSimNlmePrep |>
+  as.data.frame() |>
+  select(id, time, x, y=sim, z)
+
+ggplot(dSimNlme, aes(x=x, y=y, colour=z)) +
+  geom_point() +
+  geom_line(aes(group = id), colour = "gray")
+```
+
+```{r quickstart-fit-param, class.source = 'fold-show'}
+mod <-
+  nlmixr(
+    y~m*x + b + bRe ~ bRe|id,
+    start = c(m=3, b=5, addSd=5),
+    param = list(b ~ z),
+    data = dSimNlme,
+    est = "focei"
+  )
+
+mod
+```
 
 # Defining the model equation (the formula)
 

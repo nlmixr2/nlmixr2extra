@@ -307,7 +307,7 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
       stop("NA found in data column: ", param)
     }
     if (is.factor(data[[param]])) {
-      .nlmixrFormulaExpandStartParamFactor(startName, startValue, param, data)
+      ret <- .nlmixrFormulaExpandStartParamFactor(startName, startValue, param, data)
     } else {
       stop("Can only handle factors for fixed effect grouping levels")
     }
@@ -393,7 +393,8 @@ nlmixrFormula <- function(object, data, start, param=NULL, ..., residualModel=~a
 #'   more definition like for factors)
 #' @param predictor The predictor from the formula
 #' @param residualModel The residual model definition
-#' @param predictorVar The variable in the data for the predictor
+#' @param predictorVar The variable in the data for the predictor (the left hand
+#'   side of the equation)
 #' @param data The data used in the model
 #' @return the interior of the model()
 #' @keywords Internal

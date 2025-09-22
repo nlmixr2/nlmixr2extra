@@ -184,3 +184,72 @@ test_that(".nlmixrFormulaSetupIniRandom", {
     )
   )
 })
+
+test_that(".nlmixrFormulaExpandStartParamSingle", {
+  expect_equal(
+    .nlmixrFormulaExpandStartParamSingle(startName = "b", startValue = 5, param = NA, data = data.frame(z = factor(c("a", "b")))),
+    list(
+      ini = list(str2lang("b <- 5")),
+      model = list(NULL)
+    )
+  )
+  # `data` has no effect if is.na(param)
+  expect_equal(
+    .nlmixrFormulaExpandStartParamSingle(startName = "b", startValue = 5, param = NA, data = data.frame(z = factor(c("a", "b")))),
+    .nlmixrFormulaExpandStartParamSingle(startName = "b", startValue = 5, param = NA)
+  )
+
+  expect_error(
+    .nlmixrFormulaExpandStartParamSingle(startName = "b", startValue = 5, param = "z", data = NULL),
+    regexp = "data must be given when parameters are not single fixed effects"
+  )
+  expect_error(
+    .nlmixrFormulaExpandStartParamSingle(startName = "b", startValue = 5, param = "z", data = data.frame(z = factor(c("a", "b", NA)))),
+    regexp = "NA found in data column: z"
+  )
+  expect_error(
+    .nlmixrFormulaExpandStartParamSingle(startName = "b", startValue = 5, param = "z", data = data.frame(z = c("a", "b"))),
+    regexp = "Can only handle factors for fixed effect grouping levels"
+  )
+
+  expect_equal(
+    .nlmixrFormulaExpandStartParamSingle(startName = "b", startValue = 5, param = "z", data = data.frame(z = factor(c("a", "b")))),
+    .nlmixrFormulaExpandStartParamFactor(startName = "b", startValue = 5, param = "z", data = data.frame(z = factor(c("a", "b"))))
+  )
+})
+
+test_that(".nlmixrFormulaExpandStartParamFactor", {
+  expect_equal(
+    .nlmixrFormulaExpandStartParamFactor(startName = "b", startValue = 5, param = "z", data = data.frame(z = factor(c("a", "b")))),
+    list(
+      ini = list(str2lang("b.z.b <- 5"), str2lang("b.z.a <- 0")),
+      model = list(str2lang('b <- b.z.b + b.z.a * (z == "a")'))
+    )
+  )
+})
+
+test_that(".nlmixrFormulaSetupModel", {
+  expect_equal(
+    .nlmixrFormulaSetupModel(
+      start =
+        list(
+          list(
+            ini = list(str2lang("a <- 1")),
+            model = list(NULL)
+          ),
+          list(
+            ini = list(str2lang("b <- 2")),
+            model = list(NULL)
+          )
+        ),
+      predictor = list(str2lang("a*x + b*y + z")),
+      residualModel = ~add(addSd)
+    ),
+    str2lang("
+    {
+      value <- a * x + b * y + z
+      value ~ add(addSd)
+    }
+    ")
+  )
+})
