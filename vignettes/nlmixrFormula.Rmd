@@ -1,0 +1,242 @@
+---
+title: "nlmixr2 Algebraic Solutions with Formula"
+author: "Bill Denney"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    code_folding: show
+vignette: >
+  %\VignetteIndexEntry{nlmixr2 Algebraic Solutions with Formula}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Introduction
+
+Some models are able to be described by simple algebraic solutions.  To simplify
+algebraic models, you can use a formula interface similar to the formula used
+with the `lme4` library.  (The formula interface is described in more detail
+below; knowledge of `lme4` is not required to use the formula interface.)
+
+# Quick start
+
+The simplest, non-trivial model is a linear model, `y = m*x + b`.  We will
+generate the data for this model and then fit it to show the simplest use case
+of the nlmixr2 formula interface.
+
+```{r quickstart-setup, class.source = 'fold-show'}
+library(nlmixr2extra)
+library(dplyr)
+library(ggplot2)
+```
+
+```{r quickstart-data-gen}
+# Simulate the equation y = 3*x + 5 with normally-distributed residual error
+# having a standard deviation of 5
+withr::with_seed(
+  5, # standardize the random seed so that the results are reproducible
+  dSim <-
+    data.frame(
+      x = 1:100,
+      y =
+        (1:100)*3 +
+        5 +
+        rnorm(n = 100, mean = 0, sd = 5)
+    )
+)
+
+ggplot(dSim, aes(x=x, y=y)) + geom_point()
+```
+
+To fit this model requires only one line of R code:
+
+```{r quickstart-fit, class.source = 'fold-show'}
+mod <-
+  nlmixrFormula(
+    y~m*x + b,
+    data = dSim,
+    start = c(m = 2.5, b = 4, addSd = 2),
+    est = "focei"
+  )
+```
+
+You can also use a call to `nlmixr` or `nlmixr2`, the arguments are
+the same as `nlmixrFormula`:
+
+
+```{r quickstart-fit2, class.source = 'fold-show'}
+mod <-
+  nlmixr(
+    y ~ m*x + b,
+    data = dSim,
+    start = c(m = 2.5, b = 4, addSd = 2),
+    est = "focei"
+  )
+```
+
+## Quick start, mixed-effects model
+
+A more typical use case for nlmixr2 is a mixed-effects model.  It adds
+(subject-level) random effects to the model.
+
+```{r quickstart-data-gen-nlme}
+# Setup the dataset for nonlinear mixed-effects fitting
+
+# Simulate the equation y = 3*x + 5 with normally-distributed residual error
+# having a standard deviation of 5
+withr::with_seed(
+  5, # standardize the random seed so that the results are reproducible
+  {
+    dSimSetup <-
+      data.frame(
+        id = rep(1:10, each=10),
+        x = rep(1:10, 10),
+        y = 1
+      )
+    dSimNlmePrep <-
+      nlmixrFormula(
+        y~m*x + b + bRe ~ bRe|id,
+        start = c(m=3, b=5, addSd=5),
+        data = dSimSetup,
+        est = "rxSolve"
+      )
+  }
+)
+
+# Modify the simulated results to be ready for fitting
+dSimNlme <-
+  dSimNlmePrep |>
+  as.data.frame() |>
+  select(id, time, x, y=sim)
+
+ggplot(dSimNlme, aes(x=x, y=y, colour=factor(id))) + geom_point()
+```
+
+```{r quickstart-fit-nlme, class.source = 'fold-show'}
+mod <-
+  nlmixr(
+    y~m*x + b + bRe ~ bRe|id,
+    start = c(m=3, b=5, addSd=5),
+    data = dSimNlme,
+    est = "focei"
+  )
+
+mod
+```
+
+In this model, the fixed effects of `m` and `b` were estimated along with the
+random effect of `bRe`.
+
+## Quick start, automatic parameter fixed effects
+
+```{r quickstart-data-gen-param}
+# Setup the dataset for nonlinear mixed-effects fitting with different types of
+# parameters.
+
+# Simulate the equation y = 3*x + 4(when z = 'a') or 6(when z = 'b') with normally-distributed residual error
+# having a standard deviation of 5
+withr::with_seed(
+  5, # standardize the random seed so that the results are reproducible
+  {
+    dSimSetup <-
+      data.frame(
+        id = rep(1:10, each=10),
+        x = rep(1:10, 10),
+        y = 1,
+        z = sample(factor(c("a", "b")), size = 100, replace = TRUE)
+      )
+    # Note that we need to give `start` as a list so that 
+    dSimNlmePrep <-
+      nlmixrFormula(
+        y~m*x + b + bRe ~ bRe|id,
+        start = list(m=3, b=c(4, 2), addSd=5),
+        param = list(b ~ z),
+        data = dSimSetup,
+        est = "rxSolve"
+      )
+  }
+)
+
+# Modify the simulated results to be ready for fitting
+dSimNlme <-
+  dSimNlmePrep |>
+  as.data.frame() |>
+  select(id, time, x, y=sim, z)
+
+ggplot(dSimNlme, aes(x=x, y=y, colour=z)) +
+  geom_point() +
+  geom_line(aes(group = id), colour = "gray")
+```
+
+```{r quickstart-fit-param, class.source = 'fold-show'}
+mod <-
+  nlmixr(
+    y~m*x + b + bRe ~ bRe|id,
+    start = c(m=3, b=5, addSd=5),
+    param = list(b ~ z),
+    data = dSimNlme,
+    est = "focei"
+  )
+
+mod
+```
+
+# Defining the model equation (the formula)
+
+The model formula has 3 parts: the dependent variable, the equation predicting
+the dependent variable, and the optional random effects.  A full equation looks
+like the below:
+
+```
+dv~predictors~randomEffects
+```
+
+Any model part may have any parameter name (for example, the dependent variable
+does not have to be named `dv`).
+
+## Dependent variable
+
+The dependent variable may be any column in the `data`.  It must only be the
+column name and no additional modifiers.  For example, `log(param)` is not
+allowed.
+
+## Predictors
+
+Predictors may be any algebraic equation.  In general, there are no restrictions
+to the way that the equation may be written.
+
+## Random effects
+
+Random effects are not required for a model; fixed-effect-only models are
+possible.  When present, fixed and random effects must have different names.
+
+Random effects are written as a parameter a pipe (`|`) and its grouping value.
+From the quick start example above, the parameter is `bRe` and the grouping
+value is `id`, so it is written `bRe|id`.
+
+For multiple parameters, they must be setup separately.  For example, to have
+`mRe` and `bRe` both grouped by `id`, it would be defined as
+`~(mRe|id)+(bRe|id)`.
+
+# Providing the Starting estimates for the model
+
+## Fixed effects
+
+Fixed effects are defined by the `start` argument.  The `start` argument may
+either be a named vector or a named list.  If fixed effects only have a single
+starting value, then the two methods are equivalent.  `c(m=3, b=5)` is the same
+as `list(m=3, b=5)`.  If one of the fixed effects is defined by a factor
+variable (more on that later), the list may have multiple starting values such
+as `list(m=3, b=c(5, 10))`.
+
+## Random effects
+
+Random effect starting values are currently fixed at 1 without the ability to
+modify it.
