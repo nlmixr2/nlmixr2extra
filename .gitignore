@@ -10,3 +10,4 @@ docs
 >>>>>>> cb1c507f217bd208e003cfe1a461c6bb69bb027b
 /src/Makevars
 .RData
+inst/doc
