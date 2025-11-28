@@ -1398,7 +1398,7 @@ assignToEnv <- function(namedVars, fitobject) {
 #' R Niebecker,  MO Karlsson. (2013)
 #' *Are datasets for NLME models large enough for a bootstrap to provide reliable parameter uncertainty distributions?*
 #' PAGE 2013.
-#' <https://www.page-meeting.org/?abstract=2899>
+#' <https://www.page-meeting.org/Abstracts/are-datasets-for-nlme-models-large-enough-for-a-bootstrap-to-provide-reliable-parameter-uncertainty-distributions/>
 #' @export
 bootplot <- function(x, ...) {
   UseMethod("bootplot")
