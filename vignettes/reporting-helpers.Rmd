@@ -1,0 +1,121 @@
+---
+title: "Helpers for writing modeling reports"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Helpers for writing modeling reports}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Introduction
+
+The `nlmixr2` family of packages makes creating reports easy. Here are some
+functions and pointers that help make reporting easier.
+
+## Setup
+
+In general, create many models that may be tested. The methods below will work
+for a single model or many models.
+
+```{r setup}
+library(nlmixr2est)
+library(nlmixr2extra)
+
+# Start with your data
+d_noec50 <-
+  data.frame(
+    conc = c(rep(0, 10), rep(1:20, each = 10)),
+    DV = c(rnorm(n = 10, mean = 1, sd = 1e-5), rnorm(n = 200, mean = 5, sd = 1e-5)),
+    TIME = 0
+  )
+
+# Setup create your models
+modEmax <- function() {
+  ini({
+    e0 = 1
+    emax = 5
+    ec50 = c(0, 1.1)
+    addSd = 0.5
+  })
+  model({
+    effect <- e0 + emax*conc/(ec50 + conc)
+    effect ~ add(addSd)
+  })
+}
+
+modStep <- function() {
+  ini({
+    e0 = 1
+    emax = 5
+    addSd = 1e-5
+  })
+  model({
+    effect <- e0 + emax*(conc > 0)
+    effect ~ add(addSd)
+  })
+}
+
+modLinear <- function() {
+  ini({
+    e0 = 1
+    slope = 5
+    addSd = 1
+  })
+  model({
+    effect <- e0 + slope*conc
+    effect ~ add(addSd)
+  })
+}
+
+# Fit the models
+fitEmaxBoundaryIssue <- try(nlmixr2est::nlmixr2(modEmax, data = d_noec50, est = "focei", control = list(print = 0))
+fitStep <- nlmixr2est::nlmixr2(modStep, data = d_noec50, est = "focei", control = list(print = 0))
+fitLinear <- nlmixr2est::nlmixr2(modLinear, data = d_noec50, est = "focei", control = list(print = 0))
+```
+
+# Preparing for the report
+
+## Put the models in a named list
+
+By putting the models in a named list, the functions below can build more parts
+of the report.
+
+```{r allFit-setup}
+allFits <-
+  list(
+    "Emax model with additive residual error" = fitEmaxBoundaryIssue,
+    "Step-change model with additive residual error" = fitStep,
+    "Linear model with additive residual error" = fitLinear
+  )    
+```
+
+## Find your best model by AIC
+
+```{r bestFit-choose}
+bestFit <- getMinAICFit(allFits)
+```
+
+## Summarize the best model with its equations and parameters
+
+```{r bestFit-eqn}
+knit_print(bestFit, inline = FALSE)
+```
+
+```{r bestFit-param}
+pander::pander(bestFit$parFixed, caption = "Model parameters for the best-fit model")
+```
+
+## Summarize all models tested
+
+```{r list-models}
+pander::pander(
+  listModelsTested(allFits, caption = "Listing of all models tested.")
+)
+```
