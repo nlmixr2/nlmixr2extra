@@ -130,10 +130,17 @@ test_that("Add covariate to the ui", {
   varName <- "ka"
   covariate <- "WT"
   
-  funstring1 <- as.character(addorremoveCovariate(ui,varName,covariate,add = TRUE)[1])
-  funstring2 <- "ka <- exp(tka + eta.ka + cov_WT_ka * WT)"
-  
-  expect_equal(funstring1, funstring2)
+  res <- addorremoveCovariate(ui, varName, covariate, add = TRUE)
+  res_strs <- vapply(
+    res,
+    function(x) paste(deparse(x, width.cutoff = 500L), collapse = " "),
+    character(1L)
+  )
+
+  # New multi-line format: intermediate variable, aggregate, then parameter line
+  expect_true(any(grepl("WT_ka = WT \\* cov_WT_ka", res_strs)))
+  expect_true(any(grepl("cov_ka = WT_ka", res_strs)))
+  expect_true(any(grepl("ka <- exp\\(tka \\+ eta\\.ka \\+ cov_ka\\)", res_strs)))
 })
 
 
@@ -166,10 +173,17 @@ test_that("Add covariate to the ui", {
   varName <- "cl"
   covariate <- "WT"
   
-  funstring1 <- as.character(addorremoveCovariate(ui,varName,covariate,add = TRUE)[1])
-  funstring2 <- "cl <- exp(tcl + eta.cl + cov_WT_cl * WT)"
-  
-  expect_equal(funstring1, funstring2)
+  res2 <- addorremoveCovariate(ui, varName, covariate, add = TRUE)
+  res_strs2 <- vapply(
+    res2,
+    function(x) paste(deparse(x, width.cutoff = 500L), collapse = " "),
+    character(1L)
+  )
+
+  # New multi-line format: intermediate variable, aggregate, then parameter line
+  expect_true(any(grepl("WT_cl = WT \\* cov_WT_cl", res_strs2)))
+  expect_true(any(grepl("cov_cl = WT_cl", res_strs2)))
+  expect_true(any(grepl("cl <- exp\\(tcl \\+ eta\\.cl \\+ cov_cl\\)", res_strs2)))
 })
 
 test_that("Add covariate to the ui", {

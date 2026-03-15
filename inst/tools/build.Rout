@@ -1,0 +1,41 @@
+
+R version 4.5.2 (2025-10-31 ucrt) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-w64-mingw32/x64
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> if (!dir.exists("data")) {
++   dir.create("data")
++ }
+> 
+> .in <- suppressWarnings(readLines("src/Makevars.in"))
+> if (.Platform$OS.type == "windows") {
++   .makevars <- file("src/Makevars.win", "wb")
++   .i <- "I"
++ } else {
++   .makevars <- file("src/Makevars", "wb")
++   if (any(grepl("Pop!_OS", utils::osVersion, fixed=TRUE))) {
++     .i <- "isystem"
++   } else {
++     .i <- "I"
++   }
++ }
+> 
+> writeLines(gsub("@ISYSTEM@", .i, .in),
++            .makevars)
+> close(.makevars)
+> 
+> proc.time()
+   user  system elapsed 
+   0.07    0.01    0.10 
