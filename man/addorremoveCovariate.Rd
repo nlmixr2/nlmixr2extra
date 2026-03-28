@@ -4,7 +4,7 @@
 \alias{addorremoveCovariate}
 \title{Add covariate}
 \usage{
-addorremoveCovariate(ui, varName, covariate, add = TRUE)
+addorremoveCovariate(ui, varName, covariate, add = TRUE, covExpr = NULL)
 }
 \arguments{
 \item{ui}{compiled rxode2 nlmir2 model or fit}
@@ -14,6 +14,9 @@ addorremoveCovariate(ui, varName, covariate, add = TRUE)
 \item{covariate}{the covariate that needs string to be constructed}
 
 \item{add}{boolean indicating if the covariate needs to be added or removed.}
+
+\item{covExpr}{optional pre-built covariate expression string.  When
+\code{NULL} (default) the expression is derived from the covariate name.}
 }
 \description{
 Add covariate

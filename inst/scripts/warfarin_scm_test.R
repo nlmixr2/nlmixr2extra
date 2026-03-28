@@ -15,9 +15,12 @@
 #     cov_wt_power_v * log(wt / 70.5)     # power shape, center = median(wt)
 #     cov_wt_lin_v   * (wt - 70.5)        # lin   shape
 #
-#   For categorical covariates the generated expression is, e.g.:
-#     cov_sex_1_v * ifelse(sex == 1, 1, 0)   # sex coded 0/1 (numeric)
-#     cov_sex_male_v * ifelse(sex == "male", 1, 0)   # sex coded as character
+#   For categorical covariates covarSearchAuto() automatically creates 0/1
+#   indicator columns (one per non-reference level) in a temporary dataset,
+#   then generates expressions using those columns directly, e.g.:
+#     sex_1 * cov_sex_1_v     # sex coded 0/1; reference = most-frequent level
+#     sex_male * cov_sex_male_v   # sex coded as character
+#   No ifelse() is emitted; the indicator column must exist in the data.
 #
 #   The data argument must be passed explicitly to covarSearchAuto() so that
 #   covariate columns absent from the base model (e.g. sex) are available when
@@ -39,7 +42,9 @@ stopifnot(
   "'data' parameter missing — load_all may have failed or loaded wrong package" =
     "data"       %in% names(formals(covarSearchAuto)),
   "'saveModels' parameter missing — load_all may have failed or loaded wrong package" =
-    "saveModels" %in% names(formals(covarSearchAuto))
+    "saveModels" %in% names(formals(covarSearchAuto)),
+  "'catCutoff' parameter missing — load_all may have failed or loaded wrong package" =
+    "catCutoff"  %in% names(formals(covarSearchAuto))
 )
 
 # ── 1. Prepare data ───────────────────────────────────────────────────────────
@@ -88,7 +93,8 @@ warf_pk <- function() {
 cat("Fitting base model (SAEM)...\n")
 fit_base <- nlmixr2(
   warf_pk, pkdata,
-  est     = "saem", table = tableControl(cwres = T)
+  est     = "focei", control=foceiControl(print=10),
+  table = tableControl(cwres = T)
 )
 
 cat("\n--- Base model summary ---\n")
@@ -108,8 +114,8 @@ cat(sprintf(
 # pairsVec specifies pairs and shapes explicitly:
 #   wt~v : power shape -> log(wt / median(wt))  in model body
 #          lin   shape -> (wt - median(wt))      in model body
-#   sex~v: categorical, auto-detected because "sex" is in catvarsVec;
-#          generates ifelse(sex == <non-ref level>, 1, 0) in model body
+#   sex~v: categorical; covarSearchAuto() creates sex_<level> indicator
+#          columns automatically and uses them directly (no ifelse)
 #
 # data = pkdata must be passed explicitly: the base model does not reference
 # wt or sex, so nlme::getData(fit_base) may drop those columns.
@@ -117,27 +123,55 @@ cat(sprintf(
 cat("Starting SCM covariate search (forward p<0.05, backward p<0.01)...\n")
 cat("Pairs: wt~v (power + lin shapes), sex~v (categorical)\n\n")
 
-rxode2::.rxWithWd(tempdir(), {
-  scm <- covarSearchAuto(
-    fit        = fit_base,
-    data       = pkdata,          # full data including covariate columns
-    pairsVec   = list(
-      list(var = "v", covar = "wt",  shapes = c("power", "lin")),
-      list(var = "v", covar = "sex") # catvarsVec triggers categorical expansion
-    ),
-    catvarsVec = c("sex"),
-    pVal       = list(fwd = 0.05, bck = 0.01),
-    searchType = "scm",
-    saveModels = TRUE,
-    verbose    = TRUE,
-    restart    = TRUE
-  )
-})
+scm <- covarSearchAuto(
+  fit        = fit_base,
+  data       = pkdata,          # full data including covariate columns
+  pairsVec   = list(
+    list(var = "v", covar = "wt",  shapes = c("power")),
+    list(var = "v", covar = "sex"), # catvarsVec triggers categorical expansion
+    list(var = "cl", covar = "wt", shapes = c("power")),
+    list(var = "cl", covar = "sex")
+  ),
+  catvarsVec = c("sex"),
+  pVal       = list(fwd = 0.05, bck = 0.01),
+  searchType = "scm",
+  saveModels = TRUE,
+  verbose    = TRUE,
+  restart    = TRUE
+)
 
-# ── 5. Results ────────────────────────────────────────────────────────────────
+# ── 5. Verify categorical covariate format ────────────────────────────────────
+# Confirm that the SCM used indicator columns (sex_<level>) rather than
+# ifelse() expressions in the generated model body.
+
+cat("\n--- Categorical covariate format check ---\n")
+final_ui <- scm$resFwd[[1]]$ui
+model_lines <- as.character(nlmixr2est::.saemDropMuRefFromModel(final_ui))
+
+# Check: no ifelse() in any model line involving sex
+ifelse_in_model <- any(grepl("ifelse", model_lines, fixed = TRUE) &
+                       grepl("sex",    model_lines, fixed = TRUE))
+if (ifelse_in_model) {
+  warning("UNEXPECTED: ifelse() found in sex covariate expression — ",
+          "indicator column approach may not have been applied.")
+} else {
+  cat("OK: no ifelse() in sex covariate lines\n")
+}
+
+# Check: indicator-column expression present (sex_<something> * cov_sex_...)
+indicator_present <- any(grepl("sex_[^=]+ \\* cov_sex_", model_lines, perl = TRUE) |
+                         grepl("sex_[^=]+=",              model_lines, perl = TRUE))
+if (indicator_present) {
+  cat("OK: indicator column expression found in model body\n")
+} else {
+  cat("NOTE: sex covariate may not have been accepted into the final model ",
+      "(check forward search table)\n")
+}
+
+# ── 6. Results ────────────────────────────────────────────────────────────────
 
 cat("\n\n=======================================================\n")
-cat("  SCM RESULTS\n")
+cat("  SCM RESULTS (section 6)\n")
 cat("=======================================================\n\n")
 
 cat("--- Full summary table ---\n")

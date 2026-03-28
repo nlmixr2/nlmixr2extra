@@ -10,3 +10,5 @@ nlmixr2BootstrapCache_fit
 ^build$
 ^cran-comments\.md$
 ^CRAN-SUBMISSION$
+^.*\.Rproj$
+^\.Rproj\.user$
