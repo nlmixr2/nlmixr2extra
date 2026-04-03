@@ -7,7 +7,6 @@
 }
 
 .bootstrapEnv <- new.env(parent=emptyenv())
-.bootstrapEnv$nSampIndiv <- 0L
 
 #' Function to return pop mean, pop std of a given covariate
 #'
@@ -1239,7 +1238,7 @@ getBootstrapSummary <- function(fitList,
       w <- which(diag(covMatrix) == 0)
       if (length(w) > 0) {
         d <- dim(covMatrix)[1]
-        corMatrix <- matrix(rep(0,d * d), d, d)
+        corMatrix <- matrix(0, d, d)
         corMatrix[-w, -w] <- cov2cor(covMatrix[-w, -w])
       } else {
         corMatrix <- cov2cor(covMatrix)
