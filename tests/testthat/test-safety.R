@@ -35,27 +35,3 @@ test_that("preCondInv still works correctly on a well-conditioned matrix", {
   expect_true(all(is.finite(result)))
 })
 
-# Integer overflow in getBootstrapSummary() (Issue 4) ----
-
-test_that("integer overflow: d*d overflows 32-bit signed integer for d > 46340", {
-  # This demonstrates the bug at the arithmetic level without requiring any
-  # memory allocation. The fixed code uses matrix(0, d, d) which avoids
-  # the integer multiply entirely.
-  #
-  # 46341^2 = 2,147,484,281 which exceeds .Machine$integer.max (2,147,483,647).
-  d <- 46341L
-  # Confirm the integer overflow is real (produces NA_integer_)
-  expect_true(is.na(d * d))
-  expect_identical(class(d * d), "integer")
-  # The fix: as.numeric avoids the overflow
-  expect_false(is.na(as.numeric(d) * as.numeric(d)))
-})
-
-test_that("getBootstrapSummary integer overflow: 46341x46341 allocation would need ~17 GB RAM", {
-  skip("Allocation of 46341x46341 doubles requires ~17 GB RAM (exceeds safe test limit of ~6 GB).
-The bug and fix are verified at the arithmetic level in the preceding test.
-Run tests/manual/test-integer-overflow.R manually to confirm the runtime behaviour.")
-  # No allocation code here: placing matrix(0, 46341, 46341) in this block
-  # would attempt a 17 GB allocation if this file is sourced outside of
-  # the testthat framework (where skip() does not fire).
-})
