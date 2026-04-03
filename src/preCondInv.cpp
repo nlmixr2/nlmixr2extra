@@ -4,7 +4,7 @@
 using namespace Rcpp;
 
 #ifdef ENABLE_NLS
-#include <libintl.h>
+// #include <libintl.h> -- not available on all platforms (e.g. macOS without gettext)
 #define _(String) dgettext ("nlmixr2extra", String)
 /* replace pkg as appropriate */
 #else
