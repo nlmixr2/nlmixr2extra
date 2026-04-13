@@ -1,15 +1,9 @@
 #define STRICT_R_HEADER
 #include <RcppArmadillo.h>
+// NLS not available on all platforms; no translations provided
+#define _(String) (String)
 
 using namespace Rcpp;
-
-#ifdef ENABLE_NLS
-// #include <libintl.h> -- not available on all platforms (e.g. macOS without gettext)
-#define _(String) dgettext ("nlmixr2extra", String)
-/* replace pkg as appropriate */
-#else
-#define _(String) (String)
-#endif
 
 //' Calculate the inverse preconditioning matrix
 //'
