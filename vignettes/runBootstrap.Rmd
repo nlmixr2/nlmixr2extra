@@ -1,0 +1,361 @@
+---
+title: "Nonparametric Bootstrap with runBootstrap()"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Nonparametric Bootstrap with runBootstrap()}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse  = TRUE,
+  comment   = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+## Introduction
+
+The nonparametric bootstrap is the most widely used method for quantifying parameter
+uncertainty in population PK/PD modelling.  The idea is straightforward: resample
+subjects with replacement from the original dataset, refit the model to each resampled
+dataset, and take the empirical distribution of the resulting parameter estimates as an
+approximation to the sampling distribution.  Unlike the asymptotic covariance matrix,
+bootstrap confidence intervals do not assume that the likelihood surface is quadratic
+near the maximum, and they naturally capture non-normality and boundary behaviour.
+
+`runBootstrap()` automates this workflow for any `nlmixr2` fit:
+
+1. **Resample** subjects with replacement (optionally stratified).
+2. **Refit** the model to each bootstrap dataset using the same estimator as the
+   original fit.
+3. **Aggregate** parameter estimates across successful replicates and compute
+   empirical confidence intervals.
+4. **Attach** the results to the original fit object and write output files.
+
+Partial runs are cached to disk so that an interrupted bootstrap can be resumed
+without discarding completed replicates.
+
+---
+
+## Example: theophylline single-dose PK
+
+We use `nlmixr2data::theo_sd` — 12 subjects after a single oral dose of theophylline
+— with a one-compartment model that includes IIV on absorption, clearance, and volume.
+
+```{r packages, message = FALSE}
+library(nlmixr2)
+library(nlmixr2data)
+library(nlmixr2extra)
+```
+
+### 1. Fit the base model
+
+```{r fit, message = FALSE, results = "hide"}
+one.cmt <- function() {
+  ini({
+    tka    <- 0.45;  label("Log Ka")
+    tcl    <- 1.00;  label("Log Cl")
+    tv     <- 3.45;  label("Log V")
+    eta.ka ~ 0.6
+    eta.cl ~ 0.3
+    eta.v  ~ 0.1
+    add.sd <- 0.7
+  })
+  model({
+    ka <- exp(tka + eta.ka)
+    cl <- exp(tcl + eta.cl)
+    v  <- exp(tv  + eta.v)
+    linCmt() ~ add(add.sd)
+  })
+}
+
+fit <- nlmixr2(
+  one.cmt,
+  data    = nlmixr2data::theo_sd,
+  est     = "focei",
+  control = list(print = 0L)
+)
+```
+
+```{r fit-summary}
+fit$parFixedDf
+```
+
+---
+
+### 2. Run the bootstrap
+
+The most important arguments are:
+
+| Argument | Default | Meaning |
+|---|---|---|
+| `nboot` | `200` | Number of bootstrap replicates |
+| `nSampIndiv` | N subjects | Subjects per bootstrap dataset |
+| `stratVar` | (none) | Variable to stratify on |
+| `stdErrType` | `"perc"` | CI method: `"perc"` (percentile), `"sd"`, or `"se"` |
+| `ci` | `0.95` | Confidence level |
+| `restart` | `FALSE` | `TRUE` = discard cache, start fresh |
+| `outputDir` | auto | Directory for cache and output files |
+| `updateFit` | `TRUE` | Attach results to `fit$bootstrap` |
+| `workers` | `NULL` | Sequential; set > 1 for parallel |
+
+The example below uses `nboot = 5` for speed.  In practice, 200–1 000 replicates are
+typical; 200 is usually sufficient for 95 % CI estimation in well-identified models.
+
+```{r bootstrap, message = FALSE}
+withr::with_tempdir({
+
+  boot_result <- runBootstrap(
+    fit,
+    nboot      = 5,
+    ci         = 0.95,
+    restart    = TRUE,
+    workers    = 1L
+  )
+
+})
+```
+
+`runBootstrap()` returns a named list:
+
+| Element | Contents |
+|---|---|
+| `summary` | `parFixedDf` augmented with bootstrap columns |
+| `results` | One row per successful replicate (also written to CSV) |
+| `seed` | RNG state before resampling |
+| `model` | Fit name used for the run |
+| `outputDir` | Absolute path to the output directory |
+| `timestamp` | When the function returned |
+
+---
+
+### 3. Read the summary
+
+The `summary` element extends the original `parFixedDf` with six bootstrap columns:
+
+```{r boot-summary}
+boot_result$summary[, c(
+  "Estimate", "Back-transformed",
+  "Bootstrap CI Lower", "Bootstrap CI Upper",
+  "Bootstrap %RSE"
+)]
+```
+
+Key columns:
+
+| Column | Meaning |
+|---|---|
+| `Bootstrap Estimate` | Mean of the bootstrap parameter estimates (model scale) |
+| `Bootstrap SE` | SD of the bootstrap estimates (model scale) |
+| `Bootstrap %RSE` | 100 × SE / \|mean estimate\| |
+| `Bootstrap CI Lower/Upper` | Empirical percentile CI (back-transformed scale) |
+| `Bootstrap Back-transformed` | Mean estimate on the back-transformed scale |
+
+---
+
+### 4. Accessing results on the fit object
+
+When `updateFit = TRUE` (the default), `runBootstrap()` attaches a `$bootstrap` list
+to the fit environment.  This is available after the function returns and persists for
+the life of the `fit` object in your session:
+
+```{r fit-bootstrap, eval = FALSE}
+# Bootstrap summary table
+fit$bootstrap$summary
+
+# Omega CI matrix
+fit$bootstrap$omegaSummary
+
+# Empirical covariance matrix (thetas + omega lower triangle)
+fit$bootstrap$covMatrix
+
+# Correlation matrix
+fit$bootstrap$corMatrix
+
+# Bias: |original estimate - bootstrap mean|
+fit$bootstrap$bias$parFixed
+fit$bootstrap$bias$omega
+
+# Metadata
+fit$bootstrap$nboot
+fit$bootstrap$ci
+fit$bootstrap$outputDir
+```
+
+The bootstrap covariance matrix stored in `fit$bootstrap$covMatrix` can be activated
+as the fit's working covariance matrix (used in simulations with parameter uncertainty)
+via `nlmixr2est::setCov()`:
+
+```{r set-cov, eval = FALSE}
+# Switch to bootstrap-derived covariance
+nlmixr2est::setCov(fit, "boot5")   # "bootN" where N = nboot
+
+# Revert to the original FOCE-I covariance
+nlmixr2est::setCov(fit, "linFim")
+```
+
+---
+
+### 5. Per-replicate results
+
+The `results` element (also written as `bootstrap_results.csv`) contains one row per
+successful replicate with the model-scale estimate and back-transformed value for every
+fixed-effect parameter:
+
+```{r per-replicate}
+head(boot_result$results)
+```
+
+This table is useful for computing custom summaries, visualising the bootstrap
+distribution, or identifying outlier replicates.
+
+---
+
+### 6. Stratified bootstrap
+
+When subjects fall into distinct groups with different sampling designs (e.g., sparse
+vs. rich sampling, different study arms), it is important to preserve the proportion of
+each group across bootstrap datasets.  Use `stratVar` to name the grouping column:
+
+```{r stratified, eval = FALSE}
+# Add a sparse/rich sampling flag to the data
+theo_strat <- nlmixr2data::theo_sd
+theo_strat$SPARSE <- ifelse(theo_strat$ID <= 6, "sparse", "rich")
+
+fit_strat <- nlmixr2(one.cmt, data = theo_strat, est = "focei",
+                     control = list(print = 0L))
+
+withr::with_tempdir({
+  runBootstrap(fit_strat, nboot = 200, stratVar = "SPARSE")
+})
+```
+
+With stratification, the proportion of sparse and rich subjects in each bootstrap
+dataset mirrors the original dataset exactly.
+
+---
+
+### 7. Resuming an interrupted run
+
+`runBootstrap()` caches each completed replicate to disk.  If the run is interrupted,
+re-call the function with the same `outputDir` and `restart = FALSE` (the default) to
+pick up from where it stopped:
+
+```{r resume, eval = FALSE}
+# First partial run (e.g., interrupted after 50 of 200)
+runBootstrap(fit, nboot = 200, restart = TRUE)
+
+# Resume — only the remaining replicates are fitted
+runBootstrap(fit, nboot = 200, restart = FALSE)
+```
+
+To start from scratch and discard any cached replicates, set `restart = TRUE`.
+
+---
+
+### 8. Increasing the replicate count
+
+To add more replicates to an already completed run, simply increase `nboot` and
+re-call with `restart = FALSE`.  The function detects the existing cache and only fits
+the additional replicates:
+
+```{r add-replicates, eval = FALSE}
+# Start with 100
+runBootstrap(fit, nboot = 100, restart = TRUE)
+
+# Extend to 200 without redoing the first 100
+runBootstrap(fit, nboot = 200, restart = FALSE)
+```
+
+---
+
+### 9. Parallel execution
+
+Each bootstrap replicate is an independent model fit, so parallelisation is
+straightforward and can cut wall-clock time near-linearly up to the number of cores.
+Set `workers` to the desired number of parallel processes:
+
+```{r parallel, eval = FALSE}
+withr::with_tempdir({
+  runBootstrap(
+    fit,
+    nboot   = 200,
+    workers = 4L,
+    restart = TRUE
+  )
+})
+```
+
+`workers = NULL` (the default) uses the current `future` plan unchanged.
+`workers = 1` forces sequential execution without requiring `future`.
+
+---
+
+### 10. Bootstrap diagnostic plot
+
+`bootplot()` compares the empirical distribution of bootstrap ΔOFV values to a
+chi-squared reference distribution, providing a graphical check of whether the
+bootstrap sample size is adequate for the model complexity (Niebecker & Karlsson 2013).
+The ΔOFV curve should lie on or below the chi-squared reference curve; a curve that
+consistently exceeds the reference suggests the bootstrap may be underpowered.
+
+```{r bootplot, eval = FALSE}
+bootplot(fit)
+```
+
+---
+
+## Output files
+
+`runBootstrap()` writes the following files to the output directory:
+
+| File | Contents |
+|---|---|
+| `boot_data_{N}.rds` | Resampled dataset for replicate N |
+| `modelsEnsemble_{N}.rds` | Abbreviated fit summary for replicate N |
+| `fitEnsemble_{N}.rds` | Full fit object for replicate N |
+| `bootstrap_seed.rds` | Full RNG state before resampling |
+| `bootstrap_results.csv` | Per-replicate parameter table (one row per replicate) |
+| `bootstrap_summary.txt` | Human-readable summary with CIs |
+
+The numbered output directory is named `<fitName>_boot_<N>` and is created
+automatically in the working directory unless `outputDir` is specified explicitly.
+Repeated fresh runs produce `fit_boot_1`, `fit_boot_2`, and so on; resuming reuses
+the most recently numbered directory.
+
+---
+
+## Choosing `nboot` and `stdErrType`
+
+**How many replicates?**  200 is a common minimum for 95 % CI estimation; 1 000 is
+safer for narrow models or when tail behaviour matters.  A practical check: re-run
+with twice as many replicates and verify that the CIs are stable.
+
+**Which `stdErrType`?**
+
+* `"perc"` (default) — empirical percentile method.  Requires no distributional
+  assumption; recommended for most applications.
+* `"sd"` — normal approximation using the bootstrap SD.  Appropriate when the
+  parameter distribution is approximately normal.
+* `"se"` — normal approximation using SE scaled by `nSampIndiv`.  Rarely needed.
+
+For parameters that are bounded or skewed (variance components, steep absorption rate
+constants), `"perc"` is strongly preferred.
+
+---
+
+## References
+
+Efron, B. & Tibshirani, R.J. (1993). *An Introduction to the Bootstrap*. Chapman &
+Hall.
+
+Niebecker, R. & Karlsson, M.O. (2013). Are datasets for NLME models large enough for
+a bootstrap to provide reliable parameter uncertainty distributions? *PAGE 22*,
+Abstract 2899.
+
+Wang, W., Hallow, K.M., & James, D.A. (2015). A tutorial on RxODE: simulating
+differential equation pharmacometric models in R. *CPT: Pharmacometrics & Systems
+Pharmacology*, 5, 3–10.

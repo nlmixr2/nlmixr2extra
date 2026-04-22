@@ -282,6 +282,192 @@ addConfboundsToVar <- function(var, confLower, confUpper, sigdig = 3) {
   unlist(res)
 }
 
+#' Write bootstrap output files and print a console summary
+#'
+#' Writes two files to \code{outputDir}:
+#' \describe{
+#'   \item{\code{bootstrap_results.csv}}{One row per successful replicate with
+#'     replicate number and all fixed-effect parameter estimates (both the
+#'     log/model-scale Estimate and the Back-transformed value).}
+#'   \item{\code{bootstrap_summary.txt}}{Human-readable summary including the
+#'     random seed used for resampling, original parameter estimates, and
+#'     bootstrap confidence intervals.}
+#' }
+#' Also prints a concise summary to the console.
+#'
+#' @param fit nlmixr2 fit object (already augmented with bootstrap results)
+#' @param bootSummary result of \code{getBootstrapSummary()}
+#' @param outputDir path to the permanent output directory
+#' @param fitName model name string
+#' @param nboot total number of bootstrap replicates requested
+#' @param ci confidence interval level (e.g. 0.95)
+#' @return invisible \code{NULL}
+#' @noRd
+.writeBootstrapOutput <- function(fit, bootSummary, outputDir, fitName, nboot, ci) {
+
+  if (!dir.exists(outputDir)) dir.create(outputDir, recursive = TRUE)
+
+  # -- 1. Per-replicate results table -----------------------------------------
+  # Read each modelsEnsemble_*.rds, extract replicate index from filename,
+  # skip failed-replicate placeholders (length == 0).
+  mod_files <- list.files(outputDir, pattern = "modelsEnsemble_[0-9]+\\.rds",
+                          full.names = FALSE)
+  if (length(mod_files) > 0L) {
+    mod_idx_raw <- as.integer(gsub("modelsEnsemble_([0-9]+)\\.rds", "\\1", mod_files))
+    ord <- order(mod_idx_raw)
+    mod_files  <- mod_files[ord]
+    mod_indices <- mod_idx_raw[ord]
+
+    row_list <- lapply(seq_along(mod_files), function(i) {
+      m <- tryCatch(readRDS(file.path(outputDir, mod_files[i])),
+                    error = function(e) list())
+      if (length(m) == 0L || is.null(m$parFixedDf)) return(NULL)
+      par_df <- m$parFixedDf
+      row <- data.frame(replicate = mod_indices[i], stringsAsFactors = FALSE)
+      for (par in rownames(par_df)) {
+        col_est <- gsub("[^A-Za-z0-9_]", ".", par)
+        row[[paste0(col_est, ".Estimate")]]        <- par_df[par, "Estimate"]
+        row[[paste0(col_est, ".BackTransformed")]] <- par_df[par, "Back-transformed"]
+      }
+      row
+    })
+    row_list <- Filter(Negate(is.null), row_list)
+
+    if (length(row_list) > 0L) {
+      results_df <- do.call(rbind, row_list)
+      csv_path <- file.path(outputDir, "bootstrap_results.csv")
+      utils::write.csv(results_df, csv_path, row.names = FALSE)
+    } else {
+      results_df <- NULL
+      csv_path   <- NULL
+    }
+    n_ok <- length(row_list)
+  } else {
+    results_df <- NULL
+    csv_path   <- NULL
+    n_ok       <- 0L
+  }
+
+  # -- 2. Random seed ----------------------------------------------------------
+  seed_file <- file.path(outputDir, "bootstrap_seed.rds")
+  boot_seed <- if (file.exists(seed_file)) readRDS(seed_file) else NULL
+
+  seed_kind <- if (!is.null(boot_seed)) RNGkind()[1] else "unknown"
+  seed_preview <- if (!is.null(boot_seed) && length(boot_seed) >= 8L) {
+    paste(boot_seed[seq_len(8L)], collapse = " ")
+  } else if (!is.null(boot_seed)) {
+    paste(boot_seed, collapse = " ")
+  } else {
+    "(not recorded)"
+  }
+
+  # -- 3. Parameter summary lines ---------------------------------------------
+  par_names  <- rownames(fit$parFixedDf)
+  orig_est   <- fit$parFixedDf$Estimate
+  orig_bt    <- fit$parFixedDf$`Back-transformed`
+  boot_mean  <- bootSummary$parFixedDf$mean[, 1]
+  boot_se    <- bootSummary$parFixedDf$stdDev[, 1]
+  boot_lo    <- bootSummary$parFixedDf$confLower[, 2]  # back-transformed scale
+  boot_hi    <- bootSummary$parFixedDf$confUpper[, 2]
+
+  par_summary_df <- data.frame(
+    Parameter        = par_names,
+    Orig.Estimate    = orig_est,
+    Orig.BackTrans   = orig_bt,
+    Boot.Mean        = boot_mean,
+    Boot.SE          = boot_se,
+    Boot.CI.Lower    = boot_lo,
+    Boot.CI.Upper    = boot_hi,
+    stringsAsFactors = FALSE,
+    check.names      = FALSE
+  )
+  colnames(par_summary_df) <- c(
+    "Parameter",
+    "Orig.Estimate",
+    "Orig.Back-transformed",
+    "Boot.Mean",
+    "Boot.SE",
+    sprintf("Boot.CI.Lower (%.0f%%)", ci * 100),
+    sprintf("Boot.CI.Upper (%.0f%%)", ci * 100)
+  )
+
+  # -- 4. Omega diagonal summary -----------------------------------------------
+  omega_mean <- round(diag(bootSummary$omega$mean), 4)
+  omega_lo   <- round(diag(bootSummary$omega$confLower), 4)
+  omega_hi   <- round(diag(bootSummary$omega$confUpper), 4)
+  omega_df   <- data.frame(
+    Parameter    = names(omega_mean),
+    Boot.Mean    = omega_mean,
+    Boot.CI.Lower = omega_lo,
+    Boot.CI.Upper = omega_hi,
+    stringsAsFactors = FALSE,
+    check.names      = FALSE
+  )
+  colnames(omega_df) <- c(
+    "Parameter", "Boot.Mean",
+    sprintf("Boot.CI.Lower (%.0f%%)", ci * 100),
+    sprintf("Boot.CI.Upper (%.0f%%)", ci * 100)
+  )
+
+  # -- 5. Write bootstrap_summary.txt -----------------------------------------
+  txt_path <- file.path(outputDir, "bootstrap_summary.txt")
+  .w <- function(...) cat(..., file = txt_path, append = TRUE, sep = "")
+  .ln <- function(...) .w(..., "\n")
+
+  if (file.exists(txt_path)) file.remove(txt_path)
+
+  .ln("Bootstrap Summary")
+  .ln("=================")
+  .ln()
+  .ln(sprintf("Run date            : %s", format(Sys.time(), "%Y-%m-%d %H:%M:%S")))
+  .ln(sprintf("Model               : %s", fitName))
+  .ln(sprintf("Estimation method   : %s", tryCatch(fit$est, error = function(e) "unknown")))
+  .ln(sprintf("Total replicates    : %d", nboot))
+  .ln(sprintf("Successful          : %d", n_ok))
+  .ln(sprintf("Failed              : %d", nboot - n_ok))
+  .ln(sprintf("Confidence interval : %.0f%%", ci * 100))
+  .ln(sprintf("Output directory    : %s", outputDir))
+  .ln()
+  .ln("Random seed (state before resampling)")
+  .ln(sprintf("  RNG kind    : %s", seed_kind))
+  .ln(sprintf("  Seed[1:8]   : %s", seed_preview))
+  .ln("  (full RNG state saved in bootstrap_seed.rds)")
+  .ln()
+  .ln(strrep("-", 78))
+  .ln("Fixed-effect parameter summary")
+  .ln(strrep("-", 78))
+  .ln(paste(utils::capture.output(print(par_summary_df, row.names = FALSE)),
+           collapse = "\n"))
+  .ln()
+  .ln(strrep("-", 78))
+  .ln(sprintf("Omega diagonal (BSV variances) - %.0f%% CI", ci * 100))
+  .ln(strrep("-", 78))
+  .ln(paste(utils::capture.output(print(omega_df, row.names = FALSE)),
+           collapse = "\n"))
+
+  # -- 6. Console summary -----------------------------------------------------
+  cli::cli_rule(left = "Bootstrap output")
+  cli::cli_inform(c("i" = "Output directory  : {outputDir}"))
+  if (!is.null(csv_path)) {
+    cli::cli_inform(c("i" = "Results table     : bootstrap_results.csv ({n_ok} replicates, {length(par_names)} parameters)"))
+  } else {
+    cli::cli_warn(c("!" = "Results table     : (no successful replicates \u2014 CSV not written)"))
+  }
+  cli::cli_inform(c("i" = "Summary file      : bootstrap_summary.txt"))
+  cli::cli_rule(left = "Parameter summary")
+  cli::cli_inform(c(
+    "i" = "Fixed effects ({sprintf('%.0f', ci * 100)}% CI, back-transformed scale):"
+  ))
+  print(par_summary_df[, c("Parameter",
+                            "Orig.Back-transformed",
+                            sprintf("Boot.CI.Lower (%.0f%%)", ci * 100),
+                            sprintf("Boot.CI.Upper (%.0f%%)", ci * 100))],
+        row.names = FALSE)
+  cli::cli_rule()
+
+  invisible(list(seed = boot_seed, results = results_df))
+}
+
 #' Bootstrap nlmixr2 fit
 #'
 #' Bootstrap input dataset and rerun the model to get confidence bounds and aggregated parameters
@@ -315,14 +501,24 @@ addConfboundsToVar <- function(var, confLower, confUpper, sigdig = 3) {
 #' @param plotHist A boolean indicating if a histogram plot to assess
 #'   how well the bootstrap is doing.  By default this is turned off
 #'   (`FALSE`)
-#' @param pvalues a vector of pvalues indicating the probability of
-#'   each subject to get selected; default value is `NULL` implying
-#'   that probability of each subject is the same
-#' @param restart A boolean to try to restart an interrupted or
-#'   incomplete boostrap.  By default this is `FALSE`
-#' @param fitName is the fit name that is used for the name of the
-#'   boostrap files.  By default it is the fit provided though it
-#'   could be something else.
+#' @param outputDir character; path of the subdirectory used to store all
+#'   bootstrap cache files and output tables.  When \code{NULL} (default), the
+#'   name is derived automatically as \code{<fitName>_boot_<N>} where \code{N}
+#'   is one greater than the number of existing \code{<fitName>_boot_*}
+#'   directories in the current working directory (so repeated runs produce
+#'   \code{fit_boot_1}, \code{fit_boot_2}, ...).  When \code{restart = FALSE}
+#'   and a prior numbered directory exists, the most recently numbered directory
+#'   is reused for resuming.  Providing a path explicitly overrides the
+#'   automatic scheme.
+#'
+#' @param updateFit logical; if \code{TRUE} (default) the bootstrap results are
+#'   stored on the original \code{fit} object as a single new \code{$bootstrap}
+#'   list element without modifying any pre-existing slots.  The list contains:
+#'   \code{summary} (augmented \code{parFixedDf}), \code{omegaSummary},
+#'   \code{covMatrix}, \code{corMatrix}, \code{bias} (list with
+#'   \code{parFixed} and \code{omega} elements), \code{nboot}, \code{ci},
+#'   \code{outputDir}, and \code{timestamp}.  Set to \code{FALSE} to leave
+#'   \code{fit} completely unchanged.
 #'
 #' @param returnType this describes the return type
 #'
@@ -335,9 +531,32 @@ addConfboundsToVar <- function(var, confLower, confUpper, sigdig = 3) {
 #'    parameters and messages) used for the bootstrap summary
 #'    statistics.
 #'
+#' @param workers integer or \code{NULL}; number of parallel workers to use
+#'   when fitting bootstrap replicates.  When \code{NULL} (default), the
+#'   current \code{future} plan is used unchanged.  A positive integer
+#'   temporarily switches to a \code{multisession} plan with that many workers
+#'   for the duration of the bootstrap run.
+#'
 #' @author Vipul Mann, Matthew Fidler
-#' @return Nothing, called for the side effects; The original fit is
-#'   updated with the bootstrap confidence bands
+#' @return A named list with elements:
+#' \describe{
+#'   \item{\code{seed}}{Integer vector: full RNG state before resampling (also
+#'     saved as \file{bootstrap_seed.rds} in \code{outputDir}).}
+#'   \item{\code{results}}{Data frame: one row per successful replicate with
+#'     columns \code{replicate}, \code{<par>.Estimate}, and
+#'     \code{<par>.BackTransformed} for every fixed-effect parameter (also
+#'     written as \file{bootstrap_results.csv}).}
+#'   \item{\code{summary}}{Data frame: original \code{parFixedDf} augmented
+#'     with columns \code{Bootstrap Estimate}, \code{Bootstrap SE},
+#'     \code{Bootstrap \%RSE}, \code{Bootstrap CI Lower},
+#'     \code{Bootstrap CI Upper}, and \code{Bootstrap Back-transformed}.}
+#'   \item{\code{model}}{Character: the \code{fitName} used for the run.}
+#'   \item{\code{outputDir}}{Character: absolute path to the output directory
+#'     containing all cache files and result tables.}
+#'   \item{\code{timestamp}}{POSIXct: date-time when the function returned.}
+#' }
+#' When \code{updateFit = TRUE}, the same bootstrap results are also attached to
+#' the original \code{fit} object as \code{fit$bootstrap}.
 #' @export
 #' @examples
 #' \dontrun{
@@ -364,12 +583,12 @@ addConfboundsToVar <- function(var, confLower, confUpper, sigdig = 3) {
 #'
 #' withr::with_tempdir({ # Run example in temp dir
 #'
-#' bootstrapFit(fit, nboot = 5, restart = TRUE) # overwrites any of the existing data or model files
-#' bootstrapFit(fit, nboot = 7) # resumes fitting using the stored data and model files
+#' runBootstrap(fit, nboot = 5, restart = TRUE) # overwrites any of the existing data or model files
+#' runBootstrap(fit, nboot = 7) # resumes fitting using the stored data and model files
 #'
 #' # Note this resumes because the total number of bootstrap samples is not 10
 #'
-#' bootstrapFit(fit, nboot=10)
+#' runBootstrap(fit, nboot=10)
 #'
 #' # Note the boostrap standard error and variance/covariance matrix is retained.
 #' # If you wish to switch back you can change the covariance matrix by
@@ -386,7 +605,7 @@ addConfboundsToVar <- function(var, confLower, confUpper, sigdig = 3) {
 #' bootplot(fit)
 #' })
 #' }
-bootstrapFit <- function(fit,
+runBootstrap <- function(fit,
                          nboot = 200,
                          nSampIndiv,
                          stratVar,
@@ -396,7 +615,10 @@ bootstrapFit <- function(fit,
                          restart = FALSE,
                          plotHist = FALSE,
                          fitName = as.character(substitute(fit)),
-                         returnType=c("model", "fitList", "modelList")) {
+                         outputDir = NULL,
+                         updateFit = TRUE,
+                         returnType=c("model", "fitList", "modelList"),
+                         workers = NULL) {
 
   stdErrType <- match.arg(stdErrType)
   returnType <- match.arg(returnType)
@@ -413,10 +635,27 @@ bootstrapFit <- function(fit,
     performStrat <- TRUE
   }
 
-  if (is.null(fit$bootstrapMd5)) {
-    bootstrapMd5 <- fit$md5
-    assign("bootstrapMd5", bootstrapMd5, envir = fit$env)
+  # -- Resolve permanent output directory (SCM-style numbered scheme) ----------
+  if (is.null(outputDir)) {
+    .fit_nm <- gsub("[^A-Za-z0-9_.]", "_", fitName)
+    .boot_pattern <- paste0("^", .fit_nm, "_boot_[0-9]+$")
+    .existing <- sort(grep(
+      .boot_pattern,
+      list.dirs(".", full.names = FALSE, recursive = FALSE),
+      value = TRUE
+    ))
+    if (!restart && length(.existing) > 0L) {
+      # Resume: use the most recently numbered directory
+      .nums <- as.integer(sub(paste0("^", .fit_nm, "_boot_"), "", .existing))
+      outputDir <- .existing[which.max(.nums)]
+    } else {
+      # Fresh run: increment
+      outputDir <- paste0(.fit_nm, "_boot_", length(.existing) + 1L)
+    }
   }
+  # Keep outputDir as a relative path so that modelBootstrap()'s legacy
+  # paste0("./", output_dir, ...) constructions remain valid.
+  # normalizePath() would convert to absolute and produce "./C:\..." on Windows.
 
   if (performStrat) {
     resBootstrap <-
@@ -427,7 +666,9 @@ bootstrapFit <- function(fit,
         stratVar = stratVar,
         pvalues = pvalues,
         restart = restart,
-        fitName = fitName
+        fitName = fitName,
+        outputDir = outputDir,
+        workers = workers
       ) # multiple models
 
     modelsList <- resBootstrap[[1]]
@@ -441,7 +682,9 @@ bootstrapFit <- function(fit,
         nSampIndiv = nSampIndiv,
         pvalues = pvalues,
         restart = restart,
-        fitName = fitName
+        fitName = fitName,
+        outputDir = outputDir,
+        workers = workers
       ) # multiple models
     modelsList <- resBootstrap[[1]]
     fitList <- resBootstrap[[2]]
@@ -457,164 +700,69 @@ bootstrapFit <- function(fit,
   bootSummary <-
     getBootstrapSummary(modelsList, ci=ci, stdErrType=stdErrType) # aggregate values/summary
 
-  # modify the fit object
   nrws <- nrow(bootSummary$parFixedDf$mean)
-  sigdig <- fit$control$sigdigTable
 
-  newParFixedDf <- fit$parFixedDf
-  newParFixed <- fit$parFixed
+  # Build summary data frame: original parFixedDf + Bootstrap columns
+  summaryDf <- fit$parFixedDf
 
-  # Add Estimate_boot
-  est <- unname(bootSummary$parFixedDf$mean[1:nrws, 1])
-  cLower <- unname(bootSummary$parFixedDf$confLower[1:nrws, 1])
-  cUpper <- unname(bootSummary$parFixedDf$confUpper[1:nrws, 1])
-  estEst <- est
+  estEst   <- unname(bootSummary$parFixedDf$mean[seq_len(nrws), 1])
+  seBoot   <- unname(bootSummary$parFixedDf$stdDev[seq_len(nrws), 1])
+  cLowerBT <- unname(bootSummary$parFixedDf$confLower[seq_len(nrws), 2])
+  cUpperBT <- unname(bootSummary$parFixedDf$confUpper[seq_len(nrws), 2])
+  estBT    <- unname(bootSummary$parFixedDf$mean[seq_len(nrws), 2])
 
-  estimateBoot <- addConfboundsToVar(est, cLower, cUpper, sigdig)
+  summaryDf["Bootstrap Estimate"]        <- estEst
+  summaryDf["Bootstrap SE"]              <- seBoot
+  summaryDf["Bootstrap %RSE"]            <- seBoot / estEst * 100
+  summaryDf["Bootstrap CI Lower"]        <- cLowerBT
+  summaryDf["Bootstrap CI Upper"]        <- cUpperBT
+  summaryDf["Bootstrap Back-transformed"] <- estBT
 
-  # Add SE_boot
-  seBoot <- unname(bootSummary$parFixedDf$stdDev[1:nrws, 1])
+  # -- Write permanent output files and print console summary -----------------
+  out <- .writeBootstrapOutput(
+    fit        = fit,
+    bootSummary = bootSummary,
+    outputDir  = outputDir,
+    fitName    = fitName,
+    nboot      = nboot,
+    ci         = ci
+  )
 
-  # Add Back-transformed
-  est <- unname(bootSummary$parFixedDf$mean[1:nrws, 2])
-  cLowerBT <- unname(bootSummary$parFixedDf$confLower[1:nrws, 2])
-  cUpperBT <- unname(bootSummary$parFixedDf$confUpper[1:nrws, 2])
-  backTransformed <-
-    addConfboundsToVar(est, cLowerBT, cUpperBT, sigdig)
-  estBT <- est
+  abs_output_dir <- normalizePath(outputDir, mustWork = FALSE)
 
-  newParFixedDf["Bootstrap Estimate"] <- estEst
-  newParFixedDf["Bootstrap SE"] <- seBoot
-  newParFixedDf["Bootstrap %RSE"] <- seBoot / estEst * 100
-  newParFixedDf["Bootstrap CI Lower"] <- cLowerBT
-  newParFixedDf["Bootstrap CI Upper"] <- cUpperBT
-  newParFixedDf["Bootstrap Back-transformed"] <- estBT
-
-  newParFixed["Bootstrap Estimate"] <- estimateBoot
-  newParFixed["Bootstrap SE"] <- signif(seBoot, sigdig)
-  newParFixed["Bootstrap %RSE"] <-
-    signif(seBoot / estEst * 100, sigdig)
-  .w <- which(regexpr("^Bootstrap +Back[-]transformed", names(newParFixed)) != -1)
-  if (length(.w) >= 1) {
-    newParFixed <- newParFixed[, -.w]
-  }
-  newParFixed[sprintf("Bootstrap Back-transformed(%s%%CI)", ci * 100)] <-
-    backTransformed
-
-  # compute bias
-  bootParams <- bootSummary$parFixedDf$mean
-  origParams <- data.frame(list("Estimate" = fit$parFixedDf$Estimate, "Back-transformed" = fit$parFixedDf$`Back-transformed`))
-  bootstrapBiasParfixed <- abs(origParams - bootParams)
-  bootstrapBiasOmega <- abs(fit$omega - bootSummary$omega$mean)
-
-  assign("bootBiasParfixed", bootstrapBiasParfixed, envir = fit$env)
-  assign("bootBiasOmega", bootstrapBiasOmega, envir = fit$env)
-
-  assign("bootCovMatrix", bootSummary$omega$covMatrix, envir = fit$env)
-  assign("bootCorMatrix", bootSummary$omega$corMatrix, envir = fit$env)
-  assign("parFixedDf", newParFixedDf, envir = fit$env)
-  assign("parFixed", newParFixed, envir = fit$env)
-  assign("bootOmegaSummary", bootSummary$omega, envir = fit$env)
-  assign("bootSummary", bootSummary, envir = fit$env)
-
-  # plot histogram
-  if (plotHist) {
-
-    # compute delta objf values for each of the models
-    origData <- nlme::getData(fit)
-
-    if (is.null(fit$bootstrapMd5)) {
-      bootstrapMd5 <- fit$md5
-      assign("bootstrapMd5", bootstrapMd5, envir = fit$env)
-    }
-
-    # already exists
-    output_dir <- paste0("nlmixr2BootstrapCache_", fitName, "_", fit$bootstrapMd5)
-
-    deltOBJFloaded <- NULL
-    deltOBJF <- NULL
-    rxode2::rxProgress(length(fitList))
-    cli::cli_h1("Loading/Calculating \u0394 Objective function")
-    nlmixr2est::setOfv(fit, "focei") # Make sure we are using focei objective function
-    deltOBJF <- lapply(seq_along(fitList), function(i) {
-      x <- readRDS(file.path(output_dir, paste0("fitEnsemble_", i, ".rds")))
-      .path <- file.path(output_dir, paste0("posthoc_", i, ".rds"))
-      if (file.exists(.path)) {
-        xPosthoc <- readRDS(.path)
-        rxode2::rxTick()
-      } else {
-        rxode2::rxProgressStop()
-        ## rxode2::rxProgressAbort("Starting to posthoc estimates")
-        ## Don't calculate the tables
-        .msg <- paste0(gettext("Running bootstrap estimates on original data for model index: "), i)
-        cli::cli_h1(.msg)
-        xPosthoc <- nlmixr2(x,
-                            data = origData, est = "posthoc",
-                            control = list(calcTables = FALSE, print = 1, compress=FALSE)
-                            )
-        saveRDS(xPosthoc, .path)
-      }
-      xPosthoc$objf - fit$objf
-    })
-    rxode2::rxProgressStop()
-
-    .deltaO <- sort(abs(unlist(deltOBJF)))
-
-    .deltaN <- length(.deltaO)
-
-    .df <- length(fit$ini$est)
-
-    .chisq <- rbind(
+  # -- Optionally attach results to the original fit object -------------------
+  # A single new $bootstrap slot is added; no pre-existing slot is modified.
+  if (updateFit) {
+    bias_par   <- abs(
       data.frame(
-        deltaofv = qchisq(seq(0, 0.99, 0.01), df = .df),
-        quantiles = seq(0, 0.99, 0.01),
-        Distribution = 1L,
-        stringsAsFactors = FALSE
-      ),
-      data.frame(
-        deltaofv = .deltaO,
-        quantiles = seq(.deltaN) / .deltaN,
-        Distribution = 2L,
-        stringsAsFactors = FALSE
-      )
+        "Estimate"         = fit$parFixedDf$Estimate,
+        "Back-transformed" = fit$parFixedDf$`Back-transformed`,
+        check.names = FALSE
+      ) - bootSummary$parFixedDf$mean
     )
+    bias_omega <- abs(fit$omega - bootSummary$omega$mean)
 
-    .fdelta <- approxfun(seq(.deltaN) / .deltaN, .deltaO)
-
-    .df2 <- round(mean(.deltaO, na.rm = TRUE))
-
-    .dfD <- data.frame(
-      label = paste(c("df\u2248", "df="), c(.df2, .df)),
-      Distribution = c(2L, 1L),
-      quantiles = 0.7,
-      deltaofv = c(.fdelta(0.7), qchisq(0.7, df = .df))
-    )
-
-    .dfD$Distribution <- factor(
-      .dfD$Distribution, c(1L, 2L),
-      c("Reference distribution", "\u0394 objective function")
-    )
-
-    .chisq$Distribution <- factor(
-      .chisq$Distribution, c(1L, 2L),
-      c("Reference distribution", "\u0394 objective function")
-    )
-    .dataList <- list(
-      dfD = .dfD, chisq = .chisq,
-      deltaN = .deltaN, df2 = .df2
-    )
-    assign(".bootPlotData", .dataList, envir = fit$env)
+    assign("bootstrap", list(
+      summary      = summaryDf,
+      omegaSummary = bootSummary$omega,
+      covMatrix    = bootSummary$omega$covMatrix,
+      corMatrix    = bootSummary$omega$corMatrix,
+      bias         = list(parFixed = bias_par, omega = bias_omega),
+      nboot        = nboot,
+      ci           = ci,
+      outputDir    = abs_output_dir,
+      timestamp    = Sys.time()
+    ), envir = fit$env)
   }
-  ## Update covariance estimate
-  .nm <- names(fit$theta)[!fit$foceiSkipCov[seq_along(fit$theta)]]
-  .nm <- .nm[.nm %in% dimnames(fit$bootSummary$omega$covMatrixCombined)[[1]], drop=FALSE]
-  if (length(.nm) == 0) {
-    stop("No parameters to update covariance matrix", call.=FALSE)
-  }
-  .cov <- fit$bootSummary$omega$covMatrixCombined[.nm, .nm]
-  .setCov(fit, covMethod = .cov)
-  assign("covMethod", paste0("boot", fit$bootSummary$nboot), fit$env)
-  invisible(fit)
+
+  list(
+    seed      = out$seed,
+    results   = out$results,
+    summary   = summaryDf,
+    model     = fitName,
+    outputDir = abs_output_dir,
+    timestamp = Sys.time()
+  )
 }
 
 #' Perform bootstrap-sampling from a given dataframe
@@ -759,7 +907,7 @@ sampling <- function(data,
   }
 }
 
-#' Fitting multiple bootstrapped models without aggregaion; called by the function bootstrapFit()
+#' Fitting multiple bootstrapped models without aggregaion; called by the function runBootstrap()
 #'
 #' @param fit the nlmixr2 fit object
 #' @param nboot an integer giving the number of bootstrapped models to be fit; default value is 100
@@ -780,7 +928,9 @@ modelBootstrap <- function(fit,
                            stratVar,
                            pvalues = NULL,
                            restart = FALSE,
-                           fitName = "fit") {
+                           fitName = "fit",
+                           outputDir = NULL,
+                           workers = NULL) {
   nlmixr2est::assertNlmixrFit(fit)
   if (missing(stratVar)) {
     performStrat <- FALSE
@@ -830,8 +980,11 @@ modelBootstrap <- function(fit,
     assign("bootstrapMd5", bootstrapMd5, envir = fit$env)
   }
 
-  output_dir <-
-    paste0("nlmixr2BootstrapCache_", fitName, "_", fit$bootstrapMd5) # a new directory with this name will be created
+  output_dir <- if (!is.null(outputDir)) {
+    outputDir
+  } else {
+    paste0("nlmixr2BootstrapCache_", fitName, "_", fit$bootstrapMd5)
+  }
 
   if (!dir.exists(output_dir)) {
     dir.create(output_dir)
@@ -873,6 +1026,13 @@ modelBootstrap <- function(fit,
     startCtr <- 1
   }
 
+  # Save random seed before any new sampling so it can be reported later.
+  # Only write on the first run (or after restart); preserve existing seed on resume.
+  seed_file <- file.path(output_dir, "bootstrap_seed.rds")
+  if (!file.exists(seed_file)) {
+    saveRDS(.Random.seed, seed_file)
+  }
+
   # Generate additional samples (if nboot>startCtr)
   if (nboot >= startCtr) {
     for (mod_idx in startCtr:nboot) {
@@ -907,7 +1067,6 @@ modelBootstrap <- function(fit,
   currBootData <- length(bootData)
 
   # Fitting models to bootData now
-  .env <- environment()
   fnameModelsEnsemblePattern <-
     paste0("modelsEnsemble_", "[0-9]+",
            ".rds",
@@ -921,54 +1080,53 @@ modelBootstrap <- function(fit,
            sep = "")
   fitFileExists <- list.files(paste0("./", output_dir), pattern = fnameFitEnsemblePattern)
 
+  # Determine which replicate indices are already complete
+  completed_indices <- integer(0)
   if (!restart) {
     if (length(modFileExists) > 0 &&
           (length(fileExists) > 0)) {
-
-      # read bootData and modelsEnsemble files from disk
       cli::cli_alert_success(
         "resuming bootstrap model fitting using data and models stored at {paste0(getwd(), '/', output_dir)}"
       )
-
-      bootData <- lapply(fileExists, function(x) {
-        readRDS(paste0("./", output_dir, "/", x, sep = ""))
-      })
-      modelsEnsembleLoaded <- lapply(modFileExists, function(x) {
-        readRDS(paste0("./", output_dir, "/", x, sep = ""))
-      })
-
-      fitEnsembleLoaded <- lapply(fitFileExists, function(x) {
-        readRDS(paste0("./", output_dir, "/", x, sep = ""))
-      })
-
-      .env$mod_idx <- length(modelsEnsembleLoaded) + 1
-
-      currNumModels <- .env$mod_idx - 1
-
-      if (currNumModels > nboot) {
-        mod_idx_m1 <- .env$mod_idx-1
+      completed_indices <- as.integer(
+        gsub("fitEnsemble_([0-9]+)\\.rds", "\\1", fitFileExists)
+      )
+      curr_num_models <- length(completed_indices)
+      if (curr_num_models > nboot) {
         cli::cli_alert_danger(
           cli::col_red(
-            "the model file already has {mod_idx_m1} models when max models is {nboot}; using only the first {nboot} model(s)"
+            "the model file already has {curr_num_models} models when max models is {nboot}; using only the first {nboot} model(s)"
           )
         )
-        return(list(modelsEnsembleLoaded[1:nboot], fitEnsembleLoaded[1:nboot]))
-
-        # return(modelsEnsembleLoaded[1:nboot])
-      } else if (currNumModels == nboot) {
-        mod_idx_m1 <- .env$mod_idx-1
-        cli::col_red(
-          "the model file already has {mod_idx_m1} models when max models is {nboot}; loading from {nboot} models already saved on disk"
-        )
+        # Load and return immediately, capped at nboot
+        modelsEnsembleLoaded <- lapply(modFileExists, function(x) {
+          readRDS(paste0("./", output_dir, "/", x, sep = ""))
+        })
+        fitEnsembleLoaded <- lapply(fitFileExists, function(x) {
+          readRDS(paste0("./", output_dir, "/", x, sep = ""))
+        })
+        modelsEnsembleLoaded <- Filter(function(x) length(x) > 0L,
+                                       modelsEnsembleLoaded[seq_len(nboot)])
+        fitEnsembleLoaded    <- Filter(function(x) !identical(x, NA),
+                                       fitEnsembleLoaded[seq_len(nboot)])
         return(list(modelsEnsembleLoaded, fitEnsembleLoaded))
-
-        # return(modelsEnsembleLoaded)
-      } else if (currNumModels < nboot) {
-        cli::col_red("estimating the additional models ... ")
+      } else if (curr_num_models == nboot) {
+        cli::cli_alert_success(
+          "all {nboot} bootstrap models already complete, loading from {paste0(getwd(), '/', output_dir)}"
+        )
+        modelsEnsembleLoaded <- lapply(modFileExists, function(x) {
+          readRDS(paste0("./", output_dir, "/", x, sep = ""))
+        })
+        fitEnsembleLoaded <- lapply(fitFileExists, function(x) {
+          readRDS(paste0("./", output_dir, "/", x, sep = ""))
+        })
+        modelsEnsembleLoaded <- Filter(function(x) length(x) > 0L, modelsEnsembleLoaded)
+        fitEnsembleLoaded    <- Filter(function(x) !identical(x, NA), fitEnsembleLoaded)
+        return(list(modelsEnsembleLoaded, fitEnsembleLoaded))
+      } else {
+        cli::cli_inform("estimating {nboot - curr_num_models} additional model(s) ...")
       }
-    }
-
-    else {
+    } else {
       cli::cli_alert_danger(
         cli::col_red(
           "need both the data and the model files at: {paste0(getwd(), '/', output_dir)} to resume"
@@ -979,72 +1137,154 @@ modelBootstrap <- function(fit,
         call. = FALSE
       )
     }
-  } else {
-    .env$mod_idx <- 1
   }
+
+  pending_indices <- setdiff(seq_len(nboot), completed_indices)
+
+  # -- Startup banner ---------------------------------------------------------
+  worker_desc <- if (is.null(workers)) {
+    "sequential (using current future::plan())"
+  } else if (identical(workers, "auto")) {
+    if (requireNamespace("future", quietly = TRUE))
+      paste0("parallel, auto (", future::availableCores(omit = 1L), " workers)")
+    else
+      "sequential (future not available)"
+  } else if (identical(as.integer(workers), 1L)) {
+    "sequential (workers = 1)"
+  } else {
+    paste0("parallel (", workers, " workers)")
+  }
+  resume_note <- if (length(completed_indices) > 0L)
+    paste0(" (resuming; ", length(completed_indices), " already done)")
+  else
+    ""
+
+  cli::cli_rule(left = "Bootstrap")
+  cli::cli_inform(c(
+    "i" = "Model             : {fitName}",
+    "i" = "Estimation method : {fitMeth}",
+    "i" = "Total replicates  : {nboot}{resume_note}",
+    "i" = "Pending replicates: {length(pending_indices)}",
+    "i" = "Subjects / sample : {nSampIndiv}",
+    "i" = "Stratification    : {if (performStrat) paste0('yes (', stratVar, ')') else 'no'}",
+    "i" = "Execution         : {worker_desc}",
+    "i" = "Cache directory   : {output_dir}"
+  ))
+  cli::cli_rule()
 
   # get control settings for the 'fit' object and save computation effort by not computing the tables
   .ctl <- setQuietFastControl(fit$control)
 
-  modelsEnsemble <-
-    lapply(bootData[.env$mod_idx:nboot], function(boot_data) {
-      modIdx <- .env$mod_idx
-      cli::cli_h1(paste0("Running nlmixr2 for model index: ",
-                         modIdx))
+  .withWorkerPlan(workers, {
+    .plap(
+      pending_indices,
+      function(orig_idx) {
+        boot_data <- bootData[[orig_idx]]
+        n_subj <- length(unique(boot_data[[uidCol]]))
+        cli::cli_rule(left = paste0("Replicate ", orig_idx, "/", nboot))
+        cli::cli_inform(c(
+          ">" = "Replicate {orig_idx}/{nboot} | method: {fitMeth} | {nrow(boot_data)} rows, {n_subj} subjects"
+        ))
 
-      fit <- tryCatch(
-      {
-        fit <- suppressWarnings(nlmixr2(ui,
-                                        boot_data,
-                                        est = fitMeth,
-                                        control = .ctl))
+        fit_result <- tryCatch(
+          {
+            fit_r <- suppressWarnings(nlmixr2(ui,
+                                              boot_data,
+                                              est = fitMeth,
+                                              control = .ctl))
 
-        .env$multipleFits <- list(
-          # objf = fit$OBJF,
-          # aic = fit$AIC,
-          omega = fit$omega,
-          parFixedDf = fit$parFixedDf[, c("Estimate", "Back-transformed")],
-          message = fit$message,
-          warnings = fit$warnings)
+            multiple_fits <- list(
+              omega = fit_r$omega,
+              parFixedDf = fit_r$parFixedDf[, c("Estimate", "Back-transformed")],
+              message = fit_r$message,
+              warnings = fit_r$warnings)
 
-        fit # to return 'fit'
+            list(.failed = FALSE, fit = fit_r, models = multiple_fits)
+          },
+          error = function(error_message) {
+            message("error fitting the model")
+            message(error_message)
+            message("storing the models as NA ...")
+            list(.failed = TRUE,
+                 .reason = conditionMessage(error_message),
+                 .idx = orig_idx)
+          })
+
+        if (!isTRUE(fit_result$.failed)) {
+          saveRDS(
+            fit_result$models,
+            file = paste0(
+              "./",
+              output_dir,
+              "/modelsEnsemble_",
+              orig_idx,
+              ".rds"))
+          saveRDS(
+            fit_result$fit,
+            file = paste0(
+              "./",
+              output_dir,
+              "/fitEnsemble_",
+              orig_idx,
+              ".rds"
+            )
+          )
+        } else {
+          # Save NA placeholder so the index is treated as complete on resume
+          saveRDS(
+            list(),
+            file = paste0(
+              "./",
+              output_dir,
+              "/modelsEnsemble_",
+              orig_idx,
+              ".rds"))
+          saveRDS(
+            NA,
+            file = paste0(
+              "./",
+              output_dir,
+              "/fitEnsemble_",
+              orig_idx,
+              ".rds"
+            )
+          )
+        }
+
+        invisible(NULL)
       },
-      error = function(error_message) {
-        message("error fitting the model")
-        message(error_message)
-        message("storing the models as NA ...")
-        NA # return NA otherwise (instead of NULL)
-      })
+      .label = function(orig_idx) {
+        paste0("replicate ", orig_idx, "/", nboot)
+      }
+    )
+  })
 
-      saveRDS(
-        .env$multipleFits,
-        file = paste0(
-          "./",
-          output_dir,
-          "/modelsEnsemble_",
-          .env$mod_idx,
-          ".rds"))
-
-      saveRDS(
-        fit,
-        file = paste0(
-          "./",
-          output_dir,
-          "/fitEnsemble_",
-          .env$mod_idx,
-          ".rds"
-        )
-      )
-
-      assign("mod_idx", .env$mod_idx + 1, .env)
-    })
-
-  fitEnsemble <- NULL
-
-  if (!restart) {
-    modelsEnsemble <- c(modelsEnsembleLoaded, modelsEnsemble)
-    fitEnsemble <- c(fitEnsembleLoaded, fitEnsemble)
+  # Report any failures (fits stored as NA)
+  fitFileExists <- list.files(paste0("./", output_dir), pattern = fnameFitEnsemblePattern)
+  n_failed <- sum(vapply(fitFileExists, function(f) {
+    r <- tryCatch(readRDS(paste0("./", output_dir, "/", f)),
+                  error = function(e) NULL)
+    identical(r, NA)
+  }, logical(1)))
+  # Completion summary
+  n_ok <- nboot - n_failed
+  cli::cli_rule(left = "Bootstrap complete")
+  if (n_failed == 0L) {
+    cli::cli_inform(c(
+      "v" = "All {nboot} replicates fitted successfully.",
+      "i" = "Results saved to: {output_dir}"
+    ))
+  } else {
+    cli::cli_warn(c(
+      "!" = "{n_failed} of {nboot} bootstrap replicate(s) failed to fit.",
+      "i" = "Failed replicates are stored as {.code NA} in the output."
+    ))
+    cli::cli_inform(c(
+      "i" = "{n_ok}/{nboot} replicates succeeded.",
+      "i" = "Results saved to: {output_dir}"
+    ))
   }
+  cli::cli_rule()
 
   modFileExists <-
     list.files(paste0("./", output_dir), pattern = fnameModelsEnsemblePattern)
@@ -1052,11 +1292,16 @@ modelBootstrap <- function(fit,
   modelsEnsemble <- lapply(modFileExists, function(x) {
     readRDS(paste0("./", output_dir, "/", x, sep = ""))
   })
+  # Remove empty-list placeholders saved for failed replicates so that
+  # getBootstrapSummary (which uses names(fitList[[1]])) sees a valid entry first.
+  modelsEnsemble <- Filter(function(x) length(x) > 0L, modelsEnsemble)
 
   fitFileExists <- list.files(paste0("./", output_dir), pattern = fnameFitEnsemblePattern)
   fitEnsemble <- lapply(fitFileExists, function(x) {
     readRDS(paste0("./", output_dir, "/", x, sep = ""))
   })
+  # Remove NA placeholders for failed replicates from fitEnsemble as well.
+  fitEnsemble <- Filter(function(x) !identical(x, NA), fitEnsemble)
 
   list(modelsEnsemble, fitEnsemble)
 }
@@ -1137,7 +1382,7 @@ extractVars <- function(fitlist, id = "method") {
 #' @param fitList a list of lists containing information on the multiple bootstrapped models; similar to the output of modelsBootstrap() function
 #' @return returns aggregated quantities (mean, median, standard deviation, and variance) as a list for all the quantities
 #' @author Vipul Mann, Matthew Fidler
-#' @inheritParams bootstrapFit
+#' @inheritParams runBootstrap
 #' @examples
 #' getBootstrapSummary(fitlist)
 #' @noRd
@@ -1411,11 +1656,11 @@ bootplot.nlmixr2FitCore <- function(x, ...) {
   .fitName <- as.character(substitute(x))
   if (inherits(x, "nlmixr2FitCore")) {
     if (exists("bootSummary", x$env) & (!exists(".bootPlotData", x$env))) {
-      bootstrapFit(x, x$bootSummary$nboot, plotHist = TRUE, fitName = .fitName)
+      runBootstrap(x, x$bootSummary$nboot, plotHist = TRUE, fitName = .fitName)
     }
     if (exists(".bootPlotData", x$env)) {
       if (x$bootSummary$nboot != x$env$.bootPlotData$deltaN) {
-        bootstrapFit(x, x$bootSummary$nboot, plotHist = TRUE, fitName = .fitName)
+        runBootstrap(x, x$bootSummary$nboot, plotHist = TRUE, fitName = .fitName)
       }
       .chisq <- x$env$.bootPlotData$chisq
       .dfD <- x$env$.bootPlotData$dfD
@@ -1461,4 +1706,23 @@ bootplot.nlmixr2FitCore <- function(x, ...) {
          call. = FALSE
          )
   }
+}
+
+#' Bootstrap nlmixr2 fit
+#'
+#' @description
+#' `r lifecycle::badge("deprecated")`
+#'
+#' `bootstrapFit()` has been renamed to [runBootstrap()]. This alias is provided
+#' for backward compatibility and will be removed in a future release.
+#'
+#' @inheritParams runBootstrap
+#' @inherit runBootstrap return
+#' @export
+#' @keywords internal
+bootstrapFit <- function(...) {
+  .Deprecated("runBootstrap", package = "nlmixr2extra",
+              msg = paste0("'bootstrapFit()' has been renamed to 'runBootstrap()'. ",
+                           "Please update your code."))
+  runBootstrap(...)
 }

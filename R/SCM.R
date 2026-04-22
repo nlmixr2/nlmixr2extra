@@ -108,6 +108,14 @@
 #'   \code{'backward'}; default \code{'scm'}
 #' @param restart logical; if \code{TRUE} the existing cache is backed up and
 #'   the search restarts from scratch; default \code{FALSE}
+#' @param workers integer or \code{NULL}; number of parallel workers to use
+#'   when fitting candidate models.  When \code{NULL} (default), the current
+#'   \code{future} plan is used unchanged.  A positive integer temporarily
+#'   switches to a \code{multisession} plan with that many workers for the
+#'   duration of the search.
+#' @param confirm logical; if \code{TRUE} (default) and the session is
+#'   interactive, the user is prompted to confirm before the search begins.
+#'   Set to \code{FALSE} to skip the prompt (useful in scripts or tests).
 #'
 #' @return A list with elements \code{summaryTable} (combined forward and
 #'   backward results), \code{resFwd} (list of final fit and step table from
@@ -137,13 +145,13 @@
 #' }
 #'
 #' fit <- nlmixr2(one.cmt, nlmixr2data::theo_sd, est = "saem", control = list(print = 0))
-#' auto1 <- covarSearchAuto(fit, varsVec = c("ka", "cl"), covarsVec = c("WT"))
+#' auto1 <- runSCM(fit, varsVec = c("ka", "cl"), covarsVec = c("WT"))
 #'
 #'   # Specify exact pairs instead of all combinations:
-#'   auto2 <- covarSearchAuto(fit,
+#'   auto2 <- runSCM(fit,
 #'     pairsVec = list(list(var = "cl", covar = "WT"), list(var = "ka", covar = "WT")))
 #' }
-covarSearchAuto <- function(fit,
+runSCM <- function(fit,
                             varsVec           = NULL,
                             covarsVec         = NULL,
                             pVal              = list(fwd = 0.05, bck = 0.01),
@@ -162,7 +170,9 @@ covarSearchAuto <- function(fit,
                             control           = NULL,
                             print             = 100,
                             searchType        = c("scm", "forward", "backward"),
-                            restart           = FALSE) {
+                            restart           = FALSE,
+                            workers           = NULL,
+                            confirm           = TRUE) {
   if (!is.numeric(AIC(fit))) {
     cli::cli_alert_danger("the 'fit' object needs to have an objective function value associated with it")
     cli::cli_alert_info("try computing 'AIC(fitobject)' in console to compute and store the corresponding OBJF value")
@@ -299,7 +309,7 @@ covarSearchAuto <- function(fit,
   }
   cli::cli_rule()
 
-  if (interactive()) {
+  if (isTRUE(confirm) && interactive()) {
     .ans <- readline("Proceed with SCM? [y/N]: ")
     if (!tolower(trimws(.ans)) %in% c("y", "yes")) {
       cli::cli_alert_warning("SCM cancelled.")
@@ -330,58 +340,60 @@ covarSearchAuto <- function(fit,
     if (is.null(outputDir)) outputDir <- getwd()
   }
 
-  if (searchType == "scm") {
-    resFwd <- forwardSearch(pairs, fit, data, pVal = pVal$fwd,
-                            outputDir = outputDir, restart = restart,
-                            saveModels = saveModels, verbose = verbose,
-                            control = control, print = print)
-    resBck <- backwardSearch(pairs, fitorig = fit, fitupdated = resFwd[[1]],
-                             data = data, pVal = pVal$bck, reFitCovars = FALSE,
-                             context_pairs = resFwd[[3]],
-                             includedRelations = included_pairs,
-                             outputDir = outputDir, restart = restart,
-                             saveModels = saveModels, verbose = verbose,
-                             control = control, print = print)
-    data <- NULL  # release temporary SCM dataset
-    summaryTable <- Reduce(rbind, list(resFwd[[2]], resBck[[2]]))
-    .printFinalSCMSummary(summaryTable, finalFit = resBck[[1]],
-                          searchType = searchType,
-                          outputDir  = outputDir,
-                          metadata   = list(baseFit     = fit,
-                                            pVal        = pVal,
-                                            catCutoff   = catCutoff))
-    list(summaryTable = summaryTable, resFwd = resFwd, resBck = resBck)
+  .withWorkerPlan(workers, {
+    if (searchType == "scm") {
+      resFwd <- forwardSearch(pairs, fit, data, pVal = pVal$fwd,
+                              outputDir = outputDir, restart = restart,
+                              saveModels = saveModels, verbose = verbose,
+                              control = control, print = print)
+      resBck <- backwardSearch(pairs, fitorig = fit, fitupdated = resFwd[[1]],
+                               data = data, pVal = pVal$bck, reFitCovars = FALSE,
+                               context_pairs = resFwd[[3]],
+                               includedRelations = included_pairs,
+                               outputDir = outputDir, restart = restart,
+                               saveModels = saveModels, verbose = verbose,
+                               control = control, print = print)
+      data <- NULL  # release temporary SCM dataset
+      summaryTable <- Reduce(rbind, list(resFwd[[2]], resBck[[2]]))
+      .printFinalSCMSummary(summaryTable, finalFit = resBck[[1]],
+                            searchType = searchType,
+                            outputDir  = outputDir,
+                            metadata   = list(baseFit     = fit,
+                                              pVal        = pVal,
+                                              catCutoff   = catCutoff))
+      list(summaryTable = summaryTable, resFwd = resFwd, resBck = resBck)
 
-  } else if (searchType == "forward") {
-    resFwd <- forwardSearch(pairs, fit, data, pVal = pVal$fwd,
-                            outputDir = outputDir, restart = restart,
-                            saveModels = saveModels, verbose = verbose,
-                            control = control, print = print)
-    data <- NULL  # release temporary SCM dataset
-    .printFinalSCMSummary(resFwd[[2]], finalFit = resFwd[[1]],
-                          searchType = searchType,
-                          outputDir  = outputDir,
-                          metadata   = list(baseFit     = fit,
-                                            pVal        = pVal,
-                                            catCutoff   = catCutoff))
-    list(summaryTable = resFwd[[2]], resFwd = resFwd, resBck = NULL)
+    } else if (searchType == "forward") {
+      resFwd <- forwardSearch(pairs, fit, data, pVal = pVal$fwd,
+                              outputDir = outputDir, restart = restart,
+                              saveModels = saveModels, verbose = verbose,
+                              control = control, print = print)
+      data <- NULL  # release temporary SCM dataset
+      .printFinalSCMSummary(resFwd[[2]], finalFit = resFwd[[1]],
+                            searchType = searchType,
+                            outputDir  = outputDir,
+                            metadata   = list(baseFit     = fit,
+                                              pVal        = pVal,
+                                              catCutoff   = catCutoff))
+      list(summaryTable = resFwd[[2]], resFwd = resFwd, resBck = NULL)
 
-  } else {
-    resBck <- backwardSearch(pairs, fitorig = fit, data = data,
-                             pVal = pVal$bck, reFitCovars = TRUE,
-                             includedRelations = included_pairs,
-                             outputDir = outputDir, restart = restart,
-                             saveModels = saveModels, verbose = verbose,
-                             control = control, print = print)
-    data <- NULL  # release temporary SCM dataset
-    .printFinalSCMSummary(resBck[[2]], finalFit = resBck[[1]],
-                          searchType = searchType,
-                          outputDir  = outputDir,
-                          metadata   = list(baseFit     = fit,
-                                            pVal        = pVal,
-                                            catCutoff   = catCutoff))
-    list(summaryTable = resBck[[2]], resFwd = NULL, resBck = resBck)
-  }
+    } else {
+      resBck <- backwardSearch(pairs, fitorig = fit, data = data,
+                               pVal = pVal$bck, reFitCovars = TRUE,
+                               includedRelations = included_pairs,
+                               outputDir = outputDir, restart = restart,
+                               saveModels = saveModels, verbose = verbose,
+                               control = control, print = print)
+      data <- NULL  # release temporary SCM dataset
+      .printFinalSCMSummary(resBck[[2]], finalFit = resBck[[1]],
+                            searchType = searchType,
+                            outputDir  = outputDir,
+                            metadata   = list(baseFit     = fit,
+                                              pVal        = pVal,
+                                              catCutoff   = catCutoff))
+      list(summaryTable = resBck[[2]], resFwd = NULL, resBck = resBck)
+    }
+  })
 }
 
 # -- Helpers -------------------------------------------------------------------
@@ -849,7 +861,7 @@ buildPairs <- function(varsVec = NULL, covarsVec = NULL, pairsVec = NULL) {
         "Cannot create indicator column(s): ",
         paste(collisions, collapse = ", "),
         " -- name(s) already exist in data. ",
-        "Rename the conflicting column(s) before calling covarSearchAuto().",
+        "Rename the conflicting column(s) before calling runSCM().",
         call. = FALSE
       )
     }
@@ -865,7 +877,8 @@ buildPairs <- function(varsVec = NULL, covarsVec = NULL, pairsVec = NULL) {
 
   # Trim to columns needed for fitting
   ind_cols  <- unlist(lapply(catvarsVec, function(col) {
-    paste0(col, "_", cat_levels[[col]])
+    lvls <- cat_levels[[col]]
+    if (length(lvls) == 0L) character(0L) else paste0(col, "_", lvls)
   }), use.names = FALSE)
   fit_cols  <- tryCatch(names(nlme::getData(fit)), error = function(e) character(0L))
   keep_cols <- unique(c(
@@ -1227,136 +1240,168 @@ buildPairs <- function(varsVec = NULL, covarsVec = NULL, pairsVec = NULL) {
 #' @return list of \code{list(var, covar, fit, stats)}, one per successful candidate
 #' @noRd
 .fitCandidatePairs <- function(pairs, base_ui, context_pairs = NULL, fit, data, pVal, stepIdx, add, control = NULL, print = 100) {
-  Filter(Negate(is.null), lapply(seq_len(nrow(pairs)), function(i) {
-    nam_var   <- pairs$var[i]
-    nam_covar <- pairs$covar[i]
-    covNames  <- paste0("cov_", nam_covar, "_", nam_var)
+  raw_results <- .plap(
+    seq_len(nrow(pairs)),
+    function(i) {
+      nam_var   <- pairs$var[i]
+      nam_covar <- pairs$covar[i]
+      covNames  <- paste0("cov_", nam_covar, "_", nam_var)
 
-    # Extract pre-computed covExpr, shape, init, lower, upper (set by .expandShapes())
-    cov_expr  <- if ("covExpr" %in% names(pairs)) pairs$covExpr[i] else NULL
-    cov_shape <- if ("shape"   %in% names(pairs)) pairs$shape[i]   else NA_character_
-    cov_init  <- if ("init"    %in% names(pairs) && !is.na(pairs$init[i]))
-      pairs$init[i] else 0.1
-    cov_lower <- if ("lower"   %in% names(pairs) && !is.na(pairs$lower[i]))
-      pairs$lower[i] else -5
-    cov_upper <- if ("upper"   %in% names(pairs) && !is.na(pairs$upper[i]))
-      pairs$upper[i] else 5
+      # Extract pre-computed covExpr, shape, init, lower, upper (set by .expandShapes())
+      cov_expr  <- if ("covExpr" %in% names(pairs)) pairs$covExpr[i] else NULL
+      cov_shape <- if ("shape"   %in% names(pairs)) pairs$shape[i]   else NA_character_
+      cov_init  <- if ("init"    %in% names(pairs) && !is.na(pairs$init[i]))
+        pairs$init[i] else 0.1
+      cov_lower <- if ("lower"   %in% names(pairs) && !is.na(pairs$lower[i]))
+        pairs$lower[i] else -5
+      cov_upper <- if ("upper"   %in% names(pairs) && !is.na(pairs$upper[i]))
+        pairs$upper[i] else 5
 
-    ui_cand <- tryCatch({
-      if (add) {
-        # Forward: single-pass rebuild with context pairs + this candidate together.
-        # Never layer a second .builduiCovariate() call on a tainted intermediate UI.
-        cand_df <- data.frame(
-          var     = nam_var,
-          covar   = nam_covar,
-          covExpr = if (!is.null(cov_expr)) cov_expr else nam_covar,
-          init    = cov_init,
-          lower   = cov_lower,
-          upper   = cov_upper,
-          stringsAsFactors = FALSE
-        )
-        if (!is.null(context_pairs) && nrow(context_pairs) > 0) {
-          ctx_df <- data.frame(
-            var     = context_pairs$var,
-            covar   = context_pairs$covar,
-            covExpr = if ("covExpr" %in% names(context_pairs))
-              context_pairs$covExpr else context_pairs$covar,
-            init    = if ("init"  %in% names(context_pairs))
-              context_pairs$init else rep(0.1, nrow(context_pairs)),
-            lower   = if ("lower" %in% names(context_pairs))
-              context_pairs$lower else rep(-5, nrow(context_pairs)),
-            upper   = if ("upper" %in% names(context_pairs))
-              context_pairs$upper else rep(5, nrow(context_pairs)),
+      ui_cand <- tryCatch({
+        if (add) {
+          # Forward: single-pass rebuild with context pairs + this candidate together.
+          # Never layer a second .builduiCovariate() call on a tainted intermediate UI.
+          cand_df <- data.frame(
+            var     = nam_var,
+            covar   = nam_covar,
+            covExpr = if (!is.null(cov_expr)) cov_expr else nam_covar,
+            init    = cov_init,
+            lower   = cov_lower,
+            upper   = cov_upper,
             stringsAsFactors = FALSE
           )
-          all_pairs <- rbind(ctx_df, cand_df)
+          if (!is.null(context_pairs) && nrow(context_pairs) > 0) {
+            ctx_df <- data.frame(
+              var     = context_pairs$var,
+              covar   = context_pairs$covar,
+              covExpr = if ("covExpr" %in% names(context_pairs))
+                context_pairs$covExpr else context_pairs$covar,
+              init    = if ("init"  %in% names(context_pairs))
+                context_pairs$init else rep(0.1, nrow(context_pairs)),
+              lower   = if ("lower" %in% names(context_pairs))
+                context_pairs$lower else rep(-5, nrow(context_pairs)),
+              upper   = if ("upper" %in% names(context_pairs))
+                context_pairs$upper else rep(5, nrow(context_pairs)),
+              stringsAsFactors = FALSE
+            )
+            all_pairs <- rbind(ctx_df, cand_df)
+          } else {
+            all_pairs <- cand_df
+          }
+          .rebuildUiFromPairs(base_ui, all_pairs) # nolint: object_usage_linter.
         } else {
-          all_pairs <- cand_df
+          # Backward: rebuild from base with all context pairs except this candidate
+          cp_minus <- if (!is.null(context_pairs) && nrow(context_pairs) > 0) {
+            context_pairs[
+              !(context_pairs$var == nam_var & context_pairs$covar == nam_covar), ,
+              drop = FALSE
+            ]
+          } else {
+            NULL
+          }
+          .rebuildUiFromPairs(base_ui, cp_minus) # nolint: object_usage_linter.
         }
-        .rebuildUiFromPairs(base_ui, all_pairs) # nolint: object_usage_linter.
+      }, error = function(e) {
+        list(.failed = TRUE, .reason = conditionMessage(e),
+             .pair = paste0(nam_covar, " ~ ", nam_var))
+      })
+      if (isTRUE(ui_cand$.failed)) return(ui_cand)
+
+      cand_control <- tryCatch({
+        ctrl        <- if (!is.null(control)) control else fit$control
+        ctrl$print  <- print
+        ctrl
+      }, error = function(e) NULL)
+
+      direction <- if (add) "Forward" else "Backward" # nolint: object_usage_linter.
+      shape_lbl <- if (!is.na(cov_shape) && nzchar(cov_shape)) paste0(" [", cov_shape, "]") else "" # nolint: object_usage_linter.
+      cli::cli_rule()
+      cli::cli_inform(c(
+        ">" = "{direction} step {stepIdx}, candidate {i}/{nrow(pairs)}: {nam_covar} ~ {nam_var}{shape_lbl}"
+      ))
+      cli::cli_rule()
+
+      x <- tryCatch(
+        suppressWarnings(nlmixr2(ui_cand, data, fit$est, control = cand_control)),
+        error = function(e) {
+          list(.failed = TRUE, .reason = conditionMessage(e),
+               .pair = paste0(nam_covar, " ~ ", nam_var))
+        }
+      )
+      if (isTRUE(x$.failed)) return(x)
+
+      # dObjf > 0 means the model change improved the fit:
+      #   forward:  candidate has lower OFV than reference  -> fit$objf - x$objf
+      #   backward: removal raises OFV relative to reference -> x$objf - fit$objf
+      dObjf <- if (add) fit$objf - x$objf else x$objf - fit$objf
+      if (is.na(dObjf)) {
+        return(list(.failed = TRUE,
+                    .reason = "NA objective function value",
+                    .pair   = paste0(nam_covar, " ~ ", nam_var)))
+      }
+      dof   <- if (add) {
+        length(x$finalUiEnv$ini$est) - length(fit$finalUiEnv$ini$est)
       } else {
-        # Backward: rebuild from base with all context pairs except this candidate
-        cp_minus <- if (!is.null(context_pairs) && nrow(context_pairs) > 0) {
-          context_pairs[
-            !(context_pairs$var == nam_var & context_pairs$covar == nam_covar), ,
-            drop = FALSE
-          ]
-        } else {
-          NULL
-        }
-        .rebuildUiFromPairs(base_ui, cp_minus) # nolint: object_usage_linter.
+        length(fit$finalUiEnv$ini$est) - length(x$finalUiEnv$ini$est)
       }
-    }, error = function(e) {
-      message("error building candidate for ",
-              nam_covar, "~", nam_var, ": ", conditionMessage(e))
-      NULL
-    })
-    if (is.null(ui_cand)) return(NULL)
+      pchisqr <- if (dObjf > 0) 1 - pchisq(dObjf, df = dof) else 1
 
-    cand_control <- tryCatch({
-      ctrl        <- if (!is.null(control)) control else fit$control
-      ctrl$print  <- print
-      ctrl
-    }, error = function(e) NULL)
+      # covarEffect: from the candidate fit when adding, from the full model when removing
+      covarEffect  <- if (add) x$parFixedDf[covNames, "Estimate"] else fit$parFixedDf[covNames, "Estimate"]
+      bsvReduction <- if (add) {
+        .bsvReduction(fit_without = fit, fit_with = x,   nam_var = nam_var)
+      } else {
+        .bsvReduction(fit_without = x,   fit_with = fit, nam_var = nam_var)
+      }
 
-    direction <- if (add) "Forward" else "Backward" # nolint: object_usage_linter.
-    shape_lbl <- if (!is.na(cov_shape) && nzchar(cov_shape)) paste0(" [", cov_shape, "]") else "" # nolint: object_usage_linter.
-    cli::cli_rule()
-    cli::cli_inform(c(
-      ">" = "{direction} step {stepIdx}, candidate {i}/{nrow(pairs)}: {nam_covar} ~ {nam_var}{shape_lbl}"
+      stats <- data.frame(
+        step         = stepIdx,
+        covar        = nam_covar,
+        var          = nam_var,
+        shape        = cov_shape,
+        objf         = x$objf,
+        deltObjf     = dObjf,
+        AIC          = x$AIC,
+        BIC          = x$BIC,
+        numParams    = length(x$finalUiEnv$ini$est),
+        qchisqr      = qchisq(1 - pVal, dof),
+        pchisqr      = pchisqr,
+        included     = if (add) "no" else "",
+        searchType   = if (add) "forward" else "backward",
+        covNames     = covNames,
+        covarEffect  = covarEffect,
+        bsvReduction = bsvReduction,
+        stringsAsFactors = FALSE
+      )
+
+      list(var = nam_var, covar = nam_covar, fit = x, stats = stats)
+    },
+    .label = function(i) {
+      sh <- if ("shape" %in% names(pairs) && !is.na(pairs$shape[i]) && nzchar(pairs$shape[i]))
+        paste0(" [", pairs$shape[i], "]") else ""
+      paste0(pairs$covar[i], " ~ ", pairs$var[i], sh)
+    }
+  )
+
+  # Separate failures from successes and report
+  is_fail  <- vapply(raw_results, function(r) isTRUE(r$.failed), logical(1))
+  failures <- raw_results[is_fail]
+  results  <- raw_results[!is_fail]
+
+  if (length(failures) > 0L) {
+    fail_msgs <- vapply(failures, function(f) paste0(f$.pair, ": ", f$.reason), character(1))
+    cli::cli_warn(c(
+      "!" = "{length(failures)} candidate fit(s) failed at step {stepIdx}:",
+      setNames(fail_msgs, rep("x", length(fail_msgs)))
     ))
-    cli::cli_rule()
+  }
 
-    x <- tryCatch(
-      suppressWarnings(nlmixr2(ui_cand, data, fit$est, control = cand_control)),
-      error = function(e) {
-        message("error fitting candidate for ", nam_covar, "~", nam_var, ": ", conditionMessage(e))
-        NULL
-      }
-    )
-    if (is.null(x)) return(NULL)
+  if (length(results) == 0L) {
+    stop("All ", nrow(pairs), " candidate fit(s) failed at step ", stepIdx,
+         ". Cannot continue.", call. = FALSE)
+  }
 
-    # dObjf > 0 means the model change improved the fit:
-    #   forward:  candidate has lower OFV than reference  -> fit$objf - x$objf
-    #   backward: removal raises OFV relative to reference -> x$objf - fit$objf
-    dObjf <- if (add) fit$objf - x$objf else x$objf - fit$objf
-    dof   <- if (add) {
-      length(x$finalUiEnv$ini$est) - length(fit$finalUiEnv$ini$est)
-    } else {
-      length(fit$finalUiEnv$ini$est) - length(x$finalUiEnv$ini$est)
-    }
-    pchisqr <- if (dObjf > 0) 1 - pchisq(dObjf, df = dof) else 1
-
-    # covarEffect: from the candidate fit when adding, from the full model when removing
-    covarEffect  <- if (add) x$parFixedDf[covNames, "Estimate"] else fit$parFixedDf[covNames, "Estimate"]
-    bsvReduction <- if (add) {
-      .bsvReduction(fit_without = fit, fit_with = x,   nam_var = nam_var)
-    } else {
-      .bsvReduction(fit_without = x,   fit_with = fit, nam_var = nam_var)
-    }
-
-    stats <- data.frame(
-      step         = stepIdx,
-      covar        = nam_covar,
-      var          = nam_var,
-      shape        = cov_shape,
-      objf         = x$objf,
-      deltObjf     = dObjf,
-      AIC          = x$AIC,
-      BIC          = x$BIC,
-      numParams    = length(x$finalUiEnv$ini$est),
-      qchisqr      = qchisq(1 - pVal, dof),
-      pchisqr      = pchisqr,
-      included     = if (add) "no" else "",
-      searchType   = if (add) "forward" else "backward",
-      covNames     = covNames,
-      covarEffect  = covarEffect,
-      bsvReduction = bsvReduction,
-      stringsAsFactors = FALSE
-    )
-
-    list(var = nam_var, covar = nam_covar, fit = x, stats = stats)
-  }))
+  results
 }
 
 # -- Search functions -----------------------------------------------------------
@@ -1542,7 +1587,7 @@ forwardSearch <- function(pairs, fit, data, pVal = 0.05, outputDir, restart = FA
 #' @param reFitCovars logical; if \code{TRUE} all pairs are added simultaneously
 #'   before backward elimination (used for standalone backward search)
 #' @param includedRelations enriched pairs data frame (output of the pipeline
-#'   in \code{covarSearchAuto}) of relationships that must be present in the
+#'   in \code{runSCM}) of relationships that must be present in the
 #'   model before backward elimination begins.  Any that are missing are added
 #'   and the model is re-fit once.  \code{NULL} = no forced inclusions.
 #' @param outputDir   cache directory path
@@ -1594,7 +1639,7 @@ backwardSearch <- function(pairs, fitorig, fitupdated, data,
   }, error = function(e) NULL)
 
   if (reFitCovars) {
-    xmod <- buildupatedUI(base_ui, unique(pairs$var), unique(pairs$covar), indep = FALSE, add = TRUE)
+    xmod <- .rebuildUiFromPairs(base_ui, pairs)
     fit  <- suppressWarnings(nlmixr2(xmod, data, fit$est, control = bck_control))
     context_pairs <- .pairsInModel(pairs, fit)
   }
@@ -1776,4 +1821,23 @@ backwardSearch <- function(pairs, fitorig, fitupdated, data,
 
   cli::cli_h2(cli::col_red("backward search complete"))
   list(fit, resTableComplete)
+}
+
+#' Stepwise Covariate Model-selection (SCM) method
+#'
+#' @description
+#' `r lifecycle::badge("deprecated")`
+#'
+#' `covarSearchAuto()` has been renamed to [runSCM()]. This alias is provided
+#' for backward compatibility and will be removed in a future release.
+#'
+#' @inheritParams runSCM
+#' @inherit runSCM return
+#' @export
+#' @keywords internal
+covarSearchAuto <- function(...) {
+  .Deprecated("runSCM", package = "nlmixr2extra",
+              msg = paste0("'covarSearchAuto()' has been renamed to 'runSCM()'. ",
+                           "Please update your code."))
+  runSCM(...)
 }

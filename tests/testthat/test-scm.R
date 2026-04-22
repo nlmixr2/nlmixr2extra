@@ -196,8 +196,8 @@ test_that(".makeSCMData: three-level variable with one rare level", {
     grp = c(rep("A", 15), rep("B", 4), rep("C", 1)),
     stringsAsFactors = FALSE
   )
-  res <- .cur$.makeSCMData(d, catvarsVec = "grp", fit = NULL, catCutoff = 0.05)
-  # A is reference; B retained; C dropped
+  # A=75% (ref), B=20% (retained), C=5% (< cutoff 0.06 → dropped)
+  res <- .cur$.makeSCMData(d, catvarsVec = "grp", fit = NULL, catCutoff = 0.06)
   expect_equal(res$catRef[["grp"]], "A")
   expect_true("B"  %in% res$catLevels[["grp"]])
   expect_false("C" %in% res$catLevels[["grp"]])
@@ -636,19 +636,20 @@ skip_if_not_installed("nlmixr2data")
 
 .fit_base <- function() {
   nlmixr2(
-    .pk_model, .theoph, est = "saem",
-    control = saemControl(nBurn = 50, nEm = 100, print = 0)
+    .pk_model, .theoph, est = "focei",
+    control = nlmixr2est::foceiControl(print = 0, calcTables = TRUE)
   )
 }
 
-test_that("covarSearchAuto: forward-only returns expected list structure", {
+test_that("runSCM: forward-only returns expected list structure", {
   withr::local_tempdir(clean = TRUE)
   base_fit <- .fit_base()
-  res <- covarSearchAuto(
+  res <- runSCM(
     fit        = base_fit,
     pairsVec   = list(list(var = "cl", covar = "WT", shapes = "power")),
     searchType = "forward",
-    saveModels = FALSE
+    saveModels = FALSE,
+    workers    = 1L
   )
   expect_type(res, "list")
   expect_named(res, c("summaryTable", "resFwd", "resBck"))
@@ -656,60 +657,64 @@ test_that("covarSearchAuto: forward-only returns expected list structure", {
   expect_type(res$resFwd, "list")
 })
 
-test_that("covarSearchAuto: backward-only returns expected list structure", {
+test_that("runSCM: backward-only returns expected list structure", {
   withr::local_tempdir(clean = TRUE)
   base_fit <- .fit_base()
-  res <- covarSearchAuto(
+  res <- runSCM(
     fit               = base_fit,
     pairsVec          = list(list(var = "cl", covar = "WT", shapes = "power")),
     searchType        = "backward",
     saveModels        = FALSE,
-    includedRelations = list(list(var = "cl", covar = "WT", shapes = "power"))
+    includedRelations = list(list(var = "cl", covar = "WT", shapes = "power")),
+    workers           = 1L
   )
   expect_named(res, c("summaryTable", "resFwd", "resBck"))
   expect_null(res$resFwd)
 })
 
-test_that("covarSearchAuto: full SCM returns forward and backward results", {
+test_that("runSCM: full SCM returns forward and backward results", {
   withr::local_tempdir(clean = TRUE)
   base_fit <- .fit_base()
-  res <- covarSearchAuto(
+  res <- runSCM(
     fit        = base_fit,
     pairsVec   = list(list(var = "cl", covar = "WT", shapes = "power")),
     searchType = "scm",
-    saveModels = FALSE
+    saveModels = FALSE,
+    workers    = 1L
   )
   expect_named(res, c("summaryTable", "resFwd", "resBck"))
   expect_type(res$resFwd, "list")
   expect_type(res$resBck, "list")
 })
 
-test_that("covarSearchAuto: saveModels=FALSE creates no output directory", {
+test_that("runSCM: saveModels=FALSE creates no output directory", {
   td <- withr::local_tempdir(clean = TRUE)
   withr::local_dir(td)
   base_fit <- .fit_base()
   n_before <- length(list.dirs(td, recursive = FALSE))
-  covarSearchAuto(
+  runSCM(
     fit        = base_fit,
     pairsVec   = list(list(var = "cl", covar = "WT", shapes = "power")),
     searchType = "forward",
-    saveModels = FALSE
+    saveModels = FALSE,
+    workers    = 1L
   )
   n_after <- length(list.dirs(td, recursive = FALSE))
   expect_equal(n_before, n_after)
 })
 
-test_that("covarSearchAuto: saveModels=TRUE writes log and CSV files", {
+test_that("runSCM: saveModels=TRUE writes log and CSV files", {
   td <- withr::local_tempdir(clean = TRUE)
   withr::local_dir(td)
   base_fit <- .fit_base()
-  covarSearchAuto(
+  runSCM(
     fit        = base_fit,
     pairsVec   = list(list(var = "cl", covar = "WT", shapes = "power")),
     searchType = "forward",
     saveModels = TRUE,
     outputDir  = "scm_out",
-    restart    = TRUE
+    restart    = TRUE,
+    workers    = 1L
   )
   expect_true(dir.exists("scm_out"))
   expect_true(file.exists(file.path("scm_out", "scm_log.txt")))
@@ -717,14 +722,15 @@ test_that("covarSearchAuto: saveModels=TRUE writes log and CSV files", {
   expect_true(file.exists(file.path("scm_out", "scm_all_candidates.csv")))
 })
 
-test_that("covarSearchAuto: summaryTable has expected columns", {
+test_that("runSCM: summaryTable has expected columns", {
   withr::local_tempdir(clean = TRUE)
   base_fit <- .fit_base()
-  res <- covarSearchAuto(
+  res <- runSCM(
     fit        = base_fit,
     pairsVec   = list(list(var = "cl", covar = "WT", shapes = "power")),
     searchType = "forward",
-    saveModels = FALSE
+    saveModels = FALSE,
+    workers    = 1L
   )
   if (!is.null(res$summaryTable) && nrow(res$summaryTable) > 0) {
     expect_true(all(c("covar", "var", "deltObjf", "pchisqr",
@@ -733,45 +739,48 @@ test_that("covarSearchAuto: summaryTable has expected columns", {
   }
 })
 
-test_that("covarSearchAuto: user-supplied control object accepted", {
+test_that("runSCM: user-supplied control object accepted", {
   withr::local_tempdir(clean = TRUE)
   base_fit <- .fit_base()
-  ctrl     <- saemControl(nBurn = 30, nEm = 60, print = 0)
+  ctrl     <- nlmixr2est::foceiControl(print = 0, calcTables = TRUE)
   expect_no_error(
-    covarSearchAuto(
+    runSCM(
       fit        = base_fit,
       pairsVec   = list(list(var = "cl", covar = "WT", shapes = "power")),
       searchType = "forward",
       saveModels = FALSE,
-      control    = ctrl
+      control    = ctrl,
+      workers    = 1L
     )
   )
 })
 
-test_that("covarSearchAuto: inits with bounds run without error", {
+test_that("runSCM: inits with bounds run without error", {
   withr::local_tempdir(clean = TRUE)
   base_fit <- .fit_base()
   expect_no_error(
-    covarSearchAuto(
+    runSCM(
       fit        = base_fit,
       pairsVec   = list(list(var = "cl", covar = "WT", shapes = "power")),
       searchType = "forward",
       saveModels = FALSE,
+      workers    = 1L,
       inits      = list(power = list(est = 0.75, lower = 0, upper = 3))
     )
   )
 })
 
-test_that("covarSearchAuto: per-pair shapes via pairsVec respected", {
+test_that("runSCM: per-pair shapes via pairsVec respected", {
   withr::local_tempdir(clean = TRUE)
   base_fit <- .fit_base()
-  res <- covarSearchAuto(
+  res <- runSCM(
     fit        = base_fit,
     pairsVec   = list(
       list(var = "cl", covar = "WT", shapes = c("power", "lin"))
     ),
     searchType = "forward",
-    saveModels = FALSE
+    saveModels = FALSE,
+    workers    = 1L
   )
   # At least two candidates should have been tested (power + lin)
   if (!is.null(res$summaryTable) && nrow(res$summaryTable) > 0) {
@@ -779,64 +788,157 @@ test_that("covarSearchAuto: per-pair shapes via pairsVec respected", {
   }
 })
 
-test_that("covarSearchAuto: restart=TRUE backs up existing outputDir", {
+test_that("runSCM: restart=TRUE backs up existing outputDir", {
   td <- withr::local_tempdir(clean = TRUE)
   withr::local_dir(td)
   base_fit <- .fit_base()
 
   # First run — create the directory
-  covarSearchAuto(
+  runSCM(
     fit        = base_fit,
     pairsVec   = list(list(var = "cl", covar = "WT", shapes = "power")),
     searchType = "forward",
     saveModels = TRUE,
     outputDir  = "restart_dir",
-    restart    = TRUE
+    restart    = TRUE,
+    workers    = 1L
   )
   expect_true(dir.exists("restart_dir"))
 
   # Second run — should back up and start fresh
   expect_no_error(
-    covarSearchAuto(
+    runSCM(
       fit        = base_fit,
       pairsVec   = list(list(var = "cl", covar = "WT", shapes = "power")),
       searchType = "forward",
       saveModels = TRUE,
       outputDir  = "restart_dir",
-      restart    = TRUE
+      restart    = TRUE,
+      workers    = 1L
     )
   )
   backups <- list.dirs(td, recursive = FALSE, full.names = FALSE)
   expect_true(any(grepl("^restart_dir_backup_", backups)))
 })
 
-test_that("covarSearchAuto: multiple pairs tested simultaneously", {
+test_that("runSCM: multiple pairs tested simultaneously", {
   withr::local_tempdir(clean = TRUE)
   base_fit <- .fit_base()
-  res <- covarSearchAuto(
+  res <- runSCM(
     fit        = base_fit,
     pairsVec   = list(
       list(var = "cl", covar = "WT", shapes = "power"),
       list(var = "v",  covar = "WT", shapes = "power")
     ),
     searchType = "forward",
-    saveModels = FALSE
+    saveModels = FALSE,
+    workers    = 1L
   )
   expect_type(res, "list")
 })
 
-test_that("covarSearchAuto: explicit outputDir used as absolute path", {
+test_that("runSCM: explicit outputDir used as absolute path", {
   td <- withr::local_tempdir(clean = TRUE)
   out_dir <- file.path(td, "my_scm_output")
   base_fit <- .fit_base()
-  covarSearchAuto(
+  runSCM(
     fit        = base_fit,
     pairsVec   = list(list(var = "cl", covar = "WT", shapes = "power")),
     searchType = "forward",
     saveModels = TRUE,
     outputDir  = out_dir,
-    restart    = TRUE
+    restart    = TRUE,
+    workers    = 1L
   )
   expect_true(dir.exists(out_dir))
   expect_true(file.exists(file.path(out_dir, "scm_log.txt")))
+})
+
+# =============================================================================
+# workers parameter — parallelization
+# =============================================================================
+
+test_that("runSCM: workers=1 returns same structure as workers=NULL", {
+  withr::local_tempdir(clean = TRUE)
+  base_fit <- .fit_base()
+
+  res_default <- runSCM(
+    fit        = base_fit,
+    pairsVec   = list(list(var = "cl", covar = "WT", shapes = "power")),
+    searchType = "forward",
+    saveModels = FALSE,
+    workers    = NULL
+  )
+
+  res_w1 <- runSCM(
+    fit        = base_fit,
+    pairsVec   = list(list(var = "cl", covar = "WT", shapes = "power")),
+    searchType = "forward",
+    saveModels = FALSE,
+    workers    = 1L
+  )
+
+  expect_named(res_w1, names(res_default))
+  expect_type(res_w1$resFwd, "list")
+  expect_null(res_w1$resBck)
+})
+
+test_that("runSCM: workers=1 forward+backward both respect parameter", {
+  withr::local_tempdir(clean = TRUE)
+  base_fit <- .fit_base()
+
+  res <- runSCM(
+    fit        = base_fit,
+    pairsVec   = list(list(var = "cl", covar = "WT", shapes = "power")),
+    searchType = "scm",
+    saveModels = FALSE,
+    workers    = 1L
+  )
+
+  expect_named(res, c("summaryTable", "resFwd", "resBck"))
+  expect_type(res$resFwd, "list")
+  expect_type(res$resBck, "list")
+})
+
+test_that("runSCM: workers='auto' runs without error", {
+  skip_if_not_installed("future")
+  # multisession workers load from the *installed* package, so this test only
+  # makes sense when nlmixr2extra is installed (not just load_all()-ed).
+  skip_if(
+    isTRUE(tryCatch(
+      pkgload::is_dev_package("nlmixr2extra"),
+      error = function(e) FALSE
+    )),
+    "Package loaded via load_all(); install first to run multisession test"
+  )
+  withr::local_tempdir(clean = TRUE)
+  base_fit <- .fit_base()
+
+  expect_no_error(
+    runSCM(
+      fit        = base_fit,
+      pairsVec   = list(list(var = "cl", covar = "WT", shapes = "power")),
+      searchType = "forward",
+      saveModels = FALSE,
+      workers    = "auto"
+    )
+  )
+})
+
+test_that("runSCM: future plan restored to original after workers=1", {
+  skip_if_not_installed("future")
+  withr::local_tempdir(clean = TRUE)
+  base_fit  <- .fit_base()
+  plan_orig <- class(future::plan())
+  on.exit(future::plan("sequential"), add = TRUE)
+
+  runSCM(
+    fit        = base_fit,
+    pairsVec   = list(list(var = "cl", covar = "WT", shapes = "power")),
+    searchType = "forward",
+    saveModels = FALSE,
+    workers    = 1L
+  )
+
+  expect_equal(class(future::plan()), plan_orig)
 })

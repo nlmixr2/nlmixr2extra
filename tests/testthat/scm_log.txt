@@ -1,0 +1,28 @@
+======================================================================
+SCM LOG
+======================================================================
+Generated : 2026-04-22 11:51:17
+Search type: forward
+Estimation : focei
+Base OFV   : -4029.367
+Base params: 7
+p-val fwd  : 0.05
+p-val bck  : 0.01
+Output dir : C:/Users/justin/Documents/GitHub/nlmixr2extra/tests/testthat
+
+Relationships tested (1):
+  1. WT_power~cl [power]
+
+----------------------------------------------------------------------
+FORWARD SEARCH
+----------------------------------------------------------------------
+
+Step 1 (1 candidate):
+  WT_power~cl [power]             Ref OFV= -4029.367  OFV=16580507.008  dOFV=-16584536.375  p=  1.0000
+  → No candidate met threshold (p ≤ 0.05). Forward search complete.
+
+======================================================================
+FINAL MODEL
+======================================================================
+No covariates were retained.
+Final OFV: -4029.367

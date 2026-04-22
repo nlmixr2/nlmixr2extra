@@ -89,6 +89,7 @@ Other Profiling:
 \code{\link{llpControl}()},
 \code{\link{profileFixed}()},
 \code{\link{profileLlp}()},
-\code{\link{profileNlmixr2FitCoreRet}()}
+\code{\link{profileNlmixr2FitCoreRet}()},
+\code{\link{runLLP}()}
 }
 \concept{Profiling}

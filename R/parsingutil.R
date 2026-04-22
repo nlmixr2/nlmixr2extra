@@ -22,7 +22,7 @@
 #' }
 #'
 #' Users may pass additional shapes via the \code{customShapes} argument of
-#' \code{covarSearchAuto()}.  Custom shape functions must accept named arguments
+#' \code{runSCM()}.  Custom shape functions must accept named arguments
 #' \code{col}, \code{center}, and \code{level}.
 #'
 #' @noRd
@@ -483,7 +483,7 @@ addorremoveCovariate <- function(ui, varName, covariate, add = TRUE, covExpr = N
 #'   \code{.expandShapes()} has already determined the expression.
 #' @param init numeric starting estimate for the covariate theta; default
 #'   \code{0} (no covariate effect).  Set via \code{.expandShapes()} from the
-#'   \code{inits} argument of \code{covarSearchAuto()}.
+#'   \code{inits} argument of \code{runSCM()}.
 #' @return ui with added or removed covariate
 #' @noRd
 #' @author  Vishal Sarsani
@@ -705,7 +705,7 @@ buildupatedUI <- function(ui, varsVec, covarsVec, add = TRUE, indep = FALSE) {
 #' @export
 addCatCovariates <- function(data, covarsVec, catcovarsVec) {
   # check for valid inputs
-  checkmate::assert_data_frame(data, min.cols = 7)
+  checkmate::assert_data_frame(data)
   checkmate::assert_character(covarsVec)
   checkmate::assert_character(catcovarsVec)
   #create new catcovarsvec

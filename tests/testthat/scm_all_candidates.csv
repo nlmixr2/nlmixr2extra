@@ -1,0 +1,2 @@
+"Direction","Step","Relation","Ref_OFV","OFV","dOFV","p_value","AIC","BIC","numParams","covarEffect","bsvReduction","Decision"
+"Forward",1,"WT_power~cl [power]",-4029.367,16580507.008,-16584536.375,1,16580765.607,16580788.67,8,0.1,0,"Not selected"

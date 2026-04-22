@@ -32,6 +32,7 @@ Other Profiling:
 \code{\link{llpControl}()},
 \code{\link{profile.nlmixr2FitCore}()},
 \code{\link{profileFixed}()},
-\code{\link{profileNlmixr2FitCoreRet}()}
+\code{\link{profileNlmixr2FitCoreRet}()},
+\code{\link{runLLP}()}
 }
 \concept{Profiling}

@@ -30,6 +30,7 @@ Other Profiling:
 \code{\link{llpControl}()},
 \code{\link{profile.nlmixr2FitCore}()},
 \code{\link{profileFixed}()},
-\code{\link{profileLlp}()}
+\code{\link{profileLlp}()},
+\code{\link{runLLP}()}
 }
 \concept{Profiling}

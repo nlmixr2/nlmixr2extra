@@ -1,0 +1,453 @@
+---
+title: "Stepwise Covariate Modelling with runSCM()"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Stepwise Covariate Modelling with runSCM()}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse  = TRUE,
+  comment   = "#>",
+  fig.width = 7,
+  fig.height = 4
+)
+```
+
+## Introduction
+
+Stepwise Covariate Modelling (SCM) is the standard automated covariate selection
+procedure in population PK/PD analysis.  It uses a likelihood-ratio test to evaluate
+whether adding a covariate-parameter relationship significantly improves model fit,
+and proceeds in two phases:
+
+1. **Forward inclusion**: starting from the base model, the candidate relationship
+   that produces the largest statistically significant ΔOFV (OFV decrease) is added
+   at each step.  The process repeats until no remaining candidate meets the threshold.
+2. **Backward elimination**: starting from the forward-final model, each included
+   relationship is tested for removal.  A relationship is dropped if its removal
+   does not produce a statistically significant ΔOFV increase (at a stricter
+   threshold than forward).
+
+`runSCM()` implements both phases for `nlmixr2` fits.  It automatically generates
+the covariate expressions in the model body — centering continuous covariates at their
+observed median, creating indicator columns for categorical covariates — so no data
+pre-processing is required.
+
+---
+
+## Example: warfarin PK covariate search
+
+We use `nlmixr2data::warfarin`, filtered to PK observations only (`dvid == "cp"`), with
+covariates body weight (`wt`, continuous) and sex (`sex`, categorical).
+
+```{r packages, message = FALSE}
+library(nlmixr2)
+library(nlmixr2data)
+library(nlmixr2extra)
+```
+
+### 1. Prepare the data
+
+Pass the **original, untransformed** dataset to `runSCM()`.  All covariate centering
+and other shape transformations are generated inside the model body by the SCM
+machinery; applying them to the data first would lead to double-transformation.
+
+```{r data}
+pkdata <- warfarin[warfarin$dvid == "cp", ]
+
+d_subj <- pkdata[!duplicated(pkdata$id), ]
+cat(sprintf("Subjects: %d   Rows: %d\n", length(unique(pkdata$id)), nrow(pkdata)))
+cat(sprintf("wt  median: %.1f  range: %.1f – %.1f\n",
+            median(d_subj$wt), min(d_subj$wt), max(d_subj$wt)))
+cat(sprintf("sex levels: %s\n",
+            paste(names(table(d_subj$sex)), table(d_subj$sex), sep = "=", collapse = ", ")))
+```
+
+### 2. Fit the base model
+
+The base model contains no covariate terms — `runSCM()` adds them.
+
+```{r fit, message = FALSE, results = "hide"}
+warf_pk <- function() {
+  ini({
+    tka     <- log(1.15)   # log absorption rate constant (h^-1)
+    tcl     <- log(0.135)  # log clearance (L/h)
+    tv      <- log(7.0)    # log volume of distribution (L)
+    eta.ka  ~ 0.40
+    eta.cl  ~ 0.25
+    eta.v   ~ 0.10
+    prop.err <- 0.10
+  })
+  model({
+    ka <- exp(tka + eta.ka)
+    cl <- exp(tcl + eta.cl)
+    v  <- exp(tv  + eta.v)
+    linCmt() ~ prop(prop.err)
+  })
+}
+
+fit_base <- nlmixr2(
+  warf_pk, pkdata,
+  est     = "saem",
+  control = saemControl(print = 0, nBurn = 200, nEm = 100),
+  table   = tableControl(cwres = TRUE)
+)
+```
+
+```{r fit-summary}
+fit_base$parFixedDf
+cat(sprintf("Base OFV: %.3f\n", fit_base$objf))
+```
+
+---
+
+### 3. Run the SCM
+
+#### Specifying candidates with `pairsVec`
+
+The most explicit way to define the search space is `pairsVec`: a list of
+`list(var=, covar=, shapes=)` items.  Each item names the PK parameter (`var`),
+the covariate (`covar`), and optionally the functional shapes to test.  When
+`shapes` is omitted the global `shapes` argument applies (default `"power"`).
+
+Categorical covariates are listed in `catvarsVec`; `runSCM()` automatically
+creates binary indicator columns and tests each non-reference level.
+
+The `data` argument must be supplied explicitly whenever the base model does not
+reference a covariate column — otherwise `nlme::getData(fit)` may drop it.
+
+```{r scm-pairs}
+pairs_list <- list(
+  list(var = "v",  covar = "wt",  shapes = "power"),
+  list(var = "v",  covar = "sex"),
+  list(var = "cl", covar = "wt",  shapes = "power"),
+  list(var = "cl", covar = "sex")
+)
+```
+
+```{r scm, message = FALSE, results = "hide"}
+scm <- runSCM(
+  fit        = fit_base,
+  data       = pkdata,
+  pairsVec   = pairs_list,
+  catvarsVec = "sex",
+  pVal       = list(fwd = 0.05, bck = 0.01),
+  searchType = "scm",
+  saveModels = TRUE,
+  verbose    = FALSE,
+  restart    = TRUE,
+  print      = 0,
+  workers    = 1L,
+  confirm    = FALSE
+)
+```
+
+#### `runSCM()` argument reference
+
+| Argument | Default | Meaning |
+|---|---|---|
+| `varsVec` | `NULL` | PK parameters to test (used with `covarsVec`; ignored when `pairsVec` supplied) |
+| `covarsVec` | `NULL` | Continuous covariates (ignored when `pairsVec` supplied) |
+| `catvarsVec` | `NULL` | Categorical covariates; indicator columns created automatically |
+| `pairsVec` | `NULL` | Explicit parameter-covariate pairs; overrides `varsVec`/`covarsVec` |
+| `shapes` | `"power"` | Shape(s) for continuous covariates: `"power"`, `"lin"`, `"log"`, `"identity"` |
+| `pVal` | `list(fwd=0.05, bck=0.01)` | Forward and backward p-value thresholds |
+| `searchType` | `"scm"` | `"scm"` (both phases), `"forward"`, or `"backward"` |
+| `data` | `NULL` | Dataset; required when base model omits covariate columns |
+| `inits` | `list()` | Initial theta estimates for covariate parameters, by shape |
+| `missingToken` | `NA` | Sentinel value for missing covariate observations |
+| `catCutoff` | `0.05` | Minimum non-reference level prevalence to test |
+| `includedRelations` | `NULL` | Relations forced into the backward-start model |
+| `saveModels` | `TRUE` | Write fitted models to `outputDir` |
+| `verbose` | `FALSE` | Print full candidate tables at each step |
+| `restart` | `FALSE` | Discard existing cache and start fresh |
+| `workers` | `NULL` | Sequential; set > 1 for parallel candidate fitting |
+| `confirm` | `TRUE` | Prompt for confirmation in interactive sessions |
+
+---
+
+### 4. Interpreting the results
+
+`runSCM()` returns a named list with three elements:
+
+```{r return-structure}
+names(scm)
+```
+
+#### Summary table
+
+`summaryTable` contains one row per candidate tested across all steps and both phases,
+with the columns most useful for review:
+
+```{r summary-table}
+cols <- intersect(
+  c("searchType", "step", "covar", "var", "shape",
+    "deltObjf", "pchisqr", "included"),
+  colnames(scm$summaryTable)
+)
+print(scm$summaryTable[, cols])
+```
+
+Key columns:
+
+| Column | Meaning |
+|---|---|
+| `searchType` | `"forward"` or `"backward"` |
+| `step` | Step number within the phase |
+| `covar` | Covariate name |
+| `var` | PK parameter |
+| `shape` | Functional shape tested |
+| `deltObjf` | ΔOFV (positive = improvement in forward; positive = deterioration in backward) |
+| `pchisqr` | p-value from chi-squared test (1 df) |
+| `bsvReduction` | Reduction in BSV for `var` (%) |
+| `covarEffect` | Estimated effect magnitude at the covariate extremes |
+| `included` | `"yes"` (accepted), `"no"` (rejected), `"dropped"` (removed in backward) |
+
+#### Forward search detail
+
+```{r fwd-detail}
+fwd_tbl <- scm$resFwd[[2]]
+if (!is.null(fwd_tbl) && nrow(fwd_tbl) > 0) {
+  print(fwd_tbl[fwd_tbl$included == "yes",
+                intersect(c("step", "covar", "var", "shape", "deltObjf",
+                            "pchisqr", "bsvReduction"), colnames(fwd_tbl))])
+} else {
+  cat("No covariates accepted in forward search.\n")
+}
+```
+
+#### Backward search detail
+
+```{r bck-detail}
+bck_tbl <- scm$resBck[[2]]
+if (!is.null(bck_tbl) && nrow(bck_tbl) > 0) {
+  print(bck_tbl[, intersect(c("step", "covar", "var", "shape", "deltObjf",
+                               "pchisqr", "included"), colnames(bck_tbl))])
+} else {
+  cat("No backward elimination steps.\n")
+}
+```
+
+#### Final model
+
+The final model fit is in `resBck[[1]]` after a full SCM (or `resFwd[[1]]` after a
+forward-only search):
+
+```{r final-model}
+fit_final <- scm$resBck[[1]]
+fit_final$parFixedDf
+cat(sprintf("Final OFV: %.3f   ΔOFV vs base: %.3f\n",
+            fit_final$objf, fit_base$objf - fit_final$objf))
+```
+
+---
+
+### 5. Alternative: specify all combinations with `varsVec` and `covarsVec`
+
+When the search space is a full Cartesian product of parameters × covariates, use
+`varsVec` and `covarsVec` instead of enumerating every pair:
+
+```{r scm-auto, eval = FALSE}
+scm_auto <- runSCM(
+  fit        = fit_base,
+  data       = pkdata,
+  varsVec    = c("cl", "v"),
+  covarsVec  = "wt",
+  catvarsVec = "sex",
+  shapes     = c("power", "lin"),
+  pVal       = list(fwd = 0.05, bck = 0.01),
+  confirm    = FALSE
+)
+```
+
+This tests `wt~cl`, `wt~v`, `sex~cl`, and `sex~v`, each with power and linear shapes
+for the continuous covariate — eight candidates in total.
+
+---
+
+### 6. Covariate shapes
+
+`runSCM()` supports four built-in shapes for continuous covariates.  All use the
+**observed median** as the centering value, computed automatically from the data.
+
+| Shape | Expression in model body | Interpretation |
+|---|---|---|
+| `"power"` | `log(cov / median(cov))` | Allometric / power-law relationship |
+| `"lin"` | `cov − median(cov)` | Linear deviation from the median |
+| `"log"` | `log(cov)` | Log-transformed covariate (no centering) |
+| `"identity"` | `cov` | Raw covariate (no transformation) |
+
+Categorical covariates always use the `"cat"` shape: a binary indicator column
+`cov_<level>` multiplied by a theta parameter.  The reference level is the most
+frequent category.  Levels representing fewer than `catCutoff` (default 5 %) of
+subjects are merged with the reference and not tested.
+
+Custom shapes can be added via the `customShapes` argument — a named list of functions
+`function(col, center, level)` that return a character expression string.
+
+---
+
+### 7. Forced inclusions
+
+`includedRelations` forces specific covariate relationships into the model at the start
+of backward elimination — even if they were not accepted during forward inclusion.
+This mirrors PsN's `[included_relations]` block:
+
+```{r included, eval = FALSE}
+scm_inc <- runSCM(
+  fit               = fit_base,
+  data              = pkdata,
+  pairsVec          = pairs_list,
+  catvarsVec        = "sex",
+  searchType        = "scm",
+  includedRelations = list(list(var = "cl", covar = "wt", shapes = "power")),
+  confirm           = FALSE
+)
+```
+
+The `wt~cl` power relationship will be present at the start of backward elimination
+regardless of whether it was significant in the forward phase.  It remains eligible
+for removal during backward elimination like any other covariate.
+
+---
+
+### 8. Forward-only or backward-only search
+
+Set `searchType` to run a single phase:
+
+```{r single-phase, eval = FALSE}
+# Forward only — stop after inclusion phase
+scm_fwd <- runSCM(
+  fit        = fit_base,
+  data       = pkdata,
+  pairsVec   = pairs_list,
+  catvarsVec = "sex",
+  searchType = "forward",
+  confirm    = FALSE
+)
+fit_after_fwd <- scm_fwd$resFwd[[1]]
+
+# Backward only — apply elimination to a model that already contains covariates
+# (requires a fit that already has covariate terms)
+scm_bck <- runSCM(
+  fit        = fit_after_fwd,
+  data       = pkdata,
+  pairsVec   = pairs_list,
+  catvarsVec = "sex",
+  searchType = "backward",
+  pVal       = list(fwd = 0.05, bck = 0.01),
+  confirm    = FALSE
+)
+```
+
+---
+
+### 9. Parallel candidate fitting
+
+Each candidate model at a given step is an independent fit, so parallelisation gives
+a near-linear speed-up up to the number of candidates.  Install the optional
+`future`, `future.apply`, and `progressr` packages and set `workers`:
+
+```{r parallel, eval = FALSE}
+# install.packages(c("future", "future.apply", "progressr"))
+
+scm_par <- runSCM(
+  fit        = fit_base,
+  data       = pkdata,
+  pairsVec   = pairs_list,
+  catvarsVec = "sex",
+  searchType = "scm",
+  workers    = 4L,
+  confirm    = FALSE
+)
+```
+
+Sequential execution (`workers = NULL` or `workers = 1`) requires no additional
+packages.
+
+> **Note**: parallel SCM workers load from the **installed** package.  If you are
+> developing with `devtools::load_all()`, install the package first with
+> `devtools::install()` before using `workers > 1`.
+
+---
+
+### 10. Missing covariate values
+
+When a covariate has missing observations, set `missingToken` to the sentinel used in
+the data (e.g. `-99` or `"."`) in addition to `NA`.  `runSCM()` wraps the covariate
+expression in an `ifelse()` guard that imputes the population-typical value:
+
+* **Continuous**: imputes the median (log(median/median) = 0 for power shape; 0 for linear).
+* **Categorical**: imputes the mode (most frequent level).
+
+```{r missing, eval = FALSE}
+# Data where missing wt is coded as -99
+scm_miss <- runSCM(
+  fit          = fit_base,
+  data         = pkdata,
+  pairsVec     = pairs_list,
+  catvarsVec   = "sex",
+  missingToken = -99,
+  confirm      = FALSE
+)
+```
+
+---
+
+## Output files
+
+When `saveModels = TRUE` (the default), `runSCM()` writes the following files to the
+output directory (auto-named `<fitName>_scm_<N>` in the working directory):
+
+| File | Contents |
+|---|---|
+| `scm_step_summary.csv` | Best candidate per step (one row per step) |
+| `scm_all_candidates.csv` | Every model tested across all steps |
+| `scm_log.txt` | Human-readable run log with header metadata |
+| `fwd_step{N}_<rel>.rds` | Fitted model for each forward candidate |
+| `bck_step{N}_<rel>.rds` | Fitted model for each backward candidate |
+
+Set `saveModels = FALSE` to run without writing any files, for example when
+exploring the search space in a scratch session.
+
+---
+
+## Tips for a robust SCM
+
+**Sample size**: the SCM uses a chi-squared approximation with 1 degree of freedom.
+The rule of thumb is at least 50–100 subjects for a reliable test; sparse data leads
+to inflated type I error in forward inclusion.
+
+**p-value thresholds**: the conventional PsN defaults are `fwd = 0.05` and
+`bck = 0.01`.  In exploratory analyses, a more liberal forward threshold (e.g. 0.10)
+avoids missing important relationships at the cost of higher false-positive rates.
+
+**Shape choice**: the power shape (`log(cov/median)`) is appropriate for weight and
+other allometric predictors.  Use `shapes = c("power", "lin")` to test both and let
+the data decide.
+
+**Warm-starting**: when a covariate is accepted, the estimated theta from that step
+is automatically used as the starting estimate for all subsequent steps that involve
+the same covariate shape, which speeds convergence and improves numerical stability.
+
+**Categorical covariates**: pass `catvarsVec` rather than pre-creating dummy columns.
+`runSCM()` handles level detection, reference-level selection, and indicator column
+creation automatically.
+
+---
+
+## References
+
+Jonsson, E.N. & Karlsson, M.O. (1998). Automated covariate model building within
+NONMEM. *Pharmaceutical Research*, 15(9), 1463–1468.
+
+Lindbom, L., Ribbing, J., & Jonsson, E.N. (2004). Perl-speaks-NONMEM (PsN) — a Perl
+module for NONMEM related programming. *Computer Methods and Programs in Biomedicine*,
+75, 85–94.
+
+Ribbing, J. & Jonsson, E.N. (2004). Power, selection bias and predictive performance
+of the population pharmacokinetic covariate model. *Journal of Pharmacokinetics and
+Pharmacodynamics*, 31(2), 109–134.

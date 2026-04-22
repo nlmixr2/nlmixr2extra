@@ -1,0 +1,336 @@
+---
+title: "Sampling Importance Resampling with runSIR()"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Sampling Importance Resampling with runSIR()}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse  = TRUE,
+  comment   = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+## Introduction
+
+Standard uncertainty estimates for non-linear mixed-effects model parameters rely on the
+covariance matrix produced by the covariance step (an approximation to the inverse
+Fisher information matrix).  This approximation performs well when the likelihood
+surface is nearly quadratic near the maximum — a condition that often fails for
+variance components, highly correlated parameters, or models with a restricted
+parameter space.
+
+Sampling Importance Resampling (SIR; Dosne et al. 2013) is a simulation-based
+alternative that samples directly from the parameter uncertainty distribution.  The
+algorithm:
+
+1. **Samples** parameter vectors from a proposal distribution centred on the MLE and
+   using the asymptotic covariance as its shape.
+2. **Evaluates** each sampled vector by re-running the model with those parameters
+   fixed (one OFV evaluation per sample, equivalent to NONMEM `MAXEVAL=0`).
+3. **Weights** each sample by the ratio of the target density (the likelihood) to the
+   proposal density (importance weighting).
+4. **Resamples** without replacement according to those weights.
+5. **Updates** the proposal covariance from the empirical covariance of the resampled
+   vectors and repeats for the next iteration.
+
+After convergence the resampled vectors represent draws from the parameter uncertainty
+distribution, and empirical percentiles give non-parametric confidence intervals that
+require no asymptotic assumption.
+
+`runSIR()` implements this algorithm for `nlmixr2` FOCE-I fits, following the PsN
+`sir` workflow where practical.
+
+---
+
+## Prerequisites
+
+`runSIR()` requires a fit with a successful covariance step — the initial proposal is
+derived from `fit$cov`.  If your fit was run without a covariance step, re-run with
+`covMethod = "r"` (or another appropriate method) before calling `runSIR()`.
+
+SIR also requires at least two random effects (ETAs) so that a multivariate proposal
+can be constructed for the omega block.
+
+```{r packages, message = FALSE}
+library(nlmixr2)
+library(nlmixr2data)
+library(nlmixr2extra)
+```
+
+---
+
+## Example: theophylline single-dose PK
+
+We use `nlmixr2data::theo_sd` — 12 subjects after a single oral dose — with a
+one-compartment model that includes IIV on absorption, clearance, and volume.
+
+### 1. Fit the base model
+
+The covariance step runs automatically with FOCE-I.  Request NPDE and CWRES residuals
+via `table` for later diagnostics if needed.
+
+```{r fit, message = FALSE, results = "hide"}
+three_eta_one_cmt <- function() {
+  ini({
+    tka    <- 0.45    # log absorption rate constant (1/h)
+    tcl    <- 1.00    # log clearance (L/h)
+    tv     <- 3.45    # log central volume (L)
+    eta.ka ~ 0.6      # IIV on absorption
+    eta.cl ~ 0.3      # IIV on clearance
+    eta.v  ~ 0.1      # IIV on volume
+    add.sd <- 0.7     # additive residual error (mg/L)
+  })
+  model({
+    ka <- exp(tka + eta.ka)
+    cl <- exp(tcl + eta.cl)
+    v  <- exp(tv  + eta.v)
+    linCmt() ~ add(add.sd)
+  })
+}
+
+fit <- nlmixr2(
+  three_eta_one_cmt,
+  data    = nlmixr2data::theo_sd,
+  est     = "focei",
+  control = list(print = 0L),
+  table   = list(npde = TRUE, cwres = TRUE)
+)
+```
+
+```{r fit-summary}
+fit$parFixedDf
+round(as.matrix(fit$omega), 4)
+```
+
+---
+
+### 2. Run SIR
+
+The most important arguments are:
+
+| Argument | Default | Meaning |
+|---|---|---|
+| `nSamples` | `c(1000, 1000, 1000, 2000, 2000)` | Samples per iteration |
+| `nResample` | `c(200, 400, 500, 1000, 1000)` | Resamples per iteration |
+| `thetaInflation` | `1` | Variance multiplier for theta proposal |
+| `omegaInflation` | `1` | Variance multiplier for omega proposal |
+| `capCorrelation` | `0.8` | Cap on absolute pairwise correlations |
+| `capResampling` | `1` | Max times one sample may be redrawn |
+| `recenter` | `TRUE` | Shift proposal mean to best sample when dOFV < 0 |
+| `boxcox` | `TRUE` | Use Box-Cox transformed empirical covariance |
+| `workers` | `NULL` | Sequential; set > 1 for parallel OFV evaluation |
+| `directory` | `NULL` | Output folder (auto-named if `NULL`) |
+| `recover` | `TRUE` | Resume from saved state if found |
+
+The example below uses a two-iteration schedule with small sample counts for
+illustration.  In a real analysis, use the PsN-recommended defaults (1 000 / 2 000
+samples, 200 / 1 000 resamples) or increase counts until the resampled covariance
+stabilises.
+
+```{r sir, message = FALSE}
+set.seed(20260420)
+
+sir_result <- runSIR(
+  fit,
+  nSamples       = c(16L, 16L),
+  nResample      = c(8L,  8L),
+  thetaInflation = 1,
+  omegaInflation = 1,
+  sigmaInflation = 1,
+  capCorrelation = 0.8,
+  capResampling  = 1,
+  recenter       = TRUE,
+  boxcox         = TRUE,
+  workers        = 1L,
+  directory      = file.path(
+    tempdir(), paste0("sir_vignette_", format(Sys.time(), "%Y%m%d_%H%M%S"))
+  ),
+  recover        = FALSE
+)
+```
+
+---
+
+### 3. Inspect the results
+
+`print()` shows the final parameter uncertainty table and per-iteration diagnostics:
+
+```{r print-sir}
+print(sir_result)
+```
+
+Key columns in the summary:
+
+| Column | Meaning |
+|---|---|
+| `estimate` | MLE from the original fit |
+| `sd` | Empirical SD of the resampled vectors |
+| `rse` | 100 × sd / \|estimate\| |
+| `p2.5`, `p97.5` | 2.5th and 97.5th empirical percentiles (95 % CI) |
+| `p50` | Median of the resampled distribution |
+
+The iteration diagnostics report how many samples were drawn, how many OFV evaluations
+succeeded, and how many vectors were resampled.  A healthy run has few failures
+(`nFailed` ≈ 0) and no negative dOFV values (`nNegativeDOFV` = 0; if present, the
+proposal mean is recentered automatically when `recenter = TRUE`).
+
+---
+
+### 4. Re-compute the summary from the resampled matrix
+
+`sirSummary()` recomputes the table from the raw resampled matrix, which is also
+useful when you want to summarise a subset of iterations or apply the function to a
+matrix from an external source.
+
+```{r sir-summary}
+final_mat  <- attr(sir_result, "resampledMat")
+sir_summ   <- sirSummary(final_mat, fit)
+print(sir_summ)
+```
+
+Empirical covariance and correlation matrices between parameters are available as
+attributes:
+
+```{r cov-cor}
+round(attr(sir_summ, "covMatrix"), 6)
+round(attr(sir_summ, "corMatrix"), 4)
+```
+
+---
+
+### 5. Diagnostic plots
+
+`plot()` returns a `ggplot2` object.  Three views are available:
+
+#### Parameter distributions
+
+Histograms of the final resampled vectors with the MLE marked in orange.  The shape
+reveals whether the posterior is symmetric and whether any parameter is near a bound.
+
+```{r plot-params, fig.cap = "Final resampled parameter distributions"}
+plot(sir_result, type = "parameters", bins = 12L)
+```
+
+#### dOFV distributions
+
+Histograms of ΔOFV = OFV(sample) − OFV(fit) per iteration.  A good proposal yields a
+distribution concentrated near 0–10; a very flat or right-skewed dOFV histogram
+suggests the proposal is too narrow or too wide.
+
+```{r plot-dofv, fig.cap = "dOFV distributions by iteration"}
+plot(sir_result, type = "dofv", bins = 12L)
+```
+
+#### Resampling probabilities
+
+Bar chart of resampling probabilities per sample per iteration.  A healthy run has
+many samples with non-negligible probability; a run dominated by a few high-weight
+samples indicates a poor proposal (too wide).
+
+```{r plot-resample, fig.cap = "Resampling probabilities by iteration"}
+plot(sir_result, type = "resampling")
+```
+
+---
+
+### 6. Output files
+
+`runSIR()` writes several files to the output directory:
+
+```{r list-files}
+list.files(attr(sir_result, "outputDir"))
+```
+
+| File | Contents |
+|---|---|
+| `raw_results_sir_iteration{N}.csv` | Full sample/weight/resample table for each iteration |
+| `summary_iterations.csv` | Per-iteration diagnostic summary |
+| `sample_rejection_summary.txt` | Counts of rejected samples (bounds, omega non-PD) |
+| `sir_results.csv` | Final parameter summary (same as the printed table) |
+| `sir_state.rds` | Full internal state for recovery or adding iterations |
+
+---
+
+### 7. Advanced use
+
+#### Resuming an interrupted run
+
+By default `recover = TRUE` so that if a long SIR run is interrupted, re-calling
+`runSIR()` with the same `directory` will pick up from the last completed iteration:
+
+```{r recover, eval = FALSE}
+sir_result <- runSIR(fit, directory = "my_sir_run", recover = TRUE)
+```
+
+#### Adding iterations
+
+To append more iterations to a completed run, use `addIterations = TRUE` with a new
+sample schedule:
+
+```{r add-iter, eval = FALSE}
+sir_result <- runSIR(
+  fit,
+  nSamples      = c(2000L, 2000L),
+  nResample     = c(1000L, 1000L),
+  directory     = "my_sir_run",
+  addIterations = TRUE
+)
+```
+
+#### Parallel OFV evaluation
+
+OFV evaluations are the bottleneck.  Setting `workers > 1` runs them in parallel using
+the `future` / `future.apply` packages:
+
+```{r parallel, eval = FALSE}
+# install.packages(c("future", "future.apply"))  # if not already installed
+
+sir_result <- runSIR(
+  fit,
+  nSamples  = c(1000L, 1000L, 1000L, 2000L, 2000L),
+  nResample = c(200L,  400L,  500L,  1000L, 1000L),
+  workers   = 4L
+)
+```
+
+Sequential evaluation (`workers = NULL` or `workers = 1`) does not require `future` or
+`future.apply`.
+
+---
+
+## Choosing the schedule
+
+The PsN documentation recommends the default five-iteration schedule
+`nSamples = c(1000, 1000, 1000, 2000, 2000)` /
+`nResample = c(200, 400, 500, 1000, 1000)`.  The rule of thumb is that each
+iteration's sample-to-resample ratio should be approximately 5 : 1.  The final
+resampled covariance should be stable across iterations — if it is still changing
+noticeably between the last two iterations, add more iterations or increase sample
+counts.
+
+For parameters that are far from normal (e.g. highly constrained variance components),
+setting `thetaInflation` or `omegaInflation` to 1.5–2 widens the initial proposal and
+reduces the risk of importance-weight collapse.
+
+---
+
+## References
+
+Dosne, A.-G., Bergstrand, M., & Karlsson, M.O. (2013). An automated sampling
+importance resampling procedure for estimating parameter uncertainty. *PAGE 22*,
+Abstract 2907.
+
+Dosne, A.-G., Bergstrand, M., Harling, K., & Karlsson, M.O. (2016). Improving the
+estimation of parameter uncertainty distributions in nonlinear mixed effects models
+using sampling importance resampling. *Journal of Pharmacokinetics and
+Pharmacodynamics*, 43(6), 583–596.
+
+Lindbom, L., Ribbing, J., & Jonsson, E.N. (2004). Perl-speaks-NONMEM (PsN) — a Perl
+module for NONMEM related programming. *Computer Methods and Programs in Biomedicine*,
+75, 85–94.

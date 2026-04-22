@@ -6,22 +6,29 @@
 \usage{
 llpControl(
   ofvIncrease = qchisq(0.95, df = 1),
+  normq = 1.96,
   rseTheta = 30,
   itermax = 10,
   ofvtol = 0.005,
   paramDigits = 3,
-  extrapolateExpand = 1.5
+  extrapolateExpand = 1.5,
+  workers = NULL
 )
 }
 \arguments{
 \item{ofvIncrease}{The targetted change in objective function value (3.84
 corresponds to a Chi-squared test with a 95\% confidence interval)}
 
-\item{rseTheta}{The relative standard error (percent) for the model
-parameters.  It can be missing (the default) in which case a default value
-of 30\% will be applied.  If given as a single number, it will be applied to
-all parameters.  If given as a named vector of numbers, it will be applied
-to each named parameter.}
+\item{normq}{Normal quantile used to compute the initial-guess width for each
+profile direction: \code{width = normq * SE} when SE is available, or
+\verb{width = normq * rseTheta/100 * |MLE|} as a fallback.  Defaults to 1.96
+(PsN convention).}
+
+\item{rseTheta}{The relative standard error (percent) used as a fallback
+initial-guess width when SE is unavailable.  Either a single unnamed
+non-negative number applied to all parameters (default 30), or a named
+non-negative numeric vector with one entry per parameter.  Name validity
+against the fit is checked at profiling time, not here.}
 
 \item{itermax}{Maximum number of likelihood profiling iterations for each
 bound estimated}
@@ -35,6 +42,12 @@ significant digits, it will stop.}
 
 \item{extrapolateExpand}{When extrapolating outside the range previously
 tested, how far should the step occur as a ratio}
+
+\item{workers}{Number of parallel workers for profiling multiple parameters
+simultaneously.  \code{NULL} (default) or \code{1} runs sequentially without
+requiring any optional packages.  A positive integer greater than 1, or
+\code{"auto"}, uses \code{future} and \code{future.apply}; both packages must be installed
+or profiling aborts with a clear error.}
 }
 \value{
 A validated list of control options for log-likelihood profiling
@@ -50,6 +63,7 @@ Other Profiling:
 \code{\link{profile.nlmixr2FitCore}()},
 \code{\link{profileFixed}()},
 \code{\link{profileLlp}()},
-\code{\link{profileNlmixr2FitCoreRet}()}
+\code{\link{profileNlmixr2FitCoreRet}()},
+\code{\link{runLLP}()}
 }
 \concept{Profiling}

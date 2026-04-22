@@ -39,14 +39,16 @@ Other Profiling:
 \code{\link{llpControl}()},
 \code{\link{profile.nlmixr2FitCore}()},
 \code{\link{profileLlp}()},
-\code{\link{profileNlmixr2FitCoreRet}()}
+\code{\link{profileNlmixr2FitCoreRet}()},
+\code{\link{runLLP}()}
 
 Other Profiling: 
 \code{\link{fixedControl}()},
 \code{\link{llpControl}()},
 \code{\link{profile.nlmixr2FitCore}()},
 \code{\link{profileLlp}()},
-\code{\link{profileNlmixr2FitCoreRet}()}
+\code{\link{profileNlmixr2FitCoreRet}()},
+\code{\link{runLLP}()}
 }
 \author{
 Bill Denney (changed by Matt Fidler to take out R 4.1 specific code)

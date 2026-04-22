@@ -21,6 +21,7 @@ Other Profiling:
 \code{\link{profile.nlmixr2FitCore}()},
 \code{\link{profileFixed}()},
 \code{\link{profileLlp}()},
-\code{\link{profileNlmixr2FitCoreRet}()}
+\code{\link{profileNlmixr2FitCoreRet}()},
+\code{\link{runLLP}()}
 }
 \concept{Profiling}

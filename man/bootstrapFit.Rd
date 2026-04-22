@@ -4,126 +4,33 @@
 \alias{bootstrapFit}
 \title{Bootstrap nlmixr2 fit}
 \usage{
-bootstrapFit(
-  fit,
-  nboot = 200,
-  nSampIndiv,
-  stratVar,
-  stdErrType = c("perc", "sd", "se"),
-  ci = 0.95,
-  pvalues = NULL,
-  restart = FALSE,
-  plotHist = FALSE,
-  fitName = as.character(substitute(fit)),
-  returnType = c("model", "fitList", "modelList")
-)
-}
-\arguments{
-\item{fit}{the nlmixr2 fit object}
-
-\item{nboot}{an integer giving the number of bootstrapped models to
-be fit; default value is 200}
-
-\item{nSampIndiv}{an integer specifying the number of samples in
-each bootstrapped sample; default is the number of unique
-subjects in the original dataset}
-
-\item{stratVar}{Variable in the original dataset to stratify on;
-This is useful to distinguish between sparse and full sampling
-and other features you may wish to keep distinct in your
-bootstrap}
-
-\item{stdErrType}{This gives the standard error type for the
-updated standard errors; The current possibilities are: \code{"perc"}
-which gives the standard errors by percentiles (default), \code{"sd"}
-which gives the standard errors by the using the normal
-approximation of the mean with standard devaition, or \code{"se"}
-which uses the normal approximation with standard errors
-calculated with \code{nSampIndiv}}
-
-\item{ci}{Confidence interval level to calculate.  Default is 0.95
-for a 95 percent confidence interval}
-
-\item{pvalues}{a vector of pvalues indicating the probability of
-each subject to get selected; default value is \code{NULL} implying
-that probability of each subject is the same}
-
-\item{restart}{A boolean to try to restart an interrupted or
-incomplete boostrap.  By default this is \code{FALSE}}
-
-\item{plotHist}{A boolean indicating if a histogram plot to assess
-how well the bootstrap is doing.  By default this is turned off
-(\code{FALSE})}
-
-\item{fitName}{is the fit name that is used for the name of the
-boostrap files.  By default it is the fit provided though it
-could be something else.}
-
-\item{returnType}{this describes the return type
-\itemize{
-\item \code{model} this is the default and returns an updated model boostrapped
-confidence intervals and standard errors updated in the estimates.
-\item \code{fitList} this returns the list of the full fits from the bootstrap.
-\item \code{modelList} this returns the model list (which abbreviates the
-parameters and messages) used for the bootstrap summary
-statistics.
-}}
+bootstrapFit(...)
 }
 \value{
-Nothing, called for the side effects; The original fit is
-updated with the bootstrap confidence bands
+A named list with elements:
+\describe{
+\item{\code{seed}}{Integer vector: full RNG state before resampling (also
+saved as \file{bootstrap_seed.rds} in \code{outputDir}).}
+\item{\code{results}}{Data frame: one row per successful replicate with
+columns \code{replicate}, \code{<par>.Estimate}, and
+\code{<par>.BackTransformed} for every fixed-effect parameter (also
+written as \file{bootstrap_results.csv}).}
+\item{\code{summary}}{Data frame: original \code{parFixedDf} augmented
+with columns \code{Bootstrap Estimate}, \code{Bootstrap SE},
+\code{Bootstrap \%RSE}, \code{Bootstrap CI Lower},
+\code{Bootstrap CI Upper}, and \code{Bootstrap Back-transformed}.}
+\item{\code{model}}{Character: the \code{fitName} used for the run.}
+\item{\code{outputDir}}{Character: absolute path to the output directory
+containing all cache files and result tables.}
+\item{\code{timestamp}}{POSIXct: date-time when the function returned.}
+}
+When \code{updateFit = TRUE}, the same bootstrap results are also attached to
+the original \code{fit} object as \code{fit$bootstrap}.
 }
 \description{
-Bootstrap input dataset and rerun the model to get confidence bounds and aggregated parameters
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
+
+\code{bootstrapFit()} has been renamed to \code{\link[=runBootstrap]{runBootstrap()}}. This alias is provided
+for backward compatibility and will be removed in a future release.
 }
-\examples{
-\dontrun{
-
-one.cmt <- function() {
-  ini({
-    tka <- 0.45; label("Ka")
-    tcl <- 1; label("Cl")
-    tv <- 3.45; label("V")
-    eta.ka ~ 0.6
-    eta.cl ~ 0.3
-    eta.v ~ 0.1
-    add.sd <- 0.7
-  })
-  model({
-    ka <- exp(tka + eta.ka)
-    cl <- exp(tcl + eta.cl)
-    v <- exp(tv + eta.v)
-    linCmt() ~ add(add.sd)
-  })
-}
-
-fit <- nlmixr2(one.cmt, nlmixr2data::theo_sd, est = "saem", control = list(print = 0))
-
-withr::with_tempdir({ # Run example in temp dir
-
-bootstrapFit(fit, nboot = 5, restart = TRUE) # overwrites any of the existing data or model files
-bootstrapFit(fit, nboot = 7) # resumes fitting using the stored data and model files
-
-# Note this resumes because the total number of bootstrap samples is not 10
-
-bootstrapFit(fit, nboot=10)
-
-# Note the boostrap standard error and variance/covariance matrix is retained.
-# If you wish to switch back you can change the covariance matrix by
-
-nlmixr2est::setCov(fit, "linFim")
-
-# And change it back again
-
-nlmixr2est::setCov(fit, "boot10")
-
-# This change will affect any simulations with uncertainty in their parameters
-
-# You may also do a chi-square diagnostic plot check for the bootstrap with
-bootplot(fit)
-})
-}
-}
-\author{
-Vipul Mann, Matthew Fidler
-}
+\keyword{internal}

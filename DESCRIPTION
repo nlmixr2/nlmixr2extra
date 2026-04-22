@@ -1,7 +1,7 @@
 Package: nlmixr2extra
 Title: Nonlinear Mixed Effects Models in Population PK/PD, Extra Support
     Functions
-Version: 3.1.0
+Version: 5.1.0
 Authors@R: c(
     person("Matthew", "Fidler", email="matthew.fidler@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-8538-6691")),
@@ -33,15 +33,19 @@ Imports:
     crayon,
     data.table,
     dplyr,
+    future,
+    future.apply,
     ggplot2,
     ggtext,
     knitr,
+    lifecycle,
     lotri,
     methods,
+    mvtnorm,
     nlme,
-    nlmixr2est (>= 2.1.1),
+    nlmixr2est (>= 5.0.0),
     Rcpp,
-    rxode2 (>= 2.0.10),
+    rxode2 (>= 5.0.0),
     stats,
     symengine,
     utils
@@ -49,9 +53,12 @@ Suggests:
     brms,
     digest,
     nlmixr2data,
+    progressr,
+    rmarkdown,
     testthat (>= 3.0.0),
     withr,
     devtools
+VignetteBuilder: knitr
 LinkingTo:
     Rcpp,
     RcppArmadillo

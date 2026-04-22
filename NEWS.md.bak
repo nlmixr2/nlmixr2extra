@@ -10,10 +10,6 @@
   retained as a deprecated alias that forwards all arguments and emits a
   deprecation warning. It will be removed in a future release.
 
-* `profile(fit, method = "llp")` is deprecated in favour of `runLLP()`. The
-  existing call continues to work and delegates to `runLLP()`, but will emit
-  a deprecation warning in a future release.
-
 ## `runSCM()` — major redesign of stepwise covariate model building
 
 * Function is now exported and part of the public API (previously `@noRd`).
@@ -99,60 +95,8 @@
 * `runSIR()` and helper functions have been added as of version 5.1.0 to run
   multi-iteration sampling importance resampling for nlmixr2 fits.
 
-## `runLLP()` — log-likelihood profiling
-
-* New exported function `runLLP()` runs log-likelihood profiling (Beal 1984,
-  PsN `llp`) for nlmixr2 fit objects.  It fixes one parameter at a sequence of
-  trial values, re-estimates the model, and identifies the parameter value at
-  which ΔOFV equals the target (default `qchisq(0.95, df = 1) ≈ 3.84`),
-  giving likelihood-ratio-based confidence intervals without relying on the
-  normal approximation.
-
-* `which = NULL` (default) profiles all fixed-effect theta/sigma-like
-  parameters returned by `fixef()`.  A character vector selects specific
-  parameters.  Omega diagonal names (e.g. `"eta.ka"`) are now also accepted
-  and profiled on the variance scale.
-
-* Omega diagonal profiling uses a dynamic model-function generation approach:
-  `buildFixedOmegaModel()` constructs an R function with `eta.X ~ fix(VALUE)`
-  hardcoded, which is the only mechanism that reliably sets `fix = TRUE` in the
-  resulting UI.  Initial guesses use the Wishart chi-squared approximation
-  `sqrt(2 * ω²_kk / (n_sub − 1))` for the SE.
-
-* Initial parameter guesses follow PsN convention: `MLE ± normq × SE` when SE
-  is available from `parFixedDf`, falling back to `MLE ± normq × RSE/100 × |MLE|`
-  (default `normq = 1.96`, fallback RSE 30%).
-
-* Next-candidate selection uses side-aware quadratic interpolation on a
-  three-point window (PsN-style), with automatic fallback to linear
-  interpolation/extrapolation when the quadratic is flat or the discriminant is
-  negative.
-
-* Returns an `nlmixr2Profile` object (S3 subclass of `data.frame`) with:
-  - `confint()` — named matrix of lower/upper CI bounds
-  - `print()` — cli-formatted table with MLE, CIs, interval ratio, and
-    near-boundary flags
-  - `plot()` — ggplot2 faceted ΔOFV curve with reference lines at the target
-    ΔOFV and at each CI bound
-
-* New `llpControl()` parameters: `normq` (initial-guess multiplier, default
-  1.96) and `workers` (`NULL` for sequential; positive integer or `"auto"` for
-  parallel via `future`/`future.apply`).
-
-* Parallel profiling isolates each parameter's fits in a unique temporary
-  directory via `llpWithIsolatedFitDir()` to prevent file-collision between
-  workers.  Missing parallel dependencies abort with a clear installation
-  message rather than silently falling back.
-
-* Interval-ratio warnings flag asymmetric profiles: threshold 1.3 for
-  structural theta parameters, 1.6 for residual-error-as-theta and omega
-  diagonal parameters.
-
-* All internal messaging uses `cli::cli_*` (no bare `message()` calls).
-
-* New integration test script `inst/scripts/theo_llp_test.R` demonstrates
-  theta profiling, omega diagonal profiling, combined calls, CI extraction,
-  and plot output.
+* `runSIR()` parallel OFV evaluation via `future` is now documented, tested,
+  and no longer depends on `progressr` being installed.
 
 ## Other changes
 
