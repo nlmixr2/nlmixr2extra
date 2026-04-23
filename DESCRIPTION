@@ -53,6 +53,7 @@ Imports:
 Suggests:
     brms,
     digest,
+    nlmixr2,
     pkgload,
     progressr,
     rmarkdown,
