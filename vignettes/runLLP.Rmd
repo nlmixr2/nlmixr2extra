@@ -46,7 +46,6 @@ dose of theophylline.  The model is a one-compartment first-order absorption PK 
 with IIV on the absorption rate constant and additive residual error.
 
 ```{r packages, message = FALSE}
-library(nlmixr2)
 library(nlmixr2data)
 library(nlmixr2extra)
 ```

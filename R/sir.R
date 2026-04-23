@@ -77,6 +77,7 @@
 #'   disable. Default `0.8`.
 #' @return A named, symmetric covariance matrix with the same row/column order
 #'   as `fit$cov`.
+#' @importFrom stats cor
 #' @noRd
 sirGetProposalCov <- function(
   fit,

@@ -46,7 +46,6 @@ We use `nlmixr2data::theo_sd` — 12 subjects after a single oral dose of theoph
 — with a one-compartment model that includes IIV on absorption, clearance, and volume.
 
 ```{r packages, message = FALSE}
-library(nlmixr2)
 library(nlmixr2data)
 library(nlmixr2extra)
 ```

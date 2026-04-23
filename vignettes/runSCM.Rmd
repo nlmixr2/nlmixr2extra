@@ -44,7 +44,6 @@ We use `nlmixr2data::warfarin`, filtered to PK observations only (`dvid == "cp"`
 covariates body weight (`wt`, continuous) and sex (`sex`, categorical).
 
 ```{r packages, message = FALSE}
-library(nlmixr2)
 library(nlmixr2data)
 library(nlmixr2extra)
 ```
@@ -92,8 +91,8 @@ warf_pk <- function() {
 fit_base <- nlmixr2(
   warf_pk, pkdata,
   est     = "saem",
-  control = saemControl(print = 0, nBurn = 200, nEm = 100),
-  table   = tableControl(cwres = TRUE)
+  control = nlmixr2est::saemControl(print = 0, nBurn = 200, nEm = 100),
+  table   = nlmixr2est::tableControl(cwres = TRUE)
 )
 ```
 

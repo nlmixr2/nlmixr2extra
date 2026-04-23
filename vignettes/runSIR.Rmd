@@ -58,7 +58,6 @@ SIR also requires at least two random effects (ETAs) so that a multivariate prop
 can be constructed for the omega block.
 
 ```{r packages, message = FALSE}
-library(nlmixr2)
 library(nlmixr2data)
 library(nlmixr2extra)
 ```
