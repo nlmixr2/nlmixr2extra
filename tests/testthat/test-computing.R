@@ -23,3 +23,49 @@ test_that("Function to return normalization column of a covariates (.normalizeDf
 test_that("Function to return normalization column of a covariates", {
   expect_error(.normalizeDf(nlmixr2data::theo_sd,"BMI"))
 })
+
+# foldgen() loop fix (Issue 3) ----
+
+test_that("foldgen assigns folds to ALL strata classes, not just the first", {
+  # With the bug (1:seq_along(numInClass)), R's ':' operator used only the
+  # first element of seq_along()'s vector result, so the loop ran exactly
+  # once. Only the first stratum class ever received fold assignments; all
+  # others remained as 0L. After the fix (seq_along(numInClass)), every
+  # class gets complete fold coverage.
+  set.seed(42)
+  n <- 40
+  df <- data.frame(
+    ID    = seq_len(n),
+    TIME  = 0,
+    DV    = stats::rnorm(n),
+    AMT   = 0,
+    EVID  = 0,
+    CMT   = 1,
+    STRAT = rep(c("A", "B"), each = n / 2)
+  )
+  result <- foldgen(df, nfold = 5, stratVar = "STRAT")
+  # All rows must have a valid fold number
+  expect_true(all(result$fold >= 1L & result$fold <= 5L))
+  # Both strata classes must have rows assigned to all 5 folds
+  folds_A <- result$fold[result$STRAT == "A"]
+  folds_B <- result$fold[result$STRAT == "B"]
+  expect_equal(sort(unique(folds_A)), 1:5)
+  expect_equal(sort(unique(folds_B)), 1:5)
+})
+
+# extractVars() loop fix (Issue 5) ----
+
+test_that("extractVars checks all message strings, not just the last", {
+  # With the bug (for (i in length(res))), only res[[length(res)]] was ever
+  # inspected. A non-empty message in an earlier element was silently ignored
+  # and the function incorrectly returned "". After the fix (seq_along(res)),
+  # every element is checked.
+  fitlist <- list(
+    list(message = ""),
+    list(message = "converged"),
+    list(message = "")
+  )
+  result <- nlmixr2extra:::extractVars(fitlist, id = "message")
+  expect_false(identical(result, ""))
+  expect_true("converged" %in% result)
+})
