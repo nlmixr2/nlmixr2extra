@@ -2,8 +2,7 @@
 % Please edit documentation in R/nlmixrFormula.R
 \name{.renameOrOverwrite}
 \alias{.renameOrOverwrite}
-\title{Rename a column in a dataset, optionally overwriting it if the column does
-not exist}
+\title{Rename a column in a dataset}
 \usage{
 .renameOrOverwrite(data, newName, oldName)
 }
@@ -16,8 +15,9 @@ not exist}
 data with \code{data[[newName]] <- data[[charOld]]}
 }
 \description{
-Rename a column in a dataset, optionally overwriting it if the column does
-not exist
+If \code{newName} already exists in \code{data} and would be overwritten with
+a different source column, this is treated as a hard error so that user data
+is never silently clobbered.
 }
 \examples{
 \dontrun{

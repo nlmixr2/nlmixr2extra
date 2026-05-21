@@ -152,7 +152,9 @@ withr::with_seed(
         y = 1,
         z = sample(factor(c("a", "b")), size = 100, replace = TRUE)
       )
-    # Note that we need to give `start` as a list so that 
+    # Note that we need to give `start` as a list so that `b` can carry one
+    # starting value per factor level of `z` (named-vector `c()` cannot hold
+    # multi-element entries).
     dSimNlmePrep <-
       nlmixrFormula(
         y~m*x + b + bRe ~ bRe|id,
@@ -179,13 +181,81 @@ ggplot(dSimNlme, aes(x=x, y=y, colour=z)) +
 mod <-
   nlmixr(
     y~m*x + b + bRe ~ bRe|id,
-    start = c(m=3, b=5, addSd=5),
+    start = list(m=3, b=c(4, 2), addSd=5),
     param = list(b ~ z),
     data = dSimNlme,
     est = "focei"
   )
 
 mod
+```
+
+## Quick start, continuous covariate on a parameter
+
+`param` also accepts numeric (continuous) covariate columns. When `b` is
+modelled as a linear function of a continuous covariate `w`, two parameters
+are introduced: `pop.b` (the intercept) and `cov_w_b` (the slope on `w`). The
+generated model line is `b <- pop.b + cov_w_b * w`.
+
+`start[["b"]]` may be a single value (treated as the intercept; the slope
+starts at 0) or `c(intercept, slope)`.
+
+```{r quickstart-data-gen-cont}
+withr::with_seed(
+  5,
+  {
+    dSimSetup <-
+      data.frame(
+        id = rep(1:10, each=10),
+        x = rep(1:10, 10),
+        y = 1,
+        w = runif(100, min = 0, max = 10)
+      )
+    dSimContPrep <-
+      nlmixrFormula(
+        y~m*x + b + bRe ~ bRe|id,
+        start = list(m=3, b=c(4, 0.2), addSd=5),
+        param = list(b ~ w),
+        data = dSimSetup,
+        est = "rxSolve"
+      )
+  }
+)
+
+dSimCont <-
+  dSimContPrep |>
+  as.data.frame() |>
+  select(id, time, x, w, y=sim)
+```
+
+```{r quickstart-fit-cont, class.source = 'fold-show'}
+mod <-
+  nlmixr(
+    y~m*x + b + bRe ~ bRe|id,
+    start = list(m=3, b=c(4, 0.2), addSd=5),
+    param = list(b ~ w),
+    data = dSimCont,
+    est = "focei"
+  )
+
+mod
+```
+
+## Quick start, log-linked parameter
+
+Some parameters are naturally strictly positive (clearances, volumes, rate
+constants). Pass `paramLink = c(<parameter> = "log")` to wrap the linear
+combination in `exp()`. The starting values are then on the log scale.
+
+```{r quickstart-fit-log, class.source = 'fold-show', eval = FALSE}
+nlmixr(
+  y~m*x + b + bRe ~ bRe|id,
+  start = list(m=3, b=c(log(4), 0.2), addSd=5),
+  param = list(b ~ w),
+  paramLink = c(b = "log"),
+  data = dSimCont,
+  est = "focei"
+)
 ```
 
 # Defining the model equation (the formula)
@@ -225,6 +295,39 @@ For multiple parameters, they must be setup separately.  For example, to have
 `mRe` and `bRe` both grouped by `id`, it would be defined as
 `~(mRe|id)+(bRe|id)`.
 
+Only one grouping variable is supported per model. Multiple grouping
+variables (for inter-occasion variability, for example) are not yet
+supported.
+
+## Per-parameter covariate models (`param`)
+
+The `param` argument adds a covariate model to one or more parameters. It
+accepts a formula or a list of formulas, each of the form
+`<parameter> ~ <covariate columns>`. The right-hand side names one or more
+columns from `data`:
+
+- A **factor** column produces one fixed effect per level. The first level is
+  the baseline; subsequent levels are estimated as differences from the
+  baseline.
+- A **numeric** column produces a slope. With only the continuous covariate,
+  two parameters are introduced — `pop.<parameter>` (intercept) and
+  `cov_<column>_<parameter>` (slope).
+- Multiple covariates can be combined on the same parameter with `+`:
+  `b ~ z + w` combines factor `z` and continuous `w`. When a factor is
+  present, the factor supplies the baseline so `pop.b` is not introduced.
+
+When mixing factor and continuous covariates on the same parameter,
+`start[[<parameter>]]` must explicitly list one value per factor level
+followed by one slope per continuous covariate (in the order they appear in
+`param`).
+
+### `paramLink` (link function per parameter)
+
+By default the assembled linear combination is the parameter itself
+(`b <- <linear combination>`). Set `paramLink = c(b = "log")` to wrap the
+combination in `exp()`, so the parameter is strictly positive on its natural
+scale.
+
 # Providing the Starting estimates for the model
 
 ## Fixed effects
@@ -236,7 +339,27 @@ as `list(m=3, b=5)`.  If one of the fixed effects is defined by a factor
 variable (more on that later), the list may have multiple starting values such
 as `list(m=3, b=c(5, 10))`.
 
+For continuous covariates passed via `param`, `start[[<parameter>]]` may be a
+single intercept value (the slope defaults to 0) or `c(intercept, slope)`.
+
 ## Random effects
 
 Random effect starting values are currently fixed at 1 without the ability to
 modify it.
+
+## Residual error models
+
+The default residual error model is `~ add(addSd)` (additive standard
+deviation `addSd`). More complex specifications are supported as long as
+every sigma parameter in the residual formula appears in `start`. For
+example:
+
+```r
+nlmixr(
+  y~m*x + b ~ (bRe|id),
+  start = list(m=3, b=5, addSd=1, propSd=0.1),
+  residualModel = ~ add(addSd) + prop(propSd),
+  data = dSimNlme,
+  est = "focei"
+)
+```

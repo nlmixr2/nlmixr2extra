@@ -3,32 +3,47 @@
 \name{.nlmixrFormulaExpandStartParam}
 \alias{.nlmixrFormulaExpandStartParam}
 \alias{.nlmixrFormulaExpandStartParamSingle}
-\title{Expand parameters to include their factor representations, if applicable.}
+\title{Expand parameters to include their covariate representations, if applicable.}
 \usage{
-.nlmixrFormulaExpandStartParam(start, param, data)
+.nlmixrFormulaExpandStartParam(start, param, paramLink = NULL, data)
 
-.nlmixrFormulaExpandStartParamSingle(startName, startValue, param, data)
+.nlmixrFormulaExpandStartParamSingle(
+  startName,
+  startValue,
+  param = NULL,
+  link = NULL,
+  data = NULL
+)
 }
 \arguments{
 \item{start}{the starting values for the model}
 
 \item{param}{The parameter in the model}
 
+\item{paramLink}{Named character vector giving the link function for each
+parameter that has a \code{param} entry. Recognised values: \code{"identity"}
+(default) emits \code{<param> <- <linear combination>}; \code{"log"} wraps
+the linear combination in \code{exp()}.}
+
 \item{data}{The dataset}
 
 \item{startName}{The base name for the parameter}
 
 \item{startValue}{The initial value for the base parameter}
+
+\item{link}{Optional link function for this parameter (\code{"identity"} or
+\code{"log"}). Defaults to \code{"identity"}.}
 }
 \value{
 A list with the ini and model parts needed to use the parameter
 }
 \description{
-Expand parameters to include their factor representations, if applicable.
+Expand parameters to include their covariate representations, if applicable.
 }
 \section{Functions}{
 \itemize{
-\item \code{.nlmixrFormulaExpandStartParamSingle()}: Expand a single parameter in a model using dataset factors, if applicable
+\item \code{.nlmixrFormulaExpandStartParamSingle()}: Expand a single parameter in a
+model using dataset covariates, if applicable
 
 }}
 \keyword{Internal}
