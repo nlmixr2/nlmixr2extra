@@ -1,7 +1,7 @@
 Package: nlmixr2extra
 Title: Nonlinear Mixed Effects Models in Population PK/PD, Extra Support
     Functions
-Version: 3.0.3
+Version: 5.0.0
 Authors@R: c(
     person("Matthew", "Fidler", email="matthew.fidler@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-8538-6691")),
@@ -39,9 +39,9 @@ Imports:
     lotri,
     methods,
     nlme,
-    nlmixr2est (>= 2.1.1),
+    nlmixr2est (>= 5.0.0),
     Rcpp,
-    rxode2 (>= 2.0.10),
+    rxode2 (>= 5.0.0),
     stats,
     symengine,
     utils
