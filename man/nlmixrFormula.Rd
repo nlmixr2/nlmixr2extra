@@ -9,6 +9,7 @@ nlmixrFormula(
   data,
   start,
   param = NULL,
+  paramLink = NULL,
   ...,
   residualModel = ~add(addSd)
 )
@@ -28,12 +29,22 @@ argument.)}
 
 \item{param}{A formula or list of two-sided formulas giving the
 model used for parameters.  If a parameter is a simple fixed
-effect, only, then it should not be included here.  If a
-parameter should have a separate estimate per level of a factor,
-give that as the two-sided formula here.}
+effect, only, then it should not be included here.  The
+right-hand side of a \code{param} formula names one or more
+columns in \code{data}: factor columns get a separate fixed effect
+per level; numeric columns get a linear slope. Multiple covariates
+on the same parameter can be combined with \code{+}, e.g.
+\code{b ~ z + w}.}
+
+\item{paramLink}{Optional named character vector mapping parameter
+names to a link function. \code{"identity"} (the default) emits
+\code{<param> <- <linear combination>}; \code{"log"} wraps the
+linear combination in \code{exp()} so the parameter is
+strictly-positive on the natural scale. Only parameters that have
+a \code{param} entry may appear here.}
 
 \item{...}{
-  Arguments passed on to \code{\link[nlmixr2est:nlmixr2]{nlmixr2est::nlmixr}}
+  Arguments passed on to \code{\link[nlmixr2est:nlmixr]{nlmixr2est::nlmixr}}
   \describe{
     \item{\code{est}}{estimation method (all methods are shown by
 `nlmixr2AllEst()`). Methods can be added for other tools}
@@ -48,7 +59,10 @@ evaluated before running the estimation routine.}
   }}
 
 \item{residualModel}{The residual model formula to use as a
-one-sided formula.}
+one-sided formula. The default is \code{~ add(addSd)}; richer
+models such as \code{~ add(addSd) + prop(propSd)} are supported as
+long as the corresponding sigma parameter names appear in
+\code{start}.}
 }
 \value{
 The model fit from \code{nlmixr2est::nlmixr2()}

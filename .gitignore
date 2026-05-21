@@ -11,3 +11,5 @@ docs
 /src/Makevars
 .RData
 inst/doc
+/doc/
+/Meta/
