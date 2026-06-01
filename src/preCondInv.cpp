@@ -4,6 +4,13 @@
 #define _(String) (String)
 
 using namespace Rcpp;
+// #ifdef ENABLE_NLS
+// #include <libintl.h>
+// #define _(String) dgettext ("nlmixr2extra", String)
+// /* replace pkg as appropriate */
+// #else
+#define _(String) (String)
+// #endif
 
 //' Calculate the inverse preconditioning matrix
 //'
