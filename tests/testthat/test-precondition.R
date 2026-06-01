@@ -26,7 +26,7 @@ test_that("precondition tests", {
       nlmixr(
         one.compartment, nlmixr2data::theo_sd,
         est = "focei",
-        control = list(print = 0)
+        control = list(print = 0, eval.max = 200)
       )
     ))
 
