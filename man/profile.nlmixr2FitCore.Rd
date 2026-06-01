@@ -84,11 +84,11 @@ proftka <- profile(fit, which = "tka")
 }
 }
 \seealso{
-Other Profiling: 
-\code{\link{fixedControl}()},
-\code{\link{llpControl}()},
-\code{\link{profileFixed}()},
-\code{\link{profileLlp}()},
-\code{\link{profileNlmixr2FitCoreRet}()}
+Other Profiling:
+\code{\link[=fixedControl]{fixedControl()}},
+\code{\link[=llpControl]{llpControl()}},
+\code{\link[=profileFixed]{profileFixed()}},
+\code{\link[=profileLlp]{profileLlp()}},
+\code{\link[=profileNlmixr2FitCoreRet]{profileNlmixr2FitCoreRet()}}
 }
 \concept{Profiling}

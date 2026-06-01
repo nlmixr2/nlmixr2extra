@@ -27,11 +27,11 @@ respectively.
 Profile confidence intervals with log-likelihood profiling
 }
 \seealso{
-Other Profiling: 
-\code{\link{fixedControl}()},
-\code{\link{llpControl}()},
-\code{\link{profile.nlmixr2FitCore}()},
-\code{\link{profileFixed}()},
-\code{\link{profileNlmixr2FitCoreRet}()}
+Other Profiling:
+\code{\link[=fixedControl]{fixedControl()}},
+\code{\link[=llpControl]{llpControl()}},
+\code{\link[=profile.nlmixr2FitCore]{profile.nlmixr2FitCore()}},
+\code{\link[=profileFixed]{profileFixed()}},
+\code{\link[=profileNlmixr2FitCoreRet]{profileNlmixr2FitCoreRet()}}
 }
 \concept{Profiling}
