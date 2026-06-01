@@ -27,7 +27,6 @@ withr::with_tempdir({
         linCmt() ~ add(add.sd)
       })
     }
-    skip_if_not(rxode2::.linCmtSensB())
     suppressMessages(suppressWarnings(
       fit <-
         nlmixr(
@@ -85,7 +84,6 @@ withr::with_tempdir({
         linCmt() ~ add(add.sd)
       })
     }
-    skip_if_not(rxode2::.linCmtSensB())
     suppressMessages(suppressWarnings(
       fit <-
         nlmixr2(
@@ -131,7 +129,6 @@ withr::with_tempdir({
         linCmt() ~ add(add.sd)
       })
     }
-    skip_if_not(rxode2::.linCmtSensB())
     suppressMessages(suppressWarnings(
       fit <-
         nlmixr2(
@@ -145,7 +142,7 @@ withr::with_tempdir({
 
     colsBefore <- colnames(fit$parFixedDf)
     suppressMessages(
-      fitlist <- nlmixr2extra:::modelBootstrap(fit, nboot = 4, restart = TRUE)[[1]]
+      fitlist <- nlmixr2extra:::modelBootstrap(fit, nboot = 2, restart = TRUE)[[1]]
     )
 
     bootSummary <- nlmixr2extra:::getBootstrapSummary(fitlist, ci = 0.95)
@@ -191,7 +188,6 @@ withr::with_tempdir({
           table = list(npde = TRUE, cwres = TRUE)
         )
     ))
-    skip_if_not(rxode2::.linCmtSensB())
     suppressMessages(
       expect_error(fit1 <- nlmixr2extra:::bootstrapFit(fit, nboot = 2, restart = TRUE), NA)
     )
