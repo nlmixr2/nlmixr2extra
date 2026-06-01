@@ -34,6 +34,7 @@ Vishal Sarsani
 ## Examples
 
 ``` r
+
 d <- nlmixr2data::theo_sd
 d$SEX <-0
 d$SEX[d$ID<=6] <-1

@@ -10,6 +10,7 @@ You can install the development version of nlmixr2extra from
 [GitHub](https://github.com/) with:
 
 ``` r
+
 # install.packages("remotes")
 remotes::install_github("nlmixr2/nlmixr2data")
 remotes::install_github("nlmixr2/lotri")
@@ -23,6 +24,7 @@ remotes::install_github("nlmixr2/nlmixr2extra")
 This is a basic example of bootstrapping provided by this package
 
 ``` r
+
 library(nlmixr2est)
 #> Loading required package: nlmixr2data
 library(nlmixr2extra)
