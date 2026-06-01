@@ -24,7 +24,7 @@ Produce delta objective function for boostrap
 R Niebecker,  MO Karlsson. (2013)
 \emph{Are datasets for NLME models large enough for a bootstrap to provide reliable parameter uncertainty distributions?}
 PAGE 2013.
-\url{https://www.page-meeting.org/?abstract=2899}
+\url{https://www.page-meeting.org/Abstracts/are-datasets-for-nlme-models-large-enough-for-a-bootstrap-to-provide-reliable-parameter-uncertainty-distributions/}
 }
 \author{
 Vipul Mann,  Matthew L. Fidler

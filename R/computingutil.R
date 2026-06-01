@@ -7,7 +7,6 @@
 }
 
 .bootstrapEnv <- new.env(parent=emptyenv())
-.bootstrapEnv$nSampIndiv <- 0L
 
 #' Function to return pop mean, pop std of a given covariate
 #'
@@ -190,7 +189,7 @@ foldgen <-  function(data,nfold=5,stratVar=NULL) {
     ## For each class, balance the fold allocation as far
     ## as possible, then resample the remainder.
     ## The final assignment of folds is also randomized.
-    for(i in 1:seq_along(numInClass)) {
+    for(i in seq_along(numInClass)) {
       ## create a vector of integers from 1:k as many times as possible without
       ## going over the number of samples in the class. Note that if the number
       ## of samples in a class is less than k, nothing is producd here.
@@ -716,8 +715,6 @@ sampling <- function(data,
       .env$new_id <- 1
       do.call(rbind, lapply(uids_samp, function(u) {
         data_slice <- dat[dat[, uid_colname] == u, ]
-        start <- NROW(sampled_df) + 1
-        end <- start + NROW(data_slice) - 1
 
         data_slice[uid_colname] <-
           .env$new_id # assign a new ID to the sliced dataframe
@@ -748,8 +745,6 @@ sampling <- function(data,
 
     do.call(rbind, lapply(uids_samp, function(u) {
       data_slice <- data[data[, uid_colname] == u, ]
-      start <- NROW(sampled_df) + 1
-      end <- start + NROW(data_slice) - 1
 
       data_slice[uid_colname] <-
         .env$new_id # assign a new ID to the sliced dataframe
@@ -1107,7 +1102,7 @@ extractVars <- function(fitlist, id = "method") {
       # check if all message strings are empty
       if (id == "message") {
         prev <- TRUE
-        for (i in length(res)) {
+        for (i in seq_along(res)) {
           status <- (res[[i]] == "") && prev
           prev <- status
         }
@@ -1239,7 +1234,7 @@ getBootstrapSummary <- function(fitList,
       w <- which(diag(covMatrix) == 0)
       if (length(w) > 0) {
         d <- dim(covMatrix)[1]
-        corMatrix <- matrix(rep(0,d * d), d, d)
+        corMatrix <- matrix(0, d, d)
         corMatrix[-w, -w] <- cov2cor(covMatrix[-w, -w])
       } else {
         corMatrix <- cov2cor(covMatrix)
@@ -1398,7 +1393,7 @@ assignToEnv <- function(namedVars, fitobject) {
 #' R Niebecker,  MO Karlsson. (2013)
 #' *Are datasets for NLME models large enough for a bootstrap to provide reliable parameter uncertainty distributions?*
 #' PAGE 2013.
-#' <https://www.page-meeting.org/?abstract=2899>
+#' <https://www.page-meeting.org/Abstracts/are-datasets-for-nlme-models-large-enough-for-a-bootstrap-to-provide-reliable-parameter-uncertainty-distributions/>
 #' @export
 bootplot <- function(x, ...) {
   UseMethod("bootplot")
