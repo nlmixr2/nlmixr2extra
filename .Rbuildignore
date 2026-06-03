@@ -1,4 +1,5 @@
 ^LICENSE\.md$
+^vignettes$
 ^README\.Rmd$
 ^\.github$
 ^codecov\.yml$
