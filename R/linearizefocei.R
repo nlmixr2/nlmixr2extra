@@ -508,7 +508,7 @@ parseCovExpr <- function(expr, oData, effect){
 
 
     ## add col levels for cat covars
-    refCalc <- lapply(seq_along(nrow(currentCovDf)), function(x){
+    refCalc <- lapply(seq_len(nrow(currentCovDf)), function(x){
                                 if(currentCovDf$type[x] == "cat"){
                                     covName <- currentCovDf$covariate[x]
                                     freqTable <- prop.table(table(oData[[covName]]))
@@ -523,7 +523,7 @@ parseCovExpr <- function(expr, oData, effect){
     currentCovDf$refLevel <- lapply(refCalc, function(x) x$refLevel)
     currentCovDf$refFreq <- unlist(lapply(refCalc, function(x) x$refFreq))
     
-    currentCovDf$levels <- lapply(seq_along(nrow(currentCovDf)), function(x){
+    currentCovDf$levels <- lapply(seq_len(nrow(currentCovDf)), function(x){
                                 if(currentCovDf$type[x] == "cat"){
                                     covName <- currentCovDf$covariate[x]
                                     list(unique(oData[[covName]]))
@@ -535,7 +535,7 @@ parseCovExpr <- function(expr, oData, effect){
 
     # cont covariaties
     ## add cols min and max for cont
-    currentCovDf$min <- unlist(lapply(seq_along(nrow(currentCovDf)), function(x){
+    currentCovDf$min <- unlist(lapply(seq_len(nrow(currentCovDf)), function(x){
                                 if(currentCovDf$type[x] == "cont"){
                                     covName <- currentCovDf$covariate[x]
                                     min(oData[[covName]])
@@ -544,7 +544,7 @@ parseCovExpr <- function(expr, oData, effect){
                                 }
     }))
 
-    currentCovDf$max <- unlist(lapply(seq_along(nrow(currentCovDf)), function(x){
+    currentCovDf$max <- unlist(lapply(seq_len(nrow(currentCovDf)), function(x){
                                 if(currentCovDf$type[x] == "cont"){
                                     covName <- currentCovDf$covariate[x]
                                     max(oData[[covName]])
@@ -554,7 +554,7 @@ parseCovExpr <- function(expr, oData, effect){
     }))
 
 
-    currentCovDf$mean <- unlist(lapply(seq_along(nrow(currentCovDf)), function(x){
+    currentCovDf$mean <- unlist(lapply(seq_len(nrow(currentCovDf)), function(x){
                                 if(currentCovDf$type[x] == "cont"){
                                     covName <- currentCovDf$covariate[x]
                                     mean(oData[[covName]])
@@ -564,7 +564,7 @@ parseCovExpr <- function(expr, oData, effect){
     }))
 
 
-    currentCovDf$median <- unlist(lapply(seq_along(nrow(currentCovDf)), function(x){
+    currentCovDf$median <- unlist(lapply(seq_len(nrow(currentCovDf)), function(x){
                                 if(currentCovDf$type[x] == "cont"){
                                   
                                   
@@ -587,7 +587,7 @@ parseCovExpr <- function(expr, oData, effect){
     }
 
 
-    exprNthetaNames <- lapply(seq_along(nrow(currentCovDf)), function(x){
+    exprNthetaNames <- lapply(seq_len(nrow(currentCovDf)), function(x){
                                 param <- currentCovDf$param[x]
                                 covName <- currentCovDf$covariate[x]
                                 normFactor <- currentCovDf$normFactor[x]
@@ -698,7 +698,7 @@ addCovariate.rxUi <- function(fit, expr, effect = "power", ref = "median", ...){
 #'@export
 addCovariate.nlmixr2FitCore <- function(fit, expr, effect = "power", ref = "median", ...){
     ui <- fit$ui
-    addCovariate(ui)
+    addCovariate(ui, expr=expr, effect=effect, ref=ref, ...)
 }
 
 #'@rdname addCovariate
@@ -880,6 +880,8 @@ copyEnv <- function(env) {
 }
 
 
+#' @importFrom nlme getData
+#' @exportS3Method nlme::getData
 getData.rxUi <- function(x){
     x$origData
 }

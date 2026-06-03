@@ -107,7 +107,7 @@ filterEtaMat <- function(oMat, filterStr, minIni=0.1){
         resMat <- lotri::lotriNearPD(resMat)
         
         etaToRemove <-  setdiff(colnames(oMat), elem)
-        if(length(etaToRemove > 0)){
+        if(length(etaToRemove) > 0){
           resMat[etaToRemove, ] <- 0
           resMat[,etaToRemove ] <- 0
           resMat[etaToRemove, etaToRemove ] <- 0
@@ -154,7 +154,7 @@ iivCombn <- function(params) {
     all_results <- unlist(lapply(all_combinations, function(combo) {
         individual <- strsplit(combo, "\\+")[[1]]
         if (length(individual) == 1) {
-            combo
+            return(combo)
         }
         # Generate all pairwise correlations
         all_corr <- combn(individual, 2, FUN = function(x) paste(x, collapse = "~"), simplify = TRUE)
@@ -187,7 +187,7 @@ addAllEtas <- function(ui, fix = FALSE){
     # ui$singleTheta 
     # ui$muRefDataFrame
 
-    thetaNames <- ui$iniDf[is.na(ui$iniDf$neta1) & is.na(ui$ini$condition), "name"]
+    thetaNames <- ui$iniDf[is.na(ui$iniDf$neta1) & is.na(ui$iniDf$condition), "name"]
     freeTheta <- setdiff(thetaNames, ui$muRefDataFrame$theta)
     if(length(freeTheta) > 0){
       newMod <- nlmixr2lib::addEta(ui, freeTheta)
@@ -212,7 +212,7 @@ addAllEtas <- function(ui, fix = FALSE){
 #' @export
 print.linIIVSearch <- function(x, ...){
   df <- x$summary
-  df[order(df$BIC), ]
+  print(df[order(df$BIC), ])
 }
 
 #' Rerun Top N Original Models From A Search
@@ -251,7 +251,7 @@ rerunTopN.linIIVSearch <- function(x, n = 5, ...){
   nlui <- addAllEtas(nlui)
   resOrig <- lapply(cli::cli_progress_along(topCand), function(i){
     i <- topCand[i]
-    cli::cli_alert_info("Fitting Original Model with {x}")
+    cli::cli_alert_info("Fitting Original Model with {i}")
     omegaMat <- filterEtaMat(cov(x$linearFit$eta[,-1]), i)
     iniDf <- nlui$iniDf
     iniDf[!is.na(iniDf$neta1), "fix"] <- FALSE 
