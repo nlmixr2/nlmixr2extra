@@ -882,8 +882,8 @@ copyEnv <- function(env) {
 
 #' @importFrom nlme getData
 #' @exportS3Method nlme::getData
-getData.rxUi <- function(x){
-    x$origData
+getData.rxUi <- function(object){
+    object$origData
 }
 
 
