@@ -1,6 +1,6 @@
 ---
 title: "Likelihood Profiling for NLME Models"
-author: "nlmixr2extra authors"
+author: "Bill Denney"
 date: "`r Sys.Date()`"
 output:
   rmarkdown::html_vignette:
