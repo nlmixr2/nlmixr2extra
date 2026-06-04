@@ -1,0 +1,219 @@
+# Stabilising Covariance Estimates with preconditionFit()
+
+## The problem: ill-conditioned covariance matrices
+
+After fitting a nonlinear mixed-effects model with FOCEI, the standard
+errors (SEs) of the population parameters are derived from the
+variance-covariance matrix of the parameter estimates. This matrix is
+assembled from the **R matrix** (second-derivative / Hessian
+approximation) and, optionally, the **S matrix** (cross-product of first
+derivatives). When the parameters are on very different scales, or when
+two parameters are nearly collinear, the R matrix becomes
+ill-conditioned: small rounding errors in the gradient calculations are
+amplified during the matrix inversion and the resulting covariance
+matrix is unreliable.
+
+Symptoms of this problem include:
+
+- `covMethod` reported as `"r"` or `"s"` rather than the preferred
+  `"r,s"`
+- NaN or negative values on the diagonal of the covariance matrix
+- Standard errors that are implausibly large or small relative to the
+  estimates
+- `%RSE` values that are very large
+
+## The solution: preconditioning
+
+Aoki, Nordgren, and Hooker (2016) showed that a simple **linear
+reparameterisation** of the fixed-effects parameters can dramatically
+improve the condition number of the R matrix without changing the model
+or its fit. The idea is to find a matrix **P** such that **P R P^T** is
+close to the identity matrix, run FOCEI on the reparameterised model
+(which converges to a numerically stable covariance matrix), and then
+transform the result back to the original parameterisation.
+
+`nlmixr2extra` implements this approach in
+[`preconditionFit()`](https://nlmixr2.github.io/nlmixr2extra/reference/preconditionFit.md).
+
+> **Reference:** Aoki Y, Nordgren R, Hooker AC. Preconditioning of
+> Nonlinear Mixed Effects Models for Stabilisation of
+> Variance-Covariance Matrix Computations. *AAPS J.* 2016;18(2):505–518.
+> <doi:%5B10.1208/s12248-016-9866-5>\](<https://doi.org/10.1208/s12248-016-9866-5>)
+
+## Basic usage
+
+``` r
+
+library(nlmixr2extra)
+
+one.compartment <- function() {
+  ini({
+    tka <- 0.45  # log Ka
+    tcl <- 1     # log Cl
+    tv  <- 3.45  # log V
+    eta.ka ~ 0.6
+    eta.cl ~ 0.3
+    eta.v  ~ 0.1
+    add.sd <- 0.7
+  })
+  model({
+    ka <- exp(tka + eta.ka)
+    cl <- exp(tcl + eta.cl)
+    v  <- exp(tv  + eta.v)
+    d/dt(depot)  <- -ka * depot
+    d/dt(center) <-  ka * depot - cl/v * center
+    cp <- center / v
+    cp ~ add(add.sd)
+  })
+}
+
+fit <- nlmixr2(one.compartment, data = nlmixr2data::theo_sd,
+               est = "focei", control = list(print = 0))
+fit
+```
+
+If the covariance method reported is not `"r,s"` (or you simply want a
+more robust covariance estimate), apply preconditioning:
+
+``` r
+
+preconditionFit(fit)
+```
+
+[`preconditionFit()`](https://nlmixr2.github.io/nlmixr2extra/reference/preconditionFit.md)
+modifies the **original fit object in-place**: after the call,
+`fit$cov`, `fit$parFixedDf`, and `fit$covMethod` all reflect the
+preconditioned covariance. The function returns the preconditioned
+covariance matrix invisibly.
+
+## Controlling the amount of re-estimation
+
+The `estType` argument determines how much of the model is re-estimated
+on the reparameterised problem:
+
+| `estType` | What is re-estimated | When to use |
+|----|----|----|
+| `"full"` (default) | Outer *and* inner iterations (theta, ETA) | When you suspect the original estimates may have converged to a local minimum |
+| `"posthoc"` | Inner iterations only (ETA, given theta) | When you trust the theta estimates but want a better covariance |
+| `"none"` | Nothing — only the covariance matrix is re-computed | Fastest; good for a quick diagnostic check |
+
+``` r
+
+# Only recompute the covariance matrix (fastest)
+preconditionFit(fit, estType = "none")
+
+# Fix theta, re-estimate ETAs, then compute covariance
+preconditionFit(fit, estType = "posthoc")
+
+# Full re-estimation on the reparameterised model (default)
+preconditionFit(fit, estType = "full")
+```
+
+## Retrying until convergence: `ntry`
+
+The inner loop of
+[`preconditionFit()`](https://nlmixr2.github.io/nlmixr2extra/reference/preconditionFit.md)
+iterates the preconditioning until the reparameterised problem achieves
+a `"r,s"` covariance (the most reliable type). If that target is not
+reached within `ntry` attempts the function stops with an error. The
+default is `ntry = 10`.
+
+``` r
+
+# Allow up to 20 attempts before giving up
+preconditionFit(fit, ntry = 20L)
+```
+
+If
+[`preconditionFit()`](https://nlmixr2.github.io/nlmixr2extra/reference/preconditionFit.md)
+fails even with more tries, the R matrix itself may be too poorly
+determined for preconditioning to help. In that case inspect the model
+for identifiability problems or consider likelihood profiling
+(`profile(fit)`) instead of Wald-based confidence intervals.
+
+## Switching between covariance estimates
+
+[`preconditionFit()`](https://nlmixr2.github.io/nlmixr2extra/reference/preconditionFit.md)
+stores the preconditioned covariance alongside any previously computed
+covariances in `fit$covList`. You can inspect what is available and
+switch between them with
+[`setCov()`](https://nlmixr2.github.io/nlmixr2est/reference/setCov.html):
+
+``` r
+
+# See which covariance estimates are stored
+names(fit$covList)
+# e.g. c("r,s", "precondition")
+
+# Switch back to the standard r,s covariance
+setCov(fit, "r,s")
+
+# Switch to the preconditioned covariance
+setCov(fit, "precondition")
+```
+
+After
+[`setCov()`](https://nlmixr2.github.io/nlmixr2est/reference/setCov.html)
+the fit object is updated in-place and the displayed parameter table
+(`fit$parFixedDf`) reflects the selected covariance.
+
+## Worked example: comparing SEs before and after preconditioning
+
+``` r
+
+library(nlmixr2extra)
+
+fit <- nlmixr2(one.compartment, data = nlmixr2data::theo_sd,
+               est = "focei", control = list(print = 0))
+
+# Record the original parameter table
+df_before <- fit$parFixedDf
+cat("Covariance method before:", fit$covMethod, "\n")
+
+# Apply preconditioning (only recompute covariance, do not re-estimate)
+preconditionFit(fit, estType = "none")
+df_after <- fit$parFixedDf
+cat("Covariance method after:", fit$covMethod, "\n")
+
+# Compare standard errors
+cbind(
+  SE_before = df_before$SE,
+  SE_after  = df_after$SE,
+  row.names = rownames(df_before)
+)
+```
+
+The point estimates (`Estimate`, `Back-transformed`) and the
+random-effects summaries (`BSV(CV%)`, `Shrink(SD)%`) are identical
+before and after — only the covariance-derived quantities (SE, %RSE,
+confidence intervals) change.
+
+## When to use `preconditionFit()`
+
+Use
+[`preconditionFit()`](https://nlmixr2.github.io/nlmixr2extra/reference/preconditionFit.md)
+when:
+
+- `fit$covMethod` is not `"r,s"` after a FOCEI fit
+- Standard errors look implausibly large or contain NaN
+- You want a publication-quality covariance estimate and are willing to
+  spend extra computation time
+
+It is not needed when FOCEI already produces a `"r,s"` covariance and
+the SEs look reasonable. For models where identifiability is in doubt
+(very large %RSE for multiple parameters simultaneously), consider
+likelihood profiling rather than trying to stabilise a structurally
+unreliable covariance.
+
+## Requirements
+
+[`preconditionFit()`](https://nlmixr2.github.io/nlmixr2extra/reference/preconditionFit.md)
+requires:
+
+- A fit produced by FOCEI (or a method that stores an R matrix in
+  `fit$R`). SAEM fits do not store an R matrix by default; call
+  `fit <- nlmixr2(model, data, est = "focei", ...)` first, or use
+  `getVarCov(saemFit)` to trigger covariance computation.
+- The `symengine` package (used to construct the symbolic
+  reparameterisation).
+- The `nlmixr2extra` package to be loaded.

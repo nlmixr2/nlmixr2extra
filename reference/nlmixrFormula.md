@@ -164,9 +164,9 @@ nlmixrFormula(
 #> ── Time (sec value$time): ──
 #> 
 #>              setup   optimize  covariance preprocess postprocess table compress
-#> elapsed 0.03102474 0.02524362 0.008833683      0.028       0.022 0.056    0.001
+#> elapsed 0.03385723 0.02226933 0.007665063      0.041        0.02 0.055    0.001
 #>            other
-#> elapsed 2.475898
+#> elapsed 2.733208
 #> 
 #> ── Population Parameters (value$parFixed or value$parFixedDf): ──
 #> 
