@@ -2,6 +2,8 @@
 
 ## All functions
 
+- [`aaaNlmixr2ExtraCRAN()`](https://nlmixr2.github.io/nlmixr2extra/reference/aaaNlmixr2ExtraCRAN.md)
+  : This function is to set the number of threads to 2
 - [`adaptivelassoCoefficients()`](https://nlmixr2.github.io/nlmixr2extra/reference/adaptivelassoCoefficients.md)
   : Return Adaptive lasso coefficients after finding optimal t
 - [`addAllEtas()`](https://nlmixr2.github.io/nlmixr2extra/reference/addAllEtas.md)
