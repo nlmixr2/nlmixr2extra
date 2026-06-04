@@ -24,6 +24,8 @@
   : Build covInfo list from varsVec and covarsVec
 - [`buildupatedUI()`](https://nlmixr2.github.io/nlmixr2extra/reference/buildupatedUI.md)
   : Build updated from the covariate and variable vector list
+- [`covarSearchAuto()`](https://nlmixr2.github.io/nlmixr2extra/reference/covarSearchAuto.md)
+  : Stepwise Covariate Model-selection (SCM) method
 - [`.nlmixrFormulaDataPrep()`](https://nlmixr2.github.io/nlmixr2extra/reference/dot-nlmixrFormulaDataPrep.md)
   : Perform any required data modifications for the nlmixrFormula
   interface
