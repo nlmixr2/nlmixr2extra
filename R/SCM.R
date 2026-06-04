@@ -18,7 +18,7 @@
 #'   of the covariate selection as well as "resFwd" for the forward
 #'   selection method and "resBck" for the backward selection method.
 #'
-#' @noRd
+#' @export
 #' @author Vipul Mann, Matthew Fidler, Vishal Sarsani
 #'
 #' @examples
@@ -70,8 +70,6 @@
 #'                 searchType = "forward")
 #' })
 #' }
-
-# unsuccessful runs info store; check for covInformation before resuming
 covarSearchAuto <- function(fit,
                             varsVec,
                             covarsVec,

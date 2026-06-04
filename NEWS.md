@@ -1,3 +1,16 @@
+# nlmixr2extra 5.1.0
+
+- Add focei/foce linearization
+
+- Add formula interface
+
+- Add vignettes on linearization, formula interface, log-likelihood
+  profiling and preconditioning.
+
+# nlmixr2extra 5.0.0
+
+* Update internal fit to be nlmixr2est 5.0.0 fit object
+
 # nlmixr2extra 3.0.3
 
 * Allow raw fits to be returned (or only the parameters)
