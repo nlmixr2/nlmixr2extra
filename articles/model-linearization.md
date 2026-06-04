@@ -58,28 +58,32 @@ library(nlmixr2extra)
 library(ggplot2)
 ```
 
-Define a one-compartment model with additive error and no IIV as the
-starting point for the search:
+## Simulate data for demonstration
+
+Define a one-compartment model with additive residual error and IIV with
+correlation between CL and V:
 
 ``` r
 
 one_cmt <- function() {
   ini({
-    tcl  <- log(2.7)
-    tv   <- log(30)
-    tka  <- log(1.56)
+    tcl <- log(2.7) # Cl
+    tv <- log(30) # V
+    tka <- log(1.56) #  Ka
+    eta.cl + eta.v ~ sd(cor(0.3, 0.99, 0.5))
+    eta.ka ~ 0
     add.sd <- 0.7
   })
   model({
-    ka <- exp(tka)
-    cl <- exp(tcl)
-    v  <- exp(tv)
-    d/dt(depot)  <- -ka * depot
-    d/dt(center) <- ka * depot - cl / v * center
+    ka <- exp(tka + eta.ka)
+    cl <- exp(tcl + eta.cl)
+    v <- exp(tv + eta.v)
+    d / dt(depot) <- -ka * depot
+    d / dt(center) <- ka * depot - cl / v * center
     cp <- center / v
     cp ~ add(add.sd)
   })
-}
+  }
 
 set.seed(42)
 ev <- rxode2::et(amt = 300, cmt = "depot") |>
@@ -88,13 +92,46 @@ sim <- rxode2::rxSolve(one_cmt, ev, nSub = 50, addDosing = TRUE)
 sim$dv <- sim$sim
 sim$id <- sim$sim.id
 sim <- sim[, c("id", "time", "amt", "dv", "evid")]
-
-fit <- nlmixr2(one_cmt, sim, est = "focei")
 ```
 
 ## Linearizing a fit
 
-### Basic usage
+### Define a base model
+
+Define a base model with *no IIV* and additive residual error:
+
+``` r
+
+one_cmt_base <- function() {
+  ini({
+      tcl <- log(2.7) # Cl
+      tv <- log(30) # V
+      tka <- log(1.56) #  Ka
+      add.sd <- 0.7
+    })
+    model({
+      ka <- exp(tka)
+      cl <- exp(tcl)
+      v <- exp(tv)
+      d / dt(depot) <- -ka * depot
+      d / dt(center) <- ka * depot - cl / v * center
+      cp <- center / v
+      cp ~ add(add.sd)
+    })
+  }
+```
+
+### Base Model Fit
+
+Fit the data to the base model `one_cmt_base` with typical NLME method
+(e.g. FOCEI):
+
+``` r
+
+fit <- nlmixr2(one_cmt_base, sim, est = "focei") 
+```
+
+### Run Linearization
 
 [`linearize()`](https://nlmixr2.github.io/nlmixr2extra/reference/linearize.md)
 takes a fitted `nlmixr2` object and returns an `nlmixr2Linearize` fit.
@@ -128,17 +165,18 @@ well:
 match <- isLinearizeMatch(fitLin)
 
 # OFV agreement (relative tolerance 10%)
-match$ofv[[1]]   # TRUE/FALSE
-match$ofv[[2]]   # all.equal() message if FALSE
+match$ofv[[1]]   # TRUE/FALSE if OFV differ by less than tol
+match$ofv[[2]]   # all.equal() message if FALSE 
 
 # Omega matrix agreement
-match$omega[[1]]
+match$omega[[1]]  # TRUE/FALSE if Omega matrices differ by less than tol
 
 # Individual eta agreement
-match$eta[[1]]
+match$eta[[1]] # TRUE/FALSE if all individual etas differ by less than tol
+
 
 # Residual variance agreement
-match$err[[1]]
+match$err[[1]] # TRUE/FALSE if residual variances differ by less than tol
 ```
 
 A visual check is available via
@@ -308,8 +346,10 @@ The structures tested are:
 
 ``` r
 
-# Start from a linearized model with additive error
-fitLinAdd <- linearize(fit, addEtas = TRUE, focei = FALSE)
+# Start from a linearized model; additive-only in this case
+fitLinAdd <- linearize(fit, addEtas = TRUE)
+
+isLinearizeMatch(fitLinAdd)  # check quality before searching
 
 resRes <- resSearch(fitLinAdd)
 
@@ -325,7 +365,7 @@ used as the base) for reference.
 ``` r
 
 ## 1. Fit the base nonlinear model (no IIV, additive error)
-fit <- nlmixr2(one_cmt, sim, est = "focei")
+fit <- nlmixr2(one_cmt_base, sim, est = "focei")
 
 ## 2. Linearize, adding etas on all thetas
 fitLin <- linearize(fit, addEtas = TRUE, focei = NA)
