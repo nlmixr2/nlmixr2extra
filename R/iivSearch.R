@@ -22,7 +22,7 @@ iivSearch.default <- function(fit, ...){
 #'@export 
 iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC", mceta=5, ...){
     checkmate::assertChoice(sortBy, c("OBJ", "BIC"))
-    checkmate::assertInteger(mceta, lower = -1, upper = 1000)
+    checkmate::assertIntegerish(mceta, lower = -1, upper = 1000)
   
     if(!hasAnyEta(fit)){stop("Use `addEtas=TRUE` while linearizing this model")}
     # get eta names
