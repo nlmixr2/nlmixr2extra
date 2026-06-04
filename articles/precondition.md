@@ -1,4 +1,4 @@
-# Stabilising Covariance Estimates with preconditionFit()
+# Stabilizing Covariance Estimates with preconditionFit()
 
 ## The problem: ill-conditioned covariance matrices
 
@@ -25,18 +25,18 @@ Symptoms of this problem include:
 ## The solution: preconditioning
 
 Aoki, Nordgren, and Hooker (2016) showed that a simple **linear
-reparameterisation** of the fixed-effects parameters can dramatically
+reparameterization** of the fixed-effects parameters can dramatically
 improve the condition number of the R matrix without changing the model
 or its fit. The idea is to find a matrix **P** such that **P R P^T** is
-close to the identity matrix, run FOCEI on the reparameterised model
+close to the identity matrix, run FOCEI on the reparameterized model
 (which converges to a numerically stable covariance matrix), and then
-transform the result back to the original parameterisation.
+transform the result back to the original parameterization.
 
 `nlmixr2extra` implements this approach in
 [`preconditionFit()`](https://nlmixr2.github.io/nlmixr2extra/reference/preconditionFit.md).
 
 > **Reference:** Aoki Y, Nordgren R, Hooker AC. Preconditioning of
-> Nonlinear Mixed Effects Models for Stabilisation of
+> Nonlinear Mixed Effects Models for Stabilization of
 > Variance-Covariance Matrix Computations. *AAPS J.* 2016;18(2):505–518.
 > <doi:%5B10.1208/s12248-016-9866-5>\](<https://doi.org/10.1208/s12248-016-9866-5>)
 
@@ -89,7 +89,7 @@ covariance matrix invisibly.
 ## Controlling the amount of re-estimation
 
 The `estType` argument determines how much of the model is re-estimated
-on the reparameterised problem:
+on the reparameterized problem:
 
 | `estType` | What is re-estimated | When to use |
 |----|----|----|
@@ -105,7 +105,7 @@ preconditionFit(fit, estType = "none")
 # Fix theta, re-estimate ETAs, then compute covariance
 preconditionFit(fit, estType = "posthoc")
 
-# Full re-estimation on the reparameterised model (default)
+# Full re-estimation on the reparameterized model (default)
 preconditionFit(fit, estType = "full")
 ```
 
@@ -113,7 +113,7 @@ preconditionFit(fit, estType = "full")
 
 The inner loop of
 [`preconditionFit()`](https://nlmixr2.github.io/nlmixr2extra/reference/preconditionFit.md)
-iterates the preconditioning until the reparameterised problem achieves
+iterates the preconditioning until the reparameterized problem achieves
 a `"r,s"` covariance (the most reliable type). If that target is not
 reached within `ntry` attempts the function stops with an error. The
 default is `ntry = 10`.
@@ -202,7 +202,7 @@ when:
 It is not needed when FOCEI already produces a `"r,s"` covariance and
 the SEs look reasonable. For models where identifiability is in doubt
 (very large %RSE for multiple parameters simultaneously), consider
-likelihood profiling rather than trying to stabilise a structurally
+likelihood profiling rather than trying to stabilize a structurally
 unreliable covariance.
 
 ## Requirements
@@ -215,5 +215,5 @@ requires:
   `fit <- nlmixr2(model, data, est = "focei", ...)` first, or use
   `getVarCov(saemFit)` to trigger covariance computation.
 - The `symengine` package (used to construct the symbolic
-  reparameterisation).
+  reparameterization).
 - The `nlmixr2extra` package to be loaded.

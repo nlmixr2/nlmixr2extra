@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Stabilising Covariance Estimates with preconditionFit() • nlmixr2extra</title>
+<title>Stabilizing Covariance Estimates with preconditionFit() • nlmixr2extra</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
 <link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
@@ -15,7 +15,7 @@
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Stabilising Covariance Estimates with preconditionFit()">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Stabilizing Covariance Estimates with preconditionFit()">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -41,7 +41,7 @@
 <li><a class="dropdown-item" href="../articles/likelihood-profiling.html">Likelihood Profiling for NLME Models</a></li>
     <li><a class="dropdown-item" href="../articles/model-linearization.html">Model Linearization for IIV and Residual Error Search</a></li>
     <li><a class="dropdown-item" href="../articles/nlmixrFormula.html">nlmixr2 Algebraic Solutions with Formula</a></li>
-    <li><a class="dropdown-item" href="../articles/precondition.html">Stabilising Covariance Estimates with preconditionFit()</a></li>
+    <li><a class="dropdown-item" href="../articles/precondition.html">Stabilizing Covariance Estimates with preconditionFit()</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -63,7 +63,7 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-      <img src="../logo.png" class="logo" alt=""><h1>Stabilising Covariance Estimates with preconditionFit()</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Stabilizing Covariance Estimates with preconditionFit()</h1>
                         <h4 data-toc-skip class="author">Matthew
 Fidler</h4>
             
@@ -105,18 +105,18 @@ estimates</li>
 <h2 id="the-solution-preconditioning">The solution: preconditioning<a class="anchor" aria-label="anchor" href="#the-solution-preconditioning"></a>
 </h2>
 <p>Aoki, Nordgren, and Hooker (2016) showed that a simple <strong>linear
-reparameterisation</strong> of the fixed-effects parameters can
+reparameterization</strong> of the fixed-effects parameters can
 dramatically improve the condition number of the R matrix without
 changing the model or its fit. The idea is to find a matrix
 <strong>P</strong> such that <strong>P R P^T</strong> is close to the
-identity matrix, run FOCEI on the reparameterised model (which converges
+identity matrix, run FOCEI on the reparameterized model (which converges
 to a numerically stable covariance matrix), and then transform the
-result back to the original parameterisation.</p>
+result back to the original parameterization.</p>
 <p><code>nlmixr2extra</code> implements this approach in
 <code><a href="../reference/preconditionFit.html">preconditionFit()</a></code>.</p>
 <blockquote>
 <p><strong>Reference:</strong> Aoki Y, Nordgren R, Hooker AC.
-Preconditioning of Nonlinear Mixed Effects Models for Stabilisation of
+Preconditioning of Nonlinear Mixed Effects Models for Stabilization of
 Variance-Covariance Matrix Computations. <em>AAPS J.</em>
 2016;18(2):505–518. <a href="doi:%5B10.1208/s12248-016-9866-5" class="uri">doi:[10.1208/s12248-016-9866-5</a>](<a href="https://doi.org/10.1208/s12248-016-9866-5" class="external-link uri">https://doi.org/10.1208/s12248-016-9866-5</a>)</p>
 </blockquote>
@@ -166,7 +166,7 @@ covariance matrix invisibly.</p>
 <h2 id="controlling-the-amount-of-re-estimation">Controlling the amount of re-estimation<a class="anchor" aria-label="anchor" href="#controlling-the-amount-of-re-estimation"></a>
 </h2>
 <p>The <code>estType</code> argument determines how much of the model is
-re-estimated on the reparameterised problem:</p>
+re-estimated on the reparameterized problem:</p>
 <table class="table">
 <colgroup>
 <col width="23%">
@@ -205,14 +205,14 @@ local minimum</td>
 <span><span class="co"># Fix theta, re-estimate ETAs, then compute covariance</span></span>
 <span><span class="fu"><a href="../reference/preconditionFit.html">preconditionFit</a></span><span class="op">(</span><span class="va">fit</span>, estType <span class="op">=</span> <span class="st">"posthoc"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Full re-estimation on the reparameterised model (default)</span></span>
+<span><span class="co"># Full re-estimation on the reparameterized model (default)</span></span>
 <span><span class="fu"><a href="../reference/preconditionFit.html">preconditionFit</a></span><span class="op">(</span><span class="va">fit</span>, estType <span class="op">=</span> <span class="st">"full"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="retrying-until-convergence-ntry">Retrying until convergence: <code>ntry</code><a class="anchor" aria-label="anchor" href="#retrying-until-convergence-ntry"></a>
 </h2>
 <p>The inner loop of <code><a href="../reference/preconditionFit.html">preconditionFit()</a></code> iterates the
-preconditioning until the reparameterised problem achieves a
+preconditioning until the reparameterized problem achieves a
 <code>"r,s"</code> covariance (the most reliable type). If that target
 is not reached within <code>ntry</code> attempts the function stops with
 an error. The default is <code>ntry = 10</code>.</p>
@@ -291,7 +291,7 @@ to spend extra computation time</li>
 <p>It is not needed when FOCEI already produces a <code>"r,s"</code>
 covariance and the SEs look reasonable. For models where identifiability
 is in doubt (very large %RSE for multiple parameters simultaneously),
-consider likelihood profiling rather than trying to stabilise a
+consider likelihood profiling rather than trying to stabilize a
 structurally unreliable covariance.</p>
 </div>
 <div class="section level2">
@@ -305,7 +305,7 @@ structurally unreliable covariance.</p>
 or use <code>getVarCov(saemFit)</code> to trigger covariance
 computation.</li>
 <li>The <code>symengine</code> package (used to construct the symbolic
-reparameterisation).</li>
+reparameterization).</li>
 <li>The <code>nlmixr2extra</code> package to be loaded.</li>
 </ul>
 </div>
