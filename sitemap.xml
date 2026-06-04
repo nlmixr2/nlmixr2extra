@@ -1,6 +1,10 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/404.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/LICENSE.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/articles/index.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/articles/likelihood-profiling.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/articles/model-linearization.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/articles/nlmixrFormula.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/authors.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/index.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/news/index.html</loc></url>
@@ -15,6 +19,12 @@
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/bootstrapFit.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/buildcovInfo.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/buildupatedUI.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/dot-nlmixrFormulaDataPrep.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/dot-nlmixrFormulaExpandStartParam.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/dot-nlmixrFormulaParser.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/dot-nlmixrFormulaParserRanef.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/dot-nlmixrFormulaSetupIniFixed.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/dot-renameOrOverwrite.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/fixedControl.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/foldgen.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/horseshoeSummardf.html</loc></url>
@@ -30,6 +40,7 @@
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/linearizePlot.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/llpControl.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/nlmixr2extra-package.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/nlmixrFormula.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/normalizedData.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/optimUnisampling.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/preconditionFit.html</loc></url>

@@ -28,6 +28,9 @@ Useful links:
 
 Authors:
 
+- Matthew Fidler <matthew.fidler@gmail.com>
+  ([ORCID](https://orcid.org/0000-0001-8538-6691))
+
 - Vipul Mann <vm2583@columbia.edu>
 
 - Vishal Sarsani <vsarsani@umass.edu>

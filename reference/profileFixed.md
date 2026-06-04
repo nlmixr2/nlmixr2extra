@@ -48,13 +48,6 @@ Other Profiling:
 [`profileLlp()`](https://nlmixr2.github.io/nlmixr2extra/reference/profileLlp.md),
 [`profileNlmixr2FitCoreRet()`](https://nlmixr2.github.io/nlmixr2extra/reference/profileNlmixr2FitCoreRet.md)
 
-Other Profiling:
-[`fixedControl()`](https://nlmixr2.github.io/nlmixr2extra/reference/fixedControl.md),
-[`llpControl()`](https://nlmixr2.github.io/nlmixr2extra/reference/llpControl.md),
-[`profile.nlmixr2FitCore()`](https://nlmixr2.github.io/nlmixr2extra/reference/profile.nlmixr2FitCore.md),
-[`profileLlp()`](https://nlmixr2.github.io/nlmixr2extra/reference/profileLlp.md),
-[`profileNlmixr2FitCoreRet()`](https://nlmixr2.github.io/nlmixr2extra/reference/profileNlmixr2FitCoreRet.md)
-
 ## Author
 
 Bill Denney (changed by Matt Fidler to take out R 4.1 specific code)

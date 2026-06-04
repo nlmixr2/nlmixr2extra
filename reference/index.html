@@ -16,6 +16,12 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/likelihood-profiling.html">Likelihood Profiling for NLME Models</a></li>
+    <li><a class="dropdown-item" href="../articles/model-linearization.html">Model Linearization for IIV and Residual Error Search</a></li>
+    <li><a class="dropdown-item" href="../articles/nlmixrFormula.html">nlmixr2 Algebraic Solutions with Formula</a></li>
+  </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
@@ -119,6 +125,48 @@
 
         <dt>
 
+          <code><a href="dot-nlmixrFormulaDataPrep.html">.nlmixrFormulaDataPrep()</a></code>
+
+        </dt>
+        <dd>Perform any required data modifications for the nlmixrFormula interface</dd>
+
+        <dt>
+
+          <code><a href="dot-nlmixrFormulaExpandStartParam.html">.nlmixrFormulaExpandStartParam()</a></code> <code><a href="dot-nlmixrFormulaExpandStartParam.html">.nlmixrFormulaExpandStartParamSingle()</a></code>
+
+        </dt>
+        <dd>Expand parameters to include their covariate representations, if applicable.</dd>
+
+        <dt>
+
+          <code><a href="dot-nlmixrFormulaParser.html">.nlmixrFormulaParser()</a></code>
+
+        </dt>
+        <dd>Parse the formula to extract the dependent variable, predictor, and random effects</dd>
+
+        <dt>
+
+          <code><a href="dot-nlmixrFormulaParserRanef.html">.nlmixrFormulaParserRanef()</a></code>
+
+        </dt>
+        <dd>Parse the random effects part of a formula</dd>
+
+        <dt>
+
+          <code><a href="dot-nlmixrFormulaSetupIniFixed.html">.nlmixrFormulaSetupIniFixed()</a></code> <code><a href="dot-nlmixrFormulaSetupIniFixed.html">.nlmixrFormulaSetupIniRandom()</a></code>
+
+        </dt>
+        <dd>Setup the ini() part of the model for fixed effects</dd>
+
+        <dt>
+
+          <code><a href="dot-renameOrOverwrite.html">.renameOrOverwrite()</a></code>
+
+        </dt>
+        <dd>Rename a column in a dataset</dd>
+
+        <dt>
+
           <code><a href="fixedControl.html">fixedControl()</a></code>
 
         </dt>
@@ -200,6 +248,13 @@
 
         </dt>
         <dd>Control options for log-likelihood profiling</dd>
+
+        <dt>
+
+          <code><a href="nlmixrFormula.html">nlmixrFormula()</a></code>
+
+        </dt>
+        <dd>A simple formula-based interface for nlmixr2</dd>
 
         <dt>
 

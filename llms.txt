@@ -123,6 +123,23 @@ fit2
   : Build covInfo list from varsVec and covarsVec
 - [`buildupatedUI()`](https://nlmixr2.github.io/nlmixr2extra/reference/buildupatedUI.md)
   : Build updated from the covariate and variable vector list
+- [`.nlmixrFormulaDataPrep()`](https://nlmixr2.github.io/nlmixr2extra/reference/dot-nlmixrFormulaDataPrep.md)
+  : Perform any required data modifications for the nlmixrFormula
+  interface
+- [`.nlmixrFormulaExpandStartParam()`](https://nlmixr2.github.io/nlmixr2extra/reference/dot-nlmixrFormulaExpandStartParam.md)
+  [`.nlmixrFormulaExpandStartParamSingle()`](https://nlmixr2.github.io/nlmixr2extra/reference/dot-nlmixrFormulaExpandStartParam.md)
+  : Expand parameters to include their covariate representations, if
+  applicable.
+- [`.nlmixrFormulaParser()`](https://nlmixr2.github.io/nlmixr2extra/reference/dot-nlmixrFormulaParser.md)
+  : Parse the formula to extract the dependent variable, predictor, and
+  random effects
+- [`.nlmixrFormulaParserRanef()`](https://nlmixr2.github.io/nlmixr2extra/reference/dot-nlmixrFormulaParserRanef.md)
+  : Parse the random effects part of a formula
+- [`.nlmixrFormulaSetupIniFixed()`](https://nlmixr2.github.io/nlmixr2extra/reference/dot-nlmixrFormulaSetupIniFixed.md)
+  [`.nlmixrFormulaSetupIniRandom()`](https://nlmixr2.github.io/nlmixr2extra/reference/dot-nlmixrFormulaSetupIniFixed.md)
+  : Setup the ini() part of the model for fixed effects
+- [`.renameOrOverwrite()`](https://nlmixr2.github.io/nlmixr2extra/reference/dot-renameOrOverwrite.md)
+  : Rename a column in a dataset
 - [`fixedControl()`](https://nlmixr2.github.io/nlmixr2extra/reference/fixedControl.md)
   : Control options for fixed-value likelihood profiling
 - [`foldgen()`](https://nlmixr2.github.io/nlmixr2extra/reference/foldgen.md)
@@ -150,6 +167,8 @@ fit2
   : Plot Original Versus Linear Models iObj and Etas
 - [`llpControl()`](https://nlmixr2.github.io/nlmixr2extra/reference/llpControl.md)
   : Control options for log-likelihood profiling
+- [`nlmixrFormula()`](https://nlmixr2.github.io/nlmixr2extra/reference/nlmixrFormula.md)
+  : A simple formula-based interface for nlmixr2
 - [`normalizedData()`](https://nlmixr2.github.io/nlmixr2extra/reference/normalizedData.md)
   : Function to return data of normalized covariates
 - [`optimUnisampling()`](https://nlmixr2.github.io/nlmixr2extra/reference/optimUnisampling.md)
@@ -179,3 +198,13 @@ fit2
 - [`theoFitOde`](https://nlmixr2.github.io/nlmixr2extra/reference/theoFitOde.md)
   : Example single dose Theophylline ODE model
 
+# Articles
+
+### All vignettes
+
+- [Likelihood Profiling for NLME
+  Models](https://nlmixr2.github.io/nlmixr2extra/articles/likelihood-profiling.md):
+- [Model Linearization for IIV and Residual Error
+  Search](https://nlmixr2.github.io/nlmixr2extra/articles/model-linearization.md):
+- [nlmixr2 Algebraic Solutions with
+  Formula](https://nlmixr2.github.io/nlmixr2extra/articles/nlmixrFormula.md):
