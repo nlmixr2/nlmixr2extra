@@ -64,5 +64,4 @@ Encoding: UTF-8
 NeedsCompilation: yes
 Roxygen: list(markdown = TRUE)
 LazyData: true
-VignetteBuilder: knitr
 Config/roxygen2/version: 8.0.0
