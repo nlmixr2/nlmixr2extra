@@ -45,11 +45,11 @@ Control options for log-likelihood profiling
 \seealso{
 \code{\link[=profileLlp]{profileLlp()}}
 
-Other Profiling: 
-\code{\link{fixedControl}()},
-\code{\link{profile.nlmixr2FitCore}()},
-\code{\link{profileFixed}()},
-\code{\link{profileLlp}()},
-\code{\link{profileNlmixr2FitCoreRet}()}
+Other Profiling:
+\code{\link[=fixedControl]{fixedControl()}},
+\code{\link[=profile.nlmixr2FitCore]{profile.nlmixr2FitCore()}},
+\code{\link[=profileFixed]{profileFixed()}},
+\code{\link[=profileLlp]{profileLlp()}},
+\code{\link[=profileNlmixr2FitCoreRet]{profileNlmixr2FitCoreRet()}}
 }
 \concept{Profiling}

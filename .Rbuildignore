@@ -1,4 +1,5 @@
 ^LICENSE\.md$
+^vignettes$
 ^README\.Rmd$
 ^\.github$
 ^codecov\.yml$
@@ -10,3 +11,5 @@ nlmixr2BootstrapCache_fit
 ^build$
 ^cran-comments\.md$
 ^CRAN-SUBMISSION$
+^doc$
+^Meta$

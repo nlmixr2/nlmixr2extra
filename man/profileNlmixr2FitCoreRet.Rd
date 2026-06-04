@@ -25,11 +25,11 @@ variances and covariances.
 Give the output data.frame for a single model for profile.nlmixr2FitCore
 }
 \seealso{
-Other Profiling: 
-\code{\link{fixedControl}()},
-\code{\link{llpControl}()},
-\code{\link{profile.nlmixr2FitCore}()},
-\code{\link{profileFixed}()},
-\code{\link{profileLlp}()}
+Other Profiling:
+\code{\link[=fixedControl]{fixedControl()}},
+\code{\link[=llpControl]{llpControl()}},
+\code{\link[=profile.nlmixr2FitCore]{profile.nlmixr2FitCore()}},
+\code{\link[=profileFixed]{profileFixed()}},
+\code{\link[=profileLlp]{profileLlp()}}
 }
 \concept{Profiling}

@@ -34,19 +34,12 @@ profiling)
 
 }}
 \seealso{
-Other Profiling: 
-\code{\link{fixedControl}()},
-\code{\link{llpControl}()},
-\code{\link{profile.nlmixr2FitCore}()},
-\code{\link{profileLlp}()},
-\code{\link{profileNlmixr2FitCoreRet}()}
-
-Other Profiling: 
-\code{\link{fixedControl}()},
-\code{\link{llpControl}()},
-\code{\link{profile.nlmixr2FitCore}()},
-\code{\link{profileLlp}()},
-\code{\link{profileNlmixr2FitCoreRet}()}
+Other Profiling:
+\code{\link[=fixedControl]{fixedControl()}},
+\code{\link[=llpControl]{llpControl()}},
+\code{\link[=profile.nlmixr2FitCore]{profile.nlmixr2FitCore()}},
+\code{\link[=profileLlp]{profileLlp()}},
+\code{\link[=profileNlmixr2FitCoreRet]{profileNlmixr2FitCoreRet()}}
 }
 \author{
 Bill Denney (changed by Matt Fidler to take out R 4.1 specific code)

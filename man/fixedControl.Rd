@@ -16,11 +16,11 @@ Control options for fixed-value likelihood profiling
 \seealso{
 \code{\link[=profileFixed]{profileFixed()}}
 
-Other Profiling: 
-\code{\link{llpControl}()},
-\code{\link{profile.nlmixr2FitCore}()},
-\code{\link{profileFixed}()},
-\code{\link{profileLlp}()},
-\code{\link{profileNlmixr2FitCoreRet}()}
+Other Profiling:
+\code{\link[=llpControl]{llpControl()}},
+\code{\link[=profile.nlmixr2FitCore]{profile.nlmixr2FitCore()}},
+\code{\link[=profileFixed]{profileFixed()}},
+\code{\link[=profileLlp]{profileLlp()}},
+\code{\link[=profileNlmixr2FitCoreRet]{profileNlmixr2FitCoreRet()}}
 }
 \concept{Profiling}

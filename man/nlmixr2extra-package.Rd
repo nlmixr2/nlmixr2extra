@@ -22,6 +22,7 @@ Useful links:
 
 Authors:
 \itemize{
+  \item Matthew Fidler \email{matthew.fidler@gmail.com} (\href{https://orcid.org/0000-0001-8538-6691}{ORCID})
   \item Vipul Mann \email{vm2583@columbia.edu}
   \item Vishal Sarsani \email{vsarsani@umass.edu} (\href{https://orcid.org/0000-0002-9272-3438}{ORCID})
   \item Bill Denney \email{wdenney@humanpredictions.com} (\href{https://orcid.org/0000-0002-5759-428X}{ORCID})

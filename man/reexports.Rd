@@ -18,10 +18,10 @@ These objects are imported from other packages. Follow the links
 below to see their documentation.
 
 \describe{
-  \item{knitr}{\code{\link[knitr]{knit_print}}}
+  \item{knitr}{\code{\link[knitr:knit_print]{knit_print()}}}
 
-  \item{nlmixr2est}{\code{\link[nlmixr2est:nlmixr2]{nlmixr}}, \code{\link[nlmixr2est]{nlmixr2}}, \code{\link[nlmixr2est]{nlmixrWithTiming}}, \code{\link[nlmixr2est]{setCov}}}
+  \item{nlmixr2est}{\code{\link[nlmixr2est:nlmixr]{nlmixr()}}, \code{\link[nlmixr2est:nlmixr2]{nlmixr2()}}, \code{\link[nlmixr2est:nlmixrWithTiming]{nlmixrWithTiming()}}, \code{\link[nlmixr2est:setCov]{setCov()}}}
 
-  \item{rxode2}{\code{\link[rxode2]{ini}}, \code{\link[rxode2]{model}}, \code{\link[rxode2]{rxUiDeparse}}}
+  \item{rxode2}{\code{\link[rxode2:ini]{ini()}}, \code{\link[rxode2:model]{model()}}, \code{\link[rxode2:rxUiDeparse]{rxUiDeparse()}}}
 }}
 
