@@ -53,7 +53,7 @@ We use the single-dose theophylline dataset (`theo_sd`) from `nlmixr2data`.
 library(nlmixr2extra)
 library(ggplot2)
 
-one_cmt <- function() {
+oneCmt <- function() {
   ini({
     tka  <- log(1.57)   # log absorption rate constant
     tcl  <- log(2.72)   # log clearance
@@ -71,7 +71,7 @@ one_cmt <- function() {
   })
 }
 
-fit <- nlmixr2(one_cmt, data = nlmixr2data::theo_sd,
+fit <- nlmixr2(oneCmt, data = nlmixr2data::theo_sd,
                est = "focei", control = list(print = 0))
 fit
 ```
@@ -81,8 +81,8 @@ fit
 ```{r profile-all, eval=FALSE}
 # Profiles tka and tcl; eta.ka, eta.cl, and add.sd are also included.
 # This may take a few minutes.
-prof_all <- profile(fit)
-prof_all
+profAll <- profile(fit)
+profAll
 
 # not run
 #>      Parameter           OFV         tka        tcl         tv       add.sd       eta.ka     eta.cl profileBound
@@ -109,7 +109,7 @@ prof_all
 ## Profile a single parameter
 
 ```{r profile-single, eval=FALSE}
-prof_tka <- profile(fit, which = "tka")
+profTka <- profile(fit, which = "tka")
 
 # not run
 #>      Parameter           OFV         tka        tcl         tv       add.sd       eta.ka     eta.cl profileBound
@@ -150,13 +150,13 @@ ctrl <- llpControl(
   paramDigits   = 3      # significant digits for convergence
 )
 
-prof_tka <- profile(fit, which = "tka", control = ctrl)
+profTka <- profile(fit, which = "tka", control = ctrl)
 ```
 
 To get a 90% CI instead of 95%, lower the threshold:
 
 ```{r llpcontrol-90, eval=FALSE}
-prof_tka_90 <- profile(fit, which = "tka",
+profTka90 <- profile(fit, which = "tka",
                        control = list(ofvIncrease = qchisq(0.90, df = 1)))
 ```
 
@@ -172,7 +172,7 @@ The returned data frame has one row per model evaluation. Key columns:
 
 ```{r interpret, eval=FALSE}
 # Show rows near the boundary
-prof_tka[!is.na(prof_tka$profileBound), ]
+profTka[!is.na(profTka$profileBound), ]
 ```
 
 The rows where `profileBound` is non-`NA` give the profile CI limits directly
@@ -186,13 +186,13 @@ value on the x-axis, with a horizontal reference line at the CI threshold.
 
 ```{r plot, eval=FALSE}
 # Compute ΔOFV relative to the minimum
-ofv_min <- min(prof_tka$OFV, na.rm = TRUE)
-prof_tka$dOFV <- prof_tka$OFV - ofv_min
+ofvMin <- min(profTka$OFV, na.rm = TRUE)
+profTka$dOFV <- profTka$OFV - ofvMin
 
 # The two boundary rows (one per direction)
-bounds <- prof_tka[!is.na(prof_tka$profileBound), ]
+bounds <- profTka[!is.na(profTka$profileBound), ]
 
-ggplot(prof_tka, aes(x = tka, y = dOFV)) +
+ggplot(profTka, aes(x = tka, y = dOFV)) +
   geom_line() +
   geom_point() +
   geom_hline(yintercept = qchisq(0.95, 1), linetype = "dashed", colour = "red") +
@@ -224,12 +224,12 @@ algorithm struggles.
 
 ```{r fixed, eval=FALSE}
 # Evaluate tka at seven equally spaced values around the point estimate
-tka_est <- fit$theta["tka"]
+tkaEst <- fit$theta["tka"]
 
-grid <- data.frame(tka = seq(tka_est - 0.6, tka_est + 0.6, length.out = 7))
+grid <- data.frame(tka = seq(tkaEst - 0.6, tkaEst + 0.6, length.out = 7))
 
-prof_grid <- profile(fit, which = grid, method = "fixed")
-prof_grid[, c("Parameter", "tka", "OFV")]
+profGrid <- profile(fit, which = grid, method = "fixed")
+profGrid[, c("Parameter", "tka", "OFV")]
 ```
 
 ## Two-parameter joint profile
@@ -240,14 +240,14 @@ contours.
 
 ```{r fixed-joint, eval=FALSE}
 grid2d <- expand.grid(
-  tka = seq(tka_est - 0.4, tka_est + 0.4, length.out = 5),
+  tka = seq(tkaEst - 0.4, tkaEst + 0.4, length.out = 5),
   tcl = seq(nlmixr2est::fixef(fit)[["tcl"]] - 0.2,
             nlmixr2est::fixef(fit)[["tcl"]] + 0.2, length.out = 5)
 )
 
-prof_joint <- profile(fit, which = grid2d, method = "fixed")
+profJoint <- profile(fit, which = grid2d, method = "fixed")
 
-ggplot(prof_joint, aes(x = tka, y = tcl,
+ggplot(profJoint, aes(x = tka, y = tcl,
                        fill = OFV - min(OFV, na.rm = TRUE))) +
   geom_tile() +
   scale_fill_viridis_c(name = expression(Delta * "OFV")) +
@@ -265,29 +265,29 @@ This is common for variance parameters and log-scale parameters near zero.
 
 ```{r compare, eval=FALSE}
 # Wald CI from the fit
-wald_ci <- confint(fit)  # uses the covariance matrix
+waldCi <- confint(fit)  # uses the covariance matrix
 
 # Extract profile CI from the boundary rows
-bound_rows <- prof_all[!is.na(prof_all$profileBound), ]
+boundRows <- profAll[!is.na(profAll$profileBound), ]
 
-# For each parameter, the two bound_rows give lower and upper limits
-profile_ci <- tapply(
-  seq_len(nrow(bound_rows)),
-  bound_rows$Parameter,
+# For each parameter, the two boundRows give lower and upper limits
+profileCi <- tapply(
+  seq_len(nrow(boundRows)),
+  boundRows$Parameter,
   function(idx) {
-    vals <- bound_rows[idx, bound_rows$Parameter[idx[1]]]
+    vals <- boundRows[idx, boundRows$Parameter[idx[1]]]
     c(lower = min(vals), upper = max(vals))
   }
 )
 
 # Show side-by-side
-do.call(rbind, lapply(names(profile_ci), function(p) {
+do.call(rbind, lapply(names(profileCi), function(p) {
   data.frame(
     parameter   = p,
-    wald_lower  = wald_ci[p, 1],
-    wald_upper  = wald_ci[p, 2],
-    prof_lower  = profile_ci[[p]]["lower"],
-    prof_upper  = profile_ci[[p]]["upper"]
+    wald_lower  = waldCi[p, 1],
+    wald_upper  = waldCi[p, 2],
+    prof_lower  = profileCi[[p]]["lower"],
+    prof_upper  = profileCi[[p]]["upper"]
   )
 }))
 ```

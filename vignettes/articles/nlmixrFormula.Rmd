@@ -305,10 +305,10 @@ withr::with_seed(42, {
   subjScale  <- exp(rnorm(nSubj, mean = 0, sd = 0.4))
 
   cqtDesign <-
-    expand.grid(id = 1:nSubj, time_h = nomTimes)
-  cqtDesign$conc  <- bateman(cqtDesign$time_h) * cmaxFactor *
+    expand.grid(id = 1:nSubj, timeH = nomTimes)
+  cqtDesign$conc  <- bateman(cqtDesign$timeH) * cmaxFactor *
                      subjScale[cqtDesign$id]
-  cqtDesign$timeF <- factor(cqtDesign$time_h,
+  cqtDesign$timeF <- factor(cqtDesign$timeH,
                             levels = as.character(nomTimes))
   cqtDesign$dQT   <- 1  # placeholder; nlmixrFormula(est="rxSolve") fills it in
 })

@@ -45,7 +45,7 @@ Stepwise Covariate Model-selection (SCM) method
 }
 \examples{
 \dontrun{
-one.cmt <- function() {
+oneCmt <- function() {
   ini({
     tka <- 0.45; label("Ka")
     tcl <- log(c(0, 2.7, 100)); label("Cl")
@@ -63,7 +63,7 @@ one.cmt <- function() {
   })
 }
 
-fit <- nlmixr2(one.cmt, nlmixr2data::theo_sd, est = "saem", control = list(print = 0))
+fit <- nlmixr2(oneCmt, nlmixr2data::theo_sd, est = "saem", control = list(print = 0))
 rxode2::.rxWithWd(tempdir(), {# with temporary directory
 
 auto1 <- covarSearchAuto(fit, varsVec = c("ka", "cl"),
@@ -78,7 +78,7 @@ d <- nlmixr2data::theo_sd
 d$SEX <-0
 d$SEX[d$ID<=6] <-1
 
-fit <- nlmixr2(one.cmt, d, est = "saem", control = list(print = 0))
+fit <- nlmixr2(oneCmt, d, est = "saem", control = list(print = 0))
 
 # This would restart if for some reason the search crashed:
 
