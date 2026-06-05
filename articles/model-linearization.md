@@ -65,7 +65,7 @@ correlation between CL and V:
 
 ``` r
 
-one_cmt <- function() {
+oneCmt <- function() {
   ini({
     tcl <- log(2.7) # Cl
     tv <- log(30) # V
@@ -88,7 +88,7 @@ one_cmt <- function() {
 set.seed(42)
 ev <- rxode2::et(amt = 300, cmt = "depot") |>
   rxode2::et(time = c(0.25, 0.5, 1, 2, 3, 6, 8, 12, 16, 24))
-sim <- rxode2::rxSolve(one_cmt, ev, nSub = 50, addDosing = TRUE)
+sim <- rxode2::rxSolve(oneCmt, ev, nSub = 50, addDosing = TRUE)
 sim$dv <- sim$sim
 sim$id <- sim$sim.id
 sim <- sim[, c("id", "time", "amt", "dv", "evid")]
@@ -102,7 +102,7 @@ Define a base model with *no IIV* and additive residual error:
 
 ``` r
 
-one_cmt_base <- function() {
+oneCmtBase <- function() {
   ini({
       tcl <- log(2.7) # Cl
       tv <- log(30) # V
@@ -123,12 +123,12 @@ one_cmt_base <- function() {
 
 ### Base Model Fit
 
-Fit the data to the base model `one_cmt_base` with typical NLME method
+Fit the data to the base model `oneCmtBase` with typical NLME method
 (e.g. FOCEI):
 
 ``` r
 
-fit <- nlmixr2(one_cmt_base, sim, est = "focei") 
+fit <- nlmixr2(oneCmtBase, sim, est = "focei") 
 ```
 
 ### Run Linearization
@@ -365,7 +365,7 @@ used as the base) for reference.
 ``` r
 
 ## 1. Fit the base nonlinear model (no IIV, additive error)
-fit <- nlmixr2(one_cmt_base, sim, est = "focei")
+fit <- nlmixr2(oneCmtBase, sim, est = "focei")
 
 ## 2. Linearize, adding etas on all thetas
 fitLin <- linearize(fit, addEtas = TRUE, focei = NA)
@@ -380,8 +380,8 @@ print(iivRes)   # BIC-ordered summary
 
 ## 5. Refit top 3 structures with the original model
 top3 <- rerunTopN(iivRes, n = 3)
-best_structure <- top3$summary$search[which.min(top3$summary$O.BIC)]
-cat("Best IIV structure:", best_structure, "\n")
+bestStructure <- top3$summary$search[which.min(top3$summary$O.BIC)]
+cat("Best IIV structure:", bestStructure, "\n")
 
 ## 6. Rebuild the model with the best IIV structure and search residual error
 # (refit with the chosen IIV structure first)

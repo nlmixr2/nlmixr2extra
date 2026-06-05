@@ -148,7 +148,7 @@ FOCEI fit</strong> rather than a full nonlinear optimization.</p>
 <p>Define a one-compartment model with additive residual error and IIV
 with correlation between CL and V:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">one_cmt</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="op">{</span></span>
+<code class="sourceCode R"><span><span class="va">oneCmt</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://nlmixr2.github.io/rxode2/reference/ini.html" class="external-link">ini</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>    <span class="va">tcl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">2.7</span><span class="op">)</span> <span class="co"># Cl</span></span>
 <span>    <span class="va">tv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">30</span><span class="op">)</span> <span class="co"># V</span></span>
@@ -171,7 +171,7 @@ with correlation between CL and V:</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
 <span><span class="va">ev</span> <span class="op">&lt;-</span> <span class="fu">rxode2</span><span class="fu">::</span><span class="fu"><a href="https://nlmixr2.github.io/rxode2/reference/et.html" class="external-link">et</a></span><span class="op">(</span>amt <span class="op">=</span> <span class="fl">300</span>, cmt <span class="op">=</span> <span class="st">"depot"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">rxode2</span><span class="fu">::</span><span class="fu"><a href="https://nlmixr2.github.io/rxode2/reference/et.html" class="external-link">et</a></span><span class="op">(</span>time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.25</span>, <span class="fl">0.5</span>, <span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">6</span>, <span class="fl">8</span>, <span class="fl">12</span>, <span class="fl">16</span>, <span class="fl">24</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">sim</span> <span class="op">&lt;-</span> <span class="fu">rxode2</span><span class="fu">::</span><span class="fu"><a href="https://nlmixr2.github.io/rxode2/reference/rxSolve.html" class="external-link">rxSolve</a></span><span class="op">(</span><span class="va">one_cmt</span>, <span class="va">ev</span>, nSub <span class="op">=</span> <span class="fl">50</span>, addDosing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">sim</span> <span class="op">&lt;-</span> <span class="fu">rxode2</span><span class="fu">::</span><span class="fu"><a href="https://nlmixr2.github.io/rxode2/reference/rxSolve.html" class="external-link">rxSolve</a></span><span class="op">(</span><span class="va">oneCmt</span>, <span class="va">ev</span>, nSub <span class="op">=</span> <span class="fl">50</span>, addDosing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">sim</span><span class="op">$</span><span class="va">dv</span> <span class="op">&lt;-</span> <span class="va">sim</span><span class="op">$</span><span class="va">sim</span></span>
 <span><span class="va">sim</span><span class="op">$</span><span class="va">id</span> <span class="op">&lt;-</span> <span class="va">sim</span><span class="op">$</span><span class="va">sim.id</span></span>
 <span><span class="va">sim</span> <span class="op">&lt;-</span> <span class="va">sim</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="st">"time"</span>, <span class="st">"amt"</span>, <span class="st">"dv"</span>, <span class="st">"evid"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
@@ -185,7 +185,7 @@ with correlation between CL and V:</p>
 <p>Define a base model with <em>no IIV</em> and additive residual
 error:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">one_cmt_base</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="op">{</span></span>
+<code class="sourceCode R"><span><span class="va">oneCmtBase</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://nlmixr2.github.io/rxode2/reference/ini.html" class="external-link">ini</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>      <span class="va">tcl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">2.7</span><span class="op">)</span> <span class="co"># Cl</span></span>
 <span>      <span class="va">tv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">30</span><span class="op">)</span> <span class="co"># V</span></span>
@@ -206,10 +206,10 @@ error:</p>
 <div class="section level3">
 <h3 id="base-model-fit">Base Model Fit<a class="anchor" aria-label="anchor" href="#base-model-fit"></a>
 </h3>
-<p>Fit the data to the base model <code>one_cmt_base</code> with typical
+<p>Fit the data to the base model <code>oneCmtBase</code> with typical
 NLME method (e.g. FOCEI):</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">one_cmt_base</span>, <span class="va">sim</span>, est <span class="op">=</span> <span class="st">"focei"</span><span class="op">)</span> </span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">oneCmtBase</span>, <span class="va">sim</span>, est <span class="op">=</span> <span class="st">"focei"</span><span class="op">)</span> </span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="run-linearization">Run Linearization<a class="anchor" aria-label="anchor" href="#run-linearization"></a>
@@ -490,7 +490,7 @@ linearized fit used as the base) for reference.</p>
 </h2>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## 1. Fit the base nonlinear model (no IIV, additive error)</span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">one_cmt_base</span>, <span class="va">sim</span>, est <span class="op">=</span> <span class="st">"focei"</span><span class="op">)</span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">oneCmtBase</span>, <span class="va">sim</span>, est <span class="op">=</span> <span class="st">"focei"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co">## 2. Linearize, adding etas on all thetas</span></span>
 <span><span class="va">fitLin</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/linearize.html">linearize</a></span><span class="op">(</span><span class="va">fit</span>, addEtas <span class="op">=</span> <span class="cn">TRUE</span>, focei <span class="op">=</span> <span class="cn">NA</span><span class="op">)</span></span>
@@ -505,8 +505,8 @@ linearized fit used as the base) for reference.</p>
 <span></span>
 <span><span class="co">## 5. Refit top 3 structures with the original model</span></span>
 <span><span class="va">top3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rerunTopN.html">rerunTopN</a></span><span class="op">(</span><span class="va">iivRes</span>, n <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
-<span><span class="va">best_structure</span> <span class="op">&lt;-</span> <span class="va">top3</span><span class="op">$</span><span class="va">summary</span><span class="op">$</span><span class="va">search</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/which.min.html" class="external-link">which.min</a></span><span class="op">(</span><span class="va">top3</span><span class="op">$</span><span class="va">summary</span><span class="op">$</span><span class="va">O.BIC</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Best IIV structure:"</span>, <span class="va">best_structure</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="va">bestStructure</span> <span class="op">&lt;-</span> <span class="va">top3</span><span class="op">$</span><span class="va">summary</span><span class="op">$</span><span class="va">search</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/which.min.html" class="external-link">which.min</a></span><span class="op">(</span><span class="va">top3</span><span class="op">$</span><span class="va">summary</span><span class="op">$</span><span class="va">O.BIC</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Best IIV structure:"</span>, <span class="va">bestStructure</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co">## 6. Rebuild the model with the best IIV structure and search residual error</span></span>
 <span><span class="co"># (refit with the chosen IIV structure first)</span></span>

@@ -127,7 +127,7 @@ Variance-Covariance Matrix Computations. <em>AAPS J.</em>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://nlmixr2.github.io/nlmixr2extra/">nlmixr2extra</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">one.compartment</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="op">{</span></span>
+<span><span class="va">oneCompartment</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://nlmixr2.github.io/rxode2/reference/ini.html" class="external-link">ini</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>    <span class="va">tka</span> <span class="op">&lt;-</span> <span class="fl">0.45</span>  <span class="co"># log Ka</span></span>
 <span>    <span class="va">tcl</span> <span class="op">&lt;-</span> <span class="fl">1</span>     <span class="co"># log Cl</span></span>
@@ -148,7 +148,7 @@ Variance-Covariance Matrix Computations. <em>AAPS J.</em>
 <span>  <span class="op">}</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">one.compartment</span>, data <span class="op">=</span> <span class="fu">nlmixr2data</span><span class="fu">::</span><span class="va"><a href="https://nlmixr2.github.io/nlmixr2data/reference/theo_sd.html" class="external-link">theo_sd</a></span>,</span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">oneCompartment</span>, data <span class="op">=</span> <span class="fu">nlmixr2data</span><span class="fu">::</span><span class="va"><a href="https://nlmixr2.github.io/nlmixr2data/reference/theo_sd.html" class="external-link">theo_sd</a></span>,</span>
 <span>               est <span class="op">=</span> <span class="st">"focei"</span>, control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>print <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">fit</span></span></code></pre></div>
 <p>If the covariance method reported is not <code>"r,s"</code> (or you
@@ -252,23 +252,23 @@ selected covariance.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://nlmixr2.github.io/nlmixr2extra/">nlmixr2extra</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">one.compartment</span>, data <span class="op">=</span> <span class="fu">nlmixr2data</span><span class="fu">::</span><span class="va"><a href="https://nlmixr2.github.io/nlmixr2data/reference/theo_sd.html" class="external-link">theo_sd</a></span>,</span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">oneCompartment</span>, data <span class="op">=</span> <span class="fu">nlmixr2data</span><span class="fu">::</span><span class="va"><a href="https://nlmixr2.github.io/nlmixr2data/reference/theo_sd.html" class="external-link">theo_sd</a></span>,</span>
 <span>               est <span class="op">=</span> <span class="st">"focei"</span>, control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>print <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Record the original parameter table</span></span>
-<span><span class="va">df_before</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">parFixedDf</span></span>
+<span><span class="va">dfBefore</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">parFixedDf</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Covariance method before:"</span>, <span class="va">fit</span><span class="op">$</span><span class="va">covMethod</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Apply preconditioning (only recompute covariance, do not re-estimate)</span></span>
 <span><span class="fu"><a href="../reference/preconditionFit.html">preconditionFit</a></span><span class="op">(</span><span class="va">fit</span>, estType <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span>
-<span><span class="va">df_after</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">parFixedDf</span></span>
+<span><span class="va">dfAfter</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">parFixedDf</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Covariance method after:"</span>, <span class="va">fit</span><span class="op">$</span><span class="va">covMethod</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Compare standard errors</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
-<span>  SE_before <span class="op">=</span> <span class="va">df_before</span><span class="op">$</span><span class="va">SE</span>,</span>
-<span>  SE_after  <span class="op">=</span> <span class="va">df_after</span><span class="op">$</span><span class="va">SE</span>,</span>
-<span>  row.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">df_before</span><span class="op">)</span></span>
+<span>  SE_before <span class="op">=</span> <span class="va">dfBefore</span><span class="op">$</span><span class="va">SE</span>,</span>
+<span>  SE_after  <span class="op">=</span> <span class="va">dfAfter</span><span class="op">$</span><span class="va">SE</span>,</span>
+<span>  row.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">dfBefore</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>The point estimates (<code>Estimate</code>,
 <code>Back-transformed</code>) and the random-effects summaries

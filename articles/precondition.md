@@ -46,7 +46,7 @@ transform the result back to the original parameterization.
 
 library(nlmixr2extra)
 
-one.compartment <- function() {
+oneCompartment <- function() {
   ini({
     tka <- 0.45  # log Ka
     tcl <- 1     # log Cl
@@ -67,7 +67,7 @@ one.compartment <- function() {
   })
 }
 
-fit <- nlmixr2(one.compartment, data = nlmixr2data::theo_sd,
+fit <- nlmixr2(oneCompartment, data = nlmixr2data::theo_sd,
                est = "focei", control = list(print = 0))
 fit
 ```
@@ -163,23 +163,23 @@ the fit object is updated in-place and the displayed parameter table
 
 library(nlmixr2extra)
 
-fit <- nlmixr2(one.compartment, data = nlmixr2data::theo_sd,
+fit <- nlmixr2(oneCompartment, data = nlmixr2data::theo_sd,
                est = "focei", control = list(print = 0))
 
 # Record the original parameter table
-df_before <- fit$parFixedDf
+dfBefore <- fit$parFixedDf
 cat("Covariance method before:", fit$covMethod, "\n")
 
 # Apply preconditioning (only recompute covariance, do not re-estimate)
 preconditionFit(fit, estType = "none")
-df_after <- fit$parFixedDf
+dfAfter <- fit$parFixedDf
 cat("Covariance method after:", fit$covMethod, "\n")
 
 # Compare standard errors
 cbind(
-  SE_before = df_before$SE,
-  SE_after  = df_after$SE,
-  row.names = rownames(df_before)
+  SE_before = dfBefore$SE,
+  SE_after  = dfAfter$SE,
+  row.names = rownames(dfBefore)
 )
 ```
 
