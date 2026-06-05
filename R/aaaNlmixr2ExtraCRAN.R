@@ -19,5 +19,8 @@
 #' aaaNlmixr2ExtraCRAN()
 #'
 aaaNlmixr2ExtraCRAN <- function() {
-  nlmixr2est::aaaCranNlmixrThreads()
+  rxode2::setRxThreads(2L)
+  data.table::setDTthreads(2L)
+  Sys.setenv(OMP_NUM_THREADS = "2")
+  Sys.setenv(MKL_NUM_THREADS = "2")
 }
