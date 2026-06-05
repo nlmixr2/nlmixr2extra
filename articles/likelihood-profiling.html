@@ -67,7 +67,7 @@
                         <h4 data-toc-skip class="author">Bill
 Denney</h4>
             
-            <h4 data-toc-skip class="date">2026-06-04</h4>
+            <h4 data-toc-skip class="date">2026-06-05</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/nlmixr2/nlmixr2extra/blob/main/vignettes/articles/likelihood-profiling.Rmd" class="external-link"><code>vignettes/articles/likelihood-profiling.Rmd</code></a></small>
       <div class="d-none name"><code>likelihood-profiling.Rmd</code></div>
@@ -159,13 +159,48 @@ from <code>nlmixr2data</code>.</p>
 <code class="sourceCode R"><span><span class="co"># Profiles tka and tcl; eta.ka, eta.cl, and add.sd are also included.</span></span>
 <span><span class="co"># This may take a few minutes.</span></span>
 <span><span class="va">prof_all</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/profile.html" class="external-link">profile</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
-<span><span class="va">prof_all</span></span></code></pre></div>
+<span><span class="va">prof_all</span></span>
+<span></span>
+<span><span class="co"># not run</span></span>
+<span><span class="co">#&gt;      Parameter           OFV         tka        tcl         tv       add.sd       eta.ka     eta.cl profileBound</span></span>
+<span><span class="co">#&gt; 1        tka  1.302956e+02  0.40707834  1.0277804  3.4301847 7.790360e-01 3.313392e-01 0.11903041           NA</span></span>
+<span><span class="co">#&gt; 2        tka  1.359081e+02 -0.06205406  1.0357450  3.4201803 7.822078e-01 5.373565e-01 0.11997097           NA</span></span>
+<span><span class="co">#&gt; 3        tka            NA  0.03246907         NA         NA           NA           NA         NA    -3.841459</span></span>
+<span><span class="co">#&gt; 4        tka  1.341359e+02  0.03253017  1.0349416  3.4203239 7.813290e-01 4.459202e-01 0.11954391           NA</span></span>
+<span><span class="co">#&gt; 5        tka  1.340839e+02  0.03536930  1.0339534  3.4211996 7.793176e-01 4.506370e-01 0.11970980           NA</span></span>
+<span><span class="co">#&gt; 6        tka  1.332169e+02  0.08598386  1.0344147  3.4212832 7.808917e-01 4.048129e-01 0.11966891           NA</span></span>
+<span><span class="co">#&gt; 7        tka  1.333483e+02  0.73591286  1.0203980  3.4396473 7.820747e-01 4.405237e-01 0.12179708           NA</span></span>
+<span><span class="co">#&gt; 8        tka  1.340970e+02  0.78149630  1.0155783  3.4395393 7.814438e-01 4.782030e-01 0.12240100           NA</span></span>
+<span><span class="co">#&gt; 9        tka  1.341362e+02  0.78375611  1.0163098  3.4402083 7.812342e-01 4.813841e-01 0.12266684           NA</span></span>
+<span><span class="co">#&gt; 10       tka            NA  0.78380398         NA         NA           NA           NA         NA     3.841459</span></span>
+<span><span class="co">#&gt; 11       tka  1.357760e+02  0.87621075  1.0136331  3.4402359 7.818523e-01 5.617630e-01 0.12254599           NA</span></span>
+<span><span class="co">#&gt; 12       tcl  1.302956e+02  0.40707834  1.0277804  3.4301847 7.790360e-01 3.313392e-01 0.11903041           NA</span></span>
+<span><span class="co">#&gt; 13       tcl  1.663811e+02  0.42951804 -0.1566724  3.4457119 7.849234e-01 3.329437e-01 0.59514936           NA</span></span>
+<span><span class="co">#&gt; 14       tcl            NA          NA  0.7988096         NA           NA           NA         NA    -3.841459</span></span>
+<span><span class="co">#&gt; 15       tcl  1.341352e+02  0.41822580  0.7988652  3.4390860 7.835247e-01 3.305029e-01 0.17116048           NA</span></span>
+<span><span class="co">#&gt; 16       tcl  1.341188e+02  0.41746955  0.7994066  3.4384609 7.832626e-01 3.312768e-01 0.17139417           NA</span></span>
+<span><span class="co">#&gt; 17       tcl  1.340151e+02  0.41805477  0.8030235  3.4381714 7.837632e-01 3.325469e-01 0.17017609           NA</span></span>
+<span><span class="co">#&gt; 18       tcl  1.334242e+02  0.41788913  0.8242418  3.4379266 7.816312e-01 3.310546e-01 0.15915788           NA</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="profile-a-single-parameter">Profile a single parameter<a class="anchor" aria-label="anchor" href="#profile-a-single-parameter"></a>
 </h3>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">prof_tka</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/profile.html" class="external-link">profile</a></span><span class="op">(</span><span class="va">fit</span>, which <span class="op">=</span> <span class="st">"tka"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">prof_tka</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/profile.html" class="external-link">profile</a></span><span class="op">(</span><span class="va">fit</span>, which <span class="op">=</span> <span class="st">"tka"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># not run</span></span>
+<span><span class="co">#&gt;      Parameter           OFV         tka        tcl         tv       add.sd       eta.ka     eta.cl profileBound</span></span>
+<span><span class="co">#&gt; 1        tka  1.302956e+02  0.40707834  1.0277804  3.4301847 7.790360e-01 3.313392e-01 0.11903041           NA</span></span>
+<span><span class="co">#&gt; 2        tka  1.359081e+02 -0.06205406  1.0357450  3.4201803 7.822078e-01 5.373565e-01 0.11997097           NA</span></span>
+<span><span class="co">#&gt; 3        tka            NA  0.03246907         NA         NA           NA           NA         NA    -3.841459</span></span>
+<span><span class="co">#&gt; 4        tka  1.341359e+02  0.03253017  1.0349416  3.4203239 7.813290e-01 4.459202e-01 0.11954391           NA</span></span>
+<span><span class="co">#&gt; 5        tka  1.340839e+02  0.03536930  1.0339534  3.4211996 7.793176e-01 4.506370e-01 0.11970980           NA</span></span>
+<span><span class="co">#&gt; 6        tka  1.332169e+02  0.08598386  1.0344147  3.4212832 7.808917e-01 4.048129e-01 0.11966891           NA</span></span>
+<span><span class="co">#&gt; 7        tka  1.333483e+02  0.73591286  1.0203980  3.4396473 7.820747e-01 4.405237e-01 0.12179708           NA</span></span>
+<span><span class="co">#&gt; 8        tka  1.340970e+02  0.78149630  1.0155783  3.4395393 7.814438e-01 4.782030e-01 0.12240100           NA</span></span>
+<span><span class="co">#&gt; 9        tka  1.341362e+02  0.78375611  1.0163098  3.4402083 7.812342e-01 4.813841e-01 0.12266684           NA</span></span>
+<span><span class="co">#&gt; 10       tka            NA  0.78380398         NA         NA           NA           NA         NA     3.841459</span></span>
+<span><span class="co">#&gt; 11       tka  1.357760e+02  0.87621075  1.0136331  3.4402359 7.818523e-01 5.617630e-01 0.12254599           NA</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -195,7 +230,7 @@ figures.</li>
 <span>  paramDigits   <span class="op">=</span> <span class="fl">3</span>      <span class="co"># significant digits for convergence</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">prof_tka</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/profile.html" class="external-link">profile</a></span><span class="op">(</span><span class="va">fit</span>, which <span class="op">=</span> <span class="st">"tka"</span>, control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">as.list</a></span><span class="op">(</span><span class="va">ctrl</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">prof_tka</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/profile.html" class="external-link">profile</a></span><span class="op">(</span><span class="va">fit</span>, which <span class="op">=</span> <span class="st">"tka"</span>, control <span class="op">=</span> <span class="va">ctrl</span><span class="op">)</span></span></code></pre></div>
 <p>To get a 90% CI instead of 95%, lower the threshold:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">prof_tka_90</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/profile.html" class="external-link">profile</a></span><span class="op">(</span><span class="va">fit</span>, which <span class="op">=</span> <span class="st">"tka"</span>,</span>
@@ -271,7 +306,7 @@ models) or when the adaptive algorithm struggles.</p>
 </h3>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Evaluate tka at seven equally spaced values around the point estimate</span></span>
-<span><span class="va">tka_est</span> <span class="op">&lt;-</span> <span class="fu">nlmixr2est</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/nlme/man/fixed.effects.html" class="external-link">fixef</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">[[</span><span class="st">"tka"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">tka_est</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">theta</span><span class="op">[</span><span class="st">"tka"</span><span class="op">]</span></span>
 <span></span>
 <span><span class="va">grid</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>tka <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="va">tka_est</span> <span class="op">-</span> <span class="fl">0.6</span>, <span class="va">tka_est</span> <span class="op">+</span> <span class="fl">0.6</span>, length.out <span class="op">=</span> <span class="fl">7</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
