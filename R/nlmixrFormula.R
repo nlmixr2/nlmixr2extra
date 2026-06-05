@@ -60,12 +60,14 @@
 #' @return The model fit from \code{nlmixr2est::nlmixr2()}
 #'
 #' @examples
+#' \donttest{
 #' nlmixrFormula(
 #'   height ~ (Asym+AsymRe)+(R0-(Asym+AsymRe))*exp(-exp(lrc)*age) ~ (AsymRe|Seed),
 #'   data = Loblolly,
 #'   start = list(Asym = 103, R0 = -8.5, lrc = -3.3, addSd=1),
 #'   est="focei"
 #' )
+#' }
 #' @export
 nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., residualModel=~add(addSd)) {
   if (missing(data)) {

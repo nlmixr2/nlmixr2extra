@@ -95,6 +95,8 @@ nlmixrFormula(
   height ~ (Asym+AsymRe)+(R0-(Asym+AsymRe))*exp(-exp(lrc)*age) ~ (AsymRe|Seed),
   data = Loblolly,
   start = list(Asym = 103, R0 = -8.5, lrc = -3.3, addSd=1),
-  est="focei"
+  est="focei",
+  control=nlmixr2est::foceiControl( # CRAN testing requires <=2 threads
+     rxControl=rxode2::rxControl(cores=2))
 )
 }
