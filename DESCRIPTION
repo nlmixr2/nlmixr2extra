@@ -41,9 +41,9 @@ Imports:
     magrittr,
     methods,
     nlme,
-    nlmixr2est (>= 5.0.0),
+    nlmixr2est (>= 6.0.0),
     Rcpp,
-    rxode2 (>= 5.0.0),
+    rxode2 (>= 5.1.0),
     stats,
     symengine,
     utils
