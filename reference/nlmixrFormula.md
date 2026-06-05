@@ -120,7 +120,9 @@ nlmixrFormula(
   height ~ (Asym+AsymRe)+(R0-(Asym+AsymRe))*exp(-exp(lrc)*age) ~ (AsymRe|Seed),
   data = Loblolly,
   start = list(Asym = 103, R0 = -8.5, lrc = -3.3, addSd=1),
-  est="focei"
+  est="focei",
+  control=nlmixr2est::foceiControl( # CRAN testing requires <=2 threads
+     rxControl=rxode2::rxControl(cores=2))
 )
 #>  
 #>  
@@ -164,9 +166,9 @@ nlmixrFormula(
 #> ── Time (sec value$time): ──
 #> 
 #>              setup   optimize  covariance preprocess postprocess table compress
-#> elapsed 0.03457637 0.02182499 0.007746511      0.029       0.021 0.067    0.002
+#> elapsed 0.03518587 0.02214544 0.007645349       0.03        0.02 0.068    0.001
 #>            other
-#> elapsed 2.692852
+#> elapsed 2.472023
 #> 
 #> ── Population Parameters (value$parFixed or value$parFixedDf): ──
 #> 
