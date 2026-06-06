@@ -192,7 +192,7 @@ profileFixedSingle <- function(fitted, which) {
 #' @returns A validated list of control options for fixed-value likelihood
 #'   profiling
 #' @family Profiling
-#' @seealso [profileFixed()]
+#' @seealso [nlmixr2extra::profileFixed()]
 #' @export
 fixedControl <- function() {
   ret <- list()
@@ -408,7 +408,7 @@ optimProfile <- function(par, fitted, optimDf, which, ofvIncrease, direction, lo
 #'   tested, how far should the step occur as a ratio
 #' @returns A validated list of control options for log-likelihood profiling
 #' @family Profiling
-#' @seealso [profileLlp()]
+#' @seealso [nlmixr2extra::profileLlp()]
 #' @export
 llpControl <- function(ofvIncrease = qchisq(0.95, df = 1),
                        rseTheta = 30,
