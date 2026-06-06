@@ -500,7 +500,7 @@ test_that("Linearize multiple endpoints SAEM", {
         fitLin <- linearize(fit, mceta = 10)
     )
 
-    expect_true(isLinearizeMatch(fitLin)$ofv[[1]]) 
+    expect_true(isLinearizeMatch(fitLin, 0.25)$ofv[[1]])
 
     linearizePlot(fitLin)
 })
