@@ -116,13 +116,12 @@ effect parameter named "slope" for each "ID" in the data.
 ## Examples
 
 ``` r
+# \donttest{
 nlmixrFormula(
   height ~ (Asym+AsymRe)+(R0-(Asym+AsymRe))*exp(-exp(lrc)*age) ~ (AsymRe|Seed),
   data = Loblolly,
   start = list(Asym = 103, R0 = -8.5, lrc = -3.3, addSd=1),
-  est="focei",
-  control=nlmixr2est::foceiControl( # CRAN testing requires <=2 threads
-     rxControl=rxode2::rxControl(cores=2))
+  est="focei"
 )
 #>  
 #>  
@@ -165,10 +164,10 @@ nlmixrFormula(
 #> 
 #> ── Time (sec value$time): ──
 #> 
-#>              setup   optimize  covariance preprocess postprocess table compress
-#> elapsed 0.03083016 0.02390845 0.008321633      0.027       0.021 0.053    0.001
-#>           other
-#> elapsed 2.10594
+#>            setup   optimize  covariance preprocess postprocess table compress
+#> elapsed 0.033744 0.02576242 0.008896647      0.032       0.021 0.056    0.001
+#>            other
+#> elapsed 2.457597
 #> 
 #> ── Population Parameters (value$parFixed or value$parFixedDf): ──
 #> 
@@ -201,4 +200,5 @@ nlmixrFormula(
 #> 3 301       3 28.7  27.2   1.51   1.48  27.8   0.942  1.29  27.2   1.51   1.48 
 #> # ℹ 81 more rows
 #> # ℹ 2 more variables: AsymRe <dbl>, age <dbl>
+# }
 ```
