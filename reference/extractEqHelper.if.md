@@ -23,6 +23,10 @@ extractEqHelper(x, ..., inModel, alignment, indent = 0L, firstIf = 0L, name)
 
   logical; whether the expression is inside a model block
 
+- alignment:
+
+  LaTeX alignment character used for equation alignment
+
 - indent:
 
   tracks the current indention level
