@@ -13,6 +13,8 @@
 
 \item{inModel}{logical; whether the expression is inside a model block}
 
+\item{alignment}{LaTeX alignment character used for equation alignment}
+
 \item{indent}{tracks the current indention level}
 
 \item{firstIf}{tracks if this is the first if at the current indent level}

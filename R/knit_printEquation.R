@@ -371,6 +371,7 @@ braceWrap <- function(x, ..., inModel, indent) {
 #' @param x language object to convert to LaTeX
 #' @param ... additional arguments passed to methods
 #' @param inModel logical; whether the expression is inside a model block
+#' @param alignment LaTeX alignment character used for equation alignment
 #' @param name optional name for the expression
 #' @param firstIf tracks if this is the first if at the current indent level
 #' @param indent tracks the current indention level
