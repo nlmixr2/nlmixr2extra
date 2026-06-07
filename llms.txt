@@ -144,6 +144,8 @@ fit2
   : Setup the ini() part of the model for fixed effects
 - [`.renameOrOverwrite()`](https://nlmixr2.github.io/nlmixr2extra/reference/dot-renameOrOverwrite.md)
   : Rename a column in a dataset
+- [`extractEqHelper(`*`<if>`*`)`](https://nlmixr2.github.io/nlmixr2extra/reference/extractEqHelper.if.md)
+  : Generate LaTeX for if blocks
 - [`fixedControl()`](https://nlmixr2.github.io/nlmixr2extra/reference/fixedControl.md)
   : Control options for fixed-value likelihood profiling
 - [`foldgen()`](https://nlmixr2.github.io/nlmixr2extra/reference/foldgen.md)
