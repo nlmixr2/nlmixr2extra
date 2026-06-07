@@ -91,7 +91,7 @@ parameter is allowed for all random effects.  An example would be
 "slope" for each "ID" in the data.
 }
 \examples{
-\donttest{
+\dontrun{
 nlmixrFormula(
   height ~ (Asym+AsymRe)+(R0-(Asym+AsymRe))*exp(-exp(lrc)*age) ~ (AsymRe|Seed),
   data = Loblolly,

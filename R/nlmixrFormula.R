@@ -60,7 +60,7 @@
 #' @return The model fit from \code{nlmixr2est::nlmixr2()}
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' nlmixrFormula(
 #'   height ~ (Asym+AsymRe)+(R0-(Asym+AsymRe))*exp(-exp(lrc)*age) ~ (AsymRe|Seed),
 #'   data = Loblolly,
