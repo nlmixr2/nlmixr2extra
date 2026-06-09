@@ -256,7 +256,7 @@ optimUnisampling <- function(xvec,N=1000,medValue,floorT=TRUE) {
   else if (xrmin==xvec[1] && xrmax==xvec[2]) {
     return(sampled)
   }
-  optimUnisampling(xvec,N=1000,medValue)
+  optimUnisampling(xvec, N=N, medValue, floorT=floorT)
 }
 
 #' Format confidence bounds for a variable into bracketed notation using string formatting
