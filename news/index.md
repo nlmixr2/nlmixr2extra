@@ -2,6 +2,8 @@
 
 ## nlmixr2extra 5.1.0
 
+CRAN release: 2026-06-07
+
 - Add focei/foce linearization
 
 - Add formula interface
