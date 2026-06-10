@@ -55,6 +55,29 @@ test_that("foldgen assigns folds to ALL strata classes, not just the first", {
 
 # extractVars() loop fix (Issue 5) ----
 
+# optimUnisampling() bug fix ----
+
+test_that("optimUnisampling respects N argument (was hardcoded to 1000)", {
+  set.seed(42)
+  result50  <- optimUnisampling(xvec = c(6.7, 140), N = 50,  medValue = 71.7)
+  set.seed(42)
+  result200 <- optimUnisampling(xvec = c(6.7, 140), N = 200, medValue = 71.7)
+
+  expect_length(result50, 50)
+  expect_length(result200, 200)
+})
+
+test_that("optimUnisampling respects floorT=FALSE (was always TRUE in recursive path)", {
+  set.seed(42)
+  result <- optimUnisampling(xvec = c(6.7, 140), N = 200, medValue = 71.7, floorT = FALSE)
+
+  expect_length(result, 200)
+  # With floorT=FALSE the values should not all be integers
+  expect_false(all(result == floor(result)))
+})
+
+# extractVars() loop fix (Issue 5) ----
+
 test_that("extractVars checks all message strings, not just the last", {
   # With the bug (for (i in length(res))), only res[[length(res)]] was ever
   # inspected. A non-empty message in an earlier element was silently ignored
