@@ -610,7 +610,7 @@ bootstrapFit <- function(fit,
   if (length(.nm) == 0) {
     stop("No parameters to update covariance matrix", call.=FALSE)
   }
-  .cov <- fit$bootSummary$omega$covMatrixCombined[.nm, .nm]
+  .cov <- fit$bootSummary$omega$covMatrixCombined[.nm, .nm, drop = FALSE]
   .setCov(fit, covMethod = .cov)
   assign("covMethod", paste0("boot", fit$bootSummary$nboot), fit$env)
   invisible(fit)
@@ -1225,7 +1225,7 @@ getBootstrapSummary <- function(fitList,
       .w <- which(vapply(namesList, function(x) {
         !all(omgVecBoot[, x] == 0)
       }, logical(1), USE.NAMES=FALSE))
-      omgVecBoot <- omgVecBoot[, .w]
+      omgVecBoot <- omgVecBoot[, .w, drop = FALSE]
 
 
       parFixedOmegaCombined <- cbind(parFixedlistVec, omgVecBoot)
@@ -1235,7 +1235,7 @@ getBootstrapSummary <- function(fitList,
       if (length(w) > 0) {
         d <- dim(covMatrix)[1]
         corMatrix <- matrix(0, d, d)
-        corMatrix[-w, -w] <- cov2cor(covMatrix[-w, -w])
+        corMatrix[-w, -w] <- cov2cor(covMatrix[-w, -w, drop = FALSE])
       } else {
         corMatrix <- cov2cor(covMatrix)
       }

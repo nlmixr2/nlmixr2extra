@@ -1,5 +1,7 @@
 # nlmixr2extra 5.1.0
 
+- Defensive `drop = FALSE` on bootstrap covariance/omega matrix subsetting so single-parameter / single-eta models do not collapse a 1x1 matrix to a scalar (`fit$bootSummary` covariance, `cov2cor`).
+
 - Add focei/foce linearization
 
 - Add formula interface
