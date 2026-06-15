@@ -256,4 +256,65 @@ withr::with_tempdir({
       function(x) unlink(x, recursive = TRUE, force = TRUE)
     )
   })
+
+  test_that("bootstrapFit handles a model with no random effects", {
+    skip_on_cran()
+    # A fixed-effects-only model: fit$omega is NULL.  The bootstrap omega
+    # summary has nothing to aggregate and the combined covariance must be built
+    # from the fixed effects alone; previously bootstrapFit() errored
+    # ("dim(X) must have a positive length" / "'data' must be of a vector type,
+    # was 'NULL'").  Printing the summary (with its empty omega entries) also
+    # used to error in print.nlmixr2BoostrapSummary().
+    no.eta <- function() {
+      ini({
+        tcl <- 1 ; label("Log Cl")
+        addSd <- 0.7
+      })
+      model({
+        ka <- exp(0.45)
+        cl <- exp(tcl)
+        v <- exp(3.45)
+        linCmt() ~ add(addSd)
+      })
+    }
+    suppressMessages(suppressWarnings(
+      fit <-
+        nlmixr(
+          no.eta,
+          nlmixr2data::theo_sd,
+          est = "focei",
+          control = list(print = 0, eval.max = 10)
+        )
+    ))
+    # confirm the reprex really has no random effects
+    expect_true(is.null(fit$omega) || length(fit$omega) == 0L)
+
+    # bootstrapFit() used to error here; it must now run to completion
+    suppressMessages(suppressWarnings(
+      expect_error(
+        fitB <- nlmixr2extra:::bootstrapFit(fit, nboot = 5, restart = TRUE),
+        NA
+      )
+    ))
+
+    # there is no omega to summarize, but the combined covariance of the fixed
+    # effects must still be a named matrix so setCov() can use it
+    bootSummary <- fitB$bootSummary
+    expect_null(bootSummary$omega$mean)
+    expect_true(is.matrix(bootSummary$omega$covMatrixCombined))
+    expect_equal(dim(bootSummary$omega$covMatrixCombined), c(2L, 2L))
+    expect_equal(rownames(bootSummary$omega$covMatrixCombined), c("tcl", "addSd"))
+    expect_equal(fitB$env$covMethod, "boot5")
+
+    # the bootstrap summary (with empty omega entries) must print without error
+    expect_error(
+      suppressMessages(utils::capture.output(print(bootSummary))),
+      NA
+    )
+
+    lapply(
+      list.files("./", pattern = "nlmixr2BootstrapCache_.*"),
+      function(x) unlink(x, recursive = TRUE, force = TRUE)
+    )
+  })
 })

@@ -610,7 +610,8 @@ bootstrapFit <- function(fit,
   if (length(.nm) == 0) {
     stop("No parameters to update covariance matrix", call.=FALSE)
   }
-  .cov <- fit$bootSummary$omega$covMatrixCombined[.nm, .nm]
+  # drop = FALSE so a single retained parameter stays a 1x1 matrix for setCov()
+  .cov <- fit$bootSummary$omega$covMatrixCombined[.nm, .nm, drop = FALSE]
   .setCov(fit, covMethod = .cov)
   assign("covMethod", paste0("boot", fit$bootSummary$nboot), fit$env)
   invisible(fit)
@@ -1145,6 +1146,29 @@ extractVars <- function(fitlist, id = "method") {
   matrix(quants[k, , ], nrow = nrow(template), dimnames = dimnames(template))
 }
 
+#' Correlation matrix from a bootstrap covariance matrix
+#'
+#' Wraps `cov2cor()` but tolerates zero-variance entries (a parameter that did
+#' not vary across the bootstrap) and stores the standard deviations on the
+#' diagonal, matching the convention used by the bootstrap omega summary.
+#'
+#' @param covMatrix a covariance matrix
+#' @return a correlation matrix with the standard deviations on the diagonal
+#' @noRd
+.bootstrapCombinedCor <- function(covMatrix) {
+  w <- which(diag(covMatrix) == 0)
+  if (length(w) > 0) {
+    d <- dim(covMatrix)[1]
+    corMatrix <- matrix(0, d, d)
+    corMatrix[-w, -w] <- cov2cor(covMatrix[-w, -w])
+  } else {
+    corMatrix <- cov2cor(covMatrix)
+  }
+  diag(corMatrix) <- sqrt(diag(covMatrix))
+  dimnames(corMatrix) <- dimnames(covMatrix)
+  corMatrix
+}
+
 #' Summarize the bootstrapped fits/models
 #'
 #' @param fitList a list of lists containing information on the multiple bootstrapped models; similar to the output of modelsBootstrap() function
@@ -1180,6 +1204,29 @@ getBootstrapSummary <- function(fitList,
     if (id == "omega") {
       # omega estimates
       omegaMatlist <- extractVars(fitList, id)
+      if (is.null(omegaMatlist[[1]]) || nrow(omegaMatlist[[1]]) == 0L) {
+        # A model with no random effects has no omega to summarize.  Build the
+        # combined covariance from the fixed-effect bootstrap estimates alone so
+        # that bootstrapFit() can still update the covariance matrix.
+        parFixedlist <- extractVars(fitList, id = "parFixedDf")
+        parFixedlistVec <- do.call("rbind", lapply(parFixedlist, function(x) {
+          ret <- x$Estimate
+          if (is.null(names(ret))) {
+            ret <- stats::setNames(ret, rownames(x))
+          }
+          ret
+        }))
+        covMatrix <- cov(parFixedlistVec)
+        return(list(
+          mean = omegaMatlist[[1]],
+          median = omegaMatlist[[1]],
+          stdDev = omegaMatlist[[1]],
+          confLower = omegaMatlist[[1]],
+          confUpper = omegaMatlist[[1]],
+          covMatrixCombined = covMatrix,
+          corMatrixCombined = .bootstrapCombinedCor(covMatrix)
+        ))
+      }
       # simplify2array() collapses a list of 1x1 omega matrices (a single
       # random effect) into a plain vector, which breaks the apply(, 1:2, )
       # calls below; build the nEta x nEta x nboot array explicitly so a
@@ -1253,22 +1300,14 @@ getBootstrapSummary <- function(fitList,
       .w <- which(vapply(namesList, function(x) {
         !all(omgVecBoot[, x] == 0)
       }, logical(1), USE.NAMES=FALSE))
-      omgVecBoot <- omgVecBoot[, .w]
+      # drop = FALSE so a single retained omega entry stays a 1-column matrix
+      omgVecBoot <- omgVecBoot[, .w, drop = FALSE]
 
 
       parFixedOmegaCombined <- cbind(parFixedlistVec, omgVecBoot)
 
       covMatrix <- cov(parFixedOmegaCombined)
-      w <- which(diag(covMatrix) == 0)
-      if (length(w) > 0) {
-        d <- dim(covMatrix)[1]
-        corMatrix <- matrix(0, d, d)
-        corMatrix[-w, -w] <- cov2cor(covMatrix[-w, -w])
-      } else {
-        corMatrix <- cov2cor(covMatrix)
-      }
-      diag(corMatrix) <- sqrt(diag(covMatrix))
-      dimnames(corMatrix) <- dimnames(covMatrix)
+      corMatrix <- .bootstrapCombinedCor(covMatrix)
       lst <- list(
         mean = mn,
         median = median,
@@ -1359,6 +1398,10 @@ print.nlmixr2BoostrapSummary <- function(x, ..., sigdig = NULL) {
   ))
 
   lapply(seq_along(omega), function(x) {
+    # a model with no random effects has empty (NULL) omega summaries; skip them
+    if (is.null(omega[[x]]) || length(omega[[x]]) == 0L) {
+      return(invisible())
+    }
     cli::cli_text(cli::col_green(paste0("$", names(omega)[x])))
     print(signif(omega[[x]], sigdig))
   })

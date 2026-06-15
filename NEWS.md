@@ -1,11 +1,13 @@
 # nlmixr2extra 5.1.0
 
 - `bootstrapFit()` now works for models with a single estimated
-  population parameter or a single random effect.  Previously the
-  confidence-interval quantile arrays in the bootstrap summary collapsed
-  to vectors in these cases, causing `bootstrapFit()` to error with
-  `dim(X) must have a positive length` or `incorrect number of
-  dimensions`.
+  population parameter, a single random effect, or no random effects at
+  all.  Previously the bootstrap summary collapsed 1-row / 1x1 quantile
+  arrays to vectors (and could not summarize a `NULL` omega), causing
+  `bootstrapFit()` to error with `dim(X) must have a positive length`,
+  `incorrect number of dimensions`, or `'data' must be of a vector type,
+  was 'NULL'`.  Printing the bootstrap summary of a model with no random
+  effects no longer errors either.
 
 - Add focei/foce linearization
 
