@@ -49,10 +49,12 @@ Imports:
     utils
 Suggests:
     brms,
+    devtools,
     nlmixr2data,
+    nlmixr2lib,
+    pander,
     rmarkdown,
     tidyr,
-    nlmixr2lib,
     testthat (>= 3.0.0),
     withr
 LinkingTo:
@@ -65,3 +67,4 @@ NeedsCompilation: yes
 Roxygen: list(markdown = TRUE)
 LazyData: true
 Config/roxygen2/version: 8.0.0
+VignetteBuilder: knitr
