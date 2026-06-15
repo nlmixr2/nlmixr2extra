@@ -1127,6 +1127,24 @@ extractVars <- function(fitlist, id = "method") {
   }
 }
 
+#' Reshape a quantile-array slice into a parameter-by-bound matrix
+#'
+#' `apply(x, 1:2, quantile)` returns an array with dimensions
+#' `nQuantLevel x nPar x nBound`.  Selecting one quantile level with
+#' `quants[k, , ]` collapses to a vector when there is a single parameter
+#' (`nPar == 1`), which then breaks the 2-D subscripting in [bootstrapFit()].
+#' Force the slice back to the intended matrix, taking the row count and
+#' dimnames from `template` (the matching matrix of bootstrap means).
+#'
+#' @param quants 3-D array produced by `apply(..., 1:2, quantile)`
+#' @param k quantile-level index selecting the first dimension
+#' @param template matrix with the desired final shape and dimnames
+#' @return a matrix with the same dimensions as `template`
+#' @noRd
+.bootstrapQuantSlice <- function(quants, k, template) {
+  matrix(quants[k, , ], nrow = nrow(template), dimnames = dimnames(template))
+}
+
 #' Summarize the bootstrapped fits/models
 #'
 #' @param fitList a list of lists containing information on the multiple bootstrapped models; similar to the output of modelsBootstrap() function
@@ -1162,16 +1180,26 @@ getBootstrapSummary <- function(fitList,
     if (id == "omega") {
       # omega estimates
       omegaMatlist <- extractVars(fitList, id)
-      varVec <- simplify2array(omegaMatlist)
+      # simplify2array() collapses a list of 1x1 omega matrices (a single
+      # random effect) into a plain vector, which breaks the apply(, 1:2, )
+      # calls below; build the nEta x nEta x nboot array explicitly so a
+      # single-eta model is handled the same as the multi-eta case.
+      .nEta <- nrow(omegaMatlist[[1]])
+      varVec <- array(unlist(omegaMatlist),
+                      dim = c(.nEta, .nEta, length(omegaMatlist)),
+                      dimnames = list(rownames(omegaMatlist[[1]]),
+                                      colnames(omegaMatlist[[1]]), NULL))
       mn <- apply(varVec, 1:2, mean, na.rm=TRUE)
       sd <- apply(varVec, 1:2, sd, na.rm=TRUE)
 
       quants <- apply(varVec, 1:2, function(x) {
         unname(quantile(x, quantLevels, na.rm=TRUE))
       })
-      median <- quants[1, , ]
-      confLower <- quants[2, , ]
-      confUpper <- quants[3, , ]
+      # quants[k, , ] would drop to a vector for a single random effect; keep
+      # the nEta x nEta matrix shape (see .bootstrapQuantSlice)
+      median <- .bootstrapQuantSlice(quants, 1, mn)
+      confLower <- .bootstrapQuantSlice(quants, 2, mn)
+      confUpper <- .bootstrapQuantSlice(quants, 3, mn)
 
       if (stdErrType != "perc") {
         confLower <- mn + qnorm(quantLevels[[2]]) * sd
@@ -1264,9 +1292,12 @@ getBootstrapSummary <- function(fitList,
           unname(quantile(x, quantLevels, na.rm = TRUE))
         })
 
-      median <- quants[1, , ]
-      confLower <- quants[2, , ]
-      confUpper <- quants[3, , ]
+      # quants[k, , ] would drop to a vector for a model with a single
+      # population parameter; keep the nPar x 2 matrix shape so the downstream
+      # subscripting in bootstrapFit() works (see .bootstrapQuantSlice)
+      median <- .bootstrapQuantSlice(quants, 1, mn)
+      confLower <- .bootstrapQuantSlice(quants, 2, mn)
+      confUpper <- .bootstrapQuantSlice(quants, 3, mn)
 
       if (stdErrType != "perc") {
         confLower <- mn + qnorm(quantLevels[[2]]) * sd
