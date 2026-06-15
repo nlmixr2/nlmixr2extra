@@ -78,7 +78,13 @@
     }
     .dat <- nlme::getData(obj)
     .ui <- obj$ui
-    .mat <- as.matrix(nlme::random.effects(obj)[, -1])
+    .re <- nlme::random.effects(obj)
+    if (is.null(.re)) {
+      # a model with no random effects has no individual eta matrix
+      .mat <- NULL
+    } else {
+      .mat <- as.matrix(.re[, -1])
+    }
     .control$skipCov <- obj$skipCov
     .control$etaMat <- .mat
     .fit2 <- nlmixr2est::nlmixr2CreateOutputFromUi(.ui, data=.dat, control=.control,
