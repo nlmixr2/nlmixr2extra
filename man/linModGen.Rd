@@ -9,7 +9,7 @@ linModGen(ui, focei = TRUE, derivFct = FALSE)
 \arguments{
 \item{ui}{rx model or fit object.}
 
-\item{focei}{boolean. If TRUE, use FOCEI linearization with individual and residual linearization. Default is TRUE.}
+\item{focei}{boolean. If TRUE, use FOCEI linearization with individual and residual linearization. If FALSE, use FOCEp linearization where the residual interaction linearization is skipped. Default is TRUE.}
 
 \item{derivFct}{boolean. If TRUE, use normalization derivative factors. Default is FALSE.}
 }

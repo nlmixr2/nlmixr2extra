@@ -426,7 +426,7 @@ test_that("Linearize multiple endpoints ", {
     # fit <- readRDS(system.file("warfarin.RDS", package="nlmixr2extra"))
 
     suppressWarnings(
-        # this will switch to FOCE even after successful evaluation. 
+        # this will switch to FOCEp even after successful evaluation.
         # The match was 4% for OFV, but mismatch for omega/eta
         # SAEM is better in next test. No switch and lower error
       {

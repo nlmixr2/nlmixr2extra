@@ -22,7 +22,7 @@ linearize(
 
 \item{relTol}{relative deviation tolerance between original and linearized models objective functions. Used for switching if focei = NA. See details.}
 
-\item{focei}{Default is NA for automatic switch from FOCEI to FOCE if failed. See details.}
+\item{focei}{Default is NA for automatic switch from FOCEI to FOCEp if failed. See details.}
 
 \item{addEtas}{boolean. If TRUE, add etas on every theta and fix it to small value to get derivatives. Default is FALSE.}
 
@@ -45,9 +45,9 @@ The function accepts a fit object fitted using any method. However, if the metho
 Escalating to next mceta will depend on the relative deviation \code{relTol} of the original and linearized models objective functions.
 
 If \code{focei} is set to \code{NA}, the function will first try to linearize using FOCEI.
-If the relative deviation between original and linearized models objective functions is greater than \code{relTol}, it will switch to FOCE where residual linearization is skipped.
+If the relative deviation between original and linearized models objective functions is greater than \code{relTol}, it will switch to FOCEp where residual linearization is skipped.
 If \code{focei} is set to \code{TRUE}, the function will use FOCEI linearization with individual and residual linearization.
-If \code{focei} is set to \code{FALSE}, the function will use FOCE linearization with residual interaction linearization skipped.
+If \code{focei} is set to \code{FALSE}, the function will use FOCEp linearization with residual interaction linearization skipped.
 
 If \code{derivFct} is set to \code{TRUE}, the function will use an extra factor for linearization that might help in stabilization.
 This might be useful to try with FOCEI.

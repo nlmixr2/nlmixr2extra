@@ -57,8 +57,10 @@ y_i \approx f_0 + \underbrace{\sum_k \frac{\partial f}{\partial\eta_k}\bigg|_{\h
 $$
 
 where $\varepsilon \sim \mathcal{N}(0,\,r_0^2)$ and the linearized residual
-variance is similarly expanded. This is the "FOCE approximation". Adding the
-residual-variance gradient gives the full "FOCEI approximation".
+variance is similarly expanded. This is the "FOCEp approximation" (FOCE
+without the eta/residual interaction, but keeping the live conditional
+residual variance). Adding the residual-variance gradient gives the full
+"FOCEI approximation".
 
 Because the linearized model is itself linear in the $\eta$ parameters, each
 candidate structure requires only **one fast FOCEI fit** rather than a full
@@ -188,23 +190,23 @@ linearizePlot(fitLin)
 The plot shows original vs. linearized individual objective values and etas.
 Points should lie on the identity line for a good approximation.
 
-## FOCE vs. FOCEI linearization
+## FOCEp vs. FOCEI linearization
 
 The `focei` argument controls whether the residual-variance gradient is
 included:
 
 | `focei` | Description |
 |---------|-------------|
-| `NA` (default) | Try FOCEI; switch to FOCE automatically if `relTol` is exceeded |
+| `NA` (default) | Try FOCEI; switch to FOCEp automatically if `relTol` is exceeded |
 | `TRUE`  | Always use FOCEI (individual + residual linearization) |
-| `FALSE` | Always use FOCE (residual interaction linearization skipped) |
+| `FALSE` | Always use FOCEp (residual interaction linearization skipped) |
 
 FOCEI is more accurate for models with heteroscedastic residuals (proportional
-or combined error). FOCE is faster and more stable for additive-only models.
+or combined error). FOCEp is faster and more stable for additive-only models.
 
 ```{r focei-opts, eval=FALSE}
-# Force FOCE linearization
-fitLinFoce <- linearize(fit, addEtas = TRUE, focei = FALSE)
+# Force FOCEp linearization
+fitLinFocep <- linearize(fit, addEtas = TRUE, focei = FALSE)
 
 # Force FOCEI
 fitLinFocei <- linearize(fit, addEtas = TRUE, focei = TRUE)
@@ -376,7 +378,7 @@ resRes$summary[order(resRes$summary$BIC), ]
 **Linearization fails to converge (`relTol` exceeded)**
 
 - Try larger `mceta` values: `mceta = c(100, 500, 2000)`.
-- Switch to `focei = FALSE` (FOCE) which is more numerically stable.
+- Switch to `focei = FALSE` (FOCEp) which is more numerically stable.
 - Increase `relTol` slightly (e.g. `0.30`) for a looser quality threshold.
 
 **`iivSearch` produces many `NA` entries**

@@ -97,7 +97,7 @@ renameCol <- function(df, new, old){
 
 #' Generate a Linearization Model From Previous Fit
 #' @param ui rx model or fit object.
-#' @param focei boolean. If TRUE, use FOCEI linearization with individual and residual linearization. Default is TRUE.
+#' @param focei boolean. If TRUE, use FOCEI linearization with individual and residual linearization. If FALSE, use FOCEp linearization where the residual interaction linearization is skipped. Default is TRUE.
 #' @param derivFct boolean. If TRUE, use normalization derivative factors. Default is FALSE.
 #' @return rxUi model
 #' @author Omar I. Elashkar
@@ -203,7 +203,7 @@ linModGen <- function(ui, focei = TRUE, derivFct = FALSE){
 #' @param fit fit of nonlinear model fitted using any method with at least one eta. See details.
 #' @param mceta a numeric vector for mceta to try. See details.
 #' @param relTol relative deviation tolerance between original and linearized models objective functions. Used for switching if focei = NA. See details.
-#' @param focei Default is NA for automatic switch from FOCEI to FOCE if failed. See details.
+#' @param focei Default is NA for automatic switch from FOCEI to FOCEp if failed. See details.
 #' @param addEtas boolean. If TRUE, add etas on every theta and fix it to small value to get derivatives. Default is FALSE.
 #' @param derivFct boolean. If TRUE, turn on derivatives for linearization. Default is FALSE.
 #' @param plot boolean. Print plot of linearized vs original
@@ -217,9 +217,9 @@ linModGen <- function(ui, focei = TRUE, derivFct = FALSE){
 #' Escalating to next mceta will depend on the relative deviation `relTol` of the original and linearized models objective functions.
 #'
 #' If `focei` is set to `NA`, the function will first try to linearize using FOCEI.
-#' If the relative deviation between original and linearized models objective functions is greater than `relTol`, it will switch to FOCE where residual linearization is skipped.
+#' If the relative deviation between original and linearized models objective functions is greater than `relTol`, it will switch to FOCEp where residual linearization is skipped.
 #' If `focei` is set to `TRUE`, the function will use FOCEI linearization with individual and residual linearization.
-#' If `focei` is set to `FALSE`, the function will use FOCE linearization with residual interaction linearization skipped.
+#' If `focei` is set to `FALSE`, the function will use FOCEp linearization with residual interaction linearization skipped.
 #'
 #' If `derivFct` is set to `TRUE`, the function will use an extra factor for linearization that might help in stabilization.
 #' This might be useful to try with FOCEI.
@@ -288,7 +288,7 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.25, focei = NA, 
         cli::cli_alert_info("Linearization evaluation matched. Linearization might be feasible ...")
     } else{
         cli::cli_alert_warning("Linearization evaluation mismatched by deltaOFV > {relTol}. Linearization might be difficult")
-        cli::cli_alert_warning("Switching to linearization around predictions only (Variance interaction linearization skipped)")
+        cli::cli_alert_warning("Switching to FOCEp linearization around predictions only (Variance interaction linearization skipped)")
         linMod <- linMod %>%  model(foceiLin <- 0)
         secondEval <- evalFun()
         cli::cli_alert_info("{secondEval$oObj} MAP:{secondEval$lObj_map}")
@@ -315,7 +315,7 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.25, focei = NA, 
                 cli::cli_alert_info(paste("Using mceta = ", mceta[i], "provided inadequate linearization. Trying mceta = ", mceta[i+1], "..."))
             } else{
                 if(is.na(focei) & !exists("secondEval")){ # final switch iteration (after estimation) 
-                    cli::cli_alert_info("Switching to FOCE after full FOCEI estimation failed ...")
+                    cli::cli_alert_info("Switching to FOCEp after full FOCEI estimation failed ...")
                     secondEval <- evalFun()
                     linMod <- linMod %>%  model(foceiLin <- 0)
                     fitL <- nlmixr(linMod, derv, est="focei",
@@ -326,7 +326,7 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.25, focei = NA, 
                     relDev <- abs((oObj-lObj)/lObj)
                     
                     if(relDev <=relTol){
-                        cli::cli_alert_danger("FOCE Linearization was inadequate for the given tolerance. Try increasing the tolerance, refine the model or fit with mceta")
+                        cli::cli_alert_danger("FOCEp Linearization was inadequate for the given tolerance. Try increasing the tolerance, refine the model or fit with mceta")
                     }
 
                 } else{
@@ -347,13 +347,13 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.25, focei = NA, 
     }
     m <- paste(
         "Linearization method: {
-              ifelse(is.na(focei), 'Auto', ifelse(focei, 'FOCE (individual + residual)', 'Variance interaction skipped'))
+              ifelse(is.na(focei), 'Auto', ifelse(focei, 'FOCEI (individual + residual)', 'FOCEp (variance interaction skipped)'))
               }
         Linearization Relative Tolerance: {relTol}
         {
           ifelse(is.na(focei) & exists('secondEval'), 
-            'Linearization method switched automatically to FOCE approximation (residuals interaction linearization ignored)', 
-              ifelse(is.na(focei) & !exists('secondEval'), 'FOCEI Linearization', ifelse(focei, 'FOCEI Linearization', 'FOCE Linearization')))
+            'Linearization method switched automatically to FOCEp approximation (residuals interaction linearization ignored)',
+              ifelse(is.na(focei) & !exists('secondEval'), 'FOCEI Linearization', ifelse(focei, 'FOCEI Linearization', 'FOCEp Linearization')))
           }
         {paste(finalEval$message, collapse = '')}
         Fitted Linear OFV: {lObj}

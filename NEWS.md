@@ -1,6 +1,6 @@
 # nlmixr2extra 5.1.0
 
-- Add focei/foce linearization
+- Add focei/focep linearization
 
 - Add formula interface
 

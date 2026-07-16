@@ -139,13 +139,13 @@ ggplot(data.frame(rank = as.factor(unlist(lapply(res_fixed, \(x) x[["rank"]]))))
 
 ggplot(data.frame(rank = as.factor(unlist(lapply(res_fixed_foce, \(x) x[["rank"]]))))) + 
   geom_bar(aes(x = rank, y =  (..count..)/sum(..count..))) + 
-  labs(y = "Frequency", title = "FOCE Linearization", x = "True BSV Rank") + theme_classic()
+  labs(y = "Frequency", title = "FOCEp Linearization", x = "True BSV Rank") + theme_classic()
 
 
 data_cumulative <- data.frame(
     iteration = c(1:100, 1:100),
     rank = c(unlist(lapply(res_fixed_foce, \(x) x[["rank"]])), unlist(lapply(res_fixed, \(x) x[["rank"]]))),
-    method = sort(rep(c("FOCEI", "FOCE"), times = 100))
+    method = rep(c("FOCEp", "FOCEI"), each = 100)
   ) |> 
   arrange(method, rank) |>
   group_by(method) |>
@@ -154,7 +154,7 @@ data_cumulative <- data.frame(
 ggplot(data_cumulative, aes(fill = method, x = rank)) + 
   geom_bar(aes(y =  (..count..)/sum(..count..)))  + 
   labs(y = "Frequency", title = "True BSV Rank", x = "True BSV Rank") + 
-  scale_fill_manual(values = c("FOCEI" = "#D73027", "FOCE" = "#4575B4")) +
+  scale_fill_manual(values = c("FOCEI" = "#D73027", "FOCEp" = "#4575B4")) +
   facet_grid(~method)  + 
   theme_minimal() + 
   theme(legend.position = "none") + 
@@ -171,7 +171,7 @@ ggplot(data_cumulative, aes(x = rank, y = cumulative_fraction, color = method)) 
   theme(legend.position = "none") + 
   scale_x_continuous(breaks = 1:10) +
   geom_hline(yintercept=0.80, linetype = 3) + 
-  scale_color_manual(values = c("FOCEI" = "#D73027", "FOCE" = "#4575B4")) +
+  scale_color_manual(values = c("FOCEI" = "#D73027", "FOCEp" = "#4575B4")) +
   theme(legend.title = element_blank())
 
 
