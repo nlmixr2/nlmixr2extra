@@ -40,7 +40,8 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="5.1.0" id="nlmixr2extra-510">nlmixr2extra 5.1.0<a class="anchor" aria-label="anchor" href="#nlmixr2extra-510"></a></h2><p class="text-muted">CRAN release: 2026-06-07</p>
-<ul><li><p>Add focei/foce linearization</p></li>
+<ul><li><p><code><a href="../reference/bootstrapFit.html">bootstrapFit()</a></code> now works for models with a single estimated population parameter, a single random effect, or no random effects at all. Previously the bootstrap summary collapsed 1-row / 1x1 quantile arrays to vectors (and could not summarize a <code>NULL</code> omega), causing <code><a href="../reference/bootstrapFit.html">bootstrapFit()</a></code> to error with <code>dim(X) must have a positive length</code>, <code>incorrect number of dimensions</code>, or <code>'data' must be of a vector type, was 'NULL'</code>. Printing the bootstrap summary of a model with no random effects no longer errors either.</p></li>
+<li><p>Add focei/foce linearization</p></li>
 <li><p>Add formula interface</p></li>
 <li><p>Add vignettes on linearization, formula interface, log-likelihood profiling and preconditioning.</p></li>
 </ul></div>
@@ -99,7 +100,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>
