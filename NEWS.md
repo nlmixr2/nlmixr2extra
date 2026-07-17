@@ -1,5 +1,11 @@
 # nlmixr2extra 5.1.0
 
+- Fix `covarSearchAuto()` crashing with "wrong arguments for subsetting
+  an environment" when a covariate is selected; the best model is now
+  re-fit to recover its fit object. Also corrected the forward inclusion
+  test, which had an inverted sign so improving covariates were never
+  selected (#103)
+
 - Add focei/foce linearization
 
 - Add formula interface
