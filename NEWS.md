@@ -1,5 +1,10 @@
 # nlmixr2extra 5.1.0
 
+- Fix `covarSearchAuto()` crashing with "wrong arguments for subsetting
+  an environment" when a covariate is selected; the best model is now
+  re-fit to recover its fit object. Also corrected the forward inclusion
+  test, which had an inverted sign so improving covariates were never
+  selected (#103)
 - `bootstrapFit()` now works for models with a single estimated
   population parameter, a single random effect, or no random effects at
   all.  Previously the bootstrap summary collapsed 1-row / 1x1 quantile
