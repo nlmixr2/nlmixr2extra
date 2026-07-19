@@ -6,6 +6,7 @@
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/articles/model-linearization.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/articles/nlmixrFormula.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/articles/precondition.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/articles/reporting-helpers.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/authors.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/index.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/news/index.html</loc></url>
@@ -31,9 +32,11 @@
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/extractEqHelper.if.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/fixedControl.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/foldgen.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/getMinAICFit.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/horseshoeSummardf.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/iivSearch.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/index.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/isBoundaryFit.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/isLinearizeMatch.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/knit_print.nlmixr2FitCore.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/lassoCoefficients.html</loc></url>
@@ -42,6 +45,7 @@
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/linearize.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/linearizeErrorLines.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/linearizePlot.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/listModelsTested.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/llpControl.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/nlmixr2extra-package.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/nlmixrFormula.html</loc></url>

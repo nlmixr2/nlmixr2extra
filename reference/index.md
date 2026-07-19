@@ -52,10 +52,15 @@
 - [`foldgen()`](https://nlmixr2.github.io/nlmixr2extra/reference/foldgen.md)
   : Stratified cross-validation fold generator function, inspired from
   the caret
+- [`getMinAICFit()`](https://nlmixr2.github.io/nlmixr2extra/reference/getMinAICFit.md)
+  : Get the model with the minimum Akaike Information Criterion (AIC)
+  value
 - [`horseshoeSummardf()`](https://nlmixr2.github.io/nlmixr2extra/reference/horseshoeSummardf.md)
   : Create Horseshoe summary posterior estimates
 - [`iivSearch()`](https://nlmixr2.github.io/nlmixr2extra/reference/iivSearch.md)
   : Automated Inter-Individual Variability Search
+- [`isBoundaryFit()`](https://nlmixr2.github.io/nlmixr2extra/reference/isBoundaryFit.md)
+  : Detect if a fit has any parameter at the boundary
 - [`isLinearizeMatch()`](https://nlmixr2.github.io/nlmixr2extra/reference/isLinearizeMatch.md)
   : Check Linearization Match
 - [`knit_print(`*`<nlmixr2FitCore>`*`)`](https://nlmixr2.github.io/nlmixr2extra/reference/knit_print.nlmixr2FitCore.md)
@@ -72,6 +77,8 @@
   : Perform linearization of a model fitted using FOCEI
 - [`linearizePlot()`](https://nlmixr2.github.io/nlmixr2extra/reference/linearizePlot.md)
   : Plot Original Versus Linear Models iObj and Etas
+- [`listModelsTested()`](https://nlmixr2.github.io/nlmixr2extra/reference/listModelsTested.md)
+  : Make a list of models tested ready for reporting
 - [`llpControl()`](https://nlmixr2.github.io/nlmixr2extra/reference/llpControl.md)
   : Control options for log-likelihood profiling
 - [`nlmixrFormula()`](https://nlmixr2.github.io/nlmixr2extra/reference/nlmixrFormula.md)

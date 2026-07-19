@@ -10,3 +10,5 @@
   Formula](https://nlmixr2.github.io/nlmixr2extra/articles/nlmixrFormula.md):
 - [Stabilizing Covariance Estimates with
   preconditionFit()](https://nlmixr2.github.io/nlmixr2extra/articles/precondition.md):
+- [Helpers for writing modeling
+  reports](https://nlmixr2.github.io/nlmixr2extra/articles/reporting-helpers.md):
