@@ -1,5 +1,6 @@
 test_that("isBoundaryFit, getMinAICFit, listModelsTested work", {
   # fit models for testing
+  set.seed(1234)
   d_noec50 <-
     data.frame(
       conc = c(rep(0, 10), rep(1:20, each = 10)),
@@ -65,7 +66,10 @@ test_that("isBoundaryFit, getMinAICFit, listModelsTested work", {
     minAICfit <- getMinAICFit(fitEmaxBoundaryIssue, fitStep, fitLinear, fitError),
     regexp = "Removing model with a parameter at the boundary"
   )
-  expect_equal(minAICfit, fitLinear)
+  # The Emax model has a parameter at its boundary and is excluded; the step
+  # model is a near-perfect fit to the step-shaped data, so it has the lowest
+  # AIC of the remaining models.
+  expect_equal(minAICfit, fitStep)
 
   # getMinAICFit gives NULL when expected
   expect_warning(

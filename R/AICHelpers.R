@@ -60,16 +60,25 @@
 #' }
 #' @export
 getMinAICFit <- function(..., excludeBoundary = TRUE, k = 2) {
-  args <- list(...)
-  if (length(args) == 0) {
-    stop("No models given")
+  # Flatten so that lists of model fits are treated the same as individual
+  # model fits given as separate arguments (see the `...` documentation).
+  fits <- list()
+  for (arg in list(...)) {
+    if (inherits(arg, "nlmixr2FitCore") || inherits(arg, "try-error")) {
+      fits <- c(fits, list(arg))
+    } else if (is.list(arg)) {
+      fits <- c(fits, arg)
+    } else {
+      fits <- c(fits, list(arg))
+    }
   }
-  fitAIC <- vapply(X = args, FUN = tryAIC, FUN.VALUE = 1)
+  origAIC <- vapply(X = fits, FUN = tryAIC, FUN.VALUE = 1, k = k)
+  fitAIC <- origAIC
   if (excludeBoundary) {
     boundaryModelCount <- 0
     # Remove models at the boundary
-    for (idx in seq_along(args)) {
-      if (isBoundaryFit(args[[idx]])) {
+    for (idx in seq_along(fits)) {
+      if (isBoundaryFit(fits[[idx]])) {
         boundaryModelCount <- boundaryModelCount + 1
         fitAIC[idx] <- NA_real_
       }
@@ -77,18 +86,15 @@ getMinAICFit <- function(..., excludeBoundary = TRUE, k = 2) {
     if (boundaryModelCount > 0) {
       message(
         "Removing ",
-        boundaryModelCount, " ",
-        ngettext(boundaryModelCount, "model", "models"),
+        if (boundaryModelCount == 1) "model" else paste0(boundaryModelCount, " models"),
         " with a parameter at the boundary"
       )
     }
   }
-  browser()
-  stop()
   if (any(!is.na(fitAIC))) {
-    ret <- args[[which(fitAIC %in% min(fitAIC, na.rm = TRUE))[1]]]
-  } else if (all(is.na(fitAIC))) {
-    warning("No model fits with an AIC in input list")
+    ret <- fits[[which(fitAIC %in% min(fitAIC, na.rm = TRUE))[1]]]
+  } else if (all(is.na(origAIC))) {
+    warning("No model fits in input list")
     ret <- NULL
   } else {
     warning("No model fits in input after excluding models")
@@ -97,8 +103,13 @@ getMinAICFit <- function(..., excludeBoundary = TRUE, k = 2) {
   ret
 }
 
-tryAIC <- function(object, ..., silent = TRUE) {
-  try(AIC(object, ...), silent = silent)
+tryAIC <- function(object, ..., k = 2, silent = TRUE) {
+  ret <- try(AIC(object, ..., k = k), silent = silent)
+  if (inherits(ret, "try-error")) {
+    NA_real_
+  } else {
+    ret
+  }
 }
 
 #' Detect if a fit has any parameter at the boundary
@@ -126,16 +137,16 @@ isBoundaryFit <- function(object) {
 #'   will also have an "Exclude" column.
 #' @export
 listModelsTested <- function(fitList, caption, excludeBoundary = TRUE, k = 2) {
-  checkmate::expect_names(names(fitList))
+  checkmate::assertNames(names(fitList))
   ret <-
     data.frame(
       Description = names(fitList),
-      AIC = vapply(X = fitList, FUN = AIC, FUN.VALUE = 1)
+      AIC = vapply(X = fitList, FUN = tryAIC, FUN.VALUE = 1, k = k)
     )
   row.names(ret) <- NULL
   # Default when not calculated
   ret$dAIC <- "-"
-  calcdAIC <- rep(!is.na(ret$AIC), nrow(ret))
+  calcdAIC <- !is.na(ret$AIC)
   if (excludeBoundary) {
     excludes <- vapply(X = fitList, FUN = isBoundaryFit, FUN.VALUE = TRUE)
     if (any(excludes)) {
