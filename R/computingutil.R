@@ -7,7 +7,6 @@
 }
 
 .bootstrapEnv <- new.env(parent=emptyenv())
-.bootstrapEnv$nSampIndiv <- 0L
 
 #' Function to return pop mean, pop std of a given covariate
 #'
@@ -190,7 +189,7 @@ foldgen <-  function(data,nfold=5,stratVar=NULL) {
     ## For each class, balance the fold allocation as far
     ## as possible, then resample the remainder.
     ## The final assignment of folds is also randomized.
-    for(i in 1:seq_along(numInClass)) {
+    for(i in seq_along(numInClass)) {
       ## create a vector of integers from 1:k as many times as possible without
       ## going over the number of samples in the class. Note that if the number
       ## of samples in a class is less than k, nothing is producd here.
@@ -257,7 +256,7 @@ optimUnisampling <- function(xvec,N=1000,medValue,floorT=TRUE) {
   else if (xrmin==xvec[1] && xrmax==xvec[2]) {
     return(sampled)
   }
-  optimUnisampling(xvec,N=1000,medValue)
+  optimUnisampling(xvec, N=N, medValue, floorT=floorT)
 }
 
 #' Format confidence bounds for a variable into bracketed notation using string formatting
@@ -342,7 +341,7 @@ addConfboundsToVar <- function(var, confLower, confUpper, sigdig = 3) {
 #' @examples
 #' \dontrun{
 #'
-#' one.cmt <- function() {
+#' oneCmt <- function() {
 #'   ini({
 #'     tka <- 0.45; label("Ka")
 #'     tcl <- 1; label("Cl")
@@ -360,7 +359,7 @@ addConfboundsToVar <- function(var, confLower, confUpper, sigdig = 3) {
 #'   })
 #' }
 #'
-#' fit <- nlmixr2(one.cmt, nlmixr2data::theo_sd, est = "saem", control = list(print = 0))
+#' fit <- nlmixr2(oneCmt, nlmixr2data::theo_sd, est = "saem", control = list(print = 0))
 #'
 #' withr::with_tempdir({ # Run example in temp dir
 #'
@@ -611,7 +610,8 @@ bootstrapFit <- function(fit,
   if (length(.nm) == 0) {
     stop("No parameters to update covariance matrix", call.=FALSE)
   }
-  .cov <- fit$bootSummary$omega$covMatrixCombined[.nm, .nm]
+  # drop = FALSE so a single retained parameter stays a 1x1 matrix for setCov()
+  .cov <- fit$bootSummary$omega$covMatrixCombined[.nm, .nm, drop = FALSE]
   .setCov(fit, covMethod = .cov)
   assign("covMethod", paste0("boot", fit$bootSummary$nboot), fit$env)
   invisible(fit)
@@ -716,8 +716,6 @@ sampling <- function(data,
       .env$new_id <- 1
       do.call(rbind, lapply(uids_samp, function(u) {
         data_slice <- dat[dat[, uid_colname] == u, ]
-        start <- NROW(sampled_df) + 1
-        end <- start + NROW(data_slice) - 1
 
         data_slice[uid_colname] <-
           .env$new_id # assign a new ID to the sliced dataframe
@@ -748,8 +746,6 @@ sampling <- function(data,
 
     do.call(rbind, lapply(uids_samp, function(u) {
       data_slice <- data[data[, uid_colname] == u, ]
-      start <- NROW(sampled_df) + 1
-      end <- start + NROW(data_slice) - 1
 
       data_slice[uid_colname] <-
         .env$new_id # assign a new ID to the sliced dataframe
@@ -1107,7 +1103,7 @@ extractVars <- function(fitlist, id = "method") {
       # check if all message strings are empty
       if (id == "message") {
         prev <- TRUE
-        for (i in length(res)) {
+        for (i in seq_along(res)) {
           status <- (res[[i]] == "") && prev
           prev <- status
         }
@@ -1130,6 +1126,47 @@ extractVars <- function(fitlist, id = "method") {
       res
     }
   }
+}
+
+#' Reshape a quantile-array slice into a parameter-by-bound matrix
+#'
+#' `apply(x, 1:2, quantile)` returns an array with dimensions
+#' `nQuantLevel x nPar x nBound`.  Selecting one quantile level with
+#' `quants[k, , ]` collapses to a vector when there is a single parameter
+#' (`nPar == 1`), which then breaks the 2-D subscripting in [bootstrapFit()].
+#' Force the slice back to the intended matrix, taking the row count and
+#' dimnames from `template` (the matching matrix of bootstrap means).
+#'
+#' @param quants 3-D array produced by `apply(..., 1:2, quantile)`
+#' @param k quantile-level index selecting the first dimension
+#' @param template matrix with the desired final shape and dimnames
+#' @return a matrix with the same dimensions as `template`
+#' @noRd
+.bootstrapQuantSlice <- function(quants, k, template) {
+  matrix(quants[k, , ], nrow = nrow(template), dimnames = dimnames(template))
+}
+
+#' Correlation matrix from a bootstrap covariance matrix
+#'
+#' Wraps `cov2cor()` but tolerates zero-variance entries (a parameter that did
+#' not vary across the bootstrap) and stores the standard deviations on the
+#' diagonal, matching the convention used by the bootstrap omega summary.
+#'
+#' @param covMatrix a covariance matrix
+#' @return a correlation matrix with the standard deviations on the diagonal
+#' @noRd
+.bootstrapCombinedCor <- function(covMatrix) {
+  w <- which(diag(covMatrix) == 0)
+  if (length(w) > 0) {
+    d <- dim(covMatrix)[1]
+    corMatrix <- matrix(0, d, d)
+    corMatrix[-w, -w] <- cov2cor(covMatrix[-w, -w])
+  } else {
+    corMatrix <- cov2cor(covMatrix)
+  }
+  diag(corMatrix) <- sqrt(diag(covMatrix))
+  dimnames(corMatrix) <- dimnames(covMatrix)
+  corMatrix
 }
 
 #' Summarize the bootstrapped fits/models
@@ -1167,16 +1204,49 @@ getBootstrapSummary <- function(fitList,
     if (id == "omega") {
       # omega estimates
       omegaMatlist <- extractVars(fitList, id)
-      varVec <- simplify2array(omegaMatlist)
+      if (is.null(omegaMatlist[[1]]) || nrow(omegaMatlist[[1]]) == 0L) {
+        # A model with no random effects has no omega to summarize.  Build the
+        # combined covariance from the fixed-effect bootstrap estimates alone so
+        # that bootstrapFit() can still update the covariance matrix.
+        parFixedlist <- extractVars(fitList, id = "parFixedDf")
+        parFixedlistVec <- do.call("rbind", lapply(parFixedlist, function(x) {
+          ret <- x$Estimate
+          if (is.null(names(ret))) {
+            ret <- stats::setNames(ret, rownames(x))
+          }
+          ret
+        }))
+        covMatrix <- cov(parFixedlistVec)
+        return(list(
+          mean = omegaMatlist[[1]],
+          median = omegaMatlist[[1]],
+          stdDev = omegaMatlist[[1]],
+          confLower = omegaMatlist[[1]],
+          confUpper = omegaMatlist[[1]],
+          covMatrixCombined = covMatrix,
+          corMatrixCombined = .bootstrapCombinedCor(covMatrix)
+        ))
+      }
+      # simplify2array() collapses a list of 1x1 omega matrices (a single
+      # random effect) into a plain vector, which breaks the apply(, 1:2, )
+      # calls below; build the nEta x nEta x nboot array explicitly so a
+      # single-eta model is handled the same as the multi-eta case.
+      .nEta <- nrow(omegaMatlist[[1]])
+      varVec <- array(unlist(omegaMatlist),
+                      dim = c(.nEta, .nEta, length(omegaMatlist)),
+                      dimnames = list(rownames(omegaMatlist[[1]]),
+                                      colnames(omegaMatlist[[1]]), NULL))
       mn <- apply(varVec, 1:2, mean, na.rm=TRUE)
       sd <- apply(varVec, 1:2, sd, na.rm=TRUE)
 
       quants <- apply(varVec, 1:2, function(x) {
         unname(quantile(x, quantLevels, na.rm=TRUE))
       })
-      median <- quants[1, , ]
-      confLower <- quants[2, , ]
-      confUpper <- quants[3, , ]
+      # quants[k, , ] would drop to a vector for a single random effect; keep
+      # the nEta x nEta matrix shape (see .bootstrapQuantSlice)
+      median <- .bootstrapQuantSlice(quants, 1, mn)
+      confLower <- .bootstrapQuantSlice(quants, 2, mn)
+      confUpper <- .bootstrapQuantSlice(quants, 3, mn)
 
       if (stdErrType != "perc") {
         confLower <- mn + qnorm(quantLevels[[2]]) * sd
@@ -1230,22 +1300,14 @@ getBootstrapSummary <- function(fitList,
       .w <- which(vapply(namesList, function(x) {
         !all(omgVecBoot[, x] == 0)
       }, logical(1), USE.NAMES=FALSE))
-      omgVecBoot <- omgVecBoot[, .w]
+      # drop = FALSE so a single retained omega entry stays a 1-column matrix
+      omgVecBoot <- omgVecBoot[, .w, drop = FALSE]
 
 
       parFixedOmegaCombined <- cbind(parFixedlistVec, omgVecBoot)
 
       covMatrix <- cov(parFixedOmegaCombined)
-      w <- which(diag(covMatrix) == 0)
-      if (length(w) > 0) {
-        d <- dim(covMatrix)[1]
-        corMatrix <- matrix(rep(0,d * d), d, d)
-        corMatrix[-w, -w] <- cov2cor(covMatrix[-w, -w])
-      } else {
-        corMatrix <- cov2cor(covMatrix)
-      }
-      diag(corMatrix) <- sqrt(diag(covMatrix))
-      dimnames(corMatrix) <- dimnames(covMatrix)
+      corMatrix <- .bootstrapCombinedCor(covMatrix)
       lst <- list(
         mean = mn,
         median = median,
@@ -1269,9 +1331,12 @@ getBootstrapSummary <- function(fitList,
           unname(quantile(x, quantLevels, na.rm = TRUE))
         })
 
-      median <- quants[1, , ]
-      confLower <- quants[2, , ]
-      confUpper <- quants[3, , ]
+      # quants[k, , ] would drop to a vector for a model with a single
+      # population parameter; keep the nPar x 2 matrix shape so the downstream
+      # subscripting in bootstrapFit() works (see .bootstrapQuantSlice)
+      median <- .bootstrapQuantSlice(quants, 1, mn)
+      confLower <- .bootstrapQuantSlice(quants, 2, mn)
+      confUpper <- .bootstrapQuantSlice(quants, 3, mn)
 
       if (stdErrType != "perc") {
         confLower <- mn + qnorm(quantLevels[[2]]) * sd
@@ -1333,6 +1398,10 @@ print.nlmixr2BoostrapSummary <- function(x, ..., sigdig = NULL) {
   ))
 
   lapply(seq_along(omega), function(x) {
+    # a model with no random effects has empty (NULL) omega summaries; skip them
+    if (is.null(omega[[x]]) || length(omega[[x]]) == 0L) {
+      return(invisible())
+    }
     cli::cli_text(cli::col_green(paste0("$", names(omega)[x])))
     print(signif(omega[[x]], sigdig))
   })
@@ -1398,7 +1467,7 @@ assignToEnv <- function(namedVars, fitobject) {
 #' R Niebecker,  MO Karlsson. (2013)
 #' *Are datasets for NLME models large enough for a bootstrap to provide reliable parameter uncertainty distributions?*
 #' PAGE 2013.
-#' <https://www.page-meeting.org/?abstract=2899>
+#' <https://www.page-meeting.org/Abstracts/are-datasets-for-nlme-models-large-enough-for-a-bootstrap-to-provide-reliable-parameter-uncertainty-distributions/>
 #' @export
 bootplot <- function(x, ...) {
   UseMethod("bootplot")

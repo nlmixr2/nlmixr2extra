@@ -368,10 +368,14 @@ braceWrap <- function(x, ..., inModel, indent) {
 
 #' Generate LaTeX for if blocks
 #'
-#' @inheritParams extractEqHelper
+#' @param x language object to convert to LaTeX
+#' @param ... additional arguments passed to methods
+#' @param inModel logical; whether the expression is inside a model block
+#' @param alignment LaTeX alignment character used for equation alignment
+#' @param name optional name for the expression
 #' @param firstIf tracks if this is the first if at the current indent level
 #' @param indent tracks the current indention level
-#' @noRd
+#' @export
 extractEqHelper.if <- function(x, ..., inModel, alignment, indent = 0L, firstIf = 0L, name) {
   # This is used at the same level as assignment
   stopifnot(length(x) %in% c(3, 4))

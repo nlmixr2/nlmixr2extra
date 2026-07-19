@@ -37,7 +37,7 @@ Return Adjusted adaptive lasso coefficients after finding optimal t
 }
 \examples{
 \dontrun{
-one.cmt <- function() {
+oneCmt <- function() {
   ini({
     tka <- 0.45; label("Ka")
     tcl <- log(c(0, 2.7, 100)); label("Cl")
@@ -59,7 +59,7 @@ d <- nlmixr2data::theo_sd
 d$SEX <-0
 d$SEX[d$ID<=6] <-1
 
-fit <- nlmixr2(one.cmt, d, est = "saem", control = list(print = 0))
+fit <- nlmixr2(oneCmt, d, est = "saem", control = list(print = 0))
 varsVec <- c("ka","cl","v")
 covarsVec <- c("WT")
 catvarsVec <- c("SEX")

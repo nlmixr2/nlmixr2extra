@@ -1,15 +1,16 @@
 #define STRICT_R_HEADER
 #include <RcppArmadillo.h>
+// NLS not available on all platforms; no translations provided
+#define _(String) (String)
 
 using namespace Rcpp;
-
-#ifdef ENABLE_NLS
-#include <libintl.h>
-#define _(String) dgettext ("nlmixr2extra", String)
-/* replace pkg as appropriate */
-#else
+// #ifdef ENABLE_NLS
+// #include <libintl.h>
+// #define _(String) dgettext ("nlmixr2extra", String)
+// /* replace pkg as appropriate */
+// #else
 #define _(String) (String)
-#endif
+// #endif
 
 //' Calculate the inverse preconditioning matrix
 //'
@@ -25,6 +26,14 @@ SEXP preCondInv(SEXP Rin) {
   arma::mat R = as<arma::mat>(Rin);
   bool success = eig_sym(eigval, eigvec, R);
   if (success){
+    // Guard against singular/near-singular matrices: a zero (or near-zero)
+    // eigenvalue causes 1/|lambda| = Inf which silently corrupts the
+    // preconditioner (Aoki 2016 eq. 15).
+    double eigTol = 1e-10;
+    arma::uvec zeroEigs = arma::find(arma::abs(eigval) < eigTol);
+    if (zeroEigs.n_elem > 0) {
+      Rcpp::stop(_("matrix is singular or near-singular (has zero or near-zero eigenvalues); cannot calculate the preconditioning matrix"));
+    }
     // Now calculate the norm
     arma::mat eignorm = normalise(eigvec);
     arma::mat v12 = diagmat(1/(abs(eigval)));

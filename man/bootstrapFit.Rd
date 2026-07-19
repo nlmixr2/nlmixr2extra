@@ -79,7 +79,7 @@ Bootstrap input dataset and rerun the model to get confidence bounds and aggrega
 \examples{
 \dontrun{
 
-one.cmt <- function() {
+oneCmt <- function() {
   ini({
     tka <- 0.45; label("Ka")
     tcl <- 1; label("Cl")
@@ -97,7 +97,7 @@ one.cmt <- function() {
   })
 }
 
-fit <- nlmixr2(one.cmt, nlmixr2data::theo_sd, est = "saem", control = list(print = 0))
+fit <- nlmixr2(oneCmt, nlmixr2data::theo_sd, est = "saem", control = list(print = 0))
 
 withr::with_tempdir({ # Run example in temp dir
 

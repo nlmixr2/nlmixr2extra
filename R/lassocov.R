@@ -205,7 +205,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' one.cmt <- function() {
+#' oneCmt <- function() {
 #'   ini({
 #'     tka <- 0.45; label("Ka")
 #'     tcl <- log(c(0, 2.7, 100)); label("Cl")
@@ -227,7 +227,7 @@
 #' d$SEX <-0
 #' d$SEX[d$ID<=6] <-1
 #'
-#' fit <- nlmixr2(one.cmt, d, est = "saem", control = list(print = 0))
+#' fit <- nlmixr2(oneCmt, d, est = "saem", control = list(print = 0))
 #' varsVec <- c("ka","cl","v")
 #' covarsVec <- c("WT")
 #' catvarsVec <- c("SEX")
@@ -372,7 +372,7 @@ lassoCoefficients <- function(fit, varsVec, covarsVec, catvarsVec, constraint=1e
 #'
 #' @examples
 #' \dontrun{
-#' one.cmt <- function() {
+#' oneCmt <- function() {
 #'   ini({
 #'     tka <- 0.45; label("Ka")
 #'     tcl <- log(c(0, 2.7, 100)); label("Cl")
@@ -396,7 +396,7 @@ lassoCoefficients <- function(fit, varsVec, covarsVec, catvarsVec, constraint=1e
 #'
 #' fit <-
 #'  nlmixr2(
-#'    one.cmt, d,
+#'    oneCmt, d,
 #'    est = "saem",
 #'    control = list(print = 0)
 #'  )
@@ -491,7 +491,7 @@ adaptivelassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constrain
 #'
 #' @examples
 #' \dontrun{
-#' one.cmt <- function() {
+#' oneCmt <- function() {
 #'   ini({
 #'     tka <- 0.45; label("Ka")
 #'     tcl <- log(c(0, 2.7, 100)); label("Cl")
@@ -513,7 +513,7 @@ adaptivelassoCoefficients <- function(fit,varsVec,covarsVec,catvarsVec,constrain
 #' d$SEX <-0
 #' d$SEX[d$ID<=6] <-1
 #'
-#' fit <- nlmixr2(one.cmt, d, est = "saem", control = list(print = 0))
+#' fit <- nlmixr2(oneCmt, d, est = "saem", control = list(print = 0))
 #' varsVec <- c("ka","cl","v")
 #' covarsVec <- c("WT")
 #' catvarsVec <- c("SEX")
@@ -617,7 +617,7 @@ regularmodel <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,
 #'
 #' @examples
 #' \dontrun{
-#' one.cmt <- function() {
+#' oneCmt <- function() {
 #'   ini({
 #'     tka <- 0.45; label("Ka")
 #'     tcl <- log(c(0, 2.7, 100)); label("Cl")
@@ -639,7 +639,7 @@ regularmodel <- function(fit,varsVec,covarsVec,catvarsVec,constraint=1e-08,
 #' d$SEX <-0
 #' d$SEX[d$ID<=6] <-1
 #'
-#' fit <- nlmixr2(one.cmt, d, est = "saem", control = list(print = 0))
+#' fit <- nlmixr2(oneCmt, d, est = "saem", control = list(print = 0))
 #' varsVec <- c("ka","cl","v")
 #' covarsVec <- c("WT")
 #' catvarsVec <- c("SEX")

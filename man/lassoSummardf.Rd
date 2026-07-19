@@ -22,7 +22,7 @@ Create Lasso summary posterior estimates
 }
 \examples{
 \dontrun{
-one.cmt <- function() {
+oneCmt <- function() {
   ini({
     tka <- 0.45; label("Ka")
     tcl <- log(c(0, 2.7, 100)); label("Cl")
@@ -41,7 +41,7 @@ one.cmt <- function() {
 }
 
 d <- nlmixr2data::theo_sd
-fit <- nlmixr2(one.cmt, d, est = "saem", control = list(print = 0))
+fit <- nlmixr2(oneCmt, d, est = "saem", control = list(print = 0))
 covarsVec <- c("WT")
 
 # Horseshoe summary posterior estimates:

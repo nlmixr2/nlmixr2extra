@@ -1,3 +1,30 @@
+# nlmixr2extra 5.1.0
+
+- Fix `covarSearchAuto()` crashing with "wrong arguments for subsetting
+  an environment" when a covariate is selected; the best model is now
+  re-fit to recover its fit object. Also corrected the forward inclusion
+  test, which had an inverted sign so improving covariates were never
+  selected (#103)
+- `bootstrapFit()` now works for models with a single estimated
+  population parameter, a single random effect, or no random effects at
+  all.  Previously the bootstrap summary collapsed 1-row / 1x1 quantile
+  arrays to vectors (and could not summarize a `NULL` omega), causing
+  `bootstrapFit()` to error with `dim(X) must have a positive length`,
+  `incorrect number of dimensions`, or `'data' must be of a vector type,
+  was 'NULL'`.  Printing the bootstrap summary of a model with no random
+  effects no longer errors either.
+
+- Add focei/foce linearization
+
+- Add formula interface
+
+- Add vignettes on linearization, formula interface, log-likelihood
+  profiling and preconditioning.
+
+# nlmixr2extra 5.0.0
+
+* Update internal fit to be nlmixr2est 5.0.0 fit object
+
 # nlmixr2extra 3.0.3
 
 * Allow raw fits to be returned (or only the parameters)
