@@ -5,6 +5,14 @@
   re-fit to recover its fit object. Also corrected the forward inclusion
   test, which had an inverted sign so improving covariates were never
   selected (#103)
+- `bootstrapFit()` now works for models with a single estimated
+  population parameter, a single random effect, or no random effects at
+  all.  Previously the bootstrap summary collapsed 1-row / 1x1 quantile
+  arrays to vectors (and could not summarize a `NULL` omega), causing
+  `bootstrapFit()` to error with `dim(X) must have a positive length`,
+  `incorrect number of dimensions`, or `'data' must be of a vector type,
+  was 'NULL'`.  Printing the bootstrap summary of a model with no random
+  effects no longer errors either.
 
 - Add focei/foce linearization
 
