@@ -1,10 +1,11 @@
 # Example single dose Theophylline ODE model
 
 This is a nlmixr2 model that is pre-run so that it can be used in
-package testing and development. It is regenerated whenever binaries of
-`nlmixr2extra` are created. If there is a binary incompatability between
-the fit objects, a simple rerun of the installation will fix this
-nlmixr2 fit object.
+package testing and development. It is regenerated when
+[`devtools::document()`](https://devtools.r-lib.org/reference/document.html)
+is run on a source checkout. If there is a binary incompatability
+between the fit objects, re-documenting (or running `build/build.R`)
+will fix this nlmixr2 fit object.
 
 ## Format
 
