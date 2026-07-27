@@ -32,8 +32,8 @@ A (modified) data frame with  132 rows and 22 columns.
 }
 \description{
 This is a nlmixr2 model that is pre-run so that it can be used in
-package testing and development.  It is regenerated whenever
-binaries of \code{nlmixr2extra} are created.  If there is a binary
-incompatability between the fit objects, a simple rerun of the
-installation will fix this nlmixr2 fit object.
+package testing and development.  It is regenerated when
+\code{devtools::document()} is run on a source checkout.  If there is a
+binary incompatability between the fit objects, re-documenting (or
+running \code{build/build.R}) will fix this nlmixr2 fit object.
 }
