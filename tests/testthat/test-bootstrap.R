@@ -101,6 +101,56 @@ withr::with_tempdir({
     )
   })
 
+  test_that("sampled subjects keep all of their records", {
+    # grp changes within subject 1, which must not split its records
+    d <- data.frame(
+      ID = c(1, 1, 2, 2, 3, 3),
+      grp = c("A", "B", "A", "A", "B", "B"),
+      TIME = rep(c(0, 1), 3),
+      DV = seq_len(6)
+    )
+    withr::with_seed(11, {
+      expect_warning(
+        samp <-
+          nlmixr2extra:::sampling(d, uid_colname = "ID", performStrat = TRUE,
+                                  stratVar = "grp"),
+        "not constant"
+      )
+    })
+    # three subjects drawn, each contributing its two original records
+    expect_equal(nrow(samp), 6)
+    expect_equal(length(unique(samp$ID)), 3)
+    expect_true(all(table(samp$ID) == 2))
+
+    # subject 1 is stratified by its first value, so it stays whole
+    orig <- lapply(split(d$DV, d$ID), sort)
+    drawn <- lapply(split(samp$DV, samp$ID), sort)
+    expect_true(all(vapply(drawn, function(x) {
+      any(vapply(orig, identical, logical(1), x))
+    }, logical(1))))
+  })
+
+  test_that("sampling accepts a tibble and a non numeric id column", {
+    d <- tibble::tibble(
+      ID = rep(c("subA", "subB", "subC"), each = 2),
+      grp = rep(c("A", "B", "A"), each = 2),
+      DV = seq_len(6)
+    )
+    withr::with_seed(13, {
+      samp <- nlmixr2extra:::sampling(d, uid_colname = "ID")
+    })
+    expect_equal(nrow(samp), 6)
+    expect_equal(sort(unique(samp$ID)), 1:3)
+
+    withr::with_seed(13, {
+      samp <-
+        nlmixr2extra:::sampling(d, uid_colname = "ID", performStrat = TRUE,
+                                stratVar = "grp")
+    })
+    expect_equal(nrow(samp), 6)
+    expect_equal(sort(unique(samp$ID)), 1:3)
+  })
+
   test_that("resuming the fit should not return the same datasets as before", {
     skip_on_cran()
     one.cmt <- function() {

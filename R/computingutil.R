@@ -715,7 +715,9 @@ sampling <- function(data,
   }
   checkmate::assert_choice(uid_colname, colnames(data))
 
-  allUid <- unique(data[, uid_colname])
+  # [[ rather than [, so a tibble yields a vector and not a one column tibble
+  idCol <- data[[uid_colname]]
+  allUid <- unique(idCol)
 
   if (is.null(nsamp)) {
     nsamp <- length(allUid)
@@ -748,12 +750,15 @@ sampling <- function(data,
   .env <- new.env(parent = emptyenv())
   .env$new_id <- 1
 
-  # populate a dataframe from the sampled uids, giving each draw a new id
-  .sliceUid <- function(dat, uids_samp) {
-    do.call(rbind, lapply(uids_samp, function(u) {
-      data_slice <- dat[dat[, uid_colname] == u, ]
+  # the rows of each subject, so a draw is a lookup instead of a scan
+  uidRows <- split(seq_len(nrow(data)), idCol)
 
-      data_slice[uid_colname] <-
+  # populate a dataframe from the sampled uids, giving each draw a new id
+  .sliceUid <- function(uids_samp) {
+    do.call(rbind, lapply(uids_samp, function(u) {
+      data_slice <- data[uidRows[[as.character(u)]], , drop = FALSE]
+
+      data_slice[[uid_colname]] <-
         .env$new_id # assign a new ID to the sliced dataframe
       .env$new_id <- .env$new_id + 1
       data_slice
@@ -761,36 +766,41 @@ sampling <- function(data,
   }
 
   if (performStrat) {
-    stratCol <- data[, stratVar]
-    stratLevels <-
-      as.character(unique(stratCol)) # char to access freq. values
+    stratCol <- as.character(data[[stratVar]])
 
-    # %in% rather than == so a NA stratum keeps its own rows
-    dataSubsets <- lapply(stratLevels, function(x) {
-      data[stratCol %in% x, ]
-    })
+    # a bootstrap draws whole subjects, so each subject belongs to one
+    # stratum; a stratVar that changes within a subject would otherwise
+    # split that subject's records between strata
+    if (any(vapply(split(stratCol, idCol),
+                   function(x) length(unique(x)) > 1, logical(1)))) {
+      warning("'", stratVar,
+              "' is not constant within every subject; each subject is ",
+              "stratified by its first value",
+              call. = FALSE)
+    }
+    uidStrat <- stratCol[match(allUid, idCol)]
 
-    names(dataSubsets) <- stratLevels
+    # %in% rather than == so a NA stratum keeps its own subjects
+    stratLevels <- unique(uidStrat)
+    stratUid <- lapply(stratLevels, function(x) allUid[uidStrat %in% x])
 
-    stratUid <- lapply(dataSubsets, function(dat) unique(dat[, uid_colname]))
     # allocate on the number of subjects per stratum, not the number of
     # observations, so subjects with more records are not over-weighted
     stratN <- .stratSampleSize(lengths(stratUid), nsamp)
 
-    sampledDataSubsets <- lapply(seq_along(dataSubsets), function(i) {
+    sampledDataSubsets <- lapply(seq_along(stratUid), function(i) {
       uids <- stratUid[[i]]
       uids_samp <- .sampleUid(uids,
                               size = stratN[[i]],
                               prob = .stratProb(pvalues, allUid, uids)
                               )
-      .sliceUid(dataSubsets[[i]], uids_samp)
+      .sliceUid(uids_samp)
     })
     do.call("rbind", sampledDataSubsets)
   }
 
   else {
-    uids_samp <- .sampleUid(allUid, size = nsamp, prob = pvalues)
-    .sliceUid(data, uids_samp)
+    .sliceUid(.sampleUid(allUid, size = nsamp, prob = pvalues))
   }
 }
 
