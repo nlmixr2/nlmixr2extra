@@ -10,3 +10,11 @@ docs
 inst/doc
 /doc/
 /Meta/
+
+# Build artifacts (R CMD build/INSTALL/check output)
+*.Rcheck/
+*.tar.gz
+*.tgz
+inst/tools/*.Rout
+src/Makevars.win
+vignettes/*_files/
