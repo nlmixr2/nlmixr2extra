@@ -8,6 +8,149 @@ withr::with_tempdir({
     expect_false(isTRUE(all.equal(a, b)))
   })
 
+  # https://github.com/nlmixr2/nlmixr2extra/issues/99
+  test_that("stratified sampling resamples the subject ids", {
+    d <- data.frame(
+      ID = rep(1:6, each = 2),
+      grp = rep(c("A", "A", "A", "B", "B", "B"), each = 2),
+      TIME = rep(c(0, 1), 6),
+      DV = seq_len(12)
+    )
+
+    withr::with_seed(1, {
+      strat1 <-
+        nlmixr2extra:::sampling(d, uid_colname = "ID", performStrat = TRUE,
+                                stratVar = "grp")
+    })
+    withr::with_seed(2, {
+      strat2 <-
+        nlmixr2extra:::sampling(d, uid_colname = "ID", performStrat = TRUE,
+                                stratVar = "grp")
+    })
+    expect_false(isTRUE(all.equal(strat1, strat2)))
+
+    # every draw gets its own new id, including across strata
+    expect_equal(length(unique(strat1$ID)), 6)
+    expect_equal(nrow(strat1), 12)
+    expect_true(all(tapply(strat1$grp, strat1$ID, function(x) length(unique(x))) == 1))
+
+    # the sampled subjects come from the original data
+    expect_true(all(strat1$DV %in% d$DV))
+  })
+
+  test_that("stratified sampling honors nsamp and the stratum subject counts", {
+    d <- data.frame(
+      ID = rep(1:10, each = 2),
+      grp = rep(c(rep("A", 7), rep("B", 3)), each = 2),
+      DV = 1
+    )
+    # stratum A has more observations per subject than B; the split must
+    # follow the number of subjects, not the number of rows
+    d <- rbind(d, data.frame(ID = rep(1:7, each = 3), grp = "A", DV = 1))
+
+    withr::with_seed(4, {
+      samp <-
+        nlmixr2extra:::sampling(d, nsamp = 10L, uid_colname = "ID",
+                                performStrat = TRUE, stratVar = "grp")
+    })
+    expect_equal(length(unique(samp$ID)), 10)
+    nId <- vapply(split(samp$ID, samp$grp), function(x) length(unique(x)),
+                  integer(1))
+    expect_equal(nId, c(A = 7L, B = 3L))
+  })
+
+  test_that("a stratum holding a single subject samples that subject", {
+    d <- data.frame(
+      ID = rep(1:4, each = 2),
+      grp = rep(c("A", "A", "A", "B"), each = 2),
+      DV = seq_len(8)
+    )
+    withr::with_seed(3, {
+      samp <-
+        nlmixr2extra:::sampling(d, uid_colname = "ID", performStrat = TRUE,
+                                stratVar = "grp")
+    })
+    expect_equal(nrow(samp), 8)
+    # subject 4 is the only member of stratum B, so only its rows may appear
+    expect_setequal(samp$DV[samp$grp == "B"], c(7, 8))
+  })
+
+  test_that("pvalues weight the subjects that get drawn", {
+    d <- data.frame(
+      ID = rep(1:6, each = 2),
+      grp = rep(c("A", "A", "A", "B", "B", "B"), each = 2),
+      DV = rep(1:6, each = 2)
+    )
+    # only the first subject of each stratum may be selected
+    withr::with_seed(7, {
+      samp <-
+        nlmixr2extra:::sampling(d, uid_colname = "ID", performStrat = TRUE,
+                                stratVar = "grp", pvalues = c(1, 0, 0, 1, 0, 0))
+    })
+    expect_setequal(samp$DV, c(1, 4))
+
+    withr::with_seed(7, {
+      samp <- nlmixr2extra:::sampling(d, uid_colname = "ID",
+                                      pvalues = c(1, 0, 0, 0, 0, 0))
+    })
+    expect_setequal(samp$DV, 1)
+
+    expect_error(
+      nlmixr2extra:::sampling(d, uid_colname = "ID", pvalues = c(1, 0)),
+      "pvalues"
+    )
+  })
+
+  test_that("sampled subjects keep all of their records", {
+    # grp changes within subject 1, which must not split its records
+    d <- data.frame(
+      ID = c(1, 1, 2, 2, 3, 3),
+      grp = c("A", "B", "A", "A", "B", "B"),
+      TIME = rep(c(0, 1), 3),
+      DV = seq_len(6)
+    )
+    withr::with_seed(11, {
+      expect_warning(
+        samp <-
+          nlmixr2extra:::sampling(d, uid_colname = "ID", performStrat = TRUE,
+                                  stratVar = "grp"),
+        "not constant"
+      )
+    })
+    # three subjects drawn, each contributing its two original records
+    expect_equal(nrow(samp), 6)
+    expect_equal(length(unique(samp$ID)), 3)
+    expect_true(all(table(samp$ID) == 2))
+
+    # subject 1 is stratified by its first value, so it stays whole
+    orig <- lapply(split(d$DV, d$ID), sort)
+    drawn <- lapply(split(samp$DV, samp$ID), sort)
+    expect_true(all(vapply(drawn, function(x) {
+      any(vapply(orig, identical, logical(1), x))
+    }, logical(1))))
+  })
+
+  test_that("sampling accepts a tibble and a non numeric id column", {
+    d <- tibble::tibble(
+      ID = rep(c("subA", "subB", "subC"), each = 2),
+      grp = rep(c("A", "B", "A"), each = 2),
+      DV = seq_len(6)
+    )
+    withr::with_seed(13, {
+      samp <- nlmixr2extra:::sampling(d, uid_colname = "ID")
+    })
+    expect_equal(nrow(samp), 6)
+    expect_equal(sort(unique(samp$ID)), 1:3)
+
+    withr::with_seed(13, {
+      samp <-
+        nlmixr2extra:::sampling(d, uid_colname = "ID", performStrat = TRUE,
+                                stratVar = "grp")
+    })
+    expect_equal(nrow(samp), 6)
+    expect_equal(sort(unique(samp$ID)), 1:3)
+  })
+
   test_that("resuming the fit should not return the same datasets as before", {
     skip_on_cran()
     one.cmt <- function() {
