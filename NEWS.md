@@ -1,4 +1,38 @@
-# nlmixr2extra 5.1.1
+# nlmixr2extra 5.2.0
+
+## New features
+
+- New reporting helpers for comparing candidate models: `getMinAICFit()`
+  returns the fit with the lowest AIC, `listModelsTested()` builds a
+  `Description`/`AIC`/`dAIC` table ready for `pander::pander()`, and
+  `isBoundaryFit()` reports whether a fit has a parameter at its
+  boundary.  By default both selection helpers exclude boundary fits.
+  See the new "reporting helpers" article.
+
+## Bug fixes
+
+- Fix `bootstrapFit(stratVar=)`, which did not actually resample.  The
+  stratified branch called `sample(list(uids), ...)`, and since
+  `list(uids)` has length one every draw returned the whole vector of
+  subject ids, so the bootstrap datasets did not depend on the seed
+  (#99).  Three further problems in the same code are fixed with it:
+  the new subject ids restarted at 1 in each stratum, so subjects from
+  different strata were merged under a shared id; the sample was split
+  across strata by the number of *observations* rather than the number
+  of *subjects*, over-weighting strata whose subjects have more
+  records; and rounding each stratum up could return more subjects than
+  `nSampIndiv` asked for.
+
+- A stratified bootstrap now always draws whole subjects.  When
+  `stratVar` changed within a subject, that subject's records were
+  split between strata and resampled as separate (partial) subjects;
+  each subject is now stratified by its first value, with a warning.
+
+- `nlmixr2extra:::sampling()` now resolves its `uid_colname` default
+  before using it.  Called without one it sampled `ncol(data)` subjects
+  instead of the number of subjects in the data.  It also accepts a
+  tibble, which previously produced a one column tibble where a vector
+  of subject ids was expected.
 
 - Fix `covarSearchAuto()` crashing with "wrong arguments for subsetting
   an environment" when a covariate is selected; the best model is now

@@ -1,2 +1,3 @@
 *.html
+# Ignored as R files will typically go in the R/ directory within the package.
 *.R
