@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">nlmixr2extra</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">5.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">5.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -173,7 +173,7 @@ concentration), and we fit three competing structural models.</p>
 <span><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00</span></span>
 <span><span class="co">#&gt; → compiling EBE model...</span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> done</span></span>
-<span><span class="co">#&gt; rxode2 5.1.5 using 2 threads (see ?getRxThreads)</span></span>
+<span><span class="co">#&gt; rxode2 5.1.6 using 2 threads (see ?getRxThreads)</span></span>
 <span><span class="co">#&gt;   no cache: create with `rxCreateCache()`</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Attaching package: 'rxode2'</span></span>
@@ -285,14 +285,14 @@ summary table.</p>
 \end{align*}</annotation></semantics></math></p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pander</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/pander/man/pander.html" class="external-link">pander</a></span><span class="op">(</span><span class="va">bestFit</span><span class="op">$</span><span class="va">parFixed</span>, caption <span class="op">=</span> <span class="st">"Model parameters for the best-fit model"</span><span class="op">)</span></span></code></pre></div>
-<table style="width:96%;" class="table">
+<table style="width:90%;" class="table">
 <caption>Model parameters for the best-fit model</caption>
 <colgroup>
 <col width="16%">
-<col width="15%">
-<col width="12%">
 <col width="13%">
-<col width="37%">
+<col width="11%">
+<col width="12%">
+<col width="36%">
 </colgroup>
 <thead><tr class="header">
 <th align="center"> </th>
@@ -304,24 +304,24 @@ summary table.</p>
 <tbody>
 <tr class="odd">
 <td align="center"><strong>e0</strong></td>
-<td align="center">1.000</td>
-<td align="center">0.3162</td>
-<td align="center">31.62</td>
-<td align="center">1.000 (0.3802, 1.620)</td>
+<td align="center">1.00</td>
+<td align="center">0.316</td>
+<td align="center">31.6</td>
+<td align="center">1.00 (0.380, 1.62)</td>
 </tr>
 <tr class="even">
 <td align="center"><strong>emax</strong></td>
-<td align="center">4.000</td>
-<td align="center">0.3240</td>
-<td align="center">8.101</td>
-<td align="center">4.000 (3.365, 4.635)</td>
+<td align="center">4.00</td>
+<td align="center">0.324</td>
+<td align="center">8.10</td>
+<td align="center">4.00 (3.36, 4.64)</td>
 </tr>
 <tr class="odd">
 <td align="center"><strong>addSd</strong></td>
-<td align="center">4.925e-6</td>
-<td align="center">2.719</td>
-<td align="center">5.520e7</td>
-<td align="center">4.925e-6 (-5.328, 5.328)</td>
+<td align="center">1.08e-5</td>
+<td align="center">2.02</td>
+<td align="center">1.87e7</td>
+<td align="center">1.08e-5 (-3.96, 3.96)</td>
 </tr>
 </tbody>
 </table>
@@ -357,7 +357,7 @@ Information Criterion; dAIC = change from minimum AIC</caption>
 <tbody>
 <tr class="odd">
 <td align="center">Emax model with additive residual error</td>
-<td align="center">-2746</td>
+<td align="center">-1936</td>
 <td align="center">-</td>
 <td align="center">parameter at boundary</td>
 </tr>

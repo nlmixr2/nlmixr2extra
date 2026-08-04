@@ -99,7 +99,7 @@ fitEmaxBoundaryIssue <- nlmixr2est::nlmixr2(modEmax, data = d_noec50, est = "foc
 #> [====|====|====|====|====|====|====|====|====|====] 0:00:00
 #> → compiling EBE model...
 #> ✔ done
-#> rxode2 5.1.5 using 2 threads (see ?getRxThreads)
+#> rxode2 5.1.6 using 2 threads (see ?getRxThreads)
 #>   no cache: create with `rxCreateCache()`
 #> 
 #> Attaching package: 'rxode2'
@@ -229,13 +229,13 @@ knit_print(bestFit, inline = FALSE)
 pander::pander(bestFit$parFixed, caption = "Model parameters for the best-fit model")
 ```
 
-|           |   Est.   |   SE   |  %RSE   | Back-transformed(95%CI)  |
-|:---------:|:--------:|:------:|:-------:|:------------------------:|
-|  **e0**   |  1.000   | 0.3162 |  31.62  |  1.000 (0.3802, 1.620)   |
-| **emax**  |  4.000   | 0.3240 |  8.101  |   4.000 (3.365, 4.635)   |
-| **addSd** | 4.925e-6 | 2.719  | 5.520e7 | 4.925e-6 (-5.328, 5.328) |
+|           |  Est.   |  SE   |  %RSE  | Back-transformed(95%CI) |
+|:---------:|:-------:|:-----:|:------:|:-----------------------:|
+|  **e0**   |  1.00   | 0.316 |  31.6  |   1.00 (0.380, 1.62)    |
+| **emax**  |  4.00   | 0.324 |  8.10  |    4.00 (3.36, 4.64)    |
+| **addSd** | 1.08e-5 | 2.02  | 1.87e7 |  1.08e-5 (-3.96, 3.96)  |
 
-Model parameters for the best-fit model {.table style="width:96%;"}
+Model parameters for the best-fit model {.table style="width:90%;"}
 
 ### Summarize all models tested
 
@@ -256,7 +256,7 @@ pander::pander(
 
 | Description | AIC | dAIC | Exclude |
 |:--:|:--:|:--:|:--:|
-| Emax model with additive residual error | -2746 | \- | parameter at boundary |
+| Emax model with additive residual error | -1936 | \- | parameter at boundary |
 | Step-change model with additive residual error | 392 | 0 |  |
 | Linear model with additive residual error | 503.8 | 111.9 |  |
 
