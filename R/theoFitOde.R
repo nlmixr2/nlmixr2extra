@@ -13,7 +13,16 @@
 .buildModel <- function() { # nocov start
   .owd <- getwd()
   on.exit(setwd(.owd))
-  try(source(file.path(devtools::package_file(), "build", "build.R")))
+  # roxygen2 documents with the working directory at the package root,
+  # but walk up to the DESCRIPTION anyway so this also works when
+  # documenting from a subdirectory.  Done by hand rather than with
+  # devtools::package_file() to keep devtools out of the dependencies.
+  .dir <- normalizePath(.owd, mustWork = FALSE)
+  while (!file.exists(file.path(.dir, "DESCRIPTION")) &&
+           dirname(.dir) != .dir) {
+    .dir <- dirname(.dir)
+  }
+  try(source(file.path(.dir, "build", "build.R")))
   ""
 } # nocov end
 

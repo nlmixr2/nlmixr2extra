@@ -1,13 +1,12 @@
 *.o
 *.so
 nlmixr2BootstrapCache_fit_*
+nlmixr2CovariateSearchCache_fit_*
 docs
-<<<<<<< HEAD
 .Rproj.user
-=======
 *.dll
 .Rhistory
->>>>>>> cb1c507f217bd208e003cfe1a461c6bb69bb027b
+.vexp
 /src/Makevars
 .RData
 inst/doc

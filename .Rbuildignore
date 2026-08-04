@@ -4,6 +4,9 @@
 ^\.github$
 ^codecov\.yml$
 nlmixr2BootstrapCache_fit
+nlmixr2CovariateSearchCache_fit
+^\.vexp$
+^\.claude$
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
