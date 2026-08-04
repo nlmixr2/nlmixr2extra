@@ -2,6 +2,8 @@
 
 ## nlmixr2extra 5.2.0
 
+CRAN release: 2026-08-04
+
 ### New features
 
 - New reporting helpers for comparing candidate models:
