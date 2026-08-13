@@ -1,3 +1,5 @@
+.nlmixr2extra <- loadNamespace("nlmixr2extra")
+
 ## Newer 'lotri' adds a `prior` column to the ini data frame for prior
 ## distributions, so `$iniDf` gains a column.  Rows that are built by
 ## hand here have to work with an iniDf that has the column and with one
@@ -37,12 +39,12 @@ test_that(".iniDfMatchColumns() lets hand built rows rbind with either shape", {
                      err=NA_character_, stringsAsFactors=FALSE)
 
   ## a target without `prior` is left alone
-  .noPrior <- nlmixr2extra:::.iniDfMatchColumns(.row, .iniDfNoPrior())
+  .noPrior <- .nlmixr2extra$.iniDfMatchColumns(.row, .iniDfNoPrior())
   expect_equal(names(.noPrior), names(.iniDfNoPrior()))
   expect_error(rbind(.iniDfNoPrior(), .noPrior), NA)
 
   ## a target with `prior` gains the column, filled with NA
-  .withPrior <- nlmixr2extra:::.iniDfMatchColumns(.row, .iniDfWithPrior())
+  .withPrior <- .nlmixr2extra$.iniDfMatchColumns(.row, .iniDfWithPrior())
   expect_equal(names(.withPrior), names(.iniDfWithPrior()))
   expect_true(is.na(.withPrior$prior))
   expect_error(rbind(.iniDfWithPrior(), .withPrior), NA)
@@ -51,8 +53,8 @@ test_that(".iniDfMatchColumns() lets hand built rows rbind with either shape", {
   ## an extra column on the row is dropped rather than breaking rbind
   .extra <- .row
   .extra$prior <- "dnorm(0, 1)"
-  expect_equal(names(nlmixr2extra:::.iniDfMatchColumns(.extra, .iniDfNoPrior())),
+  expect_equal(names(.nlmixr2extra$.iniDfMatchColumns(.extra, .iniDfNoPrior())),
                names(.iniDfNoPrior()))
   expect_error(rbind(.iniDfNoPrior(),
-                     nlmixr2extra:::.iniDfMatchColumns(.extra, .iniDfNoPrior())), NA)
+                     .nlmixr2extra$.iniDfMatchColumns(.extra, .iniDfNoPrior())), NA)
 })
