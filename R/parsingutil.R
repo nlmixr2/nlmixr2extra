@@ -215,8 +215,7 @@ addorremoveCovariate <- function(ui,varName,covariate,add=TRUE) {
   # build ui
   .ini <- as.expression(lotri::as.lotri(.ini))
   .ini[[1]] <- quote(`ini`)
-  return(rxode2::rxUiDecompress(.getUiFunFromIniAndModel(ui, .ini, .newModel)()))
-  
+  rxode2::rxUiDecompress(.getUiFunFromIniAndModel(ui, .ini, .newModel)())
 }
 
 #' Build covInfo list from varsVec and covarsVec
@@ -295,7 +294,7 @@ buildupatedUI <- function(ui,varsVec,covarsVec,add=TRUE,indep=FALSE) {
         )
         covSearchRes[[i]] <- list(ui, c(x$covariate, x$varName),covName)[[1]]
       }
-      return(covSearchRes)
+      covSearchRes
     } else {
       ## Add all at once
       covsAddedIdx <- 1
@@ -352,7 +351,7 @@ buildupatedUI <- function(ui,varsVec,covarsVec,add=TRUE,indep=FALSE) {
         covSearchRes
       }
       
-      return(covSearchRes[length(covSearchRes)][[1]][[1]])
+      covSearchRes[length(covSearchRes)][[1]][[1]]
     }
   }
   else {
@@ -375,7 +374,7 @@ buildupatedUI <- function(ui,varsVec,covarsVec,add=TRUE,indep=FALSE) {
       covSearchRes[[i]] <- list(ui, c(x$covariate, x$varName),covName)[[1]]
       
     }
-    return(covSearchRes)
+    covSearchRes
   }
 }
 
