@@ -58,3 +58,27 @@ test_that(".iniDfMatchColumns() lets hand built rows rbind with either shape", {
   expect_error(rbind(.iniDfNoPrior(),
                      .nlmixr2extra$.iniDfMatchColumns(.extra, .iniDfNoPrior())), NA)
 })
+
+test_that("adding a covariate keeps neta1/neta2 numeric", {
+
+  ## regression for #110: an NA_character_ in the hand built row promoted
+  ## the whole column to character, and `max()`/`order()` on a character
+  ## column are lexicographic -- with ten or more etas the next index
+  ## came out as 10 rather than 11
+  .ini <- .iniDfNoPrior()
+  expect_true(is.numeric(.ini$neta1))
+
+  .row <- data.frame(ntheta=2L, neta1=NA_real_, neta2=NA_real_,
+                     name="cov_wt_cl", lower=-Inf, est=0, upper=Inf,
+                     fix=FALSE, label=NA_character_,
+                     backTransform=NA_character_, condition=NA_character_,
+                     err=NA_character_, stringsAsFactors=FALSE)
+
+  .out <- rbind(.ini, .nlmixr2extra$.iniDfMatchColumns(.row, .ini))
+  expect_true(is.numeric(.out$neta1))
+  expect_true(is.numeric(.out$neta2))
+
+  ## the failure this prevents: a character column orders the wrong way
+  expect_equal(max(c(1:10), na.rm=TRUE), 10)
+  expect_equal(max(as.character(1:10), na.rm=TRUE), "9")
+})

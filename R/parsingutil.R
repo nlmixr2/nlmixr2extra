@@ -198,9 +198,12 @@ addorremoveCovariate <- function(ui,varName,covariate,add=TRUE) {
     .newModel <- eval(parse(text = paste0("quote(model({",paste0(as.character(lst),collapse="\n"), "}))")))
     nthetaLength <- length(which(!is.na(ui$iniDf$ntheta))) 
     .ini <- ui$iniDf  
+    ## `neta1`/`neta2` are numeric in an iniDf.  An `NA_character_` here
+    ## promotes the whole column to character on the rbind, which makes
+    ## `max()` and `order()` on it lexicographic further downstream.
     .ini <- rbind(.ini,
                   .iniDfMatchColumns(
-                    data.frame(ntheta=as.integer(nthetaLength+1),neta1=NA_character_,neta2=NA_character_,
+                    data.frame(ntheta=as.integer(nthetaLength+1),neta1=NA_real_,neta2=NA_real_,
                                name=covName,lower=-Inf,est=0,upper=Inf,fix=FALSE,label=NA_character_,
                                backTransform=NA_character_,condition=NA_character_,err=NA_character_),
                     .ini))
