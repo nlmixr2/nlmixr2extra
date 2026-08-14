@@ -1,5 +1,14 @@
 # nlmixr2extra 5.2.0
 
+## Bug fixes
+
+- Ini rows that are built by hand (adding a covariate in
+  `addorremoveCovariate()`, adding thetas during linearization) no longer
+  hard-code their column list, so they still `rbind()` with an `iniDf` that
+  carries the `prior` column newer versions of `lotri` add for prior
+  distributions (#109).  Both shapes of the data frame are handled, so this
+  works with `lotri` versions that have the column and versions that do not.
+
 ## New features
 
 - New reporting helpers for comparing candidate models: `getMinAICFit()`

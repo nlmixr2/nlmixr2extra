@@ -1,8 +1,30 @@
 
-#' Add covariate 
-#' 
-#' 
-#' @param ui compiled rxode2 nlmir2 model or fit  
+#' Match a hand constructed ini row to the columns of an `iniDf`
+#'
+#' The columns present in an `iniDf` depend on the version of 'lotri'
+#' that produced it; newer versions add a `prior` column holding the
+#' prior distribution.  Rows constructed by hand in this package
+#' therefore cannot hard-code the column list, or `rbind()` fails with
+#' "numbers of columns of arguments do not match".  This reshapes such a
+#' row to whatever the target actually has, filling anything missing
+#' with an `NA` of the right type and dropping anything extra.
+#'
+#' @param row hand constructed data frame of new ini row(s)
+#' @param iniDf the ini data frame `row` will be combined with
+#' @return `row`, with the same columns in the same order as `iniDf`
+#' @author Matthew L. Fidler
+#' @noRd
+.iniDfMatchColumns <- function(row, iniDf) {
+  for (.a in setdiff(names(iniDf), names(row))) {
+    row[[.a]] <- rep(iniDf[[.a]][NA_integer_], length.out=nrow(row))
+  }
+  row[, names(iniDf), drop=FALSE]
+}
+
+#' Add covariate
+#'
+#'
+#' @param ui compiled rxode2 nlmir2 model or fit
 #' @param varName  the variable name to which the given covariate is to be added
 #' @param covariate the covariate that needs string to be constructed
 #' @param add  boolean indicating if the covariate needs to be added or removed.
@@ -176,9 +198,12 @@ addorremoveCovariate <- function(ui,varName,covariate,add=TRUE) {
     .newModel <- eval(parse(text = paste0("quote(model({",paste0(as.character(lst),collapse="\n"), "}))")))
     nthetaLength <- length(which(!is.na(ui$iniDf$ntheta))) 
     .ini <- ui$iniDf  
-    .ini <- rbind(.ini,data.frame(ntheta=as.integer(nthetaLength+1),neta1=NA_character_,neta2=NA_character_,
-                                  name=covName,lower=-Inf,est=0,upper=Inf,fix=FALSE,label=NA_character_,
-                                  backTransform=NA_character_,condition=NA_character_,err=NA_character_))
+    .ini <- rbind(.ini,
+                  .iniDfMatchColumns(
+                    data.frame(ntheta=as.integer(nthetaLength+1),neta1=NA_character_,neta2=NA_character_,
+                               name=covName,lower=-Inf,est=0,upper=Inf,fix=FALSE,label=NA_character_,
+                               backTransform=NA_character_,condition=NA_character_,err=NA_character_),
+                    .ini))
   }
   #remove covariate
   else {
@@ -190,8 +215,7 @@ addorremoveCovariate <- function(ui,varName,covariate,add=TRUE) {
   # build ui
   .ini <- as.expression(lotri::as.lotri(.ini))
   .ini[[1]] <- quote(`ini`)
-  return(rxode2::rxUiDecompress(.getUiFunFromIniAndModel(ui, .ini, .newModel)()))
-  
+  rxode2::rxUiDecompress(.getUiFunFromIniAndModel(ui, .ini, .newModel)())
 }
 
 #' Build covInfo list from varsVec and covarsVec
@@ -270,7 +294,7 @@ buildupatedUI <- function(ui,varsVec,covarsVec,add=TRUE,indep=FALSE) {
         )
         covSearchRes[[i]] <- list(ui, c(x$covariate, x$varName),covName)[[1]]
       }
-      return(covSearchRes)
+      covSearchRes
     } else {
       ## Add all at once
       covsAddedIdx <- 1
@@ -327,7 +351,7 @@ buildupatedUI <- function(ui,varsVec,covarsVec,add=TRUE,indep=FALSE) {
         covSearchRes
       }
       
-      return(covSearchRes[length(covSearchRes)][[1]][[1]])
+      covSearchRes[length(covSearchRes)][[1]][[1]]
     }
   }
   else {
@@ -350,7 +374,7 @@ buildupatedUI <- function(ui,varsVec,covarsVec,add=TRUE,indep=FALSE) {
       covSearchRes[[i]] <- list(ui, c(x$covariate, x$varName),covName)[[1]]
       
     }
-    return(covSearchRes)
+    covSearchRes
   }
 }
 
