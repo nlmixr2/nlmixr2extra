@@ -99,7 +99,7 @@ fitEmaxBoundaryIssue <- nlmixr2est::nlmixr2(modEmax, data = d_noec50, est = "foc
 #> [====|====|====|====|====|====|====|====|====|====] 0:00:00
 #> → compiling EBE model...
 #> ✔ done
-#> rxode2 5.1.6 using 2 threads (see ?getRxThreads)
+#> rxode2 5.1.7 using 2 threads (see ?getRxThreads)
 #>   no cache: create with `rxCreateCache()`
 #> 
 #> Attaching package: 'rxode2'

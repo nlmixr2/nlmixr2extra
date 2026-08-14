@@ -4,6 +4,18 @@
 
 CRAN release: 2026-08-04
 
+### Bug fixes
+
+- Ini rows that are built by hand (adding a covariate in
+  [`addorremoveCovariate()`](https://nlmixr2.github.io/nlmixr2extra/reference/addorremoveCovariate.md),
+  adding thetas during linearization) no longer hard-code their column
+  list, so they still [`rbind()`](https://rdrr.io/r/base/cbind.html)
+  with an `iniDf` that carries the `prior` column newer versions of
+  `lotri` add for prior distributions
+  ([\#109](https://github.com/nlmixr2/nlmixr2extra/issues/109)). Both
+  shapes of the data frame are handled, so this works with `lotri`
+  versions that have the column and versions that do not.
+
 ### New features
 
 - New reporting helpers for comparing candidate models:

@@ -36,17 +36,21 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/nlmixr2/nlmixr2extra/blob/v5.2.0/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/nlmixr2/nlmixr2extra/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="5.2.0" id="nlmixr2extra-520">nlmixr2extra 5.2.0<a class="anchor" aria-label="anchor" href="#nlmixr2extra-520"></a></h2><p class="text-muted">CRAN release: 2026-08-04</p>
 <div class="section level3">
+<h3 id="bug-fixes-5-2-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-5-2-0"></a></h3>
+<ul><li>Ini rows that are built by hand (adding a covariate in <code><a href="../reference/addorremoveCovariate.html">addorremoveCovariate()</a></code>, adding thetas during linearization) no longer hard-code their column list, so they still <code><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind()</a></code> with an <code>iniDf</code> that carries the <code>prior</code> column newer versions of <code>lotri</code> add for prior distributions (<a href="https://github.com/nlmixr2/nlmixr2extra/issues/109" class="external-link">#109</a>). Both shapes of the data frame are handled, so this works with <code>lotri</code> versions that have the column and versions that do not.</li>
+</ul></div>
+<div class="section level3">
 <h3 id="new-features-5-2-0">New features<a class="anchor" aria-label="anchor" href="#new-features-5-2-0"></a></h3>
 <ul><li>New reporting helpers for comparing candidate models: <code><a href="../reference/getMinAICFit.html">getMinAICFit()</a></code> returns the fit with the lowest AIC, <code><a href="../reference/listModelsTested.html">listModelsTested()</a></code> builds a <code>Description</code>/<code>AIC</code>/<code>dAIC</code> table ready for <code><a href="https://rdrr.io/pkg/pander/man/pander.html" class="external-link">pander::pander()</a></code>, and <code><a href="../reference/isBoundaryFit.html">isBoundaryFit()</a></code> reports whether a fit has a parameter at its boundary. By default both selection helpers exclude boundary fits. See the new “reporting helpers” article.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="bug-fixes-5-2-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-5-2-0"></a></h3>
+<h3 id="bug-fixes-5-2-0-1">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-5-2-0-1"></a></h3>
 <ul><li><p>Fix <code>bootstrapFit(stratVar=)</code>, which did not actually resample. The stratified branch called <code>sample(list(uids), ...)</code>, and since <code>list(uids)</code> has length one every draw returned the whole vector of subject ids, so the bootstrap datasets did not depend on the seed (<a href="https://github.com/nlmixr2/nlmixr2extra/issues/99" class="external-link">#99</a>). Three further problems in the same code are fixed with it: the new subject ids restarted at 1 in each stratum, so subjects from different strata were merged under a shared id; the sample was split across strata by the number of <em>observations</em> rather than the number of <em>subjects</em>, over-weighting strata whose subjects have more records; and rounding each stratum up could return more subjects than <code>nSampIndiv</code> asked for.</p></li>
 <li><p>A stratified bootstrap now always draws whole subjects. When <code>stratVar</code> changed within a subject, that subject’s records were split between strata and resampled as separate (partial) subjects; each subject is now stratified by its first value, with a warning.</p></li>
 <li><p><code>nlmixr2extra:::sampling()</code> now resolves its <code>uid_colname</code> default before using it. Called without one it sampled <code>ncol(data)</code> subjects instead of the number of subjects in the data. It also accepts a tibble, which previously produced a one column tibble where a vector of subject ids was expected.</p></li>
