@@ -2,6 +2,13 @@
 
 ## Bug fixes
 
+- `addorremoveCovariate()` no longer turns the `iniDf` `neta1`/`neta2`
+  columns into character (#110).  The row it adds set them to
+  `NA_character_`, and `rbind()` promotes the whole column to match, so
+  `max()` and `order()` on those columns became lexicographic further
+  downstream -- with ten or more etas `max()` returned `"9"` rather than
+  `10`, so the next eta index collided with an existing one.
+
 - Ini rows that are built by hand (adding a covariate in
   `addorremoveCovariate()`, adding thetas during linearization) no longer
   hard-code their column list, so they still `rbind()` with an `iniDf` that
