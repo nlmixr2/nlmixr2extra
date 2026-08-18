@@ -79,6 +79,6 @@ test_that("adding a covariate keeps neta1/neta2 numeric", {
   expect_true(is.numeric(.out$neta2))
 
   ## the failure this prevents: a character column orders the wrong way
-  expect_equal(max(c(1:10), na.rm=TRUE), 10)
+  expect_equal(max(1:10, na.rm=TRUE), 10)
   expect_equal(max(as.character(1:10), na.rm=TRUE), "9")
 })
