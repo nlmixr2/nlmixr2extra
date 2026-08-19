@@ -6,6 +6,17 @@ CRAN release: 2026-08-04
 
 ### Bug fixes
 
+- [`addorremoveCovariate()`](https://nlmixr2.github.io/nlmixr2extra/reference/addorremoveCovariate.md)
+  no longer turns the `iniDf` `neta1`/`neta2` columns into character
+  ([\#110](https://github.com/nlmixr2/nlmixr2extra/issues/110)). The row
+  it adds set them to `NA_character_`, and
+  [`rbind()`](https://rdrr.io/r/base/cbind.html) promotes the whole
+  column to match, so [`max()`](https://rdrr.io/r/base/Extremes.html)
+  and [`order()`](https://rdrr.io/r/base/order.html) on those columns
+  became lexicographic further downstream – with ten or more etas
+  [`max()`](https://rdrr.io/r/base/Extremes.html) returned `"9"` rather
+  than `10`, so the next eta index collided with an existing one.
+
 - Ini rows that are built by hand (adding a covariate in
   [`addorremoveCovariate()`](https://nlmixr2.github.io/nlmixr2extra/reference/addorremoveCovariate.md),
   adding thetas during linearization) no longer hard-code their column
