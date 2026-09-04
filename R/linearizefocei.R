@@ -869,7 +869,7 @@ addThetaToIniDf <- function(iniDf, thetaname, ini, fix = TRUE){
         condition = NA_character_,
         err = NA_character_
     )
-    iniDf <- rbind(iniDf, newTheta)
+    iniDf <- rbind(iniDf, .iniDfMatchColumns(newTheta, iniDf))
 
     iniDf[order(iniDf$ntheta), ]
 }

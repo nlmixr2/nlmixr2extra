@@ -19,8 +19,32 @@
   evaluation so that only the most promising ones are fully estimated,
   and each start is cached to disk so that an interrupted run resumes
   where it left off.  See `multistartControl()` for the options.
+## Bug fixes
+
+- Regenerate the stored `theoFitOde` fit.  It was built against an older
+  'nlmixr2est', and its saved `$control` no longer matched what the
+  current estimator expects, so anything that re-ran the model through
+  that control -- `bootstrapFit()`, `profile()`, or a plain
+  `nlmixr2(fit$finalUiEnv, ..., control = fit$control)` -- failed with
+  "attempt access index 130/129 in VECTOR_ELT".
 
 # nlmixr2extra 5.2.0
+
+## Bug fixes
+
+- `addorremoveCovariate()` no longer turns the `iniDf` `neta1`/`neta2`
+  columns into character (#110).  The row it adds set them to
+  `NA_character_`, and `rbind()` promotes the whole column to match, so
+  `max()` and `order()` on those columns became lexicographic further
+  downstream -- with ten or more etas `max()` returned `"9"` rather than
+  `10`, so the next eta index collided with an existing one.
+
+- Ini rows that are built by hand (adding a covariate in
+  `addorremoveCovariate()`, adding thetas during linearization) no longer
+  hard-code their column list, so they still `rbind()` with an `iniDf` that
+  carries the `prior` column newer versions of `lotri` add for prior
+  distributions (#109).  Both shapes of the data frame are handled, so this
+  works with `lotri` versions that have the column and versions that do not.
 
 ## New features
 

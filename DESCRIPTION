@@ -35,7 +35,6 @@ Imports:
     digest,
     dplyr,
     ggplot2,
-    ggtext,
     knitr,
     lotri,
     magrittr,
@@ -53,6 +52,7 @@ Suggests:
     nlmixr2data,
     pander,
     rmarkdown,
+    ggtext,
     tidyr,
     nlmixr2lib,
     testthat (>= 3.0.0),
@@ -67,4 +67,4 @@ Encoding: UTF-8
 NeedsCompilation: yes
 Roxygen: list(markdown = TRUE)
 LazyData: true
-Config/roxygen2/version: 8.0.0
+Config/roxygen2/version: 8.1.0
