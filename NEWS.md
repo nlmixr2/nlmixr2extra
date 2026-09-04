@@ -1,3 +1,25 @@
+# nlmixr2extra (development version)
+
+## New features
+
+- New `multistart()` re-estimates a model from many perturbed starting
+  points, so a fit that settled in a local optimum can be recognised.  It
+  takes either a fit or a model plus data, works with any estimation
+  method, and returns a `nlmixr2Multistart` object holding every start's
+  objective function and parameter estimates alongside the best fit.
+
+  `plot()` on the result gives the objective-function waterfall
+  (`type = "waterfall"`, the default) and the parameter-stability plot
+  (`type = "parameters"`).
+
+  Starting points are drawn around the initial estimates by `"uniform"`
+  (the default), `"lhs"` (Latin hypercube) or `"normal"` sampling,
+  respecting fixed parameters and declared bounds.  By default the
+  candidates are pre-screened with a cheap empirical-Bayes objective
+  evaluation so that only the most promising ones are fully estimated,
+  and each start is cached to disk so that an interrupted run resumes
+  where it left off.  See `multistartControl()` for the options.
+
 # nlmixr2extra 5.2.0
 
 ## New features

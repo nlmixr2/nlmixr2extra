@@ -42,6 +42,7 @@ Imports:
     methods,
     nlme,
     nlmixr2est (>= 6.0.0),
+    parallel,
     Rcpp,
     rxode2 (>= 5.1.0),
     stats,

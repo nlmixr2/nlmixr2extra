@@ -1,0 +1,202 @@
+---
+title: "Multistart estimation"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{Multistart estimation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4.5
+)
+```
+
+# The question multistart answers
+
+A population model is fit by minimising an objective function, and the
+minimiser only ever finds *a* minimum -- the one downhill from wherever it
+started.  Nothing in a converged fit tells you whether a different set of
+initial estimates would have found somewhere better.
+
+`multistart()` answers that directly: it re-estimates the model from many
+perturbed starting points and shows you what each one found.  If every start
+lands on the same objective function, the fit is at a well-identified optimum.
+If several starts settle at visibly different values, the fit you had was one
+of several local optima and the parameter estimates should not be trusted at
+face value.
+
+```{r message = FALSE}
+library(nlmixr2extra)
+```
+
+# A first run
+
+Start from an ordinary fit.
+
+```{r message = FALSE, warning = FALSE, results = "hide"}
+one.compartment <- function() {
+  ini({
+    tka <- 0.45
+    tcl <- 1
+    tv <- 3.45
+    eta.ka ~ 0.6
+    eta.cl ~ 0.3
+    add.sd <- 0.7
+  })
+  model({
+    ka <- exp(tka + eta.ka)
+    cl <- exp(tcl + eta.cl)
+    v <- exp(tv)
+    linCmt() ~ add(add.sd)
+  })
+}
+
+fit <- nlmixr2(one.compartment, nlmixr2data::theo_sd, est = "focei",
+               control = list(print = 0))
+```
+
+Then hand that fit to `multistart()`.  Every option lives in
+`multistartControl()`, which `multistart()` accepts as a plain list.
+
+```{r eval = FALSE}
+ms <- multistart(fit, control = list(n = 20, spread = 0.3))
+ms
+```
+
+The first candidate is always the unperturbed starting point, so the fit you
+began with is always in the comparison.  The other `n - 1` candidates perturb
+every unfixed population parameter on the scale it is estimated on -- for a
+mu-referenced parameter that is usually the log scale -- and clip the result to
+the parameter's declared bounds.  Between-subject variances are perturbed
+multiplicatively, so they stay positive.
+
+`ms$summary` has one row per estimated start, sorted best first, with the
+objective function, its distance from the best (`dOBJF`), the information
+criteria, whether the start converged, whether it finished with a parameter at
+a boundary, and the final estimate of every parameter.  `ms$best` is the best
+fit found and behaves like any other fit.
+
+# Reading the two plots
+
+```{r eval = FALSE}
+plot(ms)
+```
+
+The waterfall plot puts the starts in order, best to worst, and draws each
+one's objective function relative to the best.  What you want to see is a flat
+run of bars at zero: every start found the same optimum.  A staircase means
+several optima; the height of each step is the objective-function penalty for
+landing there.  Bars are coloured by whether the start converged and whether it
+finished at a boundary, and the subtitle counts the starts that failed
+outright.
+
+```{r eval = FALSE}
+plot(ms, "parameters")
+```
+
+The parameter-stability plot takes the best `kBest` starts and shows how each
+parameter estimate varies across them, with the best start's value as a dashed
+reference line.  This is the more diagnostic of the two: a parameter whose
+estimate wanders while the objective function barely moves is not identified by
+the data, whichever optimum you take.
+
+# Controlling the search
+
+## How far the starts spread
+
+`spread` is the fractional half-width of the perturbation, so `spread = 0.3`
+moves a parameter within 30% of its value.  `omegaFold` does the same job for
+the variances, as a fold-range: the default of `2` draws each variance between
+half and twice its initial value.
+
+`sampling` picks how the interval is covered.  `"uniform"` is the default;
+`"lhs"` uses a Latin hypercube, which covers the range more evenly for the same
+number of starts and is usually the better choice when `n` is small; `"normal"`
+concentrates the starts near the initial estimates with occasional far
+excursions.
+
+`which` restricts the perturbation to named parameters, which is useful when
+you suspect one particular part of the model:
+
+```{r eval = FALSE}
+ms <- multistart(fit, control = list(n = 20, which = c("tka", "tcl")))
+```
+
+## Screening
+
+Fully estimating twenty starts is expensive, and many of them start somewhere
+hopeless.  By default `multistart()` first evaluates each candidate with an
+empirical-Bayes step only -- a small fraction of the cost of an estimation --
+and fully estimates just the best `nFit`:
+
+```{r eval = FALSE}
+ms <- multistart(fit, control = list(n = 50, nFit = 10, spread = 0.5))
+```
+
+`ms$starts` records the screening objective for every candidate and which of
+them were estimated.  Pass `screen = "none"` to estimate all of them.
+
+Screening is a cheap approximation, so it is a way of spending a fixed budget
+well rather than a guarantee: a candidate that screens badly can still be the
+one that would have found the best optimum.  When the budget allows it,
+`screen = "none"` is the more thorough answer.
+
+## Where to perturb around
+
+Starting from a fit, `around = "final"` (the default) perturbs around that
+fit's final estimates, which asks "is this a local optimum?".  `around =
+"initial"` perturbs around the estimates the fit started from, which asks "how
+sensitive was this fit to where I started it?".  Both are worth running.
+
+You can also skip the first fit entirely and give `multistart()` a model and
+data:
+
+```{r eval = FALSE}
+ms <- multistart(one.compartment, nlmixr2data::theo_sd,
+                 est = "focei", control = list(n = 20))
+```
+
+# Long runs
+
+Each start is cached to disk as it completes, so an interrupted run resumes
+where it stopped -- just call `multistart()` again with the same arguments.
+Asking for more starts re-uses the ones already estimated:
+
+```{r eval = FALSE}
+ms <- multistart(fit, control = list(n = 10))   # estimates 10
+ms <- multistart(fit, control = list(n = 30))   # estimates the 20 new ones
+```
+
+Anything that changes what a starting point *is* -- `sampling`, `spread`,
+`which`, `perturbOmega`, `omegaFold` or `seed` -- gives the run its own cache,
+so a cached estimation is never reported against a start it did not come from.
+Pass `restart = TRUE` to discard the cache, or `cacheDir = NA` to never write
+one.
+
+`cores` estimates several starts at once.  Be careful with it: each estimation
+already runs across every available thread, so `multistart()` pins each worker
+to a single thread to avoid oversubscribing the machine.  Whether that is
+faster than the serial default depends on how well the model parallelises over
+subjects -- a model that already uses all your cores efficiently is usually
+better left serial.  Parallel estimation is not available on Windows.
+
+# Reproducibility
+
+Every nlmixr2 estimator runs inside its own seeded block, so calling
+`set.seed()` before a fit does not change it.  `multistart()` follows the same
+discipline: `multistartControl(seed=)` seeds the perturbation draws and gives
+each start its own derived seed, and the run neither depends on nor disturbs
+the surrounding RNG state.  The same `seed` gives the same starts and the same
+results.
+
+`ms$starts` records the seed used for each start alongside its starting
+estimates, so any individual start can be reproduced on its own.
