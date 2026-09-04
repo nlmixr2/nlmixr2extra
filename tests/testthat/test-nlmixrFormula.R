@@ -363,7 +363,7 @@ test_that(".nlmixrFormulaExpandStartParamSingle log link wraps mixed rhs", {
 })
 
 test_that(".paramExpand", {
-  # NULL → empty named list
+  # NULL -> empty named list
   expect_equal(.paramExpand(NULL), stats::setNames(list(), character()))
   # Single covariate
   expect_equal(.paramExpand(b ~ z), list(b = "z"))

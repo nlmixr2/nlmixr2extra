@@ -806,7 +806,7 @@ plot.nlmixr2Multistart <- function(x, type = c("waterfall", "parameters"),
     ggplot2::scale_fill_manual(name = "Status", values = .msStatusColors) +
     ggplot2::scale_x_continuous(breaks = .msIntBreaks) +
     ggplot2::xlab("Start (best to worst)") +
-    ggplot2::ylab("Δ objective function") +
+    ggplot2::ylab("Delta objective function") +
     ggplot2::labs(title = "Multistart objective functions", subtitle = sub) +
     rxode2::rxTheme() +
     ggplot2::theme(legend.position = "bottom", legend.box = "horizontal")

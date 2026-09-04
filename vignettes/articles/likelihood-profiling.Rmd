@@ -34,13 +34,13 @@ approximating the likelihood surface with a quadratic, it evaluates the actual
 objective function (OFV) at a grid of parameter values, holding each parameter
 fixed in turn and re-estimating the rest. A parameter's confidence interval is
 the set of values whose OFV increase relative to the minimum is below a
-threshold — by default $\chi^2_{0.95,1} \approx 3.84$.
+threshold -- by default $\chi^2_{0.95,1} \approx 3.84$.
 
 `nlmixr2extra` provides two profiling methods via the `profile()` generic:
 
 | Method | Function | Description |
 |--------|----------|-------------|
-| `"llp"` | `profileLlp()` | Adaptive log-likelihood profiling — searches for the exact OFV boundary |
+| `"llp"` | `profileLlp()` | Adaptive log-likelihood profiling -- searches for the exact OFV boundary |
 | `"fixed"` | `profileFixed()` | Evaluates the OFV at user-supplied fixed values |
 
 # Quick start
@@ -164,9 +164,9 @@ profTka90 <- profile(fit, which = "tka",
 
 The returned data frame has one row per model evaluation. Key columns:
 
-- `Parameter` — which parameter was fixed on this row
-- `OFV` — the objective function value at that step
-- `profileBound` — present on the boundary rows; its absolute value is the
+- `Parameter` -- which parameter was fixed on this row
+- `OFV` -- the objective function value at that step
+- `profileBound` -- present on the boundary rows; its absolute value is the
   `ofvIncrease` threshold and its sign indicates lower (`-`) or upper (`+`)
 - One column per model parameter showing its estimate at each step
 
@@ -181,11 +181,11 @@ from the `tka` column.
 # Plotting the profile
 
 The profile data frame contains everything needed for a profile plot. A
-standard presentation shows OFV – OFV_min on the y-axis and the parameter
+standard presentation shows OFV - OFV_min on the y-axis and the parameter
 value on the x-axis, with a horizontal reference line at the CI threshold.
 
 ```{r plot, eval=FALSE}
-# Compute ΔOFV relative to the minimum
+# Compute Delta OFV relative to the minimum
 ofvMin <- min(profTka$OFV, na.rm = TRUE)
 profTka$dOFV <- profTka$OFV - ofvMin
 
@@ -253,7 +253,7 @@ ggplot(profJoint, aes(x = tka, y = tcl,
   scale_fill_viridis_c(name = expression(Delta * "OFV")) +
   geom_contour(aes(z = OFV - min(OFV, na.rm = TRUE)),
                breaks = qchisq(0.95, 2), colour = "white") +
-  labs(title = "Joint profile: tka × tcl",
+  labs(title = "Joint profile: tka x tcl",
        subtitle = "White contour = 95% joint confidence region") +
   theme_bw()
 ```
@@ -297,7 +297,7 @@ do.call(rbind, lapply(names(profileCi), function(p) {
 - **Start with `which`**: profiling all parameters is time-consuming. Profile
   only the parameters of primary interest first.
 - **Increase `itermax`** if you see "aborted due to too many iterations". The
-  default of 10 is conservative; 20–30 is often sufficient for variance
+  default of 10 is conservative; 20-30 is often sufficient for variance
   parameters.
 - **Adjust `rseTheta`**: if the initial step is too large (OFV jumps past the
   target immediately) reduce `rseTheta`. If it is too small (many steps needed

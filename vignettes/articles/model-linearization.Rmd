@@ -29,9 +29,9 @@ replaces the nonlinear model with a first-order Taylor expansion around the
 current individual predictions. The resulting linear model fits in a fraction of
 the time, allowing exhaustive search over:
 
-- **Inter-individual variability (IIV) structure** — which parameters carry random
+- **Inter-individual variability (IIV) structure** -- which parameters carry random
   effects, and which pairs are correlated (`iivSearch()`).
-- **Residual error model** — additive, proportional, or combined variance
+- **Residual error model** -- additive, proportional, or combined variance
   structures (`resSearch()`).
 
 The workflow has three stages:
@@ -276,9 +276,9 @@ The summary contains one row per candidate with columns:
 
 The `search` column encodes the IIV structure:
 
-- `eta.cl+eta.v` — both etas present, no correlation
-- `eta.cl+eta.v+eta.cl~eta.v` — both etas with correlation between them
-- `eta.cl` — only CL carries a random effect
+- `eta.cl+eta.v` -- both etas present, no correlation
+- `eta.cl+eta.v+eta.cl~eta.v` -- both etas with correlation between them
+- `eta.cl` -- only CL carries a random effect
 
 ## Refitting top candidates with the original model
 

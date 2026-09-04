@@ -20,3 +20,4 @@ inst/doc
 inst/tools/*.Rout
 src/Makevars.win
 vignettes/*_files/
+nlmixr2MultistartCache_*

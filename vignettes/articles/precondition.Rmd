@@ -107,7 +107,7 @@ reparameterized problem:
 |-----------|----------------------|-------------|
 | `"full"` (default) | Outer *and* inner iterations (theta, ETA) | When you suspect the original estimates may have converged to a local minimum |
 | `"posthoc"` | Inner iterations only (ETA, given theta) | When you trust the theta estimates but want a better covariance |
-| `"none"` | Nothing — only the covariance matrix is re-computed | Fastest; good for a quick diagnostic check |
+| `"none"` | Nothing -- only the covariance matrix is re-computed | Fastest; good for a quick diagnostic check |
 
 ```{r esttypes, eval=FALSE}
 # Only recompute the covariance matrix (fastest)
@@ -184,7 +184,7 @@ cbind(
 ```
 
 The point estimates (`Estimate`, `Back-transformed`) and the random-effects
-summaries (`BSV(CV%)`, `Shrink(SD)%`) are identical before and after — only
+summaries (`BSV(CV%)`, `Shrink(SD)%`) are identical before and after -- only
 the covariance-derived quantities (SE, %RSE, confidence intervals) change.
 
 # When to use `preconditionFit()`

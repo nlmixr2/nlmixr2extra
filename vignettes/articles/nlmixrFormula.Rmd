@@ -392,7 +392,7 @@ fitRE
 
 The recovered `cov_conc_b` estimates the slope of concentration on
 $\Delta QT$. Multiplying by the population $C_{max}$ (about 1000 ng/mL)
-gives the projected $\Delta QT$ at $C_{max}$ — typically within ~1 msec of
+gives the projected $\Delta QT$ at $C_{max}$ -- typically within ~1 msec of
 the simulated 10 msec.
 
 # Defining the model equation (the formula)
@@ -447,7 +447,7 @@ columns from `data`:
   the baseline; subsequent levels are estimated as differences from the
   baseline.
 - A **numeric** column produces a slope. With only the continuous covariate,
-  two parameters are introduced — `pop.<parameter>` (intercept) and
+  two parameters are introduced -- `pop.<parameter>` (intercept) and
   `cov_<column>_<parameter>` (slope).
 - Multiple covariates can be combined on the same parameter with `+`:
   `b ~ z + w` combines factor `z` and continuous `w`. When a factor is
