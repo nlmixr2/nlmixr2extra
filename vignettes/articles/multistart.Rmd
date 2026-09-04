@@ -18,6 +18,13 @@ knitr::opts_chunk$set(
   fig.width = 7,
   fig.height = 4.5
 )
+library(nlmixr2save)
+## Cache the fit and each multistart run with the `:=` operator (nlmixr2save):
+## they are stored under vignettes/cache/ with a per-article prefix and loaded
+## as-is on the website build.  See vignettes/precompute.R.
+options(nlmixr2save.dir = "../cache",
+        nlmixr2save.prefix = "multistart-",
+        nlmixr2save.check = FALSE)
 ```
 
 # The question multistart answers
@@ -60,15 +67,15 @@ one.compartment <- function() {
   })
 }
 
-fit <- nlmixr2(one.compartment, nlmixr2data::theo_sd, est = "focei",
+fit := nlmixr2(one.compartment, nlmixr2data::theo_sd, est = "focei",
                control = list(print = 0))
 ```
 
 Then hand that fit to `multistart()`.  Every option lives in
 `multistartControl()`, which `multistart()` accepts as a plain list.
 
-```{r eval = FALSE}
-ms <- multistart(fit, control = list(n = 20, spread = 0.3))
+```{r first-run, message = FALSE, warning = FALSE}
+ms := multistart(fit, control = list(n = 20, spread = 0.3))
 ms
 ```
 
@@ -87,7 +94,7 @@ fit found and behaves like any other fit.
 
 # Reading the two plots
 
-```{r eval = FALSE}
+```{r waterfall}
 plot(ms)
 ```
 
@@ -99,7 +106,7 @@ landing there.  Bars are coloured by whether the start converged and whether it
 finished at a boundary, and the subtitle counts the starts that failed
 outright.
 
-```{r eval = FALSE}
+```{r parameter-stability}
 plot(ms, "parameters")
 ```
 
@@ -127,8 +134,10 @@ excursions.
 `which` restricts the perturbation to named parameters, which is useful when
 you suspect one particular part of the model:
 
-```{r eval = FALSE}
-ms <- multistart(fit, control = list(n = 20, which = c("tka", "tcl")))
+```{r which, message = FALSE, warning = FALSE}
+# a separate name: each `:=` target is its own cache entry
+msWhich := multistart(fit, control = list(n = 20, which = c("tka", "tcl")))
+msWhich
 ```
 
 ## Screening
@@ -138,8 +147,9 @@ hopeless.  By default `multistart()` first evaluates each candidate with an
 empirical-Bayes step only -- a small fraction of the cost of an estimation --
 and fully estimates just the best `nFit`:
 
-```{r eval = FALSE}
-ms <- multistart(fit, control = list(n = 50, nFit = 10, spread = 0.5))
+```{r screening, message = FALSE, warning = FALSE}
+msScreen := multistart(fit, control = list(n = 50, nFit = 10, spread = 0.5))
+head(msScreen$starts)
 ```
 
 `ms$starts` records the screening objective for every candidate and which of
@@ -160,9 +170,10 @@ sensitive was this fit to where I started it?".  Both are worth running.
 You can also skip the first fit entirely and give `multistart()` a model and
 data:
 
-```{r eval = FALSE}
-ms <- multistart(one.compartment, nlmixr2data::theo_sd,
-                 est = "focei", control = list(n = 20))
+```{r from-model, message = FALSE, warning = FALSE}
+msModel := multistart(one.compartment, nlmixr2data::theo_sd,
+                      est = "focei", control = list(n = 20))
+msModel
 ```
 
 # Long runs
@@ -171,7 +182,7 @@ Each start is cached to disk as it completes, so an interrupted run resumes
 where it stopped -- just call `multistart()` again with the same arguments.
 Asking for more starts re-uses the ones already estimated:
 
-```{r eval = FALSE}
+```{r resume, eval = FALSE}
 ms <- multistart(fit, control = list(n = 10))   # estimates 10
 ms <- multistart(fit, control = list(n = 30))   # estimates the 20 new ones
 ```

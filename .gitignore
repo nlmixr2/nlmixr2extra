@@ -21,3 +21,8 @@ inst/tools/*.Rout
 src/Makevars.win
 vignettes/*_files/
 nlmixr2MultistartCache_*
+
+# nlmixr2save unpacks a fit next to its .zip while packing; keep only the
+# cache entries themselves (<article-prefix><name>.zip / .rds).
+vignettes/cache/*.R
+vignettes/cache/*.csv

@@ -17,6 +17,13 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+library(nlmixr2save)
+## Cache each fit with the `:=` operator (nlmixr2save): fits are stored under
+## vignettes/cache/ with a per-article prefix and loaded as-is on the website
+## build.  See vignettes/precompute.R.
+options(nlmixr2save.dir = "../cache",
+        nlmixr2save.prefix = "precondition-",
+        nlmixr2save.check = FALSE)
 ```
 
 # The problem: ill-conditioned covariance matrices
@@ -57,7 +64,7 @@ the original parameterization.
 
 # Basic usage
 
-```{r basic, eval=FALSE}
+```{r basic, message=FALSE, warning=FALSE}
 library(nlmixr2extra)
 
 oneCompartment <- function() {
@@ -81,7 +88,7 @@ oneCompartment <- function() {
   })
 }
 
-fit <- nlmixr2(oneCompartment, data = nlmixr2data::theo_sd,
+fit := nlmixr2(oneCompartment, data = nlmixr2data::theo_sd,
                est = "focei", control = list(print = 0))
 fit
 ```
@@ -89,8 +96,9 @@ fit
 If the covariance method reported is not `"r,s"` (or you simply want a more
 robust covariance estimate), apply preconditioning:
 
-```{r precondition-basic, eval=FALSE}
-preconditionFit(fit)
+```{r precondition-basic}
+invisible(preconditionFit(fit))
+fit$covMethod
 ```
 
 `preconditionFit()` modifies the **original fit object in-place**: after the
@@ -110,6 +118,8 @@ reparameterized problem:
 | `"none"` | Nothing -- only the covariance matrix is re-computed | Fastest; good for a quick diagnostic check |
 
 ```{r esttypes, eval=FALSE}
+# Shown for reference -- each call re-estimates and modifies `fit` in place, so
+# run whichever one you want against a freshly fitted model.
 # Only recompute the covariance matrix (fastest)
 preconditionFit(fit, estType = "none")
 
@@ -143,11 +153,12 @@ model for identifiability problems or consider likelihood profiling
 previously computed covariances in `fit$covList`. You can inspect what is
 available and switch between them with `setCov()`:
 
-```{r setcov, eval=FALSE}
+```{r setcov}
 # See which covariance estimates are stored
 names(fit$covList)
-# e.g. c("r,s", "precondition")
+```
 
+```{r setcov-switch, eval=FALSE}
 # Switch back to the standard r,s covariance
 setCov(fit, "r,s")
 
@@ -160,20 +171,21 @@ parameter table (`fit$parFixedDf`) reflects the selected covariance.
 
 # Worked example: comparing SEs before and after preconditioning
 
-```{r compare, eval=FALSE}
+```{r compare, message=FALSE, warning=FALSE}
 library(nlmixr2extra)
 
-fit <- nlmixr2(oneCompartment, data = nlmixr2data::theo_sd,
-               est = "focei", control = list(print = 0))
+# a second, untouched fit: `fit` above was already preconditioned in place
+fitCompare := nlmixr2(oneCompartment, data = nlmixr2data::theo_sd,
+                      est = "focei", control = list(print = 0))
 
 # Record the original parameter table
-dfBefore <- fit$parFixedDf
-cat("Covariance method before:", fit$covMethod, "\n")
+dfBefore <- fitCompare$parFixedDf
+cat("Covariance method before:", fitCompare$covMethod, "\n")
 
 # Apply preconditioning (only recompute covariance, do not re-estimate)
-preconditionFit(fit, estType = "none")
-dfAfter <- fit$parFixedDf
-cat("Covariance method after:", fit$covMethod, "\n")
+invisible(preconditionFit(fitCompare, estType = "none"))
+dfAfter <- fitCompare$parFixedDf
+cat("Covariance method after:", fitCompare$covMethod, "\n")
 
 # Compare standard errors
 cbind(

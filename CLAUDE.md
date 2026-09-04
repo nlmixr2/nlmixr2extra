@@ -158,6 +158,52 @@ Bootstrap, covariate search and multistart all persist intermediate fits to a
 inputs, and resume from it.  These are listed in `.gitignore` and
 `.Rbuildignore`; add any new cache prefix to both.
 
+## Vignettes and the website
+
+`vignettes/` is `.Rbuildignore`d, so the articles build **only for the pkgdown
+website**, never during `R CMD check` or on CRAN. That is deliberate: it lets an
+article run a real estimation.
+
+Because real fits are slow and the pkgdown runner times out, every expensive
+fit is **cached** with the `:=` operator from `nlmixr2save` (a `Suggests`
+dependency). Each article opens with
+
+```r
+library(nlmixr2save)
+options(nlmixr2save.dir    = "cache",      # "../cache" under vignettes/articles/
+        nlmixr2save.prefix = "<article>-",
+        nlmixr2save.check  = FALSE)
+```
+
+An article renders with its own directory as the working directory, so
+`vignettes/*.Rmd` uses `"cache"` and `vignettes/articles/*.Rmd` uses
+`"../cache"`. Both then write to the single `vignettes/cache/`.
+
+and then caches each result with `name := nlmixr2(...)`. The first render fits
+and writes `vignettes/cache/<prefix><name>.zip` (a fit) or `.rds` (anything
+else); later renders load it. `nlmixr2save.check = FALSE` means the committed
+cache is trusted and regenerated only when missing.
+
+**The `:=` target name is the cache key**, so every target must be unique
+within an article -- do not reuse one variable (`mod`, `fit`, `ms`) for several
+different fits.
+
+Populate and refresh the cache with `vignettes/precompute.R`, which renders each
+registered article in its own fresh R subprocess (building many rxode2 models in
+one long-lived session eventually fails):
+
+```sh
+cd vignettes && Rscript precompute.R           # fit only what is missing
+cd vignettes && Rscript precompute.R --clean   # clear cache/ and refit everything
+```
+
+When adding a cached article, add its file name to the `vignettes` vector in
+`precompute.R`, and commit `vignettes/cache/<prefix>*` alongside the `.Rmd`.
+
+Keep a chunk `eval=FALSE` only when it is a pure API illustration whose output
+is not shown, or when running it would clobber a cached object or merely repeat
+work already done earlier in the article.
+
 ## R Code Style
 
 Follow the same conventions as `rxode2`:

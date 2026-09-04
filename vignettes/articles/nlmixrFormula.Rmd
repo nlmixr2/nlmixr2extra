@@ -16,6 +16,14 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+library(nlmixr2save)
+## Cache each fit with the `:=` operator (nlmixr2save): fits are stored under
+## vignettes/cache/ with a per-article prefix and loaded as-is on the website
+## build.  Each `:=` target is its own cache entry, so the fits below are named
+## rather than all reusing `mod`.  See vignettes/precompute.R.
+options(nlmixr2save.dir = "../cache",
+        nlmixr2save.prefix = "nlmixrFormula-",
+        nlmixr2save.check = FALSE)
 ```
 
 # Introduction
@@ -58,7 +66,7 @@ ggplot(dSim, aes(x=x, y=y)) + geom_point()
 To fit this model requires only one line of R code:
 
 ```{r quickstart-fit, class.source = 'fold-show'}
-mod <-
+modLm :=
   nlmixrFormula(
     y~m*x + b,
     data = dSim,
@@ -72,7 +80,7 @@ the same as `nlmixrFormula`:
 
 
 ```{r quickstart-fit2, class.source = 'fold-show'}
-mod <-
+modLm2 :=
   nlmixr(
     y ~ m*x + b,
     data = dSim,
@@ -120,7 +128,7 @@ ggplot(dSimNlme, aes(x=x, y=y, colour=factor(id))) + geom_point()
 ```
 
 ```{r quickstart-fit-nlme, class.source = 'fold-show'}
-mod <-
+modNlme :=
   nlmixr(
     y~m*x + b + bRe ~ bRe|id,
     start = c(m=3, b=5, addSd=5),
@@ -128,7 +136,7 @@ mod <-
     est = "focei"
   )
 
-mod
+modNlme
 ```
 
 In this model, the fixed effects of `m` and `b` were estimated along with the
@@ -178,7 +186,7 @@ ggplot(dSimNlme, aes(x=x, y=y, colour=z)) +
 ```
 
 ```{r quickstart-fit-param, class.source = 'fold-show'}
-mod <-
+modParam :=
   nlmixr(
     y~m*x + b + bRe ~ bRe|id,
     start = list(m=3, b=c(4, 2), addSd=5),
@@ -187,7 +195,7 @@ mod <-
     est = "focei"
   )
 
-mod
+modParam
 ```
 
 ## Quick start, continuous covariate on a parameter
@@ -229,7 +237,7 @@ dSimCont <-
 ```
 
 ```{r quickstart-fit-cont, class.source = 'fold-show'}
-mod <-
+modCont :=
   nlmixr(
     y~m*x + b + bRe ~ bRe|id,
     start = list(m=3, b=c(4, 0.2), addSd=5),
@@ -238,7 +246,7 @@ mod <-
     est = "focei"
   )
 
-mod
+modCont
 ```
 
 ## Quick start, log-linked parameter
@@ -356,7 +364,7 @@ model) and then refine with `focei` using the bobyqa estimates as starts,
 which adds the random effect.
 
 ```{r cqt-fit-fe, class.source = 'fold-show'}
-fitFE <-
+fitFE :=
   nlmixr(
     dQT ~ b,                                       # fixed effects only
     data  = cqtData,
@@ -375,7 +383,7 @@ fitFE
 # Carry the bobyqa estimates forward as starts for focei + random effects
 feEst <- setNames(fitFE$iniDf$est, fitFE$iniDf$name)
 
-fitRE <-
+fitRE :=
   nlmixr(
     dQT ~ b + bRe ~ (bRe|id),
     data  = cqtData,
