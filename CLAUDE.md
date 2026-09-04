@@ -175,12 +175,16 @@ Follow the same conventions as `rxode2`:
   Register them in roxygen with `@export`, not by hand in `NAMESPACE`.
 - Avoid `snake_case` for new names.
 - American English spelling.
-- **Never write `pkg:::foo` in package code or in a script.** CodeFactor flags
-  every `:::` as a Major Maintainability issue and fails the PR check.  Bind
-  the internal once with
-  `.foo <- utils::getFromNamespace(".foo", "rxode2")` instead.  Inside
-  `tests/testthat/` no qualifier is needed at all -- tests run in the package
-  namespace, so call internals by their bare name.
+- **Never write `pkg:::foo` in package code or in a test.** CodeFactor flags
+  every `:::` as a Major Maintainability issue and fails the PR check.  Take a
+  namespace handle once near the top of the file and call through it, as
+  `tests/testthat/test-parsing.R` and `test-ini-prior-column.R` do:
+  ```r
+  .cur <- loadNamespace("nlmixr2extra")
+  .cur$.expandPopExpr(...)
+  ```
+  `utils::getFromNamespace(".foo", "rxode2")` works the same way for a single
+  internal from another package.
 - Do not rename already-exported functions, even obviously misspelled ones
   (`buildupatedUI`, `horseshoeSummardf`): they are released API and reverse
   dependencies rely on them.
