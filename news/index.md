@@ -1,5 +1,18 @@
 # Changelog
 
+## nlmixr2extra (development version)
+
+### Bug fixes
+
+- Regenerate the stored `theoFitOde` fit. It was built against an older
+  ‘nlmixr2est’, and its saved `$control` no longer matched what the
+  current estimator expects, so anything that re-ran the model through
+  that control –
+  [`bootstrapFit()`](https://nlmixr2.github.io/nlmixr2extra/reference/bootstrapFit.md),
+  [`profile()`](https://rdrr.io/r/stats/profile.html), or a plain
+  `nlmixr2(fit$finalUiEnv, ..., control = fit$control)` – failed with
+  “attempt access index 130/129 in VECTOR_ELT”.
+
 ## nlmixr2extra 5.2.0
 
 CRAN release: 2026-08-04

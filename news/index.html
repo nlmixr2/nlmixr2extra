@@ -40,6 +40,13 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="development version" id="nlmixr2extra-development-version">nlmixr2extra (development version)<a class="anchor" aria-label="anchor" href="#nlmixr2extra-development-version"></a></h2>
+<div class="section level3">
+<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
+<ul><li>Regenerate the stored <code>theoFitOde</code> fit. It was built against an older ‘nlmixr2est’, and its saved <code>$control</code> no longer matched what the current estimator expects, so anything that re-ran the model through that control – <code><a href="../reference/bootstrapFit.html">bootstrapFit()</a></code>, <code><a href="https://rdrr.io/r/stats/profile.html" class="external-link">profile()</a></code>, or a plain <code>nlmixr2(fit$finalUiEnv, ..., control = fit$control)</code> – failed with “attempt access index 130/129 in VECTOR_ELT”.</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="5.2.0" id="nlmixr2extra-520">nlmixr2extra 5.2.0<a class="anchor" aria-label="anchor" href="#nlmixr2extra-520"></a></h2><p class="text-muted">CRAN release: 2026-08-04</p>
 <div class="section level3">
 <h3 id="bug-fixes-5-2-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-5-2-0"></a></h3>
