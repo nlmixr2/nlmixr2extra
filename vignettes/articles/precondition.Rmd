@@ -101,9 +101,11 @@ fit
 If the covariance method reported is not `"r,s"` (or you simply want a more
 robust covariance estimate), apply preconditioning:
 
-```{r precondition-basic}
-invisible(preconditionFit(fit))
-fit$covMethod
+```{r precondition-basic, eval=FALSE}
+# Not run: preconditionFit() currently fails for any dotted parameter name
+# (add.sd here) -- symengine cannot parse "nlmixr2Pre_add.sd".
+# https://github.com/nlmixr2/nlmixr2extra/issues/124
+preconditionFit(fit)
 ```
 
 `preconditionFit()` modifies the **original fit object in-place**: after the
@@ -158,9 +160,10 @@ model for identifiability problems or consider likelihood profiling
 previously computed covariances in `fit$covList`. You can inspect what is
 available and switch between them with `setCov()`:
 
-```{r setcov}
+```{r setcov, eval=FALSE}
 # See which covariance estimates are stored
 names(fit$covList)
+# e.g. c("r,s", "precondition")
 ```
 
 ```{r setcov-switch, eval=FALSE}
@@ -176,11 +179,10 @@ parameter table (`fit$parFixedDf`) reflects the selected covariance.
 
 # Worked example: comparing SEs before and after preconditioning
 
-```{r compare, message=FALSE, warning=FALSE}
+```{r compare, eval=FALSE}
 library(nlmixr2extra)
 
-# a second, untouched fit: `fit` above was already preconditioned in place
-fitCompare := nlmixr2(oneCompartment, data = nlmixr2data::theo_sd,
+fitCompare <- nlmixr2(oneCompartment, data = nlmixr2data::theo_sd,
                       est = "focei", control = list(print = 0))
 
 # Record the original parameter table
@@ -188,7 +190,7 @@ dfBefore <- fitCompare$parFixedDf
 cat("Covariance method before:", fitCompare$covMethod, "\n")
 
 # Apply preconditioning (only recompute covariance, do not re-estimate)
-invisible(preconditionFit(fitCompare, estType = "none"))
+preconditionFit(fitCompare, estType = "none")
 dfAfter <- fitCompare$parFixedDf
 cat("Covariance method after:", fitCompare$covMethod, "\n")
 
