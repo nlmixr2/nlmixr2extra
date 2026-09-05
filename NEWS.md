@@ -1,5 +1,21 @@
 # nlmixr2extra (development version)
 
+## Bug fixes
+
+- `preconditionFit()` works again.  It built the reparameterized model lines
+  through `symengine`, which cannot parse an identifier containing a `.`, so a
+  conventional residual name like `add.sd` (as `nlmixr2Pre_add.sd`) raised
+  "SymEngine exception: Parse error" and made the function unusable for most
+  models.  The lines are now assembled directly from the preconditioning
+  matrix, which also drops the `symengine` dependency from this path (#124).
+
+- `preconditionFit()` no longer fails with "non-conformable arguments" on a
+  model with random effects.  `fit$R` spans only the population parameters
+  while the fit covariance also carries the omega elements, so the
+  preconditioner is now widened to the covariance's own parameter space --
+  identity off the theta block -- which keeps the theta/omega cross-covariances
+  correct.
+
 ## New features
 
 - New `multistart()` re-estimates a model from many perturbed starting

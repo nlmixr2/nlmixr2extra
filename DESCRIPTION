@@ -45,7 +45,6 @@ Imports:
     Rcpp,
     rxode2 (>= 5.1.0),
     stats,
-    symengine,
     utils
 Suggests:
     brms,
