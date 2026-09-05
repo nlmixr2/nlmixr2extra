@@ -18,6 +18,11 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 library(nlmixr2save)
+## A cached fit is restored by sourcing the R code nlmixr2save saved with it,
+## and that code calls `lotri()` and `foceiControl()` unqualified -- so both
+## packages must be attached before any `:=` loads from the cache.
+library(lotri)
+library(nlmixr2est)
 ## Cache each fit with the `:=` operator (nlmixr2save): fits are stored under
 ## vignettes/cache/ with a per-article prefix and loaded as-is on the website
 ## build.  See vignettes/precompute.R.

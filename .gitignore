@@ -26,3 +26,7 @@ nlmixr2MultistartCache_*
 # cache entries themselves (<article-prefix><name>.zip / .rds).
 vignettes/cache/*.R
 vignettes/cache/*.csv
+
+# knitr/rmarkdown render intermediates
+vignettes/**/*.knit.md
+vignettes/**/*.utf8.md
