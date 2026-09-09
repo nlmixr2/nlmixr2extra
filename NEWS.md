@@ -2,6 +2,16 @@
 
 ## Bug fixes
 
+- `preconditionFit()` accepts a decorated covariance method.  `nlmixr2est`
+  reports the sandwich as `"|r|,|s|"` when a matrix needed the absolute-value
+  correction (or `"r+,s+"` when it was nudged positive-definite), but the retry
+  loop compared against the bare `"r,s"`, so a good result read as a failure.
+  It then re-preconditioned the already-preconditioned fit until the R matrix
+  was numerically singular and `solve()` gave up with "system is
+  computationally singular".  A singular preconditioning matrix is now also
+  reported as a preconditioning failure naming the try, rather than as a bare
+  `solve()` error (#128).
+
 - `preconditionFit()` works again.  It built the reparameterized model lines
   through `symengine`, which cannot parse an identifier containing a `.`, so a
   conventional residual name like `add.sd` (as `nlmixr2Pre_add.sd`) raised
