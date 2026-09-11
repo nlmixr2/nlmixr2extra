@@ -110,6 +110,31 @@
   .ret
 }
 
+#' Is this covariance method the r,s sandwich?
+#'
+#' nlmixr2est decorates the reported method -- `"|r|,|s|"` when a matrix needed
+#' the absolute-value correction, `"r+,s+"` when it was nudged positive-definite
+#' -- and appends a `" (full)"` scope suffix when the installed covariance spans
+#' theta + residual sigma + Omega rather than the structural-theta block alone
+#' (`foceiControl(covFull=)`, which defaults to `TRUE`).  All of those ARE the
+#' sandwich.  Comparing to the bare `"r,s"` made `preconditionFit()` treat a
+#' good result as a failure and keep retrying on an ever more degenerate R until
+#' `solve()` gave up (#128).  This is the same pattern nlmixr2est matches with
+#' in `.foceiInstallFdFullCov()`.
+#'
+#' The shape does not matter here: `.preCondExpand()` widens the preconditioner
+#' to whatever parameter space the returned covariance spans.
+#'
+#' @param covMethod The `covMethod` string reported by a fit
+#' @return TRUE when it denotes the r,s sandwich
+#' @noRd
+.preCondIsRS <- function(covMethod) {
+  if (length(covMethod) != 1L || !is.character(covMethod) || is.na(covMethod)) {
+    return(FALSE)
+  }
+  grepl("^(r\\+?|\\|r\\|),(s\\+?|\\|s\\|)( \\(full\\))?$", covMethod)
+}
+
 preconditionFit <- function(fit, estType = c("full", "posthoc", "none"),
                             ntry = 10L) {
   nlmixrWithTiming("covariance", {
@@ -121,9 +146,20 @@ preconditionFit <- function(fit, estType = c("full", "posthoc", "none"),
     .R <- fit$R
     .covMethod <- ""
     .i <- 1
-    while (.i < ntry & .covMethod != "r,s") {
+    while (.i < ntry & !.preCondIsRS(.covMethod)) {
       .i <- .i + 1
       pre <- preCondInv(.R)
+      # preCondInv() rejects individual near-zero eigenvalues, but a matrix whose
+      # eigenvalues all clear that tolerance can still be numerically singular as
+      # a whole; say so here rather than letting solve() report it with no
+      # indication of where it came from
+      .rc <- tryCatch(rcond(pre), error = function(e) 0)
+      if (!is.finite(.rc) || .rc < .Machine$double.eps) {
+        stop("preconditioning failed on try ", .i - 1,
+             ": the preconditioning matrix is numerically singular ",
+             "(reciprocal condition number ", format(.rc, digits = 3), ")",
+             call. = FALSE)
+      }
       d0 <- dimnames(fit$R)[[1]]
       modExtra <- .preCondModExtra(pre, d0)
       preInv <- solve(pre)
@@ -167,8 +203,8 @@ preconditionFit <- function(fit, estType = c("full", "posthoc", "none"),
       .R <- newFit$R
       .covMethod <- newFit$covMethod
     }
-    if (.covMethod != "r,s") {
-      stop("preconditioning failed after ", ntry, "tries",
+    if (!.preCondIsRS(.covMethod)) {
+      stop("preconditioning failed after ", ntry, " tries",
            call. = FALSE
            )
     }

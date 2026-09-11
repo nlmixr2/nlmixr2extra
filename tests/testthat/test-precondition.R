@@ -32,6 +32,15 @@ test_that("precondition tests", {
 
   df1 <- fit2$parFixedDf
   cov1 <- fit2$cov
+  ## the name of the covariance the fit actually installed: nlmixr2est reports
+  ## the sandwich as "r,s" or "r,s (full)" depending on foceiControl(covFull=),
+  ## and those are DIFFERENT matrices -- restoring the original is what this
+  ## checks, so ask for it by the name it was given rather than a fixed string
+  .m0 <- fit2$covMethod
+  ## and the live contract behind .preCondIsRS(): whatever nlmixr2est calls the
+  ## sandwich it just computed, the retry loop has to recognise it.  A literal
+  ## cannot catch a new decoration; this reads the producer.
+  expect_true(.preCondIsRS(.m0))
 
   ## Simply re-evaluate with no estimation (including inner estimation)
   suppressWarnings(preconditionFit(fit2, estType = "none"))
@@ -51,9 +60,9 @@ test_that("precondition tests", {
   expect_false(isTRUE(all.equal(df1$`%RSE`, df2$`%RSE`)))
   expect_false(isTRUE(all.equal(cov1, cov2)))
 
-  skip_if_not(any(names(fit2$covList) == "r,s"))
+  skip_if_not(any(names(fit2$covList) == .m0))
 
-  setCov(fit2, "r,s")
+  setCov(fit2, .m0)
 
   df3 <- fit2$parFixedDf
   cov3 <- fit2$cov
@@ -133,4 +142,39 @@ test_that(".preCondExpand widens the preconditioner past the theta block (#124)"
 
   expect_error(.preCondExpand(pre, c("om.eta.ka", "nope"), c("tka", "add.sd")),
                "could not find the preconditioned parameters")
+})
+
+test_that(".preCondIsRS accepts a decorated r,s covMethod (#128)", {
+  # nlmixr2est reports "|r|,|s|" when a matrix needed the absolute-value
+  # correction, and "r+,s+" when it was nudged positive-definite; both ARE the
+  # sandwich.  Comparing to the bare "r,s" made preconditionFit() treat a good
+  # result as failure and retry until the R matrix went singular.
+  expect_true(.preCondIsRS("r,s"))
+  expect_true(.preCondIsRS("|r|,|s|"))
+  expect_true(.preCondIsRS("r+,s+"))
+  expect_true(.preCondIsRS("|r|,s"))
+
+  # nlmixr2est also appends " (full)" when the installed covariance spans
+  # theta + sigma + Omega (foceiControl(covFull=), TRUE by default) -- still the
+  # sandwich, and .preCondExpand() handles either shape
+  expect_true(.preCondIsRS("r,s (full)"))
+  expect_true(.preCondIsRS("|r|,|s| (full)"))
+  expect_true(.preCondIsRS("r+,s+ (full)"))
+
+  # anything that is not the sandwich must still be a retry
+  expect_false(.preCondIsRS("|r|"))
+  expect_false(.preCondIsRS("r"))
+  expect_false(.preCondIsRS("s"))
+  expect_false(.preCondIsRS(""))
+  expect_false(.preCondIsRS("r (full)"))
+  expect_false(.preCondIsRS("s (full)"))
+  expect_false(.preCondIsRS("analytic (full)"))
+  # the suffix is the only tail that counts -- not an arbitrary one
+  expect_false(.preCondIsRS("r,s (theta)"))
+  expect_false(.preCondIsRS("r,s full"))
+
+  # and it must not fall over on a missing/odd value
+  expect_false(.preCondIsRS(NA_character_))
+  expect_false(.preCondIsRS(character(0)))
+  expect_false(.preCondIsRS(NULL))
 })
