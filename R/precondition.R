@@ -185,5 +185,5 @@ preconditionFit <- function(fit, estType = c("full", "posthoc", "none"),
     .setCov(fit, covMethod = cov)
     assign("covMethod", "precondition", envir=fit$env)
   }, envir=fit)
-  return(invisible(fit$env$precondition))
+  invisible(fit$env$precondition)
 }
