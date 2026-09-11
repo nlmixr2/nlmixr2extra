@@ -874,3 +874,64 @@ test_that("linearize mavoglorant lnorm", {
 
 })
 
+
+test_that(".uiEtaNames drops correlated-block off-diagonals (#126)", {
+  # ui$eta carries the off-diagonal entry of a correlated block, e.g.
+  # "(eta.cl,eta.v)".  linModGen() pastes each name into a model line, so that
+  # entry produced `mu_(eta.cl,eta.v) = theta.(eta.cl,eta.v) + (eta.cl,eta.v)`
+  # and the model failed to parse.
+  corr <- function() {
+    ini({
+      tcl <- log(2.7)
+      tv <- log(30)
+      tka <- log(1.56)
+      eta.cl + eta.v ~ c(0.3,
+                         0.1, 0.1)
+      eta.ka ~ 0.6
+      add.sd <- 0.7
+    })
+    model({
+      ka <- exp(tka + eta.ka)
+      cl <- exp(tcl + eta.cl)
+      v <- exp(tv + eta.v)
+      d / dt(depot) <- -ka * depot
+      d / dt(center) <- ka * depot - cl / v * center
+      cp <- center / v
+      cp ~ add(add.sd)
+    })
+  }
+  indep <- function() {
+    ini({
+      tcl <- log(2.7)
+      tv <- log(30)
+      tka <- log(1.56)
+      eta.cl ~ 0.3
+      eta.v ~ 0.1
+      eta.ka ~ 0.6
+      add.sd <- 0.7
+    })
+    model({
+      ka <- exp(tka + eta.ka)
+      cl <- exp(tcl + eta.cl)
+      v <- exp(tv + eta.v)
+      d / dt(depot) <- -ka * depot
+      d / dt(center) <- ka * depot - cl / v * center
+      cp <- center / v
+      cp ~ add(add.sd)
+    })
+  }
+  uiCorr <- rxode2::rxUiDecompress(rxode2::as.rxUi(corr))
+  uiIndep <- rxode2::rxUiDecompress(rxode2::as.rxUi(indep))
+
+  # the raw property is what made this fail
+  expect_true("(eta.cl,eta.v)" %in% uiCorr$eta)
+
+  # the helper gives the same eta names for both forms of the model
+  expect_equal(.uiEtaNames(uiCorr), c("eta.cl", "eta.v", "eta.ka"))
+  expect_equal(.uiEtaNames(uiIndep), c("eta.cl", "eta.v", "eta.ka"))
+
+  # and the generated mu lines parse
+  .mu <- paste0("mu_", .uiEtaNames(uiCorr), " = theta.", .uiEtaNames(uiCorr),
+                " + ", .uiEtaNames(uiCorr))
+  expect_silent(str2lang(paste0("{", paste(.mu, collapse = "\n"), "}")))
+})

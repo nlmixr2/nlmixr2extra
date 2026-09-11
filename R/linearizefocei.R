@@ -95,6 +95,23 @@ renameCol <- function(df, new, old){
     df
 }
 
+#' Names of the individual etas in a model
+#'
+#' `ui$eta` is not usable as a list of eta names: when the model has a
+#' correlated block it also carries the off-diagonal entries, e.g.
+#' `eta.cl, (eta.cl,eta.v), eta.v, eta.ka`.  Pasting `(eta.cl,eta.v)` into a
+#' generated model line produces text that is not valid R (#126).  Take the
+#' diagonal of the ini data frame instead, which is the eta names for both the
+#' correlated and the uncorrelated form of a model.
+#'
+#' @param ui An rxode2 ui
+#' @return Character vector of eta names
+#' @noRd
+.uiEtaNames <- function(ui) {
+  .iniDf <- ui$iniDf
+  .iniDf$name[!is.na(.iniDf$neta1) & .iniDf$neta1 == .iniDf$neta2]
+}
+
 #' Generate a Linearization Model From Previous Fit
 #' @param ui rx model or fit object.
 #' @param focei boolean. If TRUE, use FOCEI linearization with individual and residual linearization. Default is TRUE.
@@ -130,7 +147,7 @@ linModGen <- function(ui, focei = TRUE, derivFct = FALSE){
     
     noAdderrNames <- ui$iniDf$name[!is.na(ui$iniDf$err) & ui$iniDf$err != "add"]
     noAdderrEstim <- ui$iniDf$est[!is.na(ui$iniDf$err) & ui$iniDf$err != "add"]
-    etaNames <- ui$eta
+    etaNames <- .uiEtaNames(ui)
 
     modelStr <- list()
 
@@ -714,8 +731,9 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect="power", ...) {
         covParseDf <- parseCovExpr(expr, nlme::getData(fit), effect = effect)
     }
 
-    if(!any(covParseDf$param %in% ui$eta)){
-        cli::cli_alert_info("eta parameters: ", paste(ui$eta, collapse = ", "))
+    .etaNames <- .uiEtaNames(ui)
+    if(!any(covParseDf$param %in% .etaNames)){
+        cli::cli_alert_info("eta parameters: ", paste(.etaNames, collapse = ", "))
         stop("For linearized models, covariates are added to eta parameters only")
     }
     # equations terms (could be multi-lines)
