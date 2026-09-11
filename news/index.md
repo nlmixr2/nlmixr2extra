@@ -4,6 +4,15 @@
 
 ### Bug fixes
 
+- [`linearize()`](https://nlmixr2.github.io/nlmixr2extra/reference/linearize.md)
+  works on a model with a correlated eta block. The generated model was
+  built by pasting each entry of `ui$eta` into a model line, but for a
+  correlated block that property also carries the off-diagonal entry –
+  e.g. `(eta.cl,eta.v)` – which produced `mu_(eta.cl,eta.v) = ...` and
+  failed to parse. The eta names are now taken from the diagonal of the
+  ini data frame
+  ([\#126](https://github.com/nlmixr2/nlmixr2extra/issues/126)).
+
 - Regenerate the stored `theoFitOde` fit. It was built against an older
   ‘nlmixr2est’, and its saved `$control` no longer matched what the
   current estimator expects, so anything that re-ran the model through
