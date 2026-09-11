@@ -5,6 +5,29 @@
 ### Bug fixes
 
 - [`preconditionFit()`](https://nlmixr2.github.io/nlmixr2extra/reference/preconditionFit.md)
+  accepts a decorated covariance method. `nlmixr2est` reports the
+  sandwich as `"|r|,|s|"` when a matrix needed the absolute-value
+  correction (or `"r+,s+"` when it was nudged positive-definite), but
+  the retry loop compared against the bare `"r,s"`, so a good result
+  read as a failure. It then re-preconditioned the
+  already-preconditioned fit until the R matrix was numerically singular
+  and [`solve()`](https://rdrr.io/r/base/solve.html) gave up with
+  “system is computationally singular”. A singular preconditioning
+  matrix is now also reported as a preconditioning failure naming the
+  try, rather than as a bare
+  [`solve()`](https://rdrr.io/r/base/solve.html) error
+  ([\#128](https://github.com/nlmixr2/nlmixr2extra/issues/128)).
+
+  The same applies to the `" (full)"` scope suffix `nlmixr2est` appends
+  when the installed covariance spans theta + residual sigma + Omega
+  rather than the structural-theta block alone
+  (`foceiControl(covFull=)`, `TRUE` by default), so `"r,s (full)"` is
+  recognised as the sandwich too. The shape does not matter to
+  [`preconditionFit()`](https://nlmixr2.github.io/nlmixr2extra/reference/preconditionFit.md):
+  the preconditioner is widened to whatever parameter space the returned
+  covariance spans.
+
+- [`preconditionFit()`](https://nlmixr2.github.io/nlmixr2extra/reference/preconditionFit.md)
   works again. It built the reparameterized model lines through
   `symengine`, which cannot parse an identifier containing a `.`, so a
   conventional residual name like `add.sd` (as `nlmixr2Pre_add.sd`)
