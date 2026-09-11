@@ -43,6 +43,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="articles/likelihood-profiling.html">Likelihood Profiling for NLME Models</a></li>
     <li><a class="dropdown-item" href="articles/model-linearization.html">Model Linearization for IIV and Residual Error Search</a></li>
+    <li><a class="dropdown-item" href="articles/multistart.html">Multistart estimation</a></li>
     <li><a class="dropdown-item" href="articles/nlmixrFormula.html">nlmixr2 Algebraic Solutions with Formula</a></li>
     <li><a class="dropdown-item" href="articles/precondition.html">Stabilizing Covariance Estimates with preconditionFit()</a></li>
     <li><a class="dropdown-item" href="articles/reporting-helpers.html">Helpers for writing modeling reports</a></li>
@@ -118,19 +119,19 @@
 <span><span class="co"># The fit is performed by the function nlmixr/nlmixr2 specifying the model, data</span></span>
 <span><span class="co"># and estimate (in a real estimate, nBurn and nEm would be much higher.)</span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">one.compartment</span>, <span class="va">theo_sd</span>,  est<span class="op">=</span><span class="st">"saem"</span>, <span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/saemControl.html" class="external-link">saemControl</a></span><span class="op">(</span>print<span class="op">=</span><span class="fl">0</span>, nBurn <span class="op">=</span> <span class="fl">10</span>, nEm <span class="op">=</span> <span class="fl">20</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; ℹ parameter labels from comments are typically ignored in non-interactive mode</span></span>
-<span><span class="co">#&gt; ℹ Need to run with the source intact to parse comments</span></span>
-<span><span class="co">#&gt; → loading into symengine environment...</span></span>
-<span><span class="co">#&gt; → pruning branches (`if`/`else`) of saem model...</span></span>
-<span><span class="co">#&gt; ✔ done</span></span>
-<span><span class="co">#&gt; → finding duplicate expressions in saem model...</span></span>
+<span><span class="co">#&gt; i parameter labels from comments are typically ignored in non-interactive mode</span></span>
+<span><span class="co">#&gt; i Need to run with the source intact to parse comments</span></span>
+<span><span class="co">#&gt; -&gt; loading into symengine environment...</span></span>
+<span><span class="co">#&gt; -&gt; pruning branches (`if`/`else`) of saem model...</span></span>
+<span><span class="co">#&gt; v done</span></span>
+<span><span class="co">#&gt; -&gt; finding duplicate expressions in saem model...</span></span>
 <span><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00</span></span>
-<span><span class="co">#&gt; → optimizing duplicate expressions in saem model...</span></span>
+<span><span class="co">#&gt; -&gt; optimizing duplicate expressions in saem model...</span></span>
 <span><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00</span></span>
-<span><span class="co">#&gt; ✔ done</span></span>
+<span><span class="co">#&gt; v done</span></span>
 <span><span class="co">#&gt; using C compiler: 'gcc.exe (GCC) 13.2.0'</span></span>
-<span><span class="co">#&gt; ℹ calculate uninformed etas</span></span>
-<span><span class="co">#&gt; ℹ done</span></span>
+<span><span class="co">#&gt; i calculate uninformed etas</span></span>
+<span><span class="co">#&gt; i done</span></span>
 <span><span class="co">#&gt; rxode2 3.0.2 using 8 threads (see ?getRxThreads)</span></span>
 <span><span class="co">#&gt;   no cache: create with `rxCreateCache()`</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -139,21 +140,21 @@
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;     boxCox, yeoJohnson</span></span>
 <span><span class="co">#&gt; Calculating covariance matrix</span></span>
-<span><span class="co">#&gt; → loading into symengine environment...</span></span>
-<span><span class="co">#&gt; → pruning branches (`if`/`else`) of saem model...</span></span>
-<span><span class="co">#&gt; ✔ done</span></span>
-<span><span class="co">#&gt; → finding duplicate expressions in saem predOnly model 0...</span></span>
-<span><span class="co">#&gt; → finding duplicate expressions in saem predOnly model 1...</span></span>
-<span><span class="co">#&gt; → optimizing duplicate expressions in saem predOnly model 1...</span></span>
-<span><span class="co">#&gt; → finding duplicate expressions in saem predOnly model 2...</span></span>
-<span><span class="co">#&gt; ✔ done</span></span>
+<span><span class="co">#&gt; -&gt; loading into symengine environment...</span></span>
+<span><span class="co">#&gt; -&gt; pruning branches (`if`/`else`) of saem model...</span></span>
+<span><span class="co">#&gt; v done</span></span>
+<span><span class="co">#&gt; -&gt; finding duplicate expressions in saem predOnly model 0...</span></span>
+<span><span class="co">#&gt; -&gt; finding duplicate expressions in saem predOnly model 1...</span></span>
+<span><span class="co">#&gt; -&gt; optimizing duplicate expressions in saem predOnly model 1...</span></span>
+<span><span class="co">#&gt; -&gt; finding duplicate expressions in saem predOnly model 2...</span></span>
+<span><span class="co">#&gt; v done</span></span>
 <span><span class="co">#&gt; using C compiler: 'gcc.exe (GCC) 13.2.0'</span></span>
-<span><span class="co">#&gt; → Calculating residuals/tables</span></span>
-<span><span class="co">#&gt; ✔ done</span></span>
-<span><span class="co">#&gt; → compress origData in nlmixr2 object, save 5952</span></span>
-<span><span class="co">#&gt; → compress phiM in nlmixr2 object, save 3712</span></span>
-<span><span class="co">#&gt; → compress parHistData in nlmixr2 object, save 2456</span></span>
-<span><span class="co">#&gt; → compress saem0 in nlmixr2 object, save 27920</span></span>
+<span><span class="co">#&gt; -&gt; Calculating residuals/tables</span></span>
+<span><span class="co">#&gt; v done</span></span>
+<span><span class="co">#&gt; -&gt; compress origData in nlmixr2 object, save 5952</span></span>
+<span><span class="co">#&gt; -&gt; compress phiM in nlmixr2 object, save 3712</span></span>
+<span><span class="co">#&gt; -&gt; compress parHistData in nlmixr2 object, save 2456</span></span>
+<span><span class="co">#&gt; -&gt; compress saem0 in nlmixr2 object, save 27920</span></span>
 <span></span>
 <span><span class="co"># In a real bootstrap, nboot would be much higher.</span></span>
 <span><span class="va">fit2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">suppressMessages</a></span><span class="op">(</span><span class="fu"><a href="reference/bootstrapFit.html">bootstrapFit</a></span><span class="op">(</span><span class="va">fit</span>, nboot <span class="op">=</span> <span class="fl">5</span><span class="op">)</span><span class="op">)</span></span>

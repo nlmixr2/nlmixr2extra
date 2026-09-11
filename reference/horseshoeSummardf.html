@@ -20,6 +20,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/likelihood-profiling.html">Likelihood Profiling for NLME Models</a></li>
     <li><a class="dropdown-item" href="../articles/model-linearization.html">Model Linearization for IIV and Residual Error Search</a></li>
+    <li><a class="dropdown-item" href="../articles/multistart.html">Multistart estimation</a></li>
     <li><a class="dropdown-item" href="../articles/nlmixrFormula.html">nlmixr2 Algebraic Solutions with Formula</a></li>
     <li><a class="dropdown-item" href="../articles/precondition.html">Stabilizing Covariance Estimates with preconditionFit()</a></li>
     <li><a class="dropdown-item" href="../articles/reporting-helpers.html">Helpers for writing modeling reports</a></li>
@@ -103,7 +104,7 @@ control = list(adapt_delta = 0.99, max_treedepth = 15)</p></dd>
 <span class="r-in"><span><span class="co"># Horseshoe summary posterior estimates:</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">#hsDf &lt;- horseshoeSummardf(fit,covarsVec,cores=2)</span></span></span>
-<span class="r-in"><span><span class="co">#brms sometimes may throw a Error in sink(type = “output”)</span></span></span>
+<span class="r-in"><span><span class="co">#brms sometimes may throw a Error in sink(type = "output")</span></span></span>
 <span class="r-in"><span><span class="co">#Issue Should be fixed by uninstalling and re-installing rstan</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>

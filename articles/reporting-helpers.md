@@ -34,10 +34,10 @@ competing structural models.
 ``` r
 
 library(nlmixr2est)
-#> Loading required package: nlmixr2data
 library(nlmixr2extra)
 
 # Start with your data
+set.seed(42)
 d_noec50 <-
   data.frame(
     conc = c(rep(0, 10), rep(1:20, each = 10)),
@@ -87,54 +87,24 @@ modLinear <- function() {
 }
 
 # Fit the models
-fitEmaxBoundaryIssue <- nlmixr2est::nlmixr2(modEmax, data = d_noec50, est = "focei", control = list(print = 0))
+fitEmaxBoundaryIssue := nlmixr2est::nlmixr2(modEmax, data = d_noec50, est = "focei", control = list(print = 0))
+#> ℹ loading fit from reporting-helpers-fitEmaxBoundaryIssue.zip
+#> ℹ loading fit from fitEmaxBoundaryIssue.R
 #> ℹ parameter labels from comments are typically ignored in non-interactive mode
 #> ℹ Need to run with the source intact to parse comments
-#> → loading into symengine environment...
-#> → pruning branches (`if`/`else`) of full model...
-#> ✔ done
-#> → finding duplicate expressions in EBE model...
-#> → compiling EBE model...
-#> ✔ done
-#> rxode2 5.1.7 using 2 threads (see ?getRxThreads)
-#>   no cache: create with `rxCreateCache()`
-#> 
-#> Attaching package: 'rxode2'
-#> The following objects are masked from 'package:nlmixr2est':
-#> 
-#>     boxCox, yeoJohnson
-#> [====|====|====|====|====|====|====|====|====|====] 0:00:00 
-#> done
-#> → Calculating residuals/tables
-#> ✔ done
-fitStep <- nlmixr2est::nlmixr2(modStep, data = d_noec50, est = "focei", control = list(print = 0))
+#> ℹ removing unzipped fit files
+fitStep := nlmixr2est::nlmixr2(modStep, data = d_noec50, est = "focei", control = list(print = 0))
+#> ℹ loading fit from reporting-helpers-fitStep.zip
+#> ℹ loading fit from fitStep.R
 #> ℹ parameter labels from comments are typically ignored in non-interactive mode
 #> ℹ Need to run with the source intact to parse comments
-#> → loading into symengine environment...
-#> → pruning branches (`if`/`else`) of full model...
-#> ✔ done
-#> → finding duplicate expressions in EBE model...
-#> → compiling EBE model...
-#> ✔ done
-#> calculating covariance matrix
-#> [====|====|====|====|====|====|====|====|====|====] 0:00:00 
-#> done
-#> → Calculating residuals/tables
-#> ✔ done
-fitLinear <- nlmixr2est::nlmixr2(modLinear, data = d_noec50, est = "focei", control = list(print = 0))
+#> ℹ removing unzipped fit files
+fitLinear := nlmixr2est::nlmixr2(modLinear, data = d_noec50, est = "focei", control = list(print = 0))
+#> ℹ loading fit from reporting-helpers-fitLinear.zip
+#> ℹ loading fit from fitLinear.R
 #> ℹ parameter labels from comments are typically ignored in non-interactive mode
 #> ℹ Need to run with the source intact to parse comments
-#> → loading into symengine environment...
-#> → pruning branches (`if`/`else`) of full model...
-#> ✔ done
-#> → finding duplicate expressions in EBE model...
-#> → compiling EBE model...
-#> ✔ done
-#> calculating covariance matrix
-#> [====|====|====|====|====|====|====|====|====|====] 0:00:00 
-#> done
-#> → Calculating residuals/tables
-#> ✔ done
+#> ℹ removing unzipped fit files
 ```
 
 ## Detecting boundary issues
@@ -150,7 +120,7 @@ fit that errored).
 
 # The Emax model pushed ec50 to its lower boundary
 isBoundaryFit(fitEmaxBoundaryIssue)
-#> [1] TRUE
+#> [1] FALSE
 
 # The step-change model did not have a boundary issue
 isBoundaryFit(fitStep)
@@ -170,7 +140,6 @@ boundary fit is removed.
 ``` r
 
 bestFit <- getMinAICFit(fitEmaxBoundaryIssue, fitStep, fitLinear)
-#> Removing model with a parameter at the boundary
 ```
 
 If every candidate is excluded or has no AIC,
@@ -201,7 +170,6 @@ allFits <-
 ``` r
 
 bestFit <- getMinAICFit(allFits)
-#> Removing model with a parameter at the boundary
 ```
 
 ### Summarize the best model with its equations and parameters
@@ -213,7 +181,7 @@ knit_print(bestFit, inline = FALSE)
 
 ``` math
 \begin{align*}
-{effect} & = {e0}+{emax} {\times} \left({conc}>{0}\right) \\
+{effect} & = {e0}+\frac{{emax} {\times} {conc}}{\left({ec50}+{conc}\right)} \\
 {effect} & \sim add({addSd})
 \end{align*}
 ```
@@ -223,13 +191,14 @@ knit_print(bestFit, inline = FALSE)
 pander::pander(bestFit$parFixed, caption = "Model parameters for the best-fit model")
 ```
 
-|           |  Est.   |  SE   |  %RSE  | Back-transformed(95%CI) |
-|:---------:|:-------:|:-----:|:------:|:-----------------------:|
-|  **e0**   |  1.00   | 0.316 |  31.6  |   1.00 (0.380, 1.62)    |
-| **emax**  |  4.00   | 0.324 |  8.10  |    4.00 (3.36, 4.64)    |
-| **addSd** | 1.08e-5 | 2.02  | 1.87e7 |  1.08e-5 (-3.96, 3.96)  |
+|           |  Est.   |   SE    |  %RSE  |  Back-transformed(95%CI)   |
+|:---------:|:-------:|:-------:|:------:|:--------------------------:|
+|  **e0**   |  0.948  | 0.00350 | 0.369  |    0.948 (0.942, 0.955)    |
+| **emax**  |  4.05   | 0.00375 | 0.0925 |     4.05 (4.05, 4.06)      |
+| **ec50**  | 0.00166 | 8.09e-4 |  48.7  | 0.00166 (7.41e-5, 0.00324) |
+| **addSd** | 0.00998 | 7.18e-4 |  7.19  | 0.00998 (0.00857, 0.0114)  |
 
-Model parameters for the best-fit model {.table style="width:90%;"}
+Model parameters for the best-fit model {.table style="width:97%;"}
 
 ### Summarize all models tested
 
@@ -248,11 +217,11 @@ pander::pander(
 )
 ```
 
-| Description | AIC | dAIC | Exclude |
-|:--:|:--:|:--:|:--:|
-| Emax model with additive residual error | -1936 | \- | parameter at boundary |
-| Step-change model with additive residual error | 392 | 0 |  |
-| Linear model with additive residual error | 503.8 | 111.9 |  |
+|                  Description                   |  AIC  |  dAIC  |
+|:----------------------------------------------:|:-----:|:------:|
+|    Emax model with additive residual error     | -1262 |   0    |
+| Step-change model with additive residual error |  392  | \>1000 |
+|   Linear model with additive residual error    | 503.8 | \>1000 |
 
 Listing of all models tested. Abbreviations: AIC = Akaike’s Information
-Criterion; dAIC = change from minimum AIC {.table style="width:96%;"}
+Criterion; dAIC = change from minimum AIC {.table style="width:62%;"}

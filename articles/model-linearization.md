@@ -9,10 +9,10 @@ Taylor expansion around the current individual predictions. The
 resulting linear model fits in a fraction of the time, allowing
 exhaustive search over:
 
-- **Inter-individual variability (IIV) structure** — which parameters
+- **Inter-individual variability (IIV) structure** – which parameters
   carry random effects, and which pairs are correlated
   ([`iivSearch()`](https://nlmixr2.github.io/nlmixr2extra/reference/iivSearch.md)).
-- **Residual error model** — additive, proportional, or combined
+- **Residual error model** – additive, proportional, or combined
   variance structures
   ([`resSearch()`](https://nlmixr2.github.io/nlmixr2extra/reference/resSearch.md)).
 
@@ -128,7 +128,7 @@ Fit the data to the base model `oneCmtBase` with typical NLME method
 
 ``` r
 
-fit <- nlmixr2(oneCmtBase, sim, est = "focei") 
+fit := nlmixr2(oneCmtBase, sim, est = "focei", control = list(print = 0))
 ```
 
 ### Run Linearization
@@ -140,7 +140,7 @@ takes a fitted `nlmixr2` object and returns an `nlmixr2Linearize` fit.
 
 # addEtas = TRUE adds fixed etas on every theta before linearizing,
 # giving derivatives with respect to every parameter.
-fitLin <- linearize(fit, addEtas = TRUE)
+fitLin := linearize(fit, addEtas = TRUE)
 ```
 
 The function:
@@ -166,17 +166,22 @@ match <- isLinearizeMatch(fitLin)
 
 # OFV agreement (relative tolerance 10%)
 match$ofv[[1]]   # TRUE/FALSE if OFV differ by less than tol
+#> [1] TRUE
 match$ofv[[2]]   # all.equal() message if FALSE 
+#> [1] TRUE
 
 # Omega matrix agreement
 match$omega[[1]]  # TRUE/FALSE if Omega matrices differ by less than tol
+#> [1] TRUE
 
 # Individual eta agreement
 match$eta[[1]] # TRUE/FALSE if all individual etas differ by less than tol
+#> [1] TRUE
 
 
 # Residual variance agreement
 match$err[[1]] # TRUE/FALSE if residual variances differ by less than tol
+#> [1] TRUE
 ```
 
 A visual check is available via
@@ -185,7 +190,10 @@ A visual check is available via
 ``` r
 
 linearizePlot(fitLin)
+#> `geom_smooth()` using formula = 'y ~ x'
 ```
+
+![](model-linearization_files/figure-html/linplot-1.png)
 
 The plot shows original vs. linearized individual objective values and
 etas. Points should lie on the identity line for a good approximation.
@@ -208,10 +216,10 @@ additive-only models.
 ``` r
 
 # Force FOCE linearization
-fitLinFoce <- linearize(fit, addEtas = TRUE, focei = FALSE)
+fitLinFoce := linearize(fit, addEtas = TRUE, focei = FALSE)
 
 # Force FOCEI
-fitLinFocei <- linearize(fit, addEtas = TRUE, focei = TRUE)
+fitLinFocei := linearize(fit, addEtas = TRUE, focei = TRUE)
 ```
 
 ### Tuning `mceta`
@@ -223,10 +231,10 @@ in order. The algorithm stops when the relative OFV deviation is within
 ``` r
 
 # Default: try -1, 10, 100, 1000 in order
-fitLin <- linearize(fit, addEtas = TRUE, mceta = c(-1, 10, 100, 1000))
+linearize(fit, addEtas = TRUE, mceta = c(-1, 10, 100, 1000))
 
 # For a difficult model, start with a larger mceta
-fitLin <- linearize(fit, addEtas = TRUE, mceta = c(100, 500, 1000))
+linearize(fit, addEtas = TRUE, mceta = c(100, 500, 1000))
 ```
 
 `mceta = -1` uses the exact gradient (no Monte Carlo sampling) and is
@@ -256,7 +264,7 @@ random-effect signal before running the full search.
 
 ``` r
 
-iivRes <- iivSearch(fitLin)
+iivRes := iivSearch(fitLin)
 ```
 
 Progress is shown for each candidate structure. Failed fits
@@ -269,9 +277,84 @@ search.
 
 # Print ordered by BIC
 print(iivRes)
+#>              OBJF      AIC      BIC
+#> FOCEi13  476.3687 1409.307 1438.809
+#> FOCEi10  514.3502 1443.289 1464.362
+#> FOCEi3   553.2211 1478.160 1490.803
+#> FOCEi16  531.5302 1464.469 1493.971
+#> FOCEi9   553.4991 1480.438 1497.296
+#> FOCEi14  604.2598 1537.198 1566.701
+#> FOCEi4   647.0378 1573.976 1590.835
+#> FOCEi12  646.0224 1574.961 1596.034
+#> FOCEi1   800.1752 1723.114 1731.543
+#> FOCEi7   800.4129 1725.351 1737.995
+#> FOCEi8   800.6373 1727.576 1744.434
+#> FOCEi15  815.1749 1748.113 1777.616
+#> FOCEi11 1283.8662 2216.805 2246.307
+#> FOCEi5  1381.6581 2306.597 2319.240
+#> FOCEi2  1493.1602 2416.099 2424.528
+#> FOCEi   1549.0857 2472.024 2480.453
+#> FOCEi6  1590.7135 2517.652 2534.510
+#>                                                              search nParams
+#> FOCEi13              etaTcl+etaTv+etaTka+etaTcl~etaTv+etaTcl~etaTka       7
+#> FOCEi10                            etaTcl+etaTv+etaTka+etaTcl~etaTv       5
+#> FOCEi3                                                etaTcl+etaTv+       3
+#> FOCEi16 etaTcl+etaTv+etaTka+etaTcl~etaTv+etaTcl~etaTka+etaTv~etaTka       7
+#> FOCEi9                                         etaTcl+etaTv+etaTka+       4
+#> FOCEi14               etaTcl+etaTv+etaTka+etaTcl~etaTv+etaTv~etaTka       7
+#> FOCEi4                                    etaTcl+etaTv+etaTcl~etaTv       4
+#> FOCEi12                            etaTcl+etaTv+etaTka+etaTv~etaTka       5
+#> FOCEi1                                                        etaTv       2
+#> FOCEi7                                                etaTv+etaTka+       3
+#> FOCEi8                                    etaTv+etaTka+etaTv~etaTka       4
+#> FOCEi15              etaTcl+etaTv+etaTka+etaTcl~etaTka+etaTv~etaTka       7
+#> FOCEi11                           etaTcl+etaTv+etaTka+etaTcl~etaTka       7
+#> FOCEi5                                               etaTcl+etaTka+       3
+#> FOCEi2                                                       etaTka       2
+#> FOCEi                                                        etaTcl       2
+#> FOCEi6                                  etaTcl+etaTka+etaTcl~etaTka       4
+#>         covMethod outerOptTxt
+#> FOCEi13       r,s      bobyqa
+#> FOCEi10       r,s      bobyqa
+#> FOCEi3        r,s      bobyqa
+#> FOCEi16       r,s      bobyqa
+#> FOCEi9        r,s      bobyqa
+#> FOCEi14       r,s      bobyqa
+#> FOCEi4        r,s      bobyqa
+#> FOCEi12       r,s      bobyqa
+#> FOCEi1        r,s      bobyqa
+#> FOCEi7        r,s      bobyqa
+#> FOCEi8        r,s      bobyqa
+#> FOCEi15       r,s      bobyqa
+#> FOCEi11       r,s      bobyqa
+#> FOCEi5        r,s      bobyqa
+#> FOCEi2        r,s      bobyqa
+#> FOCEi         r,s      bobyqa
+#> FOCEi6        r,s      bobyqa
 
 # The summary data frame
 head(iivRes$summary[order(iivRes$summary$BIC), ])
+#>             OBJF      AIC      BIC
+#> FOCEi13 476.3687 1409.307 1438.809
+#> FOCEi10 514.3502 1443.289 1464.362
+#> FOCEi3  553.2211 1478.160 1490.803
+#> FOCEi16 531.5302 1464.469 1493.971
+#> FOCEi9  553.4991 1480.438 1497.296
+#> FOCEi14 604.2598 1537.198 1566.701
+#>                                                              search nParams
+#> FOCEi13              etaTcl+etaTv+etaTka+etaTcl~etaTv+etaTcl~etaTka       7
+#> FOCEi10                            etaTcl+etaTv+etaTka+etaTcl~etaTv       5
+#> FOCEi3                                                etaTcl+etaTv+       3
+#> FOCEi16 etaTcl+etaTv+etaTka+etaTcl~etaTv+etaTcl~etaTka+etaTv~etaTka       7
+#> FOCEi9                                         etaTcl+etaTv+etaTka+       4
+#> FOCEi14               etaTcl+etaTv+etaTka+etaTcl~etaTv+etaTv~etaTka       7
+#>         covMethod outerOptTxt
+#> FOCEi13       r,s      bobyqa
+#> FOCEi10       r,s      bobyqa
+#> FOCEi3        r,s      bobyqa
+#> FOCEi16       r,s      bobyqa
+#> FOCEi9        r,s      bobyqa
+#> FOCEi14       r,s      bobyqa
 ```
 
 The summary contains one row per candidate with columns:
@@ -289,9 +372,9 @@ The summary contains one row per candidate with columns:
 
 The `search` column encodes the IIV structure:
 
-- `eta.cl+eta.v` — both etas present, no correlation
-- `eta.cl+eta.v+eta.cl~eta.v` — both etas with correlation between them
-- `eta.cl` — only CL carries a random effect
+- `eta.cl+eta.v` – both etas present, no correlation
+- `eta.cl+eta.v+eta.cl~eta.v` – both etas with correlation between them
+- `eta.cl` – only CL carries a random effect
 
 ### Refitting top candidates with the original model
 
@@ -303,10 +386,22 @@ refits the top `n` structures:
 ``` r
 
 # Refit the 5 best structures with the original nonlinear model
-top5 <- rerunTopN(iivRes, n = 5)
+top5 := rerunTopN(iivRes, n = 5)
 
 # Results ordered by BIC from the nonlinear fits
 top5$summary[order(top5$summary$O.BIC), ]
+#>           O.OBJF    O.AIC    O.BIC O.Log-likelihood O.Condition#(Cov)
+#> FOCEi   732.0524 1660.991 1682.064        -825.4955          36.31759
+#> FOCEi1  733.1991 1664.138 1689.425        -826.0688         493.45679
+#> FOCEi3  847.7564 1786.695 1828.841        -883.3475        1603.52853
+#> FOCEi2  909.8071 1842.746 1872.248        -914.3728          63.81725
+#> FOCEi4 1083.3590 2022.298 2064.444       -1001.1488          63.96851
+#>        O.Condition#(Cor)                                         search
+#> FOCEi           28.18692                                          etaTv
+#> FOCEi1          31.95320                                  etaTv+etaTka+
+#> FOCEi3        1395.26707 etaTcl+etaTv+etaTka+etaTcl~etaTka+etaTv~etaTka
+#> FOCEi2          18.60369                      etaTv+etaTka+etaTv~etaTka
+#> FOCEi4          15.21032              etaTcl+etaTv+etaTka+etaTcl~etaTka
 ```
 
 The summary column names are prefixed with `O.` (for “original”) to
@@ -329,6 +424,8 @@ ggplot(summ, aes(x = rank, y = BIC - min(BIC))) +
   theme_bw()
 ```
 
+![](model-linearization_files/figure-html/iivplot-1.png)
+
 ## Residual error model search
 
 [`resSearch()`](https://nlmixr2.github.io/nlmixr2extra/reference/resSearch.md)
@@ -347,14 +444,49 @@ The structures tested are:
 ``` r
 
 # Start from a linearized model; additive-only in this case
-fitLinAdd <- linearize(fit, addEtas = TRUE)
+fitLinAdd := linearize(fit, addEtas = TRUE)
 
 isLinearizeMatch(fitLinAdd)  # check quality before searching
+#> $ofv
+#> $ofv[[1]]
+#> [1] TRUE
+#> 
+#> $ofv[[2]]
+#> [1] TRUE
+#> 
+#> 
+#> $omega
+#> $omega[[1]]
+#> [1] TRUE
+#> 
+#> $omega[[2]]
+#> [1] TRUE
+#> 
+#> 
+#> $eta
+#> $eta[[1]]
+#> [1] TRUE
+#> 
+#> $eta[[2]]
+#> [1] TRUE
+#> 
+#> 
+#> $err
+#> $err[[1]]
+#> [1] TRUE
+#> 
+#> $err[[2]]
+#> [1] TRUE
 
-resRes <- resSearch(fitLinAdd)
+resRes := resSearch(fitLinAdd)
 
 # Compare by BIC
 resRes$summary[order(resRes$summary$BIC), ]
+#>            OBJF      AIC      BIC    search
+#> FOCEi1 1315.987 2236.926 2241.140      prop
+#> FOCEi2 1525.454 2448.393 2456.822 combined2
+#> FOCEi3 1548.200 2471.139 2479.568 combined1
+#> FOCEi  1576.606 2497.544 2501.759  base fit
 ```
 
 The returned list also includes `resRes$originalFit` (the linearized fit

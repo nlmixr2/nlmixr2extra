@@ -40,6 +40,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/likelihood-profiling.html">Likelihood Profiling for NLME Models</a></li>
     <li><a class="dropdown-item" href="../articles/model-linearization.html">Model Linearization for IIV and Residual Error Search</a></li>
+    <li><a class="dropdown-item" href="../articles/multistart.html">Multistart estimation</a></li>
     <li><a class="dropdown-item" href="../articles/nlmixrFormula.html">nlmixr2 Algebraic Solutions with Formula</a></li>
     <li><a class="dropdown-item" href="../articles/precondition.html">Stabilizing Covariance Estimates with preconditionFit()</a></li>
     <li><a class="dropdown-item" href="../articles/reporting-helpers.html">Helpers for writing modeling reports</a></li>
@@ -108,10 +109,10 @@ compare. Here the data follow a step change (a low value at
 concentration), and we fit three competing structural models.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/nlmixr2/nlmixr2est" class="external-link">nlmixr2est</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; Loading required package: nlmixr2data</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://nlmixr2.github.io/nlmixr2extra/">nlmixr2extra</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Start with your data</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
 <span><span class="va">d_noec50</span> <span class="op">&lt;-</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>    conc <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">10</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">20</span>, each <span class="op">=</span> <span class="fl">10</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -161,54 +162,24 @@ concentration), and we fit three competing structural models.</p>
 <span><span class="op">}</span></span>
 <span></span>
 <span><span class="co"># Fit the models</span></span>
-<span><span class="va">fitEmaxBoundaryIssue</span> <span class="op">&lt;-</span> <span class="fu">nlmixr2est</span><span class="fu">::</span><span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">modEmax</span>, data <span class="op">=</span> <span class="va">d_noec50</span>, est <span class="op">=</span> <span class="st">"focei"</span>, control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>print <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">fitEmaxBoundaryIssue</span> <span class="op">:=</span> <span class="fu">nlmixr2est</span><span class="fu">::</span><span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">modEmax</span>, data <span class="op">=</span> <span class="va">d_noec50</span>, est <span class="op">=</span> <span class="st">"focei"</span>, control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>print <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> loading fit from reporting-helpers-fitEmaxBoundaryIssue.zip</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> loading fit from fitEmaxBoundaryIssue.R</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> parameter labels from comments are typically ignored in non-interactive mode</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Need to run with the source intact to parse comments</span></span>
-<span><span class="co">#&gt; → loading into <span style="color: #0000BB;">symengine</span> environment...</span></span>
-<span><span class="co">#&gt; → pruning branches (`if`/`else`) of full model...</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> done</span></span>
-<span><span class="co">#&gt; → finding duplicate expressions in EBE model...</span></span>
-<span><span class="co">#&gt; → compiling EBE model...</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> done</span></span>
-<span><span class="co">#&gt; rxode2 5.1.7 using 2 threads (see ?getRxThreads)</span></span>
-<span><span class="co">#&gt;   no cache: create with `rxCreateCache()`</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Attaching package: 'rxode2'</span></span>
-<span><span class="co">#&gt; The following objects are masked from 'package:nlmixr2est':</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;     boxCox, yeoJohnson</span></span>
-<span><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00 </span></span>
-<span><span class="co">#&gt; done</span></span>
-<span><span class="co">#&gt; → Calculating residuals/tables</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> done</span></span>
-<span><span class="va">fitStep</span> <span class="op">&lt;-</span> <span class="fu">nlmixr2est</span><span class="fu">::</span><span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">modStep</span>, data <span class="op">=</span> <span class="va">d_noec50</span>, est <span class="op">=</span> <span class="st">"focei"</span>, control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>print <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> removing unzipped fit files</span></span>
+<span><span class="va">fitStep</span> <span class="op">:=</span> <span class="fu">nlmixr2est</span><span class="fu">::</span><span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">modStep</span>, data <span class="op">=</span> <span class="va">d_noec50</span>, est <span class="op">=</span> <span class="st">"focei"</span>, control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>print <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> loading fit from reporting-helpers-fitStep.zip</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> loading fit from fitStep.R</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> parameter labels from comments are typically ignored in non-interactive mode</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Need to run with the source intact to parse comments</span></span>
-<span><span class="co">#&gt; → loading into <span style="color: #0000BB;">symengine</span> environment...</span></span>
-<span><span class="co">#&gt; → pruning branches (`if`/`else`) of full model...</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> done</span></span>
-<span><span class="co">#&gt; → finding duplicate expressions in EBE model...</span></span>
-<span><span class="co">#&gt; → compiling EBE model...</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> done</span></span>
-<span><span class="co">#&gt; calculating covariance matrix</span></span>
-<span><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00 </span></span>
-<span><span class="co">#&gt; done</span></span>
-<span><span class="co">#&gt; → Calculating residuals/tables</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> done</span></span>
-<span><span class="va">fitLinear</span> <span class="op">&lt;-</span> <span class="fu">nlmixr2est</span><span class="fu">::</span><span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">modLinear</span>, data <span class="op">=</span> <span class="va">d_noec50</span>, est <span class="op">=</span> <span class="st">"focei"</span>, control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>print <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> removing unzipped fit files</span></span>
+<span><span class="va">fitLinear</span> <span class="op">:=</span> <span class="fu">nlmixr2est</span><span class="fu">::</span><span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">modLinear</span>, data <span class="op">=</span> <span class="va">d_noec50</span>, est <span class="op">=</span> <span class="st">"focei"</span>, control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>print <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> loading fit from reporting-helpers-fitLinear.zip</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> loading fit from fitLinear.R</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> parameter labels from comments are typically ignored in non-interactive mode</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Need to run with the source intact to parse comments</span></span>
-<span><span class="co">#&gt; → loading into <span style="color: #0000BB;">symengine</span> environment...</span></span>
-<span><span class="co">#&gt; → pruning branches (`if`/`else`) of full model...</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> done</span></span>
-<span><span class="co">#&gt; → finding duplicate expressions in EBE model...</span></span>
-<span><span class="co">#&gt; → compiling EBE model...</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> done</span></span>
-<span><span class="co">#&gt; calculating covariance matrix</span></span>
-<span><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00 </span></span>
-<span><span class="co">#&gt; done</span></span>
-<span><span class="co">#&gt; → Calculating residuals/tables</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> done</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> removing unzipped fit files</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -222,7 +193,7 @@ not be trusted or selected. <code><a href="../reference/isBoundaryFit.html">isBo
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># The Emax model pushed ec50 to its lower boundary</span></span>
 <span><span class="fu"><a href="../reference/isBoundaryFit.html">isBoundaryFit</a></span><span class="op">(</span><span class="va">fitEmaxBoundaryIssue</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="co">#&gt; [1] FALSE</span></span>
 <span></span>
 <span><span class="co"># The step-change model did not have a boundary issue</span></span>
 <span><span class="fu"><a href="../reference/isBoundaryFit.html">isBoundaryFit</a></span><span class="op">(</span><span class="va">fitStep</span><span class="op">)</span></span>
@@ -238,8 +209,7 @@ produce an AIC (for example, a model that failed to estimate). You can
 pass fits as individual arguments or as a list, and it emits a message
 when a boundary fit is removed.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">bestFit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getMinAICFit.html">getMinAICFit</a></span><span class="op">(</span><span class="va">fitEmaxBoundaryIssue</span>, <span class="va">fitStep</span>, <span class="va">fitLinear</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Removing model with a parameter at the boundary</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">bestFit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getMinAICFit.html">getMinAICFit</a></span><span class="op">(</span><span class="va">fitEmaxBoundaryIssue</span>, <span class="va">fitStep</span>, <span class="va">fitLinear</span><span class="op">)</span></span></code></pre></div>
 <p>If every candidate is excluded or has no AIC,
 <code><a href="../reference/getMinAICFit.html">getMinAICFit()</a></code> returns <code>NULL</code> with a warning, so
 it is safe to call inside a larger report-building pipeline.</p>
@@ -265,28 +235,27 @@ summary table.</p>
 <h3 id="find-your-best-model-by-aic">Find your best model by AIC<a class="anchor" aria-label="anchor" href="#find-your-best-model-by-aic"></a>
 </h3>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">bestFit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getMinAICFit.html">getMinAICFit</a></span><span class="op">(</span><span class="va">allFits</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Removing model with a parameter at the boundary</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">bestFit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getMinAICFit.html">getMinAICFit</a></span><span class="op">(</span><span class="va">allFits</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="summarize-the-best-model-with-its-equations-and-parameters">Summarize the best model with its equations and parameters<a class="anchor" aria-label="anchor" href="#summarize-the-best-model-with-its-equations-and-parameters"></a>
 </h3>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/knit_print.html" class="external-link">knit_print</a></span><span class="op">(</span><span class="va">bestFit</span>, inline <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><mi>e</mi><mi>f</mi><mi>f</mi><mi>e</mi><mi>c</mi><mi>t</mi></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mo>=</mo><mrow><mi>e</mi><mn>0</mn></mrow><mo>+</mo><mrow><mi>e</mi><mi>m</mi><mi>a</mi><mi>x</mi></mrow><mo>×</mo><mrow><mo stretchy="true" form="prefix">(</mo><mrow><mi>c</mi><mi>o</mi><mi>n</mi><mi>c</mi></mrow><mo>&gt;</mo><mn>0</mn><mo stretchy="true" form="postfix">)</mo></mrow></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><mi>e</mi><mi>f</mi><mi>f</mi><mi>e</mi><mi>c</mi><mi>t</mi></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mo>∼</mo><mi>a</mi><mi>d</mi><mi>d</mi><mo stretchy="false" form="prefix">(</mo><mrow><mi>a</mi><mi>d</mi><mi>d</mi><mi>S</mi><mi>d</mi></mrow><mo stretchy="false" form="postfix">)</mo></mtd></mtr></mtable><annotation encoding="application/x-tex">\begin{align*}
-{effect} &amp; = {e0}+{emax} {\times} \left({conc}&gt;{0}\right) \\
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><mi>e</mi><mi>f</mi><mi>f</mi><mi>e</mi><mi>c</mi><mi>t</mi></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mo>=</mo><mrow><mi>e</mi><mn>0</mn></mrow><mo>+</mo><mfrac><mrow><mrow><mi>e</mi><mi>m</mi><mi>a</mi><mi>x</mi></mrow><mo>×</mo><mrow><mi>c</mi><mi>o</mi><mi>n</mi><mi>c</mi></mrow></mrow><mrow><mo stretchy="true" form="prefix">(</mo><mrow><mi>e</mi><mi>c</mi><mn>50</mn></mrow><mo>+</mo><mrow><mi>c</mi><mi>o</mi><mi>n</mi><mi>c</mi></mrow><mo stretchy="true" form="postfix">)</mo></mrow></mfrac></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><mi>e</mi><mi>f</mi><mi>f</mi><mi>e</mi><mi>c</mi><mi>t</mi></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mo>∼</mo><mi>a</mi><mi>d</mi><mi>d</mi><mo stretchy="false" form="prefix">(</mo><mrow><mi>a</mi><mi>d</mi><mi>d</mi><mi>S</mi><mi>d</mi></mrow><mo stretchy="false" form="postfix">)</mo></mtd></mtr></mtable><annotation encoding="application/x-tex">\begin{align*}
+{effect} &amp; = {e0}+\frac{{emax} {\times} {conc}}{\left({ec50}+{conc}\right)} \\
 {effect} &amp; \sim add({addSd})
 \end{align*}</annotation></semantics></math></p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pander</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/pander/man/pander.html" class="external-link">pander</a></span><span class="op">(</span><span class="va">bestFit</span><span class="op">$</span><span class="va">parFixed</span>, caption <span class="op">=</span> <span class="st">"Model parameters for the best-fit model"</span><span class="op">)</span></span></code></pre></div>
-<table style="width:90%;" class="table">
+<table style="width:97%;" class="table">
 <caption>Model parameters for the best-fit model</caption>
 <colgroup>
 <col width="16%">
 <col width="13%">
-<col width="11%">
+<col width="13%">
 <col width="12%">
-<col width="36%">
+<col width="40%">
 </colgroup>
 <thead><tr class="header">
 <th align="center"> </th>
@@ -298,24 +267,31 @@ summary table.</p>
 <tbody>
 <tr class="odd">
 <td align="center"><strong>e0</strong></td>
-<td align="center">1.00</td>
-<td align="center">0.316</td>
-<td align="center">31.6</td>
-<td align="center">1.00 (0.380, 1.62)</td>
+<td align="center">0.948</td>
+<td align="center">0.00350</td>
+<td align="center">0.369</td>
+<td align="center">0.948 (0.942, 0.955)</td>
 </tr>
 <tr class="even">
 <td align="center"><strong>emax</strong></td>
-<td align="center">4.00</td>
-<td align="center">0.324</td>
-<td align="center">8.10</td>
-<td align="center">4.00 (3.36, 4.64)</td>
+<td align="center">4.05</td>
+<td align="center">0.00375</td>
+<td align="center">0.0925</td>
+<td align="center">4.05 (4.05, 4.06)</td>
 </tr>
 <tr class="odd">
+<td align="center"><strong>ec50</strong></td>
+<td align="center">0.00166</td>
+<td align="center">8.09e-4</td>
+<td align="center">48.7</td>
+<td align="center">0.00166 (7.41e-5, 0.00324)</td>
+</tr>
+<tr class="even">
 <td align="center"><strong>addSd</strong></td>
-<td align="center">1.08e-5</td>
-<td align="center">2.02</td>
-<td align="center">1.87e7</td>
-<td align="center">1.08e-5 (-3.96, 3.96)</td>
+<td align="center">0.00998</td>
+<td align="center">7.18e-4</td>
+<td align="center">7.19</td>
+<td align="center">0.00998 (0.00857, 0.0114)</td>
 </tr>
 </tbody>
 </table>
@@ -333,39 +309,34 @@ with <code><a href="https://rdrr.io/pkg/pander/man/pander.html" class="external-
 <code class="sourceCode R"><span><span class="fu">pander</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/pander/man/pander.html" class="external-link">pander</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="../reference/listModelsTested.html">listModelsTested</a></span><span class="op">(</span><span class="va">allFits</span>, caption <span class="op">=</span> <span class="st">"Listing of all models tested."</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<table style="width:96%;" class="table">
+<table style="width:62%;" class="table">
 <caption>Listing of all models tested. Abbreviations: AIC = Akaike’s
 Information Criterion; dAIC = change from minimum AIC</caption>
 <colgroup>
 <col width="40%">
 <col width="11%">
 <col width="11%">
-<col width="33%">
 </colgroup>
 <thead><tr class="header">
 <th align="center">Description</th>
 <th align="center">AIC</th>
 <th align="center">dAIC</th>
-<th align="center">Exclude</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td align="center">Emax model with additive residual error</td>
-<td align="center">-1936</td>
-<td align="center">-</td>
-<td align="center">parameter at boundary</td>
+<td align="center">-1262</td>
+<td align="center">0</td>
 </tr>
 <tr class="even">
 <td align="center">Step-change model with additive residual error</td>
 <td align="center">392</td>
-<td align="center">0</td>
-<td align="center"></td>
+<td align="center">&gt;1000</td>
 </tr>
 <tr class="odd">
 <td align="center">Linear model with additive residual error</td>
 <td align="center">503.8</td>
-<td align="center">111.9</td>
-<td align="center"></td>
+<td align="center">&gt;1000</td>
 </tr>
 </tbody>
 </table>

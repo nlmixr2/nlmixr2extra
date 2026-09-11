@@ -40,6 +40,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/likelihood-profiling.html">Likelihood Profiling for NLME Models</a></li>
     <li><a class="dropdown-item" href="../articles/model-linearization.html">Model Linearization for IIV and Residual Error Search</a></li>
+    <li><a class="dropdown-item" href="../articles/multistart.html">Multistart estimation</a></li>
     <li><a class="dropdown-item" href="../articles/nlmixrFormula.html">nlmixr2 Algebraic Solutions with Formula</a></li>
     <li><a class="dropdown-item" href="../articles/precondition.html">Stabilizing Covariance Estimates with preconditionFit()</a></li>
     <li><a class="dropdown-item" href="../articles/reporting-helpers.html">Helpers for writing modeling reports</a></li>
@@ -149,14 +150,394 @@ Variance-Covariance Matrix Computations. <em>AAPS J.</em>
 <span>  <span class="op">}</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">oneCompartment</span>, data <span class="op">=</span> <span class="fu">nlmixr2data</span><span class="fu">::</span><span class="va"><a href="https://nlmixr2.github.io/nlmixr2data/reference/theo_sd.html" class="external-link">theo_sd</a></span>,</span>
+<span><span class="va">fit</span> <span class="op">:=</span> <span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">oneCompartment</span>, data <span class="op">=</span> <span class="fu">nlmixr2data</span><span class="fu">::</span><span class="va"><a href="https://nlmixr2.github.io/nlmixr2data/reference/theo_sd.html" class="external-link">theo_sd</a></span>,</span>
 <span>               est <span class="op">=</span> <span class="st">"focei"</span>, control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>print <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">fit</span></span></code></pre></div>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><mi>k</mi><mi>a</mi></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mo>=</mo><mrow><mi mathvariant="normal">exp</mi><mo>⁡</mo></mrow><mrow><mo stretchy="true" form="prefix">(</mo><mrow><mi>t</mi><mi>k</mi><mi>a</mi></mrow><mo>+</mo><mrow><mi>e</mi><mi>t</mi><mi>a</mi><mi>.</mi><mi>k</mi><mi>a</mi></mrow><mo stretchy="true" form="postfix">)</mo></mrow></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><mi>c</mi><mi>l</mi></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mo>=</mo><mrow><mi mathvariant="normal">exp</mi><mo>⁡</mo></mrow><mrow><mo stretchy="true" form="prefix">(</mo><mrow><mi>t</mi><mi>c</mi><mi>l</mi></mrow><mo>+</mo><mrow><mi>e</mi><mi>t</mi><mi>a</mi><mi>.</mi><mi>c</mi><mi>l</mi></mrow><mo stretchy="true" form="postfix">)</mo></mrow></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><mi>v</mi></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mo>=</mo><mrow><mi mathvariant="normal">exp</mi><mo>⁡</mo></mrow><mrow><mo stretchy="true" form="prefix">(</mo><mrow><mi>t</mi><mi>v</mi></mrow><mo>+</mo><mrow><mi>e</mi><mi>t</mi><mi>a</mi><mi>.</mi><mi>v</mi></mrow><mo stretchy="true" form="postfix">)</mo></mrow></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><mfrac><mrow><mi>d</mi><mspace width="0.222em"></mspace><mi>d</mi><mi>e</mi><mi>p</mi><mi>o</mi><mi>t</mi></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mo>=</mo><mi>−</mi><mrow><mi>k</mi><mi>a</mi></mrow><mo>×</mo><mrow><mi>d</mi><mi>e</mi><mi>p</mi><mi>o</mi><mi>t</mi></mrow></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><mfrac><mrow><mi>d</mi><mspace width="0.222em"></mspace><mi>c</mi><mi>e</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>r</mi></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mo>=</mo><mrow><mi>k</mi><mi>a</mi></mrow><mo>×</mo><mrow><mi>d</mi><mi>e</mi><mi>p</mi><mi>o</mi><mi>t</mi></mrow><mo>−</mo><mfrac><mrow><mi>c</mi><mi>l</mi></mrow><mi>v</mi></mfrac><mo>×</mo><mrow><mi>c</mi><mi>e</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>r</mi></mrow></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><mi>c</mi><mi>p</mi></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mo>=</mo><mfrac><mrow><mi>c</mi><mi>e</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>r</mi></mrow><mi>v</mi></mfrac></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><mi>c</mi><mi>p</mi></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mo>∼</mo><mi>a</mi><mi>d</mi><mi>d</mi><mo stretchy="false" form="prefix">(</mo><mrow><mi>a</mi><mi>d</mi><mi>d</mi><mi>.</mi><mi>s</mi><mi>d</mi></mrow><mo stretchy="false" form="postfix">)</mo></mtd></mtr></mtable><annotation encoding="application/x-tex">\begin{align*}
+{ka} &amp; = \exp\left({tka}+{eta.ka}\right) \\
+{cl} &amp; = \exp\left({tcl}+{eta.cl}\right) \\
+{v} &amp; = \exp\left({tv}+{eta.v}\right) \\
+\frac{d \: depot}{dt} &amp; = -{ka} {\times} {depot} \\
+\frac{d \: center}{dt} &amp; = {ka} {\times} {depot}-\frac{{cl}}{{v}} {\times} {center} \\
+{cp} &amp; = \frac{{center}}{{v}} \\
+{cp} &amp; \sim add({add.sd})
+\end{align*}</annotation></semantics></math></p>
 <p>If the covariance method reported is not <code>"r,s"</code> (or you
 simply want a more robust covariance estimate), apply
 preconditioning:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/preconditionFit.html">preconditionFit</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/preconditionFit.html">preconditionFit</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; → loading into <span style="color: #0000BB;">symengine</span> environment...</span></span>
+<span><span class="co">#&gt; → pruning branches (`if`/`else`) of full model...</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> done</span></span>
+<span><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00</span></span>
+<span><span class="co">#&gt; → calculate sensitivities</span></span>
+<span><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00</span></span>
+<span><span class="co">#&gt; → calculate ∂(f)/∂(η)</span></span>
+<span><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00</span></span>
+<span><span class="co">#&gt; → calculate ∂(R²)/∂(η)</span></span>
+<span><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00</span></span>
+<span><span class="co">#&gt; → finding duplicate expressions in inner model...</span></span>
+<span><span class="co">#&gt; → finding duplicate expressions in EBE model...</span></span>
+<span><span class="co">#&gt; → compiling inner model...</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> done</span></span>
+<span><span class="co">#&gt; → finding duplicate expressions in FD model...</span></span>
+<span><span class="co">#&gt; → compiling EBE model...</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> done</span></span>
+<span><span class="co">#&gt; → compiling events FD model...</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> done</span></span>
+<span><span class="co">#&gt; rxode2 5.1.7 using 2 threads (see ?getRxThreads)</span></span>
+<span><span class="co">#&gt;   no cache: create with `rxCreateCache()`</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Attaching package: 'rxode2'</span></span>
+<span><span class="co">#&gt; The following objects are masked from 'package:nlmixr2est':</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;     boxCox, yeoJohnson</span></span>
+<span><span class="co">#&gt; <span style="font-weight: bold;">Key:</span> U: Unscaled Parameters; X: Back-transformed parameters; G: Gill difference gradient approximation</span></span>
+<span><span class="co">#&gt; F: Forward difference gradient approximation</span></span>
+<span><span class="co">#&gt; C: Central difference gradient approximation</span></span>
+<span><span class="co">#&gt; M: Mixed forward and central difference gradient approximation</span></span>
+<span><span class="co">#&gt; A: Analytic (forward sensitivity) gradient (fast=TRUE)</span></span>
+<span><span class="co">#&gt; Unscaled parameters for Omegas=chol(solve(omega));</span></span>
+<span><span class="co">#&gt; Diagonals are transformed, as specified by foceiControl(diagXform=)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; |    #| Function Val. |nlmixr2Pre_tka |nlmixr2Pre_tcl |nlmixr2Pre_tv |nlmixr2Pre_add.sd |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|        o1 |        o2 |        o3 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">    1</span>|     116.81105 |   -0.9752 |    -1.000 |     1.000 |   -0.7133 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9898 |   -0.9890 |   -0.9880 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.83 |    -6.786 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     1.945 |     2.666 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.83 |    -6.786 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     1.945 |     2.666 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">    2</span>|     116.81098 |   -0.9752 |    -1.000 |     1.000 |   -0.7133 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9898 |   -0.9890 |   -0.9880 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.83 |    -6.786 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     1.945 |     2.666 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.83 |    -6.786 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     1.945 |     2.666 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">    3</span>|     117.16602 |   -0.7752 |    -1.000 |     1.000 |   -0.7133 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9898 |   -0.9890 |   -0.9880 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     15.40 |    -6.786 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     1.945 |     2.666 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     15.40 |    -6.786 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     1.945 |     2.666 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">    4</span>|     116.81090 |   -0.9752 |   -0.8000 |     1.000 |   -0.7133 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9898 |   -0.9890 |   -0.9880 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.83 |    -6.756 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     1.945 |     2.666 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.83 |    -6.756 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     1.945 |     2.666 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">    5</span>|     355.05484 |   -0.9752 |    -1.000 |     1.200 |   -0.7133 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9898 |   -0.9890 |   -0.9880 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.83 |    -6.786 |     1889. |     219.9 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     1.945 |     2.666 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.83 |    -6.786 |     1889. |     219.9 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     1.945 |     2.666 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">    6</span>|     118.06431 |   -0.9752 |    -1.000 |     1.000 |   -0.5133 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9898 |   -0.9890 |   -0.9880 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.83 |    -6.786 |     1574. |     263.9 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     1.945 |     2.666 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.83 |    -6.786 |     1574. |     263.9 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     1.945 |     2.666 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">    7</span>|     118.02696 |   -0.9752 |    -1.000 |     1.000 |   -0.7133 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.7898 |   -0.9890 |   -0.9880 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.83 |    -6.786 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.417 |     1.945 |     2.666 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.83 |    -6.786 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.417 |     1.945 |     2.666 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">    8</span>|     116.96433 |   -0.9752 |    -1.000 |     1.000 |   -0.7133 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9898 |   -0.7890 |   -0.9880 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.83 |    -6.786 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     2.048 |     2.666 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.83 |    -6.786 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     2.048 |     2.666 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">    9</span>|     116.82676 |   -0.9752 |    -1.000 |     1.000 |   -0.7133 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9898 |   -0.9890 |   -0.7880 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.83 |    -6.786 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     1.945 |     2.741 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.83 |    -6.786 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     1.945 |     2.741 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   10</span>|     117.13147 |    -1.175 |    -1.000 |     1.000 |   -0.7133 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9898 |   -0.9890 |   -0.9880 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     10.27 |    -6.786 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     1.945 |     2.666 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     10.27 |    -6.786 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     1.945 |     2.666 |...........|</span></span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; |    #| Function Val. |nlmixr2Pre_tka |nlmixr2Pre_tcl |nlmixr2Pre_tv |nlmixr2Pre_add.sd |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|        o1 |        o2 |        o3 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   11</span>|     116.81517 |   -0.9752 |    -1.200 |     1.000 |   -0.7133 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9898 |   -0.9890 |   -0.9880 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.83 |    -6.815 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     1.945 |     2.666 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.83 |    -6.815 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     1.945 |     2.666 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   12</span>|     357.44856 |   -0.9752 |    -1.000 |    0.8000 |   -0.7133 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9898 |   -0.9890 |   -0.9880 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.83 |    -6.786 |     1259. |     219.9 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     1.945 |     2.666 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.83 |    -6.786 |     1259. |     219.9 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     1.945 |     2.666 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   13</span>|     118.45718 |   -0.9752 |    -1.000 |     1.000 |   -0.9133 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9898 |   -0.9890 |   -0.9880 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.83 |    -6.786 |     1574. |     175.9 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     1.945 |     2.666 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.83 |    -6.786 |     1574. |     175.9 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     1.945 |     2.666 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   14</span>|     117.97931 |   -0.9752 |    -1.000 |     1.000 |   -0.7133 |</span></span>
+<span><span class="co">#&gt; |.....................|    -1.190 |   -0.9890 |   -0.9880 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.83 |    -6.786 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.100 |     1.945 |     2.666 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.83 |    -6.786 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.100 |     1.945 |     2.666 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   15</span>|     117.03261 |   -0.9752 |    -1.000 |     1.000 |   -0.7133 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9898 |    -1.189 |   -0.9880 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.83 |    -6.786 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     1.843 |     2.666 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.83 |    -6.786 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     1.843 |     2.666 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   16</span>|     116.87995 |   -0.9752 |    -1.000 |     1.000 |   -0.7133 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9898 |   -0.9890 |    -1.188 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.83 |    -6.786 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     1.945 |     2.591 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.83 |    -6.786 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     1.945 |     2.591 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   17</span>|     116.81773 |   -0.9803 |   -0.8066 |     1.000 |   -0.6997 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9918 |   -0.9708 |   -0.9248 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.77 |    -6.757 |     1575. |     222.9 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.257 |     1.955 |     2.690 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.77 |    -6.757 |     1575. |     222.9 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.257 |     1.955 |     2.690 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   18</span>|     116.81210 |   -0.9752 |   -0.7600 |     1.000 |   -0.7133 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9898 |   -0.9890 |   -0.9880 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.83 |    -6.750 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     1.945 |     2.666 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.83 |    -6.750 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     1.945 |     2.666 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   19</span>|     116.82828 |   -0.9769 |   -0.8042 |     1.000 |   -0.7009 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9921 |   -0.9775 |    -1.035 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.81 |    -6.757 |     1575. |     222.6 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.257 |     1.951 |     2.649 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.81 |    -6.757 |     1575. |     222.6 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.257 |     1.951 |     2.649 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   20</span>|     116.81430 |   -0.9929 |   -0.7823 |     1.000 |   -0.7133 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9898 |   -0.9890 |   -0.9880 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.61 |    -6.754 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     1.945 |     2.666 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.61 |    -6.754 |     1574. |     219.9 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     1.945 |     2.666 |...........|</span></span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; |    #| Function Val. |nlmixr2Pre_tka |nlmixr2Pre_tcl |nlmixr2Pre_tv |nlmixr2Pre_add.sd |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|        o1 |        o2 |        o3 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   21</span>|     116.82036 |   -0.9752 |   -0.8011 |     1.000 |   -0.7090 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9901 |    -1.012 |   -0.9795 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.83 |    -6.756 |     1575. |     220.8 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.258 |     1.934 |     2.669 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.83 |    -6.756 |     1575. |     220.8 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.258 |     1.934 |     2.669 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   22</span>|     117.46092 |   -0.9752 |   -0.8100 |     1.010 |   -0.7133 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9898 |   -0.9890 |   -0.9880 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.83 |    -6.758 |     1590. |     219.9 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     1.945 |     2.666 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.83 |    -6.758 |     1590. |     219.9 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     1.945 |     2.666 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   23</span>|     116.81080 |   -0.9679 |   -0.7927 |    0.9997 |   -0.7164 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9880 |   -0.9833 |   -0.9811 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.93 |    -6.755 |     1574. |     219.2 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.260 |     1.948 |     2.669 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.93 |    -6.755 |     1574. |     219.2 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.260 |     1.948 |     2.669 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   24</span>|     116.81740 |   -0.9675 |   -0.7826 |    0.9997 |   -0.7166 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9781 |   -0.9830 |   -0.9808 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.93 |    -6.754 |     1574. |     219.1 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.268 |     1.949 |     2.669 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.93 |    -6.754 |     1574. |     219.1 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.268 |     1.949 |     2.669 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   25</span>|     116.81679 |   -0.9684 |   -0.7920 |    0.9996 |   -0.7041 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9947 |   -0.9823 |   -0.9800 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.92 |    -6.755 |     1574. |     221.9 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.255 |     1.949 |     2.669 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.92 |    -6.755 |     1574. |     221.9 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.255 |     1.949 |     2.669 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   26</span>|     116.96163 |   -0.9704 |   -0.7921 |    0.9947 |   -0.7232 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9979 |   -0.9809 |   -0.9770 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.89 |    -6.755 |     1566. |     217.7 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.252 |     1.950 |     2.670 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.89 |    -6.755 |     1566. |     217.7 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.252 |     1.950 |     2.670 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   27</span>|     116.81448 |   -0.9654 |   -0.7946 |    0.9996 |   -0.7134 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9882 |   -0.9939 |   -0.9894 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.96 |    -6.755 |     1574. |     219.8 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.260 |     1.943 |     2.666 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.96 |    -6.755 |     1574. |     219.8 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.260 |     1.943 |     2.666 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   28</span>|     116.81736 |   -0.9682 |   -0.8029 |    0.9997 |   -0.7163 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9782 |   -0.9836 |   -0.9814 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.92 |    -6.757 |     1574. |     219.2 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.268 |     1.948 |     2.669 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.92 |    -6.757 |     1574. |     219.2 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.268 |     1.948 |     2.669 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   29</span>|     116.81080 |   -0.9732 |   -0.8025 |    0.9996 |   -0.7162 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9913 |   -0.9761 |   -0.9846 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.86 |    -6.756 |     1574. |     219.2 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.257 |     1.952 |     2.667 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.86 |    -6.756 |     1574. |     219.2 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.257 |     1.952 |     2.667 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   30</span>|     117.08502 |   -0.9632 |   -0.8068 |    0.9930 |   -0.7146 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9960 |   -0.9786 |   -0.9872 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.99 |    -6.757 |     1563. |     219.6 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.254 |     1.951 |     2.666 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.99 |    -6.757 |     1563. |     219.6 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.254 |     1.951 |     2.666 |...........|</span></span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; |    #| Function Val. |nlmixr2Pre_tka |nlmixr2Pre_tcl |nlmixr2Pre_tv |nlmixr2Pre_add.sd |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|        o1 |        o2 |        o3 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   31</span>|     116.80912 |   -0.9779 |   -0.7971 |    0.9996 |   -0.7156 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9885 |   -0.9862 |   -0.9784 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.80 |    -6.756 |     1574. |     219.4 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.260 |     1.947 |     2.670 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.80 |    -6.756 |     1574. |     219.4 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.260 |     1.947 |     2.670 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   32</span>|     116.81233 |   -0.9772 |   -0.7855 |    0.9996 |   -0.7161 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9905 |   -0.9940 |   -0.9788 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.81 |    -6.754 |     1574. |     219.2 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.258 |     1.943 |     2.670 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.81 |    -6.754 |     1574. |     219.2 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.258 |     1.943 |     2.670 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   33</span>|     116.81518 |   -0.9777 |   -0.8072 |    0.9996 |   -0.7255 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9886 |   -0.9863 |   -0.9789 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.80 |    -6.757 |     1574. |     217.2 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.260 |     1.947 |     2.670 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.80 |    -6.757 |     1574. |     217.2 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.260 |     1.947 |     2.670 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   34</span>|     116.81063 |   -0.9799 |   -0.7929 |    0.9996 |   -0.7146 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9873 |   -0.9760 |   -0.9869 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.77 |    -6.755 |     1574. |     219.6 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.261 |     1.952 |     2.667 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.77 |    -6.755 |     1574. |     219.6 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.261 |     1.952 |     2.667 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   35</span>|     116.80935 |   -0.9793 |   -0.8012 |    0.9996 |   -0.7128 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9892 |   -0.9867 |   -0.9738 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.78 |    -6.756 |     1574. |     220.0 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     1.947 |     2.671 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.78 |    -6.756 |     1574. |     220.0 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     1.947 |     2.671 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   36</span>|     116.84816 |   -0.9774 |   -0.7960 |     1.002 |   -0.7170 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9880 |   -0.9852 |   -0.9770 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.80 |    -6.756 |     1577. |     219.1 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.260 |     1.947 |     2.670 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.80 |    -6.756 |     1577. |     219.1 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.260 |     1.947 |     2.670 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   37</span>|     116.81215 |   -0.9796 |   -0.7984 |    0.9996 |   -0.7135 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9884 |   -0.9871 |   -0.9800 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.78 |    -6.756 |     1573. |     219.8 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.260 |     1.946 |     2.669 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.78 |    -6.756 |     1573. |     219.8 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.260 |     1.946 |     2.669 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   38</span>|     116.81076 |   -0.9777 |   -0.7973 |    0.9997 |   -0.7152 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9886 |   -0.9879 |   -0.9785 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.80 |    -6.756 |     1574. |     219.4 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.260 |     1.946 |     2.670 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.80 |    -6.756 |     1574. |     219.4 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.260 |     1.946 |     2.670 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   39</span>|     116.81103 |   -0.9775 |   -0.7966 |    0.9994 |   -0.7159 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9886 |   -0.9848 |   -0.9777 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.80 |    -6.756 |     1573. |     219.3 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     1.948 |     2.670 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.80 |    -6.756 |     1573. |     219.3 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     1.948 |     2.670 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   40</span>|     116.81054 |   -0.9773 |   -0.7968 |    0.9996 |   -0.7150 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9888 |   -0.9860 |   -0.9785 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.81 |    -6.756 |     1574. |     219.5 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     1.947 |     2.670 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.81 |    -6.756 |     1574. |     219.5 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     1.947 |     2.670 |...........|</span></span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; |    #| Function Val. |nlmixr2Pre_tka |nlmixr2Pre_tcl |nlmixr2Pre_tv |nlmixr2Pre_add.sd |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|        o1 |        o2 |        o3 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   41</span>|     116.81145 |   -0.9782 |   -0.7971 |    0.9996 |   -0.7163 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9889 |   -0.9862 |   -0.9789 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.79 |    -6.756 |     1574. |     219.2 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     1.947 |     2.670 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.79 |    -6.756 |     1574. |     219.2 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     1.947 |     2.670 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   42</span>|     116.81172 |   -0.9773 |   -0.7974 |    0.9996 |   -0.7157 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9878 |   -0.9860 |   -0.9786 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.81 |    -6.756 |     1574. |     219.3 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.260 |     1.947 |     2.670 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.81 |    -6.756 |     1574. |     219.3 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.260 |     1.947 |     2.670 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   43</span>|     116.81179 |   -0.9784 |   -0.7965 |    0.9995 |   -0.7155 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9880 |   -0.9863 |   -0.9781 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.79 |    -6.756 |     1573. |     219.4 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.260 |     1.947 |     2.670 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.79 |    -6.756 |     1573. |     219.4 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.260 |     1.947 |     2.670 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   44</span>|     116.80955 |   -0.9780 |   -0.7968 |    0.9996 |   -0.7156 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9884 |   -0.9855 |   -0.9790 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.80 |    -6.756 |     1574. |     219.4 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.260 |     1.947 |     2.669 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.80 |    -6.756 |     1574. |     219.4 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.260 |     1.947 |     2.669 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   45</span>|     116.81139 |   -0.9783 |   -0.7978 |    0.9999 |   -0.7156 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9887 |   -0.9859 |   -0.9781 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.79 |    -6.756 |     1574. |     219.4 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     1.947 |     2.670 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.79 |    -6.756 |     1574. |     219.4 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     1.947 |     2.670 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   46</span>|     116.81065 |   -0.9778 |   -0.7962 |    0.9996 |   -0.7157 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9886 |   -0.9867 |   -0.9785 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.80 |    -6.756 |     1574. |     219.3 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     1.947 |     2.670 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.80 |    -6.756 |     1574. |     219.3 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     1.947 |     2.670 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   47</span>|     116.81183 |   -0.9776 |   -0.7973 |    0.9993 |   -0.7160 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9888 |   -0.9866 |   -0.9778 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.80 |    -6.756 |     1573. |     219.3 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     1.947 |     2.670 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.80 |    -6.756 |     1573. |     219.3 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     1.947 |     2.670 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   48</span>|     116.81070 |   -0.9775 |   -0.7974 |    0.9996 |   -0.7157 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9887 |   -0.9855 |   -0.9789 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.80 |    -6.756 |     1574. |     219.3 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.259 |     1.947 |     2.670 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.80 |    -6.756 |     1574. |     219.3 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.259 |     1.947 |     2.670 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   49</span>|     116.81135 |   -0.9772 |   -0.7965 |    0.9998 |   -0.7159 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9886 |   -0.9859 |   -0.9788 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.81 |    -6.756 |     1574. |     219.3 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.260 |     1.947 |     2.670 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.81 |    -6.756 |     1574. |     219.3 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.260 |     1.947 |     2.670 |...........|</span></span></span>
+<span><span class="co">#&gt; |<span style="font-weight: bold;">   50</span>|     116.81091 |   -0.9779 |   -0.7971 |    0.9996 |   -0.7156 |</span></span>
+<span><span class="co">#&gt; |.....................|   -0.9885 |   -0.9862 |   -0.9784 |...........|</span></span>
+<span><span class="co">#&gt; |    U|               |     12.80 |    -6.756 |     1574. |     219.4 |</span></span>
+<span><span class="co">#&gt; |.....................|     1.260 |     1.947 |     2.670 |...........|</span></span>
+<span><span class="co">#&gt; |    X|               |     12.80 |    -6.756 |     1574. |     219.4 |</span></span>
+<span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.260 |     1.947 |     2.670 |...........|</span></span></span>
+<span><span class="co">#&gt; calculating covariance matrix</span></span>
+<span><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00 </span></span>
+<span><span class="co">#&gt; done</span></span>
+<span><span class="co">#&gt; → loading into <span style="color: #0000BB;">symengine</span> environment...</span></span>
+<span><span class="co">#&gt; → pruning branches (`if`/`else`) of full model...</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> done</span></span>
+<span><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00</span></span>
+<span><span class="co">#&gt; → calculate sensitivities</span></span>
+<span><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00</span></span>
+<span><span class="co">#&gt; → calculate ∂(f)/∂(η)</span></span>
+<span><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00</span></span>
+<span><span class="co">#&gt; → finding duplicate expressions in inner model...</span></span>
+<span><span class="co">#&gt; → finding duplicate expressions in EBE model...</span></span>
+<span><span class="co">#&gt; → compiling inner model...</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> done</span></span>
+<span><span class="co">#&gt; → finding duplicate expressions in FD model...</span></span>
+<span><span class="co">#&gt; → compiling EBE model...</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> done</span></span>
+<span><span class="co">#&gt; → compiling events FD model...</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> done</span></span>
+<span><span class="co">#&gt; Updated original fit object <span style="color: #BBBB00;">fit</span></span></span>
+<span><span class="va">fit</span><span class="op">$</span><span class="va">covMethod</span></span>
+<span><span class="co">#&gt; [1] "precondition"</span></span></code></pre></div>
 <p><code><a href="../reference/preconditionFit.html">preconditionFit()</a></code> modifies the <strong>original fit
 object in-place</strong>: after the call, <code>fit$cov</code>,
 <code>fit$parFixedDf</code>, and <code>fit$covMethod</code> all reflect
@@ -194,13 +575,15 @@ local minimum</td>
 </tr>
 <tr class="odd">
 <td><code>"none"</code></td>
-<td>Nothing — only the covariance matrix is re-computed</td>
+<td>Nothing – only the covariance matrix is re-computed</td>
 <td>Fastest; good for a quick diagnostic check</td>
 </tr>
 </tbody>
 </table>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Only recompute the covariance matrix (fastest)</span></span>
+<code class="sourceCode R"><span><span class="co"># Shown for reference -- each call re-estimates and modifies `fit` in place, so</span></span>
+<span><span class="co"># run whichever one you want against a freshly fitted model.</span></span>
+<span><span class="co"># Only recompute the covariance matrix (fastest)</span></span>
 <span><span class="fu"><a href="../reference/preconditionFit.html">preconditionFit</a></span><span class="op">(</span><span class="va">fit</span>, estType <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Fix theta, re-estimate ETAs, then compute covariance</span></span>
@@ -236,9 +619,9 @@ between them with <code><a href="https://nlmixr2.github.io/nlmixr2est/reference/
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># See which covariance estimates are stored</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">covList</span><span class="op">)</span></span>
-<span><span class="co"># e.g. c("r,s", "precondition")</span></span>
-<span></span>
-<span><span class="co"># Switch back to the standard r,s covariance</span></span>
+<span><span class="co">#&gt; [1] "r,s"</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Switch back to the standard r,s covariance</span></span>
 <span><span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/setCov.html" class="external-link">setCov</a></span><span class="op">(</span><span class="va">fit</span>, <span class="st">"r,s"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Switch to the preconditioned covariance</span></span>
@@ -250,31 +633,41 @@ selected covariance.</p>
 <div class="section level2">
 <h2 id="worked-example-comparing-ses-before-and-after-preconditioning">Worked example: comparing SEs before and after preconditioning<a class="anchor" aria-label="anchor" href="#worked-example-comparing-ses-before-and-after-preconditioning"></a>
 </h2>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://nlmixr2.github.io/nlmixr2extra/">nlmixr2extra</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">oneCompartment</span>, data <span class="op">=</span> <span class="fu">nlmixr2data</span><span class="fu">::</span><span class="va"><a href="https://nlmixr2.github.io/nlmixr2data/reference/theo_sd.html" class="external-link">theo_sd</a></span>,</span>
-<span>               est <span class="op">=</span> <span class="st">"focei"</span>, control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>print <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># a second, untouched fit: `fit` above was already preconditioned in place</span></span>
+<span><span class="va">fitCompare</span> <span class="op">:=</span> <span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">oneCompartment</span>, data <span class="op">=</span> <span class="fu">nlmixr2data</span><span class="fu">::</span><span class="va"><a href="https://nlmixr2.github.io/nlmixr2data/reference/theo_sd.html" class="external-link">theo_sd</a></span>,</span>
+<span>                      est <span class="op">=</span> <span class="st">"focei"</span>, control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>print <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Record the original parameter table</span></span>
-<span><span class="va">dfBefore</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">parFixedDf</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Covariance method before:"</span>, <span class="va">fit</span><span class="op">$</span><span class="va">covMethod</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="va">dfBefore</span> <span class="op">&lt;-</span> <span class="va">fitCompare</span><span class="op">$</span><span class="va">parFixedDf</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Covariance method before:"</span>, <span class="va">fitCompare</span><span class="op">$</span><span class="va">covMethod</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Covariance method before: r,s</span></span>
 <span></span>
 <span><span class="co"># Apply preconditioning (only recompute covariance, do not re-estimate)</span></span>
-<span><span class="fu"><a href="../reference/preconditionFit.html">preconditionFit</a></span><span class="op">(</span><span class="va">fit</span>, estType <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span>
-<span><span class="va">dfAfter</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">parFixedDf</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Covariance method after:"</span>, <span class="va">fit</span><span class="op">$</span><span class="va">covMethod</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="../reference/preconditionFit.html">preconditionFit</a></span><span class="op">(</span><span class="va">fitCompare</span>, estType <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; calculating covariance matrix</span></span>
+<span><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00</span></span>
+<span><span class="va">dfAfter</span> <span class="op">&lt;-</span> <span class="va">fitCompare</span><span class="op">$</span><span class="va">parFixedDf</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Covariance method after:"</span>, <span class="va">fitCompare</span><span class="op">$</span><span class="va">covMethod</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Covariance method after: precondition</span></span>
 <span></span>
 <span><span class="co"># Compare standard errors</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
 <span>  SE_before <span class="op">=</span> <span class="va">dfBefore</span><span class="op">$</span><span class="va">SE</span>,</span>
 <span>  SE_after  <span class="op">=</span> <span class="va">dfAfter</span><span class="op">$</span><span class="va">SE</span>,</span>
 <span>  row.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">dfBefore</span><span class="op">)</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt;        SE_before            SE_after              row.names</span></span>
+<span><span class="co">#&gt; tka    "0.23191882512431"   "0.0216417252282623"  "tka"    </span></span>
+<span><span class="co">#&gt; tcl    "0.169047370259566"  "0.009228606428201"   "tcl"    </span></span>
+<span><span class="co">#&gt; tv     "0.0405121558563634" "0.00923909311815786" "tv"     </span></span>
+<span><span class="co">#&gt; add.sd "0.0730247302042821" "0.0820970850815736"  "add.sd"</span></span></code></pre></div>
 <p>The point estimates (<code>Estimate</code>,
 <code>Back-transformed</code>) and the random-effects summaries
 (<code>BSV(CV%)</code>, <code>Shrink(SD)%</code>) are identical before
-and after — only the covariance-derived quantities (SE, %RSE, confidence
+and after – only the covariance-derived quantities (SE, %RSE, confidence
 intervals) change.</p>
 </div>
 <div class="section level2">
@@ -305,8 +698,6 @@ structurally unreliable covariance.</p>
 <code>fit &lt;- nlmixr2(model, data, est = "focei", ...)</code> first,
 or use <code>getVarCov(saemFit)</code> to trigger covariance
 computation.</li>
-<li>The <code>symengine</code> package (used to construct the symbolic
-reparameterization).</li>
 <li>The <code>nlmixr2extra</code> package to be loaded.</li>
 </ul>
 </div>

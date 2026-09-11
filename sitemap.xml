@@ -1,9 +1,11 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/404.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/CLAUDE.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/LICENSE.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/articles/index.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/articles/likelihood-profiling.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/articles/model-linearization.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/articles/multistart.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/articles/nlmixrFormula.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/articles/precondition.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/articles/reporting-helpers.html</loc></url>
@@ -47,10 +49,13 @@
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/linearizePlot.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/listModelsTested.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/llpControl.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/multistart.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/multistartControl.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/nlmixr2extra-package.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/nlmixrFormula.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/normalizedData.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/optimUnisampling.html</loc></url>
+<url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/plot.nlmixr2Multistart.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/preconditionFit.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/print.linIIVSearch.html</loc></url>
 <url><loc>https://nlmixr2.github.io/nlmixr2extra/reference/profile.nlmixr2FitCore.html</loc></url>

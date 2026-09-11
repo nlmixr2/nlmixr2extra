@@ -40,6 +40,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/likelihood-profiling.html">Likelihood Profiling for NLME Models</a></li>
     <li><a class="dropdown-item" href="../articles/model-linearization.html">Model Linearization for IIV and Residual Error Search</a></li>
+    <li><a class="dropdown-item" href="../articles/multistart.html">Multistart estimation</a></li>
     <li><a class="dropdown-item" href="../articles/nlmixrFormula.html">nlmixr2 Algebraic Solutions with Formula</a></li>
     <li><a class="dropdown-item" href="../articles/precondition.html">Stabilizing Covariance Estimates with preconditionFit()</a></li>
     <li><a class="dropdown-item" href="../articles/reporting-helpers.html">Helpers for writing modeling reports</a></li>
@@ -87,11 +88,11 @@ The resulting linear model fits in a fraction of the time, allowing
 exhaustive search over:</p>
 <ul>
 <li>
-<strong>Inter-individual variability (IIV) structure</strong> —
+<strong>Inter-individual variability (IIV) structure</strong> –
 which parameters carry random effects, and which pairs are correlated
 (<code><a href="../reference/iivSearch.html">iivSearch()</a></code>).</li>
 <li>
-<strong>Residual error model</strong> — additive, proportional, or
+<strong>Residual error model</strong> – additive, proportional, or
 combined variance structures (<code><a href="../reference/resSearch.html">resSearch()</a></code>).</li>
 </ul>
 <p>The workflow has three stages:</p>
@@ -210,7 +211,7 @@ error:</p>
 <p>Fit the data to the base model <code>oneCmtBase</code> with typical
 NLME method (e.g. FOCEI):</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">oneCmtBase</span>, <span class="va">sim</span>, est <span class="op">=</span> <span class="st">"focei"</span><span class="op">)</span> </span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">fit</span> <span class="op">:=</span> <span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">oneCmtBase</span>, <span class="va">sim</span>, est <span class="op">=</span> <span class="st">"focei"</span>, control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>print <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="run-linearization">Run Linearization<a class="anchor" aria-label="anchor" href="#run-linearization"></a>
@@ -220,7 +221,7 @@ and returns an <code>nlmixr2Linearize</code> fit.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># addEtas = TRUE adds fixed etas on every theta before linearizing,</span></span>
 <span><span class="co"># giving derivatives with respect to every parameter.</span></span>
-<span><span class="va">fitLin</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/linearize.html">linearize</a></span><span class="op">(</span><span class="va">fit</span>, addEtas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">fitLin</span> <span class="op">:=</span> <span class="fu"><a href="../reference/linearize.html">linearize</a></span><span class="op">(</span><span class="va">fit</span>, addEtas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>The function:</p>
 <ol style="list-style-type: decimal">
 <li>If <code>addEtas = TRUE</code>, adds small fixed etas on all thetas
@@ -242,20 +243,27 @@ reproduces the original model well:</p>
 <span></span>
 <span><span class="co"># OFV agreement (relative tolerance 10%)</span></span>
 <span><span class="va">match</span><span class="op">$</span><span class="va">ofv</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>   <span class="co"># TRUE/FALSE if OFV differ by less than tol</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
 <span><span class="va">match</span><span class="op">$</span><span class="va">ofv</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span>   <span class="co"># all.equal() message if FALSE </span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
 <span></span>
 <span><span class="co"># Omega matrix agreement</span></span>
 <span><span class="va">match</span><span class="op">$</span><span class="va">omega</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>  <span class="co"># TRUE/FALSE if Omega matrices differ by less than tol</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
 <span></span>
 <span><span class="co"># Individual eta agreement</span></span>
 <span><span class="va">match</span><span class="op">$</span><span class="va">eta</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span> <span class="co"># TRUE/FALSE if all individual etas differ by less than tol</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
 <span></span>
 <span></span>
 <span><span class="co"># Residual variance agreement</span></span>
-<span><span class="va">match</span><span class="op">$</span><span class="va">err</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span> <span class="co"># TRUE/FALSE if residual variances differ by less than tol</span></span></code></pre></div>
+<span><span class="va">match</span><span class="op">$</span><span class="va">err</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span> <span class="co"># TRUE/FALSE if residual variances differ by less than tol</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
 <p>A visual check is available via <code><a href="../reference/linearizePlot.html">linearizePlot()</a></code>:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/linearizePlot.html">linearizePlot</a></span><span class="op">(</span><span class="va">fitLin</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/linearizePlot.html">linearizePlot</a></span><span class="op">(</span><span class="va">fitLin</span><span class="op">)</span></span>
+<span><span class="co">#&gt; `geom_smooth()` using formula = 'y ~ x'</span></span></code></pre></div>
+<p><img src="model-linearization_files/figure-html/linplot-1.png" class="r-plt" alt="" width="672"></p>
 <p>The plot shows original vs. linearized individual objective values
 and etas. Points should lie on the identity line for a good
 approximation.</p>
@@ -296,10 +304,10 @@ exceeded</td>
 additive-only models.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Force FOCE linearization</span></span>
-<span><span class="va">fitLinFoce</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/linearize.html">linearize</a></span><span class="op">(</span><span class="va">fit</span>, addEtas <span class="op">=</span> <span class="cn">TRUE</span>, focei <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fitLinFoce</span> <span class="op">:=</span> <span class="fu"><a href="../reference/linearize.html">linearize</a></span><span class="op">(</span><span class="va">fit</span>, addEtas <span class="op">=</span> <span class="cn">TRUE</span>, focei <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Force FOCEI</span></span>
-<span><span class="va">fitLinFocei</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/linearize.html">linearize</a></span><span class="op">(</span><span class="va">fit</span>, addEtas <span class="op">=</span> <span class="cn">TRUE</span>, focei <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">fitLinFocei</span> <span class="op">:=</span> <span class="fu"><a href="../reference/linearize.html">linearize</a></span><span class="op">(</span><span class="va">fit</span>, addEtas <span class="op">=</span> <span class="cn">TRUE</span>, focei <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="tuning-mceta">Tuning <code>mceta</code><a class="anchor" aria-label="anchor" href="#tuning-mceta"></a>
@@ -309,10 +317,10 @@ sizes tried in order. The algorithm stops when the relative OFV
 deviation is within <code>relTol</code>:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Default: try -1, 10, 100, 1000 in order</span></span>
-<span><span class="va">fitLin</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/linearize.html">linearize</a></span><span class="op">(</span><span class="va">fit</span>, addEtas <span class="op">=</span> <span class="cn">TRUE</span>, mceta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">10</span>, <span class="fl">100</span>, <span class="fl">1000</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/linearize.html">linearize</a></span><span class="op">(</span><span class="va">fit</span>, addEtas <span class="op">=</span> <span class="cn">TRUE</span>, mceta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">10</span>, <span class="fl">100</span>, <span class="fl">1000</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># For a difficult model, start with a larger mceta</span></span>
-<span><span class="va">fitLin</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/linearize.html">linearize</a></span><span class="op">(</span><span class="va">fit</span>, addEtas <span class="op">=</span> <span class="cn">TRUE</span>, mceta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fl">500</span>, <span class="fl">1000</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/linearize.html">linearize</a></span><span class="op">(</span><span class="va">fit</span>, addEtas <span class="op">=</span> <span class="cn">TRUE</span>, mceta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fl">500</span>, <span class="fl">1000</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><code>mceta = -1</code> uses the exact gradient (no Monte Carlo
 sampling) and is the fastest option. Larger values are useful when exact
 gradients cause numerical issues.</p>
@@ -347,7 +355,7 @@ full search.</p>
 <h3 id="running-the-search">Running the search<a class="anchor" aria-label="anchor" href="#running-the-search"></a>
 </h3>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">iivRes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/iivSearch.html">iivSearch</a></span><span class="op">(</span><span class="va">fitLin</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">iivRes</span> <span class="op">:=</span> <span class="fu"><a href="../reference/iivSearch.html">iivSearch</a></span><span class="op">(</span><span class="va">fitLin</span><span class="op">)</span></span></code></pre></div>
 <p>Progress is shown for each candidate structure. Failed fits
 (non-convergence) are stored as <code>NA</code> in the summary and do
 not stop the search.</p>
@@ -358,9 +366,84 @@ not stop the search.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Print ordered by BIC</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">iivRes</span><span class="op">)</span></span>
+<span><span class="co">#&gt;              OBJF      AIC      BIC</span></span>
+<span><span class="co">#&gt; FOCEi13  476.3687 1409.307 1438.809</span></span>
+<span><span class="co">#&gt; FOCEi10  514.3502 1443.289 1464.362</span></span>
+<span><span class="co">#&gt; FOCEi3   553.2211 1478.160 1490.803</span></span>
+<span><span class="co">#&gt; FOCEi16  531.5302 1464.469 1493.971</span></span>
+<span><span class="co">#&gt; FOCEi9   553.4991 1480.438 1497.296</span></span>
+<span><span class="co">#&gt; FOCEi14  604.2598 1537.198 1566.701</span></span>
+<span><span class="co">#&gt; FOCEi4   647.0378 1573.976 1590.835</span></span>
+<span><span class="co">#&gt; FOCEi12  646.0224 1574.961 1596.034</span></span>
+<span><span class="co">#&gt; FOCEi1   800.1752 1723.114 1731.543</span></span>
+<span><span class="co">#&gt; FOCEi7   800.4129 1725.351 1737.995</span></span>
+<span><span class="co">#&gt; FOCEi8   800.6373 1727.576 1744.434</span></span>
+<span><span class="co">#&gt; FOCEi15  815.1749 1748.113 1777.616</span></span>
+<span><span class="co">#&gt; FOCEi11 1283.8662 2216.805 2246.307</span></span>
+<span><span class="co">#&gt; FOCEi5  1381.6581 2306.597 2319.240</span></span>
+<span><span class="co">#&gt; FOCEi2  1493.1602 2416.099 2424.528</span></span>
+<span><span class="co">#&gt; FOCEi   1549.0857 2472.024 2480.453</span></span>
+<span><span class="co">#&gt; FOCEi6  1590.7135 2517.652 2534.510</span></span>
+<span><span class="co">#&gt;                                                              search nParams</span></span>
+<span><span class="co">#&gt; FOCEi13              etaTcl+etaTv+etaTka+etaTcl~etaTv+etaTcl~etaTka       7</span></span>
+<span><span class="co">#&gt; FOCEi10                            etaTcl+etaTv+etaTka+etaTcl~etaTv       5</span></span>
+<span><span class="co">#&gt; FOCEi3                                                etaTcl+etaTv+       3</span></span>
+<span><span class="co">#&gt; FOCEi16 etaTcl+etaTv+etaTka+etaTcl~etaTv+etaTcl~etaTka+etaTv~etaTka       7</span></span>
+<span><span class="co">#&gt; FOCEi9                                         etaTcl+etaTv+etaTka+       4</span></span>
+<span><span class="co">#&gt; FOCEi14               etaTcl+etaTv+etaTka+etaTcl~etaTv+etaTv~etaTka       7</span></span>
+<span><span class="co">#&gt; FOCEi4                                    etaTcl+etaTv+etaTcl~etaTv       4</span></span>
+<span><span class="co">#&gt; FOCEi12                            etaTcl+etaTv+etaTka+etaTv~etaTka       5</span></span>
+<span><span class="co">#&gt; FOCEi1                                                        etaTv       2</span></span>
+<span><span class="co">#&gt; FOCEi7                                                etaTv+etaTka+       3</span></span>
+<span><span class="co">#&gt; FOCEi8                                    etaTv+etaTka+etaTv~etaTka       4</span></span>
+<span><span class="co">#&gt; FOCEi15              etaTcl+etaTv+etaTka+etaTcl~etaTka+etaTv~etaTka       7</span></span>
+<span><span class="co">#&gt; FOCEi11                           etaTcl+etaTv+etaTka+etaTcl~etaTka       7</span></span>
+<span><span class="co">#&gt; FOCEi5                                               etaTcl+etaTka+       3</span></span>
+<span><span class="co">#&gt; FOCEi2                                                       etaTka       2</span></span>
+<span><span class="co">#&gt; FOCEi                                                        etaTcl       2</span></span>
+<span><span class="co">#&gt; FOCEi6                                  etaTcl+etaTka+etaTcl~etaTka       4</span></span>
+<span><span class="co">#&gt;         covMethod outerOptTxt</span></span>
+<span><span class="co">#&gt; FOCEi13       r,s      bobyqa</span></span>
+<span><span class="co">#&gt; FOCEi10       r,s      bobyqa</span></span>
+<span><span class="co">#&gt; FOCEi3        r,s      bobyqa</span></span>
+<span><span class="co">#&gt; FOCEi16       r,s      bobyqa</span></span>
+<span><span class="co">#&gt; FOCEi9        r,s      bobyqa</span></span>
+<span><span class="co">#&gt; FOCEi14       r,s      bobyqa</span></span>
+<span><span class="co">#&gt; FOCEi4        r,s      bobyqa</span></span>
+<span><span class="co">#&gt; FOCEi12       r,s      bobyqa</span></span>
+<span><span class="co">#&gt; FOCEi1        r,s      bobyqa</span></span>
+<span><span class="co">#&gt; FOCEi7        r,s      bobyqa</span></span>
+<span><span class="co">#&gt; FOCEi8        r,s      bobyqa</span></span>
+<span><span class="co">#&gt; FOCEi15       r,s      bobyqa</span></span>
+<span><span class="co">#&gt; FOCEi11       r,s      bobyqa</span></span>
+<span><span class="co">#&gt; FOCEi5        r,s      bobyqa</span></span>
+<span><span class="co">#&gt; FOCEi2        r,s      bobyqa</span></span>
+<span><span class="co">#&gt; FOCEi         r,s      bobyqa</span></span>
+<span><span class="co">#&gt; FOCEi6        r,s      bobyqa</span></span>
 <span></span>
 <span><span class="co"># The summary data frame</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">iivRes</span><span class="op">$</span><span class="va">summary</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">iivRes</span><span class="op">$</span><span class="va">summary</span><span class="op">$</span><span class="va">BIC</span><span class="op">)</span>, <span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">iivRes</span><span class="op">$</span><span class="va">summary</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">iivRes</span><span class="op">$</span><span class="va">summary</span><span class="op">$</span><span class="va">BIC</span><span class="op">)</span>, <span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt;             OBJF      AIC      BIC</span></span>
+<span><span class="co">#&gt; FOCEi13 476.3687 1409.307 1438.809</span></span>
+<span><span class="co">#&gt; FOCEi10 514.3502 1443.289 1464.362</span></span>
+<span><span class="co">#&gt; FOCEi3  553.2211 1478.160 1490.803</span></span>
+<span><span class="co">#&gt; FOCEi16 531.5302 1464.469 1493.971</span></span>
+<span><span class="co">#&gt; FOCEi9  553.4991 1480.438 1497.296</span></span>
+<span><span class="co">#&gt; FOCEi14 604.2598 1537.198 1566.701</span></span>
+<span><span class="co">#&gt;                                                              search nParams</span></span>
+<span><span class="co">#&gt; FOCEi13              etaTcl+etaTv+etaTka+etaTcl~etaTv+etaTcl~etaTka       7</span></span>
+<span><span class="co">#&gt; FOCEi10                            etaTcl+etaTv+etaTka+etaTcl~etaTv       5</span></span>
+<span><span class="co">#&gt; FOCEi3                                                etaTcl+etaTv+       3</span></span>
+<span><span class="co">#&gt; FOCEi16 etaTcl+etaTv+etaTka+etaTcl~etaTv+etaTcl~etaTka+etaTv~etaTka       7</span></span>
+<span><span class="co">#&gt; FOCEi9                                         etaTcl+etaTv+etaTka+       4</span></span>
+<span><span class="co">#&gt; FOCEi14               etaTcl+etaTv+etaTka+etaTcl~etaTv+etaTv~etaTka       7</span></span>
+<span><span class="co">#&gt;         covMethod outerOptTxt</span></span>
+<span><span class="co">#&gt; FOCEi13       r,s      bobyqa</span></span>
+<span><span class="co">#&gt; FOCEi10       r,s      bobyqa</span></span>
+<span><span class="co">#&gt; FOCEi3        r,s      bobyqa</span></span>
+<span><span class="co">#&gt; FOCEi16       r,s      bobyqa</span></span>
+<span><span class="co">#&gt; FOCEi9        r,s      bobyqa</span></span>
+<span><span class="co">#&gt; FOCEi14       r,s      bobyqa</span></span></code></pre></div>
 <p>The summary contains one row per candidate with columns:</p>
 <table class="table">
 <thead><tr class="header">
@@ -400,12 +483,12 @@ not stop the search.</p>
 <p>The <code>search</code> column encodes the IIV structure:</p>
 <ul>
 <li>
-<code>eta.cl+eta.v</code> — both etas present, no correlation</li>
+<code>eta.cl+eta.v</code> – both etas present, no correlation</li>
 <li>
-<code>eta.cl+eta.v+eta.cl~eta.v</code> — both etas with correlation
+<code>eta.cl+eta.v+eta.cl~eta.v</code> – both etas with correlation
 between them</li>
 <li>
-<code>eta.cl</code> — only CL carries a random effect</li>
+<code>eta.cl</code> – only CL carries a random effect</li>
 </ul>
 </div>
 </div>
@@ -417,10 +500,22 @@ inference should be based on the original nonlinear model.
 <code><a href="../reference/rerunTopN.html">rerunTopN()</a></code> refits the top <code>n</code> structures:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Refit the 5 best structures with the original nonlinear model</span></span>
-<span><span class="va">top5</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rerunTopN.html">rerunTopN</a></span><span class="op">(</span><span class="va">iivRes</span>, n <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
+<span><span class="va">top5</span> <span class="op">:=</span> <span class="fu"><a href="../reference/rerunTopN.html">rerunTopN</a></span><span class="op">(</span><span class="va">iivRes</span>, n <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Results ordered by BIC from the nonlinear fits</span></span>
-<span><span class="va">top5</span><span class="op">$</span><span class="va">summary</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">top5</span><span class="op">$</span><span class="va">summary</span><span class="op">$</span><span class="va">O.BIC</span><span class="op">)</span>, <span class="op">]</span></span></code></pre></div>
+<span><span class="va">top5</span><span class="op">$</span><span class="va">summary</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">top5</span><span class="op">$</span><span class="va">summary</span><span class="op">$</span><span class="va">O.BIC</span><span class="op">)</span>, <span class="op">]</span></span>
+<span><span class="co">#&gt;           O.OBJF    O.AIC    O.BIC O.Log-likelihood O.Condition#(Cov)</span></span>
+<span><span class="co">#&gt; FOCEi   732.0524 1660.991 1682.064        -825.4955          36.31759</span></span>
+<span><span class="co">#&gt; FOCEi1  733.1991 1664.138 1689.425        -826.0688         493.45679</span></span>
+<span><span class="co">#&gt; FOCEi3  847.7564 1786.695 1828.841        -883.3475        1603.52853</span></span>
+<span><span class="co">#&gt; FOCEi2  909.8071 1842.746 1872.248        -914.3728          63.81725</span></span>
+<span><span class="co">#&gt; FOCEi4 1083.3590 2022.298 2064.444       -1001.1488          63.96851</span></span>
+<span><span class="co">#&gt;        O.Condition#(Cor)                                         search</span></span>
+<span><span class="co">#&gt; FOCEi           28.18692                                          etaTv</span></span>
+<span><span class="co">#&gt; FOCEi1          31.95320                                  etaTv+etaTka+</span></span>
+<span><span class="co">#&gt; FOCEi3        1395.26707 etaTcl+etaTv+etaTka+etaTcl~etaTka+etaTv~etaTka</span></span>
+<span><span class="co">#&gt; FOCEi2          18.60369                      etaTv+etaTka+etaTv~etaTka</span></span>
+<span><span class="co">#&gt; FOCEi4          15.21032              etaTcl+etaTv+etaTka+etaTcl~etaTka</span></span></code></pre></div>
 <p>The summary column names are prefixed with <code>O.</code> (for
 “original”) to distinguish them from the linearized model results.</p>
 </div>
@@ -439,6 +534,7 @@ inference should be based on the original nonlinear model.
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"BIC rank"</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">Delta</span> <span class="op">*</span> <span class="st">"BIC"</span><span class="op">)</span>,</span>
 <span>       title <span class="op">=</span> <span class="st">"IIV search: BIC relative to best model"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><img src="model-linearization_files/figure-html/iivplot-1.png" class="r-plt" alt="" width="672"></p>
 </div>
 </div>
 <div class="section level2">
@@ -475,14 +571,49 @@ comparison.</p>
 </table>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Start from a linearized model; additive-only in this case</span></span>
-<span><span class="va">fitLinAdd</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/linearize.html">linearize</a></span><span class="op">(</span><span class="va">fit</span>, addEtas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">fitLinAdd</span> <span class="op">:=</span> <span class="fu"><a href="../reference/linearize.html">linearize</a></span><span class="op">(</span><span class="va">fit</span>, addEtas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/isLinearizeMatch.html">isLinearizeMatch</a></span><span class="op">(</span><span class="va">fitLinAdd</span><span class="op">)</span>  <span class="co"># check quality before searching</span></span>
+<span><span class="co">#&gt; $ofv</span></span>
+<span><span class="co">#&gt; $ofv[[1]]</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $ofv[[2]]</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $omega</span></span>
+<span><span class="co">#&gt; $omega[[1]]</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $omega[[2]]</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $eta</span></span>
+<span><span class="co">#&gt; $eta[[1]]</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $eta[[2]]</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $err</span></span>
+<span><span class="co">#&gt; $err[[1]]</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $err[[2]]</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
 <span></span>
-<span><span class="va">resRes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/resSearch.html">resSearch</a></span><span class="op">(</span><span class="va">fitLinAdd</span><span class="op">)</span></span>
+<span><span class="va">resRes</span> <span class="op">:=</span> <span class="fu"><a href="../reference/resSearch.html">resSearch</a></span><span class="op">(</span><span class="va">fitLinAdd</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Compare by BIC</span></span>
-<span><span class="va">resRes</span><span class="op">$</span><span class="va">summary</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">resRes</span><span class="op">$</span><span class="va">summary</span><span class="op">$</span><span class="va">BIC</span><span class="op">)</span>, <span class="op">]</span></span></code></pre></div>
+<span><span class="va">resRes</span><span class="op">$</span><span class="va">summary</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">resRes</span><span class="op">$</span><span class="va">summary</span><span class="op">$</span><span class="va">BIC</span><span class="op">)</span>, <span class="op">]</span></span>
+<span><span class="co">#&gt;            OBJF      AIC      BIC    search</span></span>
+<span><span class="co">#&gt; FOCEi1 1315.987 2236.926 2241.140      prop</span></span>
+<span><span class="co">#&gt; FOCEi2 1525.454 2448.393 2456.822 combined2</span></span>
+<span><span class="co">#&gt; FOCEi3 1548.200 2471.139 2479.568 combined1</span></span>
+<span><span class="co">#&gt; FOCEi  1576.606 2497.544 2501.759  base fit</span></span></code></pre></div>
 <p>The returned list also includes <code>resRes$originalFit</code> (the
 linearized fit used as the base) for reference.</p>
 </div>
