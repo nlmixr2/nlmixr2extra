@@ -12,6 +12,13 @@
   reported as a preconditioning failure naming the try, rather than as a bare
   `solve()` error (#128).
 
+  The same applies to the `" (full)"` scope suffix `nlmixr2est` appends when the
+  installed covariance spans theta + residual sigma + Omega rather than the
+  structural-theta block alone (`foceiControl(covFull=)`, `TRUE` by default), so
+  `"r,s (full)"` is recognised as the sandwich too.  The shape does not matter
+  to `preconditionFit()`: the preconditioner is widened to whatever parameter
+  space the returned covariance spans.
+
 - `preconditionFit()` works again.  It built the reparameterized model lines
   through `symengine`, which cannot parse an identifier containing a `.`, so a
   conventional residual name like `add.sd` (as `nlmixr2Pre_add.sd`) raised

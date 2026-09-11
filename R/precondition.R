@@ -114,10 +114,16 @@
 #'
 #' nlmixr2est decorates the reported method -- `"|r|,|s|"` when a matrix needed
 #' the absolute-value correction, `"r+,s+"` when it was nudged positive-definite
-#' -- and all of those ARE the sandwich.  Comparing to the bare `"r,s"` made
-#' `preconditionFit()` treat a good result as a failure and keep retrying on an
-#' ever more degenerate R until `solve()` gave up (#128).  This is the same
-#' pattern nlmixr2est matches with in `.foceiInstallFdFullCov()`.
+#' -- and appends a `" (full)"` scope suffix when the installed covariance spans
+#' theta + residual sigma + Omega rather than the structural-theta block alone
+#' (`foceiControl(covFull=)`, which defaults to `TRUE`).  All of those ARE the
+#' sandwich.  Comparing to the bare `"r,s"` made `preconditionFit()` treat a
+#' good result as a failure and keep retrying on an ever more degenerate R until
+#' `solve()` gave up (#128).  This is the same pattern nlmixr2est matches with
+#' in `.foceiInstallFdFullCov()`.
+#'
+#' The shape does not matter here: `.preCondExpand()` widens the preconditioner
+#' to whatever parameter space the returned covariance spans.
 #'
 #' @param covMethod The `covMethod` string reported by a fit
 #' @return TRUE when it denotes the r,s sandwich
@@ -126,7 +132,7 @@
   if (length(covMethod) != 1L || !is.character(covMethod) || is.na(covMethod)) {
     return(FALSE)
   }
-  grepl("^(r\\+?|\\|r\\|),(s\\+?|\\|s\\|)$", covMethod)
+  grepl("^(r\\+?|\\|r\\|),(s\\+?|\\|s\\|)( \\(full\\))?$", covMethod)
 }
 
 preconditionFit <- function(fit, estType = c("full", "posthoc", "none"),
