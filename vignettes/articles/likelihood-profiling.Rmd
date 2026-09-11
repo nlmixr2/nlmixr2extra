@@ -19,6 +19,18 @@ knitr::opts_chunk$set(
   fig.width = 7,
   fig.height = 4
 )
+library(nlmixr2save)
+## A cached fit is restored by sourcing the R code nlmixr2save saved with it,
+## and that code calls `lotri()` and `foceiControl()` unqualified -- so both
+## packages must be attached before any `:=` loads from the cache.
+library(lotri)
+library(nlmixr2est)
+## Cache each fit and each profile with the `:=` operator (nlmixr2save): they
+## are stored under vignettes/cache/ with a per-article prefix and loaded as-is
+## on the website build.  See vignettes/precompute.R.
+options(nlmixr2save.dir = "../cache",
+        nlmixr2save.prefix = "likelihood-profiling-",
+        nlmixr2save.check = FALSE)
 ```
 
 # Introduction
@@ -34,13 +46,13 @@ approximating the likelihood surface with a quadratic, it evaluates the actual
 objective function (OFV) at a grid of parameter values, holding each parameter
 fixed in turn and re-estimating the rest. A parameter's confidence interval is
 the set of values whose OFV increase relative to the minimum is below a
-threshold — by default $\chi^2_{0.95,1} \approx 3.84$.
+threshold -- by default $\chi^2_{0.95,1} \approx 3.84$.
 
 `nlmixr2extra` provides two profiling methods via the `profile()` generic:
 
 | Method | Function | Description |
 |--------|----------|-------------|
-| `"llp"` | `profileLlp()` | Adaptive log-likelihood profiling — searches for the exact OFV boundary |
+| `"llp"` | `profileLlp()` | Adaptive log-likelihood profiling -- searches for the exact OFV boundary |
 | `"fixed"` | `profileFixed()` | Evaluates the OFV at user-supplied fixed values |
 
 # Quick start
@@ -49,7 +61,7 @@ threshold — by default $\chi^2_{0.95,1} \approx 3.84$.
 
 We use the single-dose theophylline dataset (`theo_sd`) from `nlmixr2data`.
 
-```{r fit, eval=FALSE}
+```{r fit, message=FALSE, warning=FALSE}
 library(nlmixr2extra)
 library(ggplot2)
 
@@ -71,59 +83,24 @@ oneCmt <- function() {
   })
 }
 
-fit <- nlmixr2(oneCmt, data = nlmixr2data::theo_sd,
+fit := nlmixr2(oneCmt, data = nlmixr2data::theo_sd,
                est = "focei", control = list(print = 0))
 fit
 ```
 
 ## Profile all parameters
 
-```{r profile-all, eval=FALSE}
+```{r profile-all}
 # Profiles tka and tcl; eta.ka, eta.cl, and add.sd are also included.
-# This may take a few minutes.
-profAll <- profile(fit)
+profAll := profile(fit)
 profAll
-
-# not run
-#>      Parameter           OFV         tka        tcl         tv       add.sd       eta.ka     eta.cl profileBound
-#> 1        tka  1.302956e+02  0.40707834  1.0277804  3.4301847 7.790360e-01 3.313392e-01 0.11903041           NA
-#> 2        tka  1.359081e+02 -0.06205406  1.0357450  3.4201803 7.822078e-01 5.373565e-01 0.11997097           NA
-#> 3        tka            NA  0.03246907         NA         NA           NA           NA         NA    -3.841459
-#> 4        tka  1.341359e+02  0.03253017  1.0349416  3.4203239 7.813290e-01 4.459202e-01 0.11954391           NA
-#> 5        tka  1.340839e+02  0.03536930  1.0339534  3.4211996 7.793176e-01 4.506370e-01 0.11970980           NA
-#> 6        tka  1.332169e+02  0.08598386  1.0344147  3.4212832 7.808917e-01 4.048129e-01 0.11966891           NA
-#> 7        tka  1.333483e+02  0.73591286  1.0203980  3.4396473 7.820747e-01 4.405237e-01 0.12179708           NA
-#> 8        tka  1.340970e+02  0.78149630  1.0155783  3.4395393 7.814438e-01 4.782030e-01 0.12240100           NA
-#> 9        tka  1.341362e+02  0.78375611  1.0163098  3.4402083 7.812342e-01 4.813841e-01 0.12266684           NA
-#> 10       tka            NA  0.78380398         NA         NA           NA           NA         NA     3.841459
-#> 11       tka  1.357760e+02  0.87621075  1.0136331  3.4402359 7.818523e-01 5.617630e-01 0.12254599           NA
-#> 12       tcl  1.302956e+02  0.40707834  1.0277804  3.4301847 7.790360e-01 3.313392e-01 0.11903041           NA
-#> 13       tcl  1.663811e+02  0.42951804 -0.1566724  3.4457119 7.849234e-01 3.329437e-01 0.59514936           NA
-#> 14       tcl            NA          NA  0.7988096         NA           NA           NA         NA    -3.841459
-#> 15       tcl  1.341352e+02  0.41822580  0.7988652  3.4390860 7.835247e-01 3.305029e-01 0.17116048           NA
-#> 16       tcl  1.341188e+02  0.41746955  0.7994066  3.4384609 7.832626e-01 3.312768e-01 0.17139417           NA
-#> 17       tcl  1.340151e+02  0.41805477  0.8030235  3.4381714 7.837632e-01 3.325469e-01 0.17017609           NA
-#> 18       tcl  1.334242e+02  0.41788913  0.8242418  3.4379266 7.816312e-01 3.310546e-01 0.15915788           NA
 ```
 
 ## Profile a single parameter
 
-```{r profile-single, eval=FALSE}
-profTka <- profile(fit, which = "tka")
-
-# not run
-#>      Parameter           OFV         tka        tcl         tv       add.sd       eta.ka     eta.cl profileBound
-#> 1        tka  1.302956e+02  0.40707834  1.0277804  3.4301847 7.790360e-01 3.313392e-01 0.11903041           NA
-#> 2        tka  1.359081e+02 -0.06205406  1.0357450  3.4201803 7.822078e-01 5.373565e-01 0.11997097           NA
-#> 3        tka            NA  0.03246907         NA         NA           NA           NA         NA    -3.841459
-#> 4        tka  1.341359e+02  0.03253017  1.0349416  3.4203239 7.813290e-01 4.459202e-01 0.11954391           NA
-#> 5        tka  1.340839e+02  0.03536930  1.0339534  3.4211996 7.793176e-01 4.506370e-01 0.11970980           NA
-#> 6        tka  1.332169e+02  0.08598386  1.0344147  3.4212832 7.808917e-01 4.048129e-01 0.11966891           NA
-#> 7        tka  1.333483e+02  0.73591286  1.0203980  3.4396473 7.820747e-01 4.405237e-01 0.12179708           NA
-#> 8        tka  1.340970e+02  0.78149630  1.0155783  3.4395393 7.814438e-01 4.782030e-01 0.12240100           NA
-#> 9        tka  1.341362e+02  0.78375611  1.0163098  3.4402083 7.812342e-01 4.813841e-01 0.12266684           NA
-#> 10       tka            NA  0.78380398         NA         NA           NA           NA         NA     3.841459
-#> 11       tka  1.357760e+02  0.87621075  1.0136331  3.4402359 7.818523e-01 5.617630e-01 0.12254599           NA
+```{r profile-single}
+profTka := profile(fit, which = "tka")
+profTka
 ```
 
 # The log-likelihood profiling method (`"llp"`)
@@ -140,7 +117,7 @@ profTka <- profile(fit, which = "tka")
 
 All LLP settings are set via `llpControl()`:
 
-```{r llpcontrol, eval=FALSE}
+```{r llpcontrol}
 # Default settings
 ctrl <- llpControl(
   ofvIncrease   = qchisq(0.95, df = 1),  # ~3.84 for 95% CI
@@ -150,27 +127,28 @@ ctrl <- llpControl(
   paramDigits   = 3      # significant digits for convergence
 )
 
-profTka <- profile(fit, which = "tka", control = ctrl)
+# a separate name: each `:=` target is its own cache entry
+profTkaCtrl := profile(fit, which = "tka", control = ctrl)
 ```
 
 To get a 90% CI instead of 95%, lower the threshold:
 
-```{r llpcontrol-90, eval=FALSE}
-profTka90 <- profile(fit, which = "tka",
-                       control = list(ofvIncrease = qchisq(0.90, df = 1)))
+```{r llpcontrol-90}
+profTka90 := profile(fit, which = "tka",
+                     control = list(ofvIncrease = qchisq(0.90, df = 1)))
 ```
 
 ## Interpreting the output
 
 The returned data frame has one row per model evaluation. Key columns:
 
-- `Parameter` — which parameter was fixed on this row
-- `OFV` — the objective function value at that step
-- `profileBound` — present on the boundary rows; its absolute value is the
+- `Parameter` -- which parameter was fixed on this row
+- `OFV` -- the objective function value at that step
+- `profileBound` -- present on the boundary rows; its absolute value is the
   `ofvIncrease` threshold and its sign indicates lower (`-`) or upper (`+`)
 - One column per model parameter showing its estimate at each step
 
-```{r interpret, eval=FALSE}
+```{r interpret}
 # Show rows near the boundary
 profTka[!is.na(profTka$profileBound), ]
 ```
@@ -181,11 +159,11 @@ from the `tka` column.
 # Plotting the profile
 
 The profile data frame contains everything needed for a profile plot. A
-standard presentation shows OFV – OFV_min on the y-axis and the parameter
+standard presentation shows OFV - OFV_min on the y-axis and the parameter
 value on the x-axis, with a horizontal reference line at the CI threshold.
 
-```{r plot, eval=FALSE}
-# Compute ΔOFV relative to the minimum
+```{r plot}
+# Compute Delta OFV relative to the minimum
 ofvMin <- min(profTka$OFV, na.rm = TRUE)
 profTka$dOFV <- profTka$OFV - ofvMin
 
@@ -222,13 +200,13 @@ algorithm struggles.
 
 ## Evaluating a uniform grid
 
-```{r fixed, eval=FALSE}
+```{r fixed}
 # Evaluate tka at seven equally spaced values around the point estimate
 tkaEst <- fit$theta["tka"]
 
 grid <- data.frame(tka = seq(tkaEst - 0.6, tkaEst + 0.6, length.out = 7))
 
-profGrid <- profile(fit, which = grid, method = "fixed")
+profGrid := profile(fit, which = grid, method = "fixed")
 profGrid[, c("Parameter", "tka", "OFV")]
 ```
 
@@ -238,14 +216,14 @@ profGrid[, c("Parameter", "tka", "OFV")]
 all named parameters simultaneously, allowing you to trace joint profile
 contours.
 
-```{r fixed-joint, eval=FALSE}
+```{r fixed-joint}
 grid2d <- expand.grid(
   tka = seq(tkaEst - 0.4, tkaEst + 0.4, length.out = 5),
   tcl = seq(nlmixr2est::fixef(fit)[["tcl"]] - 0.2,
             nlmixr2est::fixef(fit)[["tcl"]] + 0.2, length.out = 5)
 )
 
-profJoint <- profile(fit, which = grid2d, method = "fixed")
+profJoint := profile(fit, which = grid2d, method = "fixed")
 
 ggplot(profJoint, aes(x = tka, y = tcl,
                        fill = OFV - min(OFV, na.rm = TRUE))) +
@@ -253,7 +231,7 @@ ggplot(profJoint, aes(x = tka, y = tcl,
   scale_fill_viridis_c(name = expression(Delta * "OFV")) +
   geom_contour(aes(z = OFV - min(OFV, na.rm = TRUE)),
                breaks = qchisq(0.95, 2), colour = "white") +
-  labs(title = "Joint profile: tka × tcl",
+  labs(title = "Joint profile: tka x tcl",
        subtitle = "White contour = 95% joint confidence region") +
   theme_bw()
 ```
@@ -263,7 +241,7 @@ ggplot(profJoint, aes(x = tka, y = tcl,
 Profile CIs are wider than Wald CIs when the likelihood surface is asymmetric.
 This is common for variance parameters and log-scale parameters near zero.
 
-```{r compare, eval=FALSE}
+```{r compare}
 # Wald CI from the fit
 waldCi <- confint(fit)  # uses the covariance matrix
 
@@ -297,7 +275,7 @@ do.call(rbind, lapply(names(profileCi), function(p) {
 - **Start with `which`**: profiling all parameters is time-consuming. Profile
   only the parameters of primary interest first.
 - **Increase `itermax`** if you see "aborted due to too many iterations". The
-  default of 10 is conservative; 20–30 is often sufficient for variance
+  default of 10 is conservative; 20-30 is often sufficient for variance
   parameters.
 - **Adjust `rseTheta`**: if the initial step is too large (OFV jumps past the
   target immediately) reduce `rseTheta`. If it is too small (many steps needed

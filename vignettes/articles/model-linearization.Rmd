@@ -12,6 +12,21 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+```{r cache-setup, include = FALSE}
+library(nlmixr2save)
+## A cached fit is restored by sourcing the R code nlmixr2save saved with it,
+## and that code calls `lotri()` and `foceiControl()` unqualified -- so both
+## packages must be attached before any `:=` loads from the cache.
+library(lotri)
+library(nlmixr2est)
+## Cache each fit, linearization and search with the `:=` operator
+## (nlmixr2save): they are stored under vignettes/cache/ with a per-article
+## prefix and loaded as-is on the website build.  See vignettes/precompute.R.
+options(nlmixr2save.dir = "../cache",
+        nlmixr2save.prefix = "model-linearization-",
+        nlmixr2save.check = FALSE)
+```
+
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
@@ -29,9 +44,9 @@ replaces the nonlinear model with a first-order Taylor expansion around the
 current individual predictions. The resulting linear model fits in a fraction of
 the time, allowing exhaustive search over:
 
-- **Inter-individual variability (IIV) structure** — which parameters carry random
+- **Inter-individual variability (IIV) structure** -- which parameters carry random
   effects, and which pairs are correlated (`iivSearch()`).
-- **Residual error model** — additive, proportional, or combined variance
+- **Residual error model** -- additive, proportional, or combined variance
   structures (`resSearch()`).
 
 The workflow has three stages:
@@ -66,7 +81,7 @@ nonlinear optimization.
 
 # Setup
 
-```{r pkgs, eval=FALSE}
+```{r pkgs, message=FALSE, warning=FALSE}
 library(nlmixr2extra)
 library(ggplot2)
 ```
@@ -74,7 +89,7 @@ library(ggplot2)
 # Simulate data for demonstration
 Define a one-compartment model with additive residual error and IIV with correlation between CL and V:
 
-```{r define, eval=FALSE}
+```{r define, message=FALSE, warning=FALSE}
 oneCmt <- function() {
   ini({
     tcl <- log(2.7) # Cl
@@ -109,7 +124,7 @@ sim <- sim[, c("id", "time", "amt", "dv", "evid")]
 
 ## Define a base model
 Define a base model with _no IIV_ and additive residual error:
-```{r base, eval=FALSE}
+```{r base}
 oneCmtBase <- function() {
   ini({
       tcl <- log(2.7) # Cl
@@ -133,8 +148,8 @@ oneCmtBase <- function() {
 ## Base Model Fit
 
 Fit the data to the base model `oneCmtBase` with typical NLME method (e.g. FOCEI):
-```{r fit, eval=FALSE}
-fit <- nlmixr2(oneCmtBase, sim, est = "focei") 
+```{r fit, message=FALSE, warning=FALSE}
+fit := nlmixr2(oneCmtBase, sim, est = "focei", control = list(print = 0))
 ```
 
 ## Run Linearization
@@ -142,10 +157,10 @@ fit <- nlmixr2(oneCmtBase, sim, est = "focei")
 `linearize()` takes a fitted `nlmixr2` object and returns an
 `nlmixr2Linearize` fit.
 
-```{r linearize-basic, eval=FALSE}
+```{r linearize-basic, message=FALSE, warning=FALSE}
 # addEtas = TRUE adds fixed etas on every theta before linearizing,
 # giving derivatives with respect to every parameter.
-fitLin <- linearize(fit, addEtas = TRUE)
+fitLin := linearize(fit, addEtas = TRUE)
 ```
 
 The function:
@@ -161,7 +176,7 @@ The function:
 After `linearize()`, confirm that the linear approximation reproduces the
 original model well:
 
-```{r check, eval=FALSE}
+```{r check}
 match <- isLinearizeMatch(fitLin)
 
 # OFV agreement (relative tolerance 10%)
@@ -181,7 +196,7 @@ match$err[[1]] # TRUE/FALSE if residual variances differ by less than tol
 
 A visual check is available via `linearizePlot()`:
 
-```{r linplot, eval=FALSE}
+```{r linplot}
 linearizePlot(fitLin)
 ```
 
@@ -202,12 +217,12 @@ included:
 FOCEI is more accurate for models with heteroscedastic residuals (proportional
 or combined error). FOCE is faster and more stable for additive-only models.
 
-```{r focei-opts, eval=FALSE}
+```{r focei-opts, message=FALSE, warning=FALSE}
 # Force FOCE linearization
-fitLinFoce <- linearize(fit, addEtas = TRUE, focei = FALSE)
+fitLinFoce := linearize(fit, addEtas = TRUE, focei = FALSE)
 
 # Force FOCEI
-fitLinFocei <- linearize(fit, addEtas = TRUE, focei = TRUE)
+fitLinFocei := linearize(fit, addEtas = TRUE, focei = TRUE)
 ```
 
 ## Tuning `mceta`
@@ -217,10 +232,10 @@ order. The algorithm stops when the relative OFV deviation is within `relTol`:
 
 ```{r mceta, eval=FALSE}
 # Default: try -1, 10, 100, 1000 in order
-fitLin <- linearize(fit, addEtas = TRUE, mceta = c(-1, 10, 100, 1000))
+linearize(fit, addEtas = TRUE, mceta = c(-1, 10, 100, 1000))
 
 # For a difficult model, start with a larger mceta
-fitLin <- linearize(fit, addEtas = TRUE, mceta = c(100, 500, 1000))
+linearize(fit, addEtas = TRUE, mceta = c(100, 500, 1000))
 ```
 
 `mceta = -1` uses the exact gradient (no Monte Carlo sampling) and is the
@@ -244,8 +259,8 @@ meaningful random-effect signal before running the full search.
 
 ## Running the search
 
-```{r iivSearch, eval=FALSE}
-iivRes <- iivSearch(fitLin)
+```{r iivSearch, message=FALSE, warning=FALSE}
+iivRes := iivSearch(fitLin)
 ```
 
 Progress is shown for each candidate structure. Failed fits (non-convergence)
@@ -253,7 +268,7 @@ are stored as `NA` in the summary and do not stop the search.
 
 ## Examining results
 
-```{r iivRes, eval=FALSE}
+```{r iivRes}
 # Print ordered by BIC
 print(iivRes)
 
@@ -276,9 +291,9 @@ The summary contains one row per candidate with columns:
 
 The `search` column encodes the IIV structure:
 
-- `eta.cl+eta.v` — both etas present, no correlation
-- `eta.cl+eta.v+eta.cl~eta.v` — both etas with correlation between them
-- `eta.cl` — only CL carries a random effect
+- `eta.cl+eta.v` -- both etas present, no correlation
+- `eta.cl+eta.v+eta.cl~eta.v` -- both etas with correlation between them
+- `eta.cl` -- only CL carries a random effect
 
 ## Refitting top candidates with the original model
 
@@ -286,9 +301,9 @@ The linearized results are used to rank candidates, but final inference should
 be based on the original nonlinear model. `rerunTopN()` refits the top `n`
 structures:
 
-```{r rerun, eval=FALSE}
+```{r rerun, message=FALSE, warning=FALSE}
 # Refit the 5 best structures with the original nonlinear model
-top5 <- rerunTopN(iivRes, n = 5)
+top5 := rerunTopN(iivRes, n = 5)
 
 # Results ordered by BIC from the nonlinear fits
 top5$summary[order(top5$summary$O.BIC), ]
@@ -299,7 +314,7 @@ distinguish them from the linearized model results.
 
 ## Visualising the IIV search
 
-```{r iivplot, eval=FALSE}
+```{r iivplot}
 summ <- iivRes$summary
 summ <- summ[!is.na(summ$BIC), ]
 summ$rank <- rank(summ$BIC)
@@ -327,13 +342,13 @@ The structures tested are:
 | Combined (type 2) | `prop.sd^2 * OPRED^2 + add.sd^2` |
 | Combined (type 1) | `(prop.sd * OPRED + add.sd)^2` |
 
-```{r resSearch, eval=FALSE}
+```{r resSearch, message=FALSE, warning=FALSE}
 # Start from a linearized model; additive-only in this case
-fitLinAdd <- linearize(fit, addEtas = TRUE)
+fitLinAdd := linearize(fit, addEtas = TRUE)
 
 isLinearizeMatch(fitLinAdd)  # check quality before searching
 
-resRes <- resSearch(fitLinAdd)
+resRes := resSearch(fitLinAdd)
 
 # Compare by BIC
 resRes$summary[order(resRes$summary$BIC), ]

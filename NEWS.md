@@ -2,6 +2,40 @@
 
 ## Bug fixes
 
+- `preconditionFit()` works again.  It built the reparameterized model lines
+  through `symengine`, which cannot parse an identifier containing a `.`, so a
+  conventional residual name like `add.sd` (as `nlmixr2Pre_add.sd`) raised
+  "SymEngine exception: Parse error" and made the function unusable for most
+  models.  The lines are now assembled directly from the preconditioning
+  matrix, which also drops the `symengine` dependency from this path (#124).
+
+- `preconditionFit()` no longer fails with "non-conformable arguments" on a
+  model with random effects.  `fit$R` spans only the population parameters
+  while the fit covariance also carries the omega elements, so the
+  preconditioner is now widened to the covariance's own parameter space --
+  identity off the theta block -- which keeps the theta/omega cross-covariances
+  correct.
+
+## New features
+
+- New `multistart()` re-estimates a model from many perturbed starting
+  points, so a fit that settled in a local optimum can be recognised.  It
+  takes either a fit or a model plus data, works with any estimation
+  method, and returns a `nlmixr2Multistart` object holding every start's
+  objective function and parameter estimates alongside the best fit.
+
+  `plot()` on the result gives the objective-function waterfall
+  (`type = "waterfall"`, the default) and the parameter-stability plot
+  (`type = "parameters"`).
+
+  Starting points are drawn around the initial estimates by `"uniform"`
+  (the default), `"lhs"` (Latin hypercube) or `"normal"` sampling,
+  respecting fixed parameters and declared bounds.  By default the
+  candidates are pre-screened with a cheap empirical-Bayes objective
+  evaluation so that only the most promising ones are fully estimated,
+  and each start is cached to disk so that an interrupted run resumes
+  where it left off.  See `multistartControl()` for the options.
+## Bug fixes
 - `linearize()` works on a model with a correlated eta block.  The generated
   model was built by pasting each entry of `ui$eta` into a model line, but for a
   correlated block that property also carries the off-diagonal entry -- e.g.

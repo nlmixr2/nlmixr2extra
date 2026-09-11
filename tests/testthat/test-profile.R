@@ -154,12 +154,12 @@ test_that("profile a standard model", {
       one.compartment, data = nlmixr2data::theo_sd, est="focei", control = list(print=0, eval.max=100)
     ))
 
-  # A free theta — verifies columns including omega and that profile converges
+  # A free theta -- verifies columns including omega and that profile converges
   proftka <- suppressMessages(profile(fit, which = "tka"))
   expect_s3_class(proftka, "data.frame")
   expect_named(proftka, c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "eta.ka", "profileBound"))
 
-  # Residual error — verifies parameter columns (convergence not guaranteed at eval.max=100)
+  # Residual error -- verifies parameter columns (convergence not guaranteed at eval.max=100)
   profadd.sd <- suppressMessages(suppressWarnings(profile(fit, which = "add.sd")))
   expect_s3_class(profadd.sd, "data.frame")
   expect_true(all(c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "eta.ka") %in% names(profadd.sd)))
@@ -190,12 +190,12 @@ test_that("profile a standard model with correlated etas", {
       one.compartment, data = nlmixr2data::theo_sd, est="focei", control = list(print=0, eval.max=100)
     ))
 
-  # A free theta — verifies all eta columns appear and profile converges
+  # A free theta -- verifies all eta columns appear and profile converges
   proftka <- suppressMessages(profile(fit, which = "tka"))
   expect_s3_class(proftka, "data.frame")
   expect_named(proftka, c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "eta.ka", "eta.cl", "eta.v", "profileBound"))
 
-  # Residual error — verifies parameter columns (convergence not guaranteed at eval.max=100)
+  # Residual error -- verifies parameter columns (convergence not guaranteed at eval.max=100)
   profadd.sd <- suppressMessages(suppressWarnings(profile(fit, which = "add.sd")))
   expect_s3_class(profadd.sd, "data.frame")
   expect_true(all(c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "eta.ka", "eta.cl", "eta.v") %in% names(profadd.sd)))
