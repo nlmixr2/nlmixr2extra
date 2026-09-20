@@ -1,4 +1,4 @@
-# nlmixr2extra (development version)
+# nlmixr2extra 5.2.1
 
 ## Bug fixes
 
