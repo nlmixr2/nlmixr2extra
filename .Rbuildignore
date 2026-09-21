@@ -18,3 +18,6 @@ nlmixr2CovariateSearchCache_fit
 ^Meta$
 nlmixr2MultistartCache_
 ^CLAUDE\.md$
+^\.lintr$
+^air\.toml$
+^\.git-blame-ignore-revs$
