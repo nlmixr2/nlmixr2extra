@@ -9,8 +9,9 @@ test_that("profileNlmixr2FitDataEstInitial", {
       estimates = data.frame(A = 1),
       which = "A",
       ofvIncrease = 1.92,
-      rseTheta = c(A=100),
-      lower = -100, upper = 200
+      rseTheta = c(A = 100),
+      lower = -100,
+      upper = 200
     ),
     c(-0.92, 2.92)
   )
@@ -20,8 +21,9 @@ test_that("profileNlmixr2FitDataEstInitial", {
       estimates = data.frame(A = 1),
       which = "A",
       ofvIncrease = 1.92,
-      rseTheta = c(A=100),
-      lower = 0, upper = 200
+      rseTheta = c(A = 100),
+      lower = 0,
+      upper = 200
     ),
     c(sqrt(.Machine$double.eps), 2.92)
   )
@@ -48,7 +50,10 @@ test_that("profileNlmixr2FitCoreRet", {
 
   fit <-
     suppressMessages(nlmixr2(
-      one.compartment, data = nlmixr2data::theo_sd, est="focei", control = list(print=0, eval.max=100)
+      one.compartment,
+      data = nlmixr2data::theo_sd,
+      est = "focei",
+      control = list(print = 0, eval.max = 100)
     ))
   withoutCov <- profileNlmixr2FitCoreRet(fit, which = "tka")
   expect_s3_class(withoutCov, "data.frame")
@@ -73,11 +78,17 @@ test_that("profileNlmixr2FitCoreRet", {
 
   fit <-
     suppressMessages(nlmixr2(
-      one.compartment, data = nlmixr2data::theo_sd, est="focei", control = list(print=0, eval.max=100)
+      one.compartment,
+      data = nlmixr2data::theo_sd,
+      est = "focei",
+      control = list(print = 0, eval.max = 100)
     ))
   withCov <- profileNlmixr2FitCoreRet(fit, which = "tka")
   expect_s3_class(withCov, "data.frame")
-  expect_named(withCov, expected = c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "eta.ka", "eta.cl", "cov(eta.cl,eta.ka)"))
+  expect_named(
+    withCov,
+    expected = c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "eta.ka", "eta.cl", "cov(eta.cl,eta.ka)")
+  )
 })
 
 test_that("profileFixed", {
@@ -101,7 +112,10 @@ test_that("profileFixed", {
 
   fit <-
     suppressMessages(nlmixr2(
-      one.compartment, data = nlmixr2data::theo_sd, est="focei", control = list(print=0, eval.max=100)
+      one.compartment,
+      data = nlmixr2data::theo_sd,
+      est = "focei",
+      control = list(print = 0, eval.max = 100)
     ))
 
   testFixed <-
@@ -117,11 +131,10 @@ test_that("profileFixed", {
     suppressMessages(
       profile(
         fit,
-        which =
-          data.frame(
-            tka = log(c(1.4, 1.6, 1.8)),
-            tcl = log(c(2.6, 2.7, 2.8))
-          ),
+        which = data.frame(
+          tka = log(c(1.4, 1.6, 1.8)),
+          tcl = log(c(2.6, 2.7, 2.8))
+        ),
         method = "fixed"
       )
     )
@@ -151,7 +164,10 @@ test_that("profile a standard model", {
 
   fit <-
     suppressMessages(nlmixr2(
-      one.compartment, data = nlmixr2data::theo_sd, est="focei", control = list(print=0, eval.max=100)
+      one.compartment,
+      data = nlmixr2data::theo_sd,
+      est = "focei",
+      control = list(print = 0, eval.max = 100)
     ))
 
   # A free theta -- verifies columns including omega and that profile converges
@@ -187,16 +203,24 @@ test_that("profile a standard model with correlated etas", {
 
   fit <-
     suppressMessages(nlmixr2(
-      one.compartment, data = nlmixr2data::theo_sd, est="focei", control = list(print=0, eval.max=100)
+      one.compartment,
+      data = nlmixr2data::theo_sd,
+      est = "focei",
+      control = list(print = 0, eval.max = 100)
     ))
 
   # A free theta -- verifies all eta columns appear and profile converges
   proftka <- suppressMessages(profile(fit, which = "tka"))
   expect_s3_class(proftka, "data.frame")
-  expect_named(proftka, c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "eta.ka", "eta.cl", "eta.v", "profileBound"))
+  expect_named(
+    proftka,
+    c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "eta.ka", "eta.cl", "eta.v", "profileBound")
+  )
 
   # Residual error -- verifies parameter columns (convergence not guaranteed at eval.max=100)
   profadd.sd <- suppressMessages(suppressWarnings(profile(fit, which = "add.sd")))
   expect_s3_class(profadd.sd, "data.frame")
-  expect_true(all(c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "eta.ka", "eta.cl", "eta.v") %in% names(profadd.sd)))
+  expect_true(all(
+    c("Parameter", "OFV", "tka", "tcl", "tv", "add.sd", "eta.ka", "eta.cl", "eta.v") %in% names(profadd.sd)
+  ))
 })

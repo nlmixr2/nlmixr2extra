@@ -1,6 +1,42 @@
 # nlmixr2extra 5.2.1
 
+## New features
+
+- New `multistart()` re-estimates a model from many perturbed starting
+  points, so a fit that settled in a local optimum can be recognized.  It
+  takes either a fit or a model plus data, works with any estimation
+  method, and returns a `nlmixr2Multistart` object holding every start's
+  objective function and parameter estimates alongside the best fit.
+
+  `plot()` on the result gives the objective-function waterfall
+  (`type = "waterfall"`, the default) and the parameter-stability plot
+  (`type = "parameters"`).
+
+  Starting points are drawn around the initial estimates by `"uniform"`
+  (the default), `"lhs"` (Latin hypercube) or `"normal"` sampling,
+  respecting fixed parameters and declared bounds.  By default the
+  candidates are pre-screened with a cheap empirical-Bayes objective
+  evaluation so that only the most promising ones are fully estimated,
+  and each start is cached to disk so that an interrupted run resumes
+  where it left off.  See `multistartControl()` for the options.
+
 ## Bug fixes
+
+- `covarSearchAuto()` selects unit-scale covariates again.  A candidate
+  coefficient is added at exactly `0`; 'nlmixr2est' (>= 7.0.2) nudges such a
+  parameter to `foceiControl(zeroTheta)` (`0.001`) and FOCEi then steps it by
+  that amount, so a numeric covariate on a unit scale (e.g. a z-score) never
+  left zero and was never selected.  Each new coefficient now starts at
+  `0.1/max(|covariate|)`, a step matched to the covariate's units that keeps
+  the starting effect within `0.1` for every subject.
+
+- `linearize()` no longer diverges when re-estimating a model whose residual
+  error parameters are small.  In the linearized model those parameters are
+  ordinary thetas, so FOCEi scaled them as linear parameters (`1/|estimate|`)
+  rather than as residual errors (`0.5*|estimate|`); for a `combined1()` model
+  this drove `add.sd` into its lower bound and left the objective function
+  33 points above where the refit started.  They now keep their residual
+  scaling, which also converges in far fewer iterations.
 
 - `preconditionFit()` accepts a decorated covariance method.  `nlmixr2est`
   reports the sandwich as `"|r|,|s|"` when a matrix needed the absolute-value
@@ -15,7 +51,7 @@
   The same applies to the `" (full)"` scope suffix `nlmixr2est` appends when the
   installed covariance spans theta + residual sigma + Omega rather than the
   structural-theta block alone (`foceiControl(covFull=)`, `TRUE` by default), so
-  `"r,s (full)"` is recognised as the sandwich too.  The shape does not matter
+  `"r,s (full)"` is recognized as the sandwich too.  The shape does not matter
   to `preconditionFit()`: the preconditioner is widened to whatever parameter
   space the returned covariance spans.
 
@@ -33,26 +69,6 @@
   identity off the theta block -- which keeps the theta/omega cross-covariances
   correct.
 
-## New features
-
-- New `multistart()` re-estimates a model from many perturbed starting
-  points, so a fit that settled in a local optimum can be recognised.  It
-  takes either a fit or a model plus data, works with any estimation
-  method, and returns a `nlmixr2Multistart` object holding every start's
-  objective function and parameter estimates alongside the best fit.
-
-  `plot()` on the result gives the objective-function waterfall
-  (`type = "waterfall"`, the default) and the parameter-stability plot
-  (`type = "parameters"`).
-
-  Starting points are drawn around the initial estimates by `"uniform"`
-  (the default), `"lhs"` (Latin hypercube) or `"normal"` sampling,
-  respecting fixed parameters and declared bounds.  By default the
-  candidates are pre-screened with a cheap empirical-Bayes objective
-  evaluation so that only the most promising ones are fully estimated,
-  and each start is cached to disk so that an interrupted run resumes
-  where it left off.  See `multistartControl()` for the options.
-## Bug fixes
 - `linearize()` works on a model with a correlated eta block.  The generated
   model was built by pasting each entry of `ui$eta` into a model line, but for a
   correlated block that property also carries the off-diagonal entry -- e.g.

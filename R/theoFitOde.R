@@ -10,7 +10,8 @@
 #' @return "", called for the side effect of rewriting the stored fit
 #'
 #' @noRd
-.buildModel <- function() { # nocov start
+.buildModel <- function() {
+  # nocov start
   .owd <- getwd()
   on.exit(setwd(.owd))
   # roxygen2 documents with the working directory at the package root,
@@ -18,8 +19,10 @@
   # documenting from a subdirectory.  Done by hand rather than with
   # devtools::package_file() to keep devtools out of the dependencies.
   .dir <- normalizePath(.owd, mustWork = FALSE)
-  while (!file.exists(file.path(.dir, "DESCRIPTION")) &&
-           dirname(.dir) != .dir) {
+  while (
+    !file.exists(file.path(.dir, "DESCRIPTION")) &&
+      dirname(.dir) != .dir
+  ) {
     .dir <- dirname(.dir)
   }
   try(source(file.path(.dir, "build", "build.R")))
@@ -39,7 +42,7 @@
 #' @eval .buildModel()
 #'
 #' @format A (modified) data frame with  132 rows and 22 columns.
-#' 
+#'
 #' \describe{
 #'  \item{ID}{Patient identifier}
 #'  \item{TIME}{Time (hr)}
@@ -63,6 +66,5 @@
 #'  \item{tad}{Time after dose}
 #'  \item{dosenum}{Dose number}
 #' }
-#' 
+#'
 NULL
-

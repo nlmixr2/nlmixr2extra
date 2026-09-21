@@ -23,11 +23,13 @@ one.compartment <- function() {
   })
 }
 
- 
-theoFitOde <-  nlmixr2est::nlmixr(one.compartment, nlmixr2data::theo_sd, est="focei")
 
-if (file.exists("data/theoFitOde.rda")) unlink("data/theoFitOde.rda")
+theoFitOde <- nlmixr2est::nlmixr(one.compartment, nlmixr2data::theo_sd, est = "focei")
 
-save(theoFitOde, file="data/theoFitOde.rda", compress="bzip2", version=2, ascii=FALSE)
+if (file.exists("data/theoFitOde.rda")) {
+  unlink("data/theoFitOde.rda")
+}
+
+save(theoFitOde, file = "data/theoFitOde.rda", compress = "bzip2", version = 2, ascii = FALSE)
 
 setwd(wd)

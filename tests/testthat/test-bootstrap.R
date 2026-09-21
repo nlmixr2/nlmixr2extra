@@ -1,7 +1,6 @@
 skip_on_cran()
 
 withr::with_tempdir({
-
   test_that("sampling should return different datasets at each call", {
     a <- digest::digest(nlmixr2extra:::sampling(nlmixr2data::theo_sd))
     b <- digest::digest(nlmixr2extra:::sampling(nlmixr2data::theo_sd))
@@ -19,13 +18,11 @@ withr::with_tempdir({
 
     withr::with_seed(1, {
       strat1 <-
-        nlmixr2extra:::sampling(d, uid_colname = "ID", performStrat = TRUE,
-                                stratVar = "grp")
+        nlmixr2extra:::sampling(d, uid_colname = "ID", performStrat = TRUE, stratVar = "grp")
     })
     withr::with_seed(2, {
       strat2 <-
-        nlmixr2extra:::sampling(d, uid_colname = "ID", performStrat = TRUE,
-                                stratVar = "grp")
+        nlmixr2extra:::sampling(d, uid_colname = "ID", performStrat = TRUE, stratVar = "grp")
     })
     expect_false(isTRUE(all.equal(strat1, strat2)))
 
@@ -50,12 +47,10 @@ withr::with_tempdir({
 
     withr::with_seed(4, {
       samp <-
-        nlmixr2extra:::sampling(d, nsamp = 10L, uid_colname = "ID",
-                                performStrat = TRUE, stratVar = "grp")
+        nlmixr2extra:::sampling(d, nsamp = 10L, uid_colname = "ID", performStrat = TRUE, stratVar = "grp")
     })
     expect_equal(length(unique(samp$ID)), 10)
-    nId <- vapply(split(samp$ID, samp$grp), function(x) length(unique(x)),
-                  integer(1))
+    nId <- vapply(split(samp$ID, samp$grp), function(x) length(unique(x)), integer(1))
     expect_equal(nId, c(A = 7L, B = 3L))
   })
 
@@ -67,8 +62,7 @@ withr::with_tempdir({
     )
     withr::with_seed(3, {
       samp <-
-        nlmixr2extra:::sampling(d, uid_colname = "ID", performStrat = TRUE,
-                                stratVar = "grp")
+        nlmixr2extra:::sampling(d, uid_colname = "ID", performStrat = TRUE, stratVar = "grp")
     })
     expect_equal(nrow(samp), 8)
     # subject 4 is the only member of stratum B, so only its rows may appear
@@ -84,14 +78,18 @@ withr::with_tempdir({
     # only the first subject of each stratum may be selected
     withr::with_seed(7, {
       samp <-
-        nlmixr2extra:::sampling(d, uid_colname = "ID", performStrat = TRUE,
-                                stratVar = "grp", pvalues = c(1, 0, 0, 1, 0, 0))
+        nlmixr2extra:::sampling(
+          d,
+          uid_colname = "ID",
+          performStrat = TRUE,
+          stratVar = "grp",
+          pvalues = c(1, 0, 0, 1, 0, 0)
+        )
     })
     expect_setequal(samp$DV, c(1, 4))
 
     withr::with_seed(7, {
-      samp <- nlmixr2extra:::sampling(d, uid_colname = "ID",
-                                      pvalues = c(1, 0, 0, 0, 0, 0))
+      samp <- nlmixr2extra:::sampling(d, uid_colname = "ID", pvalues = c(1, 0, 0, 0, 0, 0))
     })
     expect_setequal(samp$DV, 1)
 
@@ -112,8 +110,7 @@ withr::with_tempdir({
     withr::with_seed(11, {
       expect_warning(
         samp <-
-          nlmixr2extra:::sampling(d, uid_colname = "ID", performStrat = TRUE,
-                                  stratVar = "grp"),
+          nlmixr2extra:::sampling(d, uid_colname = "ID", performStrat = TRUE, stratVar = "grp"),
         "not constant"
       )
     })
@@ -125,9 +122,13 @@ withr::with_tempdir({
     # subject 1 is stratified by its first value, so it stays whole
     orig <- lapply(split(d$DV, d$ID), sort)
     drawn <- lapply(split(samp$DV, samp$ID), sort)
-    expect_true(all(vapply(drawn, function(x) {
-      any(vapply(orig, identical, logical(1), x))
-    }, logical(1))))
+    expect_true(all(vapply(
+      drawn,
+      function(x) {
+        any(vapply(orig, identical, logical(1), x))
+      },
+      logical(1)
+    )))
   })
 
   test_that("sampling accepts a tibble and a non numeric id column", {
@@ -144,8 +145,7 @@ withr::with_tempdir({
 
     withr::with_seed(13, {
       samp <-
-        nlmixr2extra:::sampling(d, uid_colname = "ID", performStrat = TRUE,
-                                stratVar = "grp")
+        nlmixr2extra:::sampling(d, uid_colname = "ID", performStrat = TRUE, stratVar = "grp")
     })
     expect_equal(nrow(samp), 6)
     expect_equal(sort(unique(samp$ID)), 1:3)
@@ -187,11 +187,9 @@ withr::with_tempdir({
     output_dir <-
       paste0("nlmixr2BootstrapCache_", "fit", "_", fit$bootstrapMd5)
 
-    fnameBootDataPattern <- paste0("boot_data",
-                                   "_", "[0-9]+", ".rds",
-                                   sep = "")
+    fnameBootDataPattern <- paste0("boot_data", "_", "[0-9]+", ".rds", sep = "")
 
-    files <- list.files(paste0("./", output_dir), pattern = fnameBootDataPattern, full.names=TRUE)
+    files <- list.files(paste0("./", output_dir), pattern = fnameBootDataPattern, full.names = TRUE)
 
     fitdata <- lapply(files, function(x) {
       readRDS(x)
@@ -209,7 +207,6 @@ withr::with_tempdir({
   })
 
   test_that("different confidence levels should result in different bands", {
-
     one.cmt <- function() {
       ini({
         tka <- 0.45 ; label("Log Ka")
@@ -254,7 +251,6 @@ withr::with_tempdir({
   })
 
   test_that("expected columns in fit$parFixedDf object should match", {
-
     one.cmt <- function() {
       ini({
         tka <- 0.45 ; label("Log Ka")
@@ -298,11 +294,11 @@ withr::with_tempdir({
       list.files("./", pattern = "nlmixr2BootstrapCache_.*"),
       function(x) {
         unlink(x, recursive = TRUE, force = TRUE)
-      })
+      }
+    )
   })
 
   test_that("saem bootstrap", {
-
     one.cmt <- function() {
       ini({
         tka <- 0.45 ; label("Log Ka")

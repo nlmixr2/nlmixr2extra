@@ -30,13 +30,13 @@
       .p1 <- str2lang(env$iniDf$name[.w])
       .plast <- str2lang(paste0(env$iniDf$name[.w], ".l"))
     } else {
-      stop("cannot find proportional standard deviation", call.=FALSE)
+      stop("cannot find proportional standard deviation", call. = FALSE)
     }
   }
   if (pred1$variance) {
-    bquote(fct <- .(.p1)/.(.plast))
+    bquote(fct <- .(.p1) / .(.plast))
   } else {
-    bquote(fct <- (.(.p1))^2/(.(.plast))^2)
+    bquote(fct <- (.(.p1))^2 / (.(.plast))^2)
   }
 }
 #' Get the factor for the power error
@@ -57,13 +57,13 @@
       .p1 <- str2lang(env$iniDf$name[.w])
       .plast <- str2lang(paste0(env$iniDf$name[.w], ".l"))
     } else {
-      stop("cannot find power standard deviation", call.=FALSE)
+      stop("cannot find power standard deviation", call. = FALSE)
     }
   }
   if (pred1$variance) {
-    bquote(fct <- .(.p1)/.(.plast))
+    bquote(fct <- .(.p1) / .(.plast))
   } else {
-    bquote(fct <- (.(.p1))^2/(.(.plast)^2))
+    bquote(fct <- (.(.p1))^2 / (.(.plast)^2))
   }
 }
 
@@ -75,15 +75,16 @@
   .type <- as.character(pred1$errTypeF)
   if (.type == "f") {
     if (is.na(.f)) {
-      stop("for propF() or powF(), f must be part of the model and not estimated",
-           call.=FALSE)
+      stop("for propF() or powF(), f must be part of the model and not estimated", call. = FALSE)
     }
   }
-  switch(.type,
-         untransformed=quote(rx_pred_f_),
-         transformed=quote(rx_pred_),
-         f=str2lang(.f),
-         none=quote(rx_pred_f_))
+  switch(
+    .type,
+    untransformed = quote(rx_pred_f_),
+    transformed = quote(rx_pred_),
+    f = str2lang(.f),
+    none = quote(rx_pred_f_)
+  )
 }
 
 
@@ -105,7 +106,7 @@
       .p1 <- str2lang(env$iniDf$name[.w])
       .p1last <- str2lang(paste0(env$iniDf$name[.w], ".l"))
     } else {
-      stop("cannot find additive standard deviation", call.=FALSE)
+      stop("cannot find additive standard deviation", call. = FALSE)
     }
   }
   if (!is.na(pred1$b)) {
@@ -118,7 +119,7 @@
       .p2 <- str2lang(env$iniDf$name[.w])
       .p2last <- str2lang(paste0(env$iniDf$name[.w], ".l"))
     } else {
-      stop("cannot find proportional standard deviation", call.=FALSE)
+      stop("cannot find proportional standard deviation", call. = FALSE)
     }
   }
   if (pred1$addProp == "default") {
@@ -126,19 +127,18 @@
   } else {
     .addProp <- pred1$addProp
   }
-  .f <- .replaceFwithOpred(.getVarianceForErrorPropOrPowF(env, pred1),
-                           env, pred1)
+  .f <- .replaceFwithOpred(.getVarianceForErrorPropOrPowF(env, pred1), env, pred1)
   if (pred1$variance) {
     if (.addProp == "combined2") {
-      bquote(fct <- .(.p2)/.(.p2last))
+      bquote(fct <- .(.p2) / .(.p2last))
     } else {
-      bquote(fct <- (.(.p2)*(.(.f))+ sqrt(.(.p2)*.(.p1)))/(.(.p2last)*(.(.f)) + sqrt(.(.p2last)*.(.p1last))))
+      bquote(fct <- (.(.p2) * (.(.f)) + sqrt(.(.p2) * .(.p1))) / (.(.p2last) * (.(.f)) + sqrt(.(.p2last) * .(.p1last))))
     }
   } else {
     if (.addProp == "combined2") {
       bquote(fct <- .(.p2)^2 / .(.p2last)^2)
     } else {
-      bquote(fct <- (.(.p2)^2*(.(.f)) + .(.p2)*.(.p1))/(.(.p2last)^2*(.(.f)) + .(.p2last)*.(.p1last)))
+      bquote(fct <- (.(.p2)^2 * (.(.f)) + .(.p2) * .(.p1)) / (.(.p2last)^2 * (.(.f)) + .(.p2last) * .(.p1last)))
     }
   }
 }
@@ -150,14 +150,16 @@
 #' @return A expression for the current factor for linearization
 #' @noRd
 #' @author Matthew L. Fidler
-.rxGetFctForErrorType <- function (env, pred1) {
+.rxGetFctForErrorType <- function(env, pred1) {
   if (env$derivFct) {
-    switch(as.character(pred1$errType),
-           add = .rxGetFctForErrorAdd(env, pred1),
-           prop = .rxGetFctForErrorProp(env, pred1),
-           pow = .rxGetFctForErrorPow(env, pred1),
-           `add + prop` = .rxGetFctForErrorAddProp(env, pred1),
-           `add + pow` = quote(fct <- 1))
+    switch(
+      as.character(pred1$errType),
+      add = .rxGetFctForErrorAdd(env, pred1),
+      prop = .rxGetFctForErrorProp(env, pred1),
+      pow = .rxGetFctForErrorPow(env, pred1),
+      `add + prop` = .rxGetFctForErrorAddProp(env, pred1),
+      `add + pow` = quote(fct <- 1)
+    )
   } else {
     quote(fct <- 1)
   }
@@ -172,7 +174,7 @@
 #' @return expression with OPRED for linearized model
 #' @noRd
 #' @author Matthew L. Fidler
-.replaceFwithOpred <- function(expr, env, pred1, y="OPRED") {
+.replaceFwithOpred <- function(expr, env, pred1, y = "OPRED") {
   if (is.name(expr)) {
     if (identical(expr, quote(rx_pred_f_))) {
       # These need to be back-transformed to the original scale.
@@ -190,8 +192,7 @@
         .lambda <- deparse1(rxode2::.rxGetLambdaFromPred1AndIni(env, pred1))
         .low <- deparse1(rxode2::.rxGetLowBoundaryPred1AndIni(env, pred1))
         .hi <- deparse1(rxode2::.rxGetHiBoundaryPred1AndIni(env, pred1))
-        str2lang(sprintf("rxTBSi(%s, %s, %s, %s, %s)", y,
-                         .lambda, .yj, .low, .hi))
+        str2lang(sprintf("rxTBSi(%s, %s, %s, %s, %s)", y, .lambda, .yj, .low, .hi))
       }
     } else if (identical(expr, quote(rx_pred_))) {
       # This is the transformed predictions
@@ -200,8 +201,7 @@
       expr
     }
   } else if (is.call(expr)) {
-    as.call(c(list(expr[[1]]),
-              lapply(expr[-1], .replaceFwithOpred, env=env, pred1=pred1, y=y)))
+    as.call(c(list(expr[[1]]), lapply(expr[-1], .replaceFwithOpred, env = env, pred1 = pred1, y = y)))
   } else {
     expr
   }
@@ -229,14 +229,22 @@ linearizeErrorLines.norm <- function(line) {
   pred1 <- line[[2]]
   ret <- vector("list", 1)
   list(
-    bquote(rxR2 <- .(.replaceFwithOpred(rxode2::.rxGetVarianceForErrorType(env, pred1), env=env, pred1=pred1, y="OPRED"))),
-    .rxGetFctForErrorType(env, pred1))
+    bquote(
+      rxR2 <- .(.replaceFwithOpred(
+        rxode2::.rxGetVarianceForErrorType(env, pred1),
+        env = env,
+        pred1 = pred1,
+        y = "OPRED"
+      ))
+    ),
+    .rxGetFctForErrorType(env, pred1)
+  )
 }
 
 #' @rdname linearizeErrorLines
 #' @export
-linearizeErrorLines.default  <- function(line) {
-  stop("distribution not supported", call.=FALSE)
+linearizeErrorLines.default <- function(line) {
+  stop("distribution not supported", call. = FALSE)
 }
 
 
@@ -264,99 +272,129 @@ linearizeErrorLines.rxUi <- function(line) {
 
 rxUiGet.linearizeError <- function(x, ...) {
   .ui <- x[[1]]
-  if (!exists("derivFct", envir=.ui)) {
+  if (!exists("derivFct", envir = .ui)) {
     .ui$derivFct <- TRUE
-    on.exit({
-      rm("derivFct", envir=.ui)
-    }, add=TRUE)
+    on.exit(
+      {
+        rm("derivFct", envir = .ui)
+      },
+      add = TRUE
+    )
   }
   .errLines <- linearizeErrorLines(.ui)
   .predDf <- .ui$predDf
   .expr <-
-  .tipred <- lapply(seq_along(.predDf$cmt),
-                    function(i) {
-                      .replaceFwithOpred(expr=str2lang("TIPRED <- rx_pred_f_"),
-                                                  env=.ui,
-                                                  pred1=.predDf[i, ],
-                                                  y="y")
-                    })
-  if (all(vapply(seq_along(.tipred), function(i) {
-    identical(.tipred[[i]], str2lang("TIPRED <- y"))
-  }, logical(1)))) {
+    .tipred <- lapply(seq_along(.predDf$cmt), function(i) {
+      .replaceFwithOpred(expr = str2lang("TIPRED <- rx_pred_f_"), env = .ui, pred1 = .predDf[i, ], y = "y")
+    })
+  if (
+    all(vapply(
+      seq_along(.tipred),
+      function(i) {
+        identical(.tipred[[i]], str2lang("TIPRED <- y"))
+      },
+      logical(1)
+    ))
+  ) {
     .tipred <- "TIPRED <- y"
   } else {
-    .tipred <- vapply(seq_along(.predDf$cmt),
-                      function(i) {
-                        paste(deparse(as.call(list(quote(`if`), as.call(list(quote(`==`),
-                                                                             quote(OCMT), as.numeric(.predDf$cmt[i]))),
-                                                   as.call(c(list(quote(`{`)),
-                                                             .tipred[[i]]))))), collapse="\n")
+    .tipred <- vapply(
+      seq_along(.predDf$cmt),
+      function(i) {
+        paste(
+          deparse(as.call(list(
+            quote(`if`),
+            as.call(list(quote(`==`), quote(OCMT), as.numeric(.predDf$cmt[i]))),
+            as.call(c(list(quote(`{`)), .tipred[[i]]))
+          ))),
+          collapse = "\n"
+        )
+      },
+      character(1)
+    )
 
-                      }, character(1))
-
-    .tipred <- strsplit(paste(.tipred, collapse="\n"), "\n")[[1]]
+    .tipred <- strsplit(paste(.tipred, collapse = "\n"), "\n")[[1]]
   }
-  if(length(.predDf$cmt) > 1){
-    .rxR2 <- vapply(seq_along(.predDf$cmt),
-                    function(i) {
-                      paste(deparse(as.call(list(quote(`if`), as.call(list(quote(`==`),
-                                                                           quote(OCMT), as.numeric(.predDf$cmt[i]))),
-                                                 as.call(c(list(quote(`{`)),
-                                                           .errLines[[i]]))))), collapse="\n")
-
-                    }, character(1))
+  if (length(.predDf$cmt) > 1) {
+    .rxR2 <- vapply(
+      seq_along(.predDf$cmt),
+      function(i) {
+        paste(
+          deparse(as.call(list(
+            quote(`if`),
+            as.call(list(quote(`==`), quote(OCMT), as.numeric(.predDf$cmt[i]))),
+            as.call(c(list(quote(`{`)), .errLines[[i]]))
+          ))),
+          collapse = "\n"
+        )
+      },
+      character(1)
+    )
   } else {
-    .rxR2 <- vapply(seq_along(.errLines[[1]]),
-                    function(i) {
-                      paste(deparse(.errLines[[1]][[i]]), collapse="\n")
-                    }, character(1))
+    .rxR2 <- vapply(
+      seq_along(.errLines[[1]]),
+      function(i) {
+        paste(deparse(.errLines[[1]][[i]]), collapse = "\n")
+      },
+      character(1)
+    )
   }
 
   .errModel <-
-    vapply(seq_along(.predDf$cmt),
-           function(i) {
-             .pred1 <- .predDf[i, ]
-             .lambda <- deparse1(rxode2::.rxGetLambdaFromPred1AndIni(.ui, .pred1))
-             .low <- deparse1(rxode2::.rxGetLowBoundaryPred1AndIni(.ui, .pred1))
-             .hi <- deparse1(rxode2::.rxGetHiBoundaryPred1AndIni(.ui, .pred1))
-             .transform <- paste0(.predDf$transform[i])
-             .first <- switch(.transform,
-                              boxCox="add(rxR)",
-                              yeoJohnson="add(rxR)",
-                              untransformed="add(rxR)",
-                              lnorm="lnorm(rxR)",
-                              logit=sprintf("logitNorm(rxR, %s, %s)", .low, .hi),
-                              `logit + yeoJohnson`=sprintf("logitNorm(rxR, %s, %s)", .low, .hi),
+    vapply(
+      seq_along(.predDf$cmt),
+      function(i) {
+        .pred1 <- .predDf[i, ]
+        .lambda <- deparse1(rxode2::.rxGetLambdaFromPred1AndIni(.ui, .pred1))
+        .low <- deparse1(rxode2::.rxGetLowBoundaryPred1AndIni(.ui, .pred1))
+        .hi <- deparse1(rxode2::.rxGetHiBoundaryPred1AndIni(.ui, .pred1))
+        .transform <- paste0(.predDf$transform[i])
+        .first <- switch(
+          .transform,
+          boxCox = "add(rxR)",
+          yeoJohnson = "add(rxR)",
+          untransformed = "add(rxR)",
+          lnorm = "lnorm(rxR)",
+          logit = sprintf("logitNorm(rxR, %s, %s)", .low, .hi),
+          `logit + yeoJohnson` = sprintf("logitNorm(rxR, %s, %s)", .low, .hi),
 
-                              probit=sprintf("probitNorm(rxR, %s, %s)", .low, .hi),
-                              `probit + yeoJohnson`=sprintf("probitNorm(rxR, %s, %s)", .low, .hi),
-                              `logit + boxCox`=sprintf("logitNorm(rxR, %s, %s)", .low, .hi),
-                              `probit + boxCox`=sprintf("probitNorm(rxR, %s, %s)", .low, .hi)
-                              )
+          probit = sprintf("probitNorm(rxR, %s, %s)", .low, .hi),
+          `probit + yeoJohnson` = sprintf("probitNorm(rxR, %s, %s)", .low, .hi),
+          `logit + boxCox` = sprintf("logitNorm(rxR, %s, %s)", .low, .hi),
+          `probit + boxCox` = sprintf("probitNorm(rxR, %s, %s)", .low, .hi)
+        )
 
-             .last <- switch(.transform,
-                             boxCox=sprintf(" + boxCox(%s) + dv()", .lambda),
-                             yeoJohnson=sprintf("+ yeoJohnson(%s) + dv()", .lambda),
-                             untransformed="",
-                             lnorm="+dv()",
-                             logit="+dv()",
-                             `logit + yeoJohnson`=sprintf("+yeoJohnson(%s)+dv()", .lambda),
+        .last <- switch(
+          .transform,
+          boxCox = sprintf(" + boxCox(%s) + dv()", .lambda),
+          yeoJohnson = sprintf("+ yeoJohnson(%s) + dv()", .lambda),
+          untransformed = "",
+          lnorm = "+dv()",
+          logit = "+dv()",
+          `logit + yeoJohnson` = sprintf("+yeoJohnson(%s)+dv()", .lambda),
 
-                             probit="+dv()",
-                             `probit + yeoJohnson`=sprintf("+yeoJohnson(%s)+dv()", .lambda),
-                             `logit + boxCox`=sprintf(" + boxCox(%s) + dv()", .lambda),
-                             `probit + boxCox`=sprintf(" + boxCox(%s) + dv()", .lambda)
-                             )
-             deparse1(str2lang(paste0("y", i, " ~ ",  .first, .last)))
-           }, character(1), USE.NAMES=FALSE)
+          probit = "+dv()",
+          `probit + yeoJohnson` = sprintf("+yeoJohnson(%s)+dv()", .lambda),
+          `logit + boxCox` = sprintf(" + boxCox(%s) + dv()", .lambda),
+          `probit + boxCox` = sprintf(" + boxCox(%s) + dv()", .lambda)
+        )
+        deparse1(str2lang(paste0("y", i, " ~ ", .first, .last)))
+      },
+      character(1),
+      USE.NAMES = FALSE
+    )
 
-  .errModel <- c(vapply(seq_along(.predDf$cmt),
-                      function(i) {
-                        deparse1(str2lang(sprintf("y%s <- y", i)))
-                      }, character(1), USE.NAMES=FALSE),
-                 .errModel)
+  .errModel <- c(
+    vapply(
+      seq_along(.predDf$cmt),
+      function(i) {
+        deparse1(str2lang(sprintf("y%s <- y", i)))
+      },
+      character(1),
+      USE.NAMES = FALSE
+    ),
+    .errModel
+  )
 
-  list(rxR2=strsplit(paste(.rxR2, collapse="\n"), "\n")[[1]],
-       tipred=.tipred,
-       err=.errModel)
+  list(rxR2 = strsplit(paste(.rxR2, collapse = "\n"), "\n")[[1]], tipred = .tipred, err = .errModel)
 }

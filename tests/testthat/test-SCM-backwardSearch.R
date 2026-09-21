@@ -11,9 +11,9 @@ test_that("backwardSearch errors with correct message when fitorig is not a nlmi
   not_a_fit <- list(a = 1, b = 2)
   expect_error(
     nlmixr2extra:::backwardSearch(
-      varsVec   = "cl",
+      varsVec = "cl",
       covarsVec = "WT",
-      fitorig   = not_a_fit,
+      fitorig = not_a_fit,
       outputDir = tempdir()
     ),
     regexp = "fitorig.*needs to be a nlmixr2 fit"

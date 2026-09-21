@@ -55,7 +55,7 @@ estimated start), \code{fits}, \code{best}, and \code{bestIndex}
 \description{
 Refits a model from several perturbed sets of initial estimates and collects
 the results, so that a fit which settled in a local optimum can be
-recognised.  Use \code{\link[=plot]{plot()}} on the result for the objective-function waterfall
+recognized.  Use \code{\link[=plot]{plot()}} on the result for the objective-function waterfall
 and the parameter-stability plots.
 }
 \section{Starting points}{

@@ -96,7 +96,6 @@ importFrom(ggplot2,
   aes
 )
 importFrom(knitr,knit_print)
-importFrom(magrittr,"%>%")
 importFrom(nlme,getData)
 importFrom(nlmixr2est,
   nlmixr,

@@ -8,13 +8,12 @@ if (.Platform$OS.type == "windows") {
   .i <- "I"
 } else {
   .makevars <- file("src/Makevars", "wb")
-  if (any(grepl("Pop!_OS", utils::osVersion, fixed=TRUE))) {
+  if (any(grepl("Pop!_OS", utils::osVersion, fixed = TRUE))) {
     .i <- "isystem"
   } else {
     .i <- "I"
   }
 }
 
-writeLines(gsub("@ISYSTEM@", .i, .in),
-           .makevars)
+writeLines(gsub("@ISYSTEM@", .i, .in), .makevars)
 close(.makevars)

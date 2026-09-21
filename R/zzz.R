@@ -1,4 +1,3 @@
-
 .iniS3 <- function() {
   rxode2::.s3register("rxode2::rxUiGet", "linearizeError")
 }

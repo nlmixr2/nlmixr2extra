@@ -20,13 +20,15 @@ test_that("Add covariates and lasso string to ui ", {
   }
   ui1 <- nlmixr(one.cmt)
   ui <- ui1
-  varsVec <- c("ka","cl","v")
-  covarsVec <- c("WT","BMI")
+  varsVec <- c("ka", "cl", "v")
+  covarsVec <- c("WT", "BMI")
 
-  funstring1 <- intersect((.lassoUicovariate(ui,varsVec,covarsVec))$iniDf$name,
-                          c("cov_WT_ka","cov_WT_cl","cov_WT_v","cov_BMI_ka","cov_BMI_cl","cov_BMI_v"))
-  funstring2 <- c("cov_WT_ka","cov_WT_cl","cov_WT_v","cov_BMI_ka","cov_BMI_cl","cov_BMI_v")
-  funstring3 <- .lassoUicovariate(ui,varsVec,covarsVec)$funTxt
+  funstring1 <- intersect(
+    (.lassoUicovariate(ui, varsVec, covarsVec))$iniDf$name,
+    c("cov_WT_ka", "cov_WT_cl", "cov_WT_v", "cov_BMI_ka", "cov_BMI_cl", "cov_BMI_v")
+  )
+  funstring2 <- c("cov_WT_ka", "cov_WT_cl", "cov_WT_v", "cov_BMI_ka", "cov_BMI_cl", "cov_BMI_v")
+  funstring3 <- .lassoUicovariate(ui, varsVec, covarsVec)$funTxt
   funstring4 <- "tvalue <- 0.05\nabssum <- sum(abs(cov_BMI_ka) + abs(cov_WT_ka) + abs(cov_WT_cl) + abs(cov_BMI_cl) + abs(cov_BMI_v) + abs(cov_WT_v))\nratio <- abssum/tvalue\nfactor <- exp(1 - ratio)\nka <- exp(tka + eta.ka + cov_WT_ka * factor * WT + cov_BMI_ka * factor * BMI)\ncl <- exp(tcl + eta.cl + cov_BMI_cl * factor * BMI + cov_WT_cl * factor * WT)\nv <- exp(tv + eta.v + cov_WT_v * factor * WT + cov_BMI_v * factor * BMI)\nlinCmt() ~ add(add.sd)"
   expect_equal(funstring1, funstring2)
   expect_equal(funstring3, funstring4)
@@ -57,10 +59,6 @@ test_that("Add covariates and lasso string to ui ", {
   ui2 <- nlmixr(two.compartment)
   ui <- ui2
   varsVec <- "ka"
-  covarsVec <- c("WT","BMI")
-  expect_error(.lassoUicovariate(ui,varsVec,covarsVec))
-
+  covarsVec <- c("WT", "BMI")
+  expect_error(.lassoUicovariate(ui, varsVec, covarsVec))
 })
-
-
-
