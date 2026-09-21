@@ -1,3 +1,57 @@
+#' Data-scaled starting values for newly added covariate coefficients
+#'
+#' `.builduiCovariate()` adds a coefficient at exactly `0`, which carries no
+#' scale.  FOCEi then nudges it to `foceiControl(zeroTheta)` (`0.001`) and uses
+#' that as its step size: fine for a covariate in the tens (weight, age), but a
+#' unit-scale covariate (e.g. a z-score) is pinned at zero and never
+#' selected.  Starting each new coefficient at `0.1/max(|X|)` gives a step
+#' matched to the covariate's own units and keeps the starting term within
+#' `0.1` for every subject.  Coefficients already estimated are left alone.
+#'
+#' @param mod candidate `rxUi` model
+#' @param data data set used for the search
+#' @return `mod` with rescaled starting values
+#' @noRd
+#' @author Matthew L. Fidler
+.scmCovIni <- function(mod, data) {
+  .mod <- rxode2::assertRxUi(mod)
+  .cov <- .mod$muRefCovariateDataFrame
+  if (is.null(.cov) || nrow(.cov) == 0L) {
+    return(mod)
+  }
+  .ini <- .mod$iniDf
+  .new <- list()
+  for (.i in seq_len(nrow(.cov))) {
+    .par <- .cov$covariateParameter[.i]
+    .x <- .cov$covariate[.i]
+    .w <- which(.ini$name == .par & !is.na(.ini$ntheta))
+    if (length(.w) != 1L || .ini$est[.w] != 0 || .ini$fix[.w] ||
+          !(.x %in% names(data)) || !is.numeric(data[[.x]])) {
+      next
+    }
+    .max <- suppressWarnings(max(abs(data[[.x]]), na.rm = TRUE))
+    if (is.finite(.max) && .max > 0) {
+      .new[[.par]] <- 0.1 / .max
+    }
+  }
+  if (length(.new) == 0L) {
+    return(mod)
+  }
+  suppressMessages(do.call(rxode2::ini, c(list(.mod), .new)))
+}
+
+#' Refit a covariate-search candidate model
+#'
+#' @param mod candidate `rxUi` model
+#' @param data data set used for the search
+#' @param fit parent `nlmixr2FitCore`
+#' @return the candidate fit
+#' @noRd
+#' @author Matthew L. Fidler
+.scmRefit <- function(mod, data, fit) {
+  nlmixr2(.scmCovIni(mod, data), data, fit$est)
+}
+
 #' Stepwise Covariate Model-selection (SCM) method
 #'
 #' @param fit an nlmixr2 'fit' object
@@ -228,7 +282,7 @@ forwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL,fit, pVal = 0.05, ou
        x <- tryCatch(
          {
            x <-
-             suppressWarnings(nlmixr2(xmod,data,fit$est))
+             suppressWarnings(.scmRefit(xmod, data, fit))
            x # to return 'model fit'
          },
          error = function(error_message) {
@@ -276,7 +330,7 @@ forwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL,fit, pVal = 0.05, ou
       print(bestRow)
 
       fit <-
-        suppressWarnings(nlmixr2(covSearchRes[[which.min(resTable$pchisqr)]], data, fit$est)) # re-fit the best model to obtain its fit object
+        suppressWarnings(.scmRefit(covSearchRes[[which.min(resTable$pchisqr)]], data, fit)) # re-fit the best model to obtain its fit object
 
       covInfo[[paste0(as.character(bestRow$covar), as.character(bestRow$var))]] <- NULL
 
@@ -352,7 +406,7 @@ backwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL, fitorig, fitupdate
 
   if (reFitCovars) {
     xmod <- buildupatedUI(ui,varsVec,covarsVec,indep = FALSE,add=TRUE)
-    fitupdated <- suppressWarnings(nlmixr2(xmod,data,fit$est)) # get the last fit object with all covariates added # DOES NOT ADD $ini
+    fitupdated <- suppressWarnings(.scmRefit(xmod, data, fit)) # get the last fit object with all covariates added # DOES NOT ADD $ini
     fit <- fitupdated
   }
 
@@ -427,7 +481,7 @@ backwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL, fitorig, fitupdate
       x <- tryCatch(
         {
           x <-
-            suppressWarnings(nlmixr2(xmod,data,fit$est))
+            suppressWarnings(.scmRefit(xmod, data, fit))
           x # to return 'model fit'
         },
         error = function(error_message) {
@@ -476,7 +530,7 @@ backwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL, fitorig, fitupdate
       print(bestRow)
 
       fit <-
-        suppressWarnings(nlmixr2(covSearchRes[[which.min(resTable$pchisqr)]], data, fit$est)) # re-fit the best model to obtain its fit object
+        suppressWarnings(.scmRefit(covSearchRes[[which.min(resTable$pchisqr)]], data, fit)) # re-fit the best model to obtain its fit object
       covInfo[[paste0(as.character(bestRow$covar), as.character(bestRow$var))]] <- NULL
 
       saveRDS(fit, file = paste0(outputDir, "/", "backward_", "step_", stepIdx, "_", "fit", "_", paste0(as.character(bestRow$covar), as.character(bestRow$var)), ".RData"))

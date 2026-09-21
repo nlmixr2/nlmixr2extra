@@ -216,6 +216,49 @@ linModGen <- function(ui, focei = TRUE, derivFct = FALSE){
     nlmod
 }
 
+#' Scaling constants for the linearized model's thetas
+#'
+#' In the linearized model the original residual-error parameters are ordinary
+#' thetas -- they appear inside `rxR2` rather than in an error term -- so FOCEi
+#' scales them as linear parameters (`1/|init|`) instead of with the residual
+#' rule (`0.5*|init|`) they had in the nonlinear fit.  For a residual around
+#' `0.2` that is an order of magnitude too coarse: the optimizer overshoots an
+#' `add()` sd into its lower bound at `0` and the refit ends above the objective
+#' it started from.  Each parameter keeps the rule nlmixr2est gives its error
+#' type: `0.5*|init|` for sd-like terms, `0.4*|init|` for `ar`, `1` for shape
+#' parameters (`boxCox`, `yeoJohnson`, ...); any other theta gets `1`.
+#'
+#' @param linMod linearized `rxUi` from `linModGen()`
+#' @param fit the nonlinear fit being linearized
+#' @return numeric `scaleC` vector, one entry per linearized theta
+#' @noRd
+#' @author Matthew L. Fidler
+.linScaleC <- function(linMod, fit) {
+  .ini <- linMod$iniDf
+  .th <- .ini[!is.na(.ini$ntheta), , drop = FALSE]
+  .th <- .th[order(.th$ntheta), , drop = FALSE]
+  if (nrow(.th) == 0L) {
+    return(NULL)
+  }
+  .fi <- fit$iniDf[!is.na(fit$iniDf$err), c("name", "err"), drop = FALSE]
+  .errType <- stats::setNames(.fi$err, .fi$name)
+  .sdLike <- c("prop", "propT", "propF", "pow", "powT", "powF", "add", "norm",
+               "dnorm", "logn", "dlogn", "lnorm", "dlnorm")
+  vapply(seq_len(nrow(.th)), function(.i) {
+    .e <- .errType[.th$name[.i]]
+    .est <- .th$est[.i]
+    if (is.na(.e) || .est == 0) {
+      1
+    } else if (.e %in% .sdLike) {
+      0.5 * abs(.est)
+    } else if (.e == "ar") {
+      0.4 * abs(.est)
+    } else {
+      1
+    }
+  }, numeric(1), USE.NAMES = FALSE)
+}
+
 #' Perform linearization of a model fitted using FOCEI
 #' @param fit fit of nonlinear model fitted using any method with at least one eta. See details.
 #' @param mceta a numeric vector for mceta to try. See details.
@@ -313,9 +356,12 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.25, focei = NA, 
 
 
     # fit linearized model
+    .scaleC <- .linScaleC(linMod, fit)
+
     for(i in seq_along(mceta)){
         fitL <- nlmixr(linMod, derv, est=est,
-            control = nlmixr2est::foceiControl(etaMat = fit, mceta=mceta[i], covMethod = "", calcTables = FALSE, print = 20))
+            control = nlmixr2est::foceiControl(etaMat = fit, mceta=mceta[i], covMethod = "", calcTables = FALSE, print = 20,
+                                               scaleC = .scaleC))
         
         if(est != "focei"){break} # obj are not comparable
         
@@ -336,7 +382,8 @@ linearize <- function(fit, mceta=c(-1, 10, 100, 1000), relTol=0.25, focei = NA, 
                     secondEval <- evalFun()
                     linMod <- linMod %>%  model(foceiLin <- 0)
                     fitL <- nlmixr(linMod, derv, est="focei",
-                        control = nlmixr2est::foceiControl(etaMat = fit, mceta=10, covMethod = "", calcTables = FALSE, print = 20))
+                        control = nlmixr2est::foceiControl(etaMat = fit, mceta=10, covMethod = "", calcTables = FALSE, print = 20,
+                                                           scaleC = .linScaleC(linMod, fit)))
                     oObj <- fit$objDf$OBJF
                     lObj <- fitL$objDf$OBJF
 

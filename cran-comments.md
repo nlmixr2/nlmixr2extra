@@ -1,30 +1,27 @@
-# nlmixr2extra 5.2.0
+# nlmixr2extra 5.2.1
 
-This release adds reporting helpers for model comparison and fixes
-several bugs in the bootstrap and covariate-search code.  It supersedes
-the 5.1.1 development version, which was never submitted; its fixes are
-included here.
+This release adds `multistart()` and fixes bugs in `preconditionFit()`,
+`linearize()` and `covarSearchAuto()`.
 
 New features:
 
-- Reporting helpers for comparing candidate models: `getMinAICFit()`,
-  `listModelsTested()` and `isBoundaryFit()`
+- `multistart()` re-estimates a model from many perturbed starting points
+  to detect fits that settled in a local optimum
 
 Bug fixes:
 
-- `bootstrapFit(stratVar=)` now actually resamples, keeps subject ids
-  distinct across strata, and draws whole subjects
+- `preconditionFit()` works again: it no longer fails on residual names
+  containing a `.`, on models with random effects, or when 'nlmixr2est'
+  reports a decorated covariance method (`"|r|,|s|"`, `"r,s (full)"`)
 
-- `covarSearchAuto()` no longer errors when a covariate is selected, and
-  the forward inclusion test no longer has an inverted sign
+- `covarSearchAuto()` selects unit-scale covariates again; since
+  'nlmixr2est' 7.0.2 a coefficient added at zero stayed pinned there
 
-- `bootstrapFit()` works for models with a single population parameter,
-  a single random effect, or no random effects
+- `linearize()` no longer diverges when re-estimating a model with small
+  residual error parameters, and works with correlated eta blocks
 
-- `optimUnisampling()` keeps `N` and `floorT` when it retries internally
-
-- The bundled `theoFitOde` fit was regenerated so it no longer requires
-  the `qs2` package to be decoded
+- The bundled `theoFitOde` fit was regenerated to match the current
+  'nlmixr2est'
 
 ## Test environments
 
@@ -32,21 +29,15 @@ Bug fixes:
 
 ## R CMD check results
 
-0 errors | 0 warnings | 2 notes
-
-Both notes are properties of the local check environment rather than the
-package:
+0 errors | 0 warnings | 1 note
 
 - `checking compilation flags used ... NOTE`: the non-portable flag
   `-mno-omit-leaf-frame-pointer` comes from the distribution r-base
   `Makeconf`, not from anything the package sets.
 
-- `checking HTML version of manual ... NOTE`: HTML validation was
-  skipped because no `tidy` command is installed locally.
-
 ## Downstream dependencies
 
-The reverse dependencies on CRAN are babelmixr2, nlmixr2, nlmixr2plot
-and nlmixr2rpt.  This release only adds exports (`getMinAICFit()`,
-`listModelsTested()`, `isBoundaryFit()`); no exported function was
-removed and no existing signature changed.
+We checked all 4 reverse dependencies on CRAN (babelmixr2, nlmixr2,
+nlmixr2plot, nlmixr2rpt) with 'revdepcheck', comparing R CMD check results
+for the current CRAN version and this release.  No new problems were found.
+No exported function was removed and no existing signature changed.

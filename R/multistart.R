@@ -1,7 +1,7 @@
 # Multistart estimation ----
 #
 # Refit a model from many perturbed starting points so that a suspected local
-# optimum can be recognised.  The pieces here are deliberately small and
+# optimum can be recognized.  The pieces here are deliberately small and
 # testable: `.msPerturbIni()` builds the candidate starting points,
 # `.msRunOne()` fits one of them, and `.multistartRun()` orchestrates
 # screening, fitting, caching and summarisation.
@@ -127,7 +127,7 @@ rxUiDeparse.multistartControl <- function(object, var) {
 #'
 #' Refits a model from several perturbed sets of initial estimates and collects
 #' the results, so that a fit which settled in a local optimum can be
-#' recognised.  Use [plot()] on the result for the objective-function waterfall
+#' recognized.  Use [plot()] on the result for the objective-function waterfall
 #' and the parameter-stability plots.
 #'
 #' @details

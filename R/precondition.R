@@ -18,26 +18,6 @@
   .retf
 }
 
-#' Linearly re-parameterize the model to be less sensitive to rounding errors
-#'
-#' @param fit A nlmixr2 fit to be preconditioned
-#' @param estType Once the fit has been linearly reparameterized,
-#'   should a "full" estimation, "posthoc" estimation or simply a
-#'   estimation of the covariance matrix "none" before the fit is
-#'   updated
-#' @param ntry number of tries before giving up on a pre-conditioned
-#'   covariance estimate
-#'
-#' @return A nlmixr2 fit object that was preconditioned to stabilize
-#'   the variance/covariance calculation
-#'
-#' @export
-#'
-#' @references Aoki Y, Nordgren R, Hooker AC. Preconditioning of
-#'   Nonlinear Mixed Effects Models for Stabilisation of
-#'   Variance-Covariance Matrix Computations. AAPS
-#'   J. 2016;18(2):505-518. doi:10.1208/s12248-016-9866-5
-#'
 #' Format a number for inclusion in a generated model line
 #'
 #' Uses the full round-trip precision of a double so the preconditioning
@@ -135,6 +115,25 @@
   grepl("^(r\\+?|\\|r\\|),(s\\+?|\\|s\\|)( \\(full\\))?$", covMethod)
 }
 
+#' Linearly re-parameterize the model to be less sensitive to rounding errors
+#'
+#' @param fit A nlmixr2 fit to be preconditioned
+#' @param estType Once the fit has been linearly reparameterized,
+#'   should a "full" estimation, "posthoc" estimation or simply a
+#'   estimation of the covariance matrix "none" before the fit is
+#'   updated
+#' @param ntry number of tries before giving up on a pre-conditioned
+#'   covariance estimate
+#'
+#' @return A nlmixr2 fit object that was preconditioned to stabilize
+#'   the variance/covariance calculation
+#'
+#' @export
+#'
+#' @references Aoki Y, Nordgren R, Hooker AC. Preconditioning of
+#'   Nonlinear Mixed Effects Models for Stabilisation of
+#'   Variance-Covariance Matrix Computations. AAPS
+#'   J. 2016;18(2):505-518. doi:10.1208/s12248-016-9866-5
 preconditionFit <- function(fit, estType = c("full", "posthoc", "none"),
                             ntry = 10L) {
   nlmixrWithTiming("covariance", {
