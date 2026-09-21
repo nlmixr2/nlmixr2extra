@@ -53,7 +53,7 @@ test_that("get the population parameter from variable name", {
     })
     # and a model block with the error specification and model specification
     model({
-      
+
       cl <- exp(tcl + eta.cl)
       v1 <- exp(tv1 + eta.v1)
       v2 <- exp(tv2 + eta.v2)
@@ -151,7 +151,7 @@ test_that("Add covariate to the ui", {
     })
     # and a model block with the error specification and model specification
     model({
-      
+
       cl <- exp(tcl + eta.cl)
       v1 <- exp(tv1 + eta.v1)
       v2 <- exp(tv2 + eta.v2)
@@ -186,7 +186,7 @@ test_that("Add covariate to the ui", {
     })
     # and a model block with the error specification and model specification
     model({
-      
+
       cl <- exp(tcl + eta.cl)
       v1 <- exp(tv1 + eta.v1)
       v2 <- exp(tv2 + eta.v2)
@@ -297,7 +297,7 @@ test_that("Build ui from the covariate", {
     })
     # and a model block with the error specification and model specification
     model({
-      
+
       cl <- exp(tcl + eta.cl)
       v1 <- exp(tv1 + eta.v1)
       v2 <- exp(tv2 + eta.v2)
@@ -392,7 +392,7 @@ test_that("Build ui from the covariate", {
     })
     # and a model block with the error specification and model specification
     model({
-      
+
       cl <- exp(tcl + eta.cl)
       v1 <- exp(tv1 + eta.v1)
       v2 <- exp(tv2 + eta.v2)

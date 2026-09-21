@@ -802,8 +802,10 @@ sampling <- function(data, nsamp = NULL, uid_colname, pvalues = NULL, performStr
 #'
 #' @param fit the nlmixr2 fit object
 #' @param nboot an integer giving the number of bootstrapped models to be fit; default value is 100
-#' @param nSampIndiv an integer specifying the number of samples in each bootstrapped sample; default is the number of unique subjects in the original dataset
-#' @param pvalues a vector of pvalues indicating the probability of each subject to get selected; default value is NULL implying that probability of each subject is the same
+#' @param nSampIndiv an integer specifying the number of samples in each bootstrapped sample;
+#'   default is the number of unique subjects in the original dataset
+#' @param pvalues a vector of pvalues indicating the probability of each subject to get selected;
+#'   default value is NULL implying that probability of each subject is the same
 #' @param restart a boolean that indicates if a previous session has to be restarted; default value is FALSE
 #'
 #' @return a list of lists containing the different attributed of the fit object for each of the bootstrapped models
@@ -984,7 +986,10 @@ modelBootstrap <- function(
         mod_idx_m1 <- .env$mod_idx - 1
         cli::cli_alert_danger(
           cli::col_red(
-            "the model file already has {mod_idx_m1} models when max models is {nboot}; using only the first {nboot} model(s)"
+            paste0(
+              "the model file already has {mod_idx_m1} models when max models is {nboot}; ",
+              "using only the first {nboot} model(s)"
+            )
           )
         )
         return(list(modelsEnsembleLoaded[1:nboot], fitEnsembleLoaded[1:nboot]))
@@ -993,7 +998,10 @@ modelBootstrap <- function(
       } else if (currNumModels == nboot) {
         mod_idx_m1 <- .env$mod_idx - 1
         cli::col_red(
-          "the model file already has {mod_idx_m1} models when max models is {nboot}; loading from {nboot} models already saved on disk"
+          paste0(
+            "the model file already has {mod_idx_m1} models when max models is {nboot}; ",
+            "loading from {nboot} models already saved on disk"
+          )
         )
         return(list(modelsEnsembleLoaded, fitEnsembleLoaded))
 
@@ -1113,7 +1121,8 @@ getFitMethod <- function(fit) {
 
 #' Extract all the relevant variables from a set of bootstrapped models
 #'
-#' @param fitlist a list of lists containing information on the multiple bootstrapped models; similar to the output of modelsBootstrap() function
+#' @param fitlist a list of lists containing information on the multiple bootstrapped models;
+#'   similar to the output of modelsBootstrap() function
 #' @param id a character representing the variable of interest: OBJF, AIC, omega, parFixedDf, method, message, warnings
 #'
 #' @return returns a vector or list across of the variable of interest from all the fits/bootstrapped models
@@ -1204,8 +1213,10 @@ extractVars <- function(fitlist, id = "method") {
 
 #' Summarize the bootstrapped fits/models
 #'
-#' @param fitList a list of lists containing information on the multiple bootstrapped models; similar to the output of modelsBootstrap() function
-#' @return returns aggregated quantities (mean, median, standard deviation, and variance) as a list for all the quantities
+#' @param fitList a list of lists containing information on the multiple bootstrapped models;
+#'   similar to the output of modelsBootstrap() function
+#' @return returns aggregated quantities (mean, median, standard deviation, and variance) as a list
+#'   for all the quantities
 #' @author Vipul Mann, Matthew Fidler
 #' @inheritParams bootstrapFit
 #' @examples
@@ -1323,7 +1334,7 @@ getBootstrapSummary <- function(fitList, ci = 0.95, stdErrType = "perc") {
           } else {
             nam <- paste0("(", nam1, ",", nam2, ")")
             namRev <- paste0("(", nam2, ",", nam1, ")")
-            if (!(nam %in% namesList | namRev %in% namesList)) {
+            if (!(nam %in% namesList || namRev %in% namesList)) {
               namesList[idxName] <- nam
               idxName <- idxName + 1
             }
@@ -1493,6 +1504,7 @@ assignToEnv <- function(namedVars, fitobject) {
   })
 }
 
+# nolint start: line_length_linter.
 #' @title Produce delta objective function for boostrap
 #'
 #' @param x fit object
@@ -1508,6 +1520,7 @@ assignToEnv <- function(namedVars, fitobject) {
 bootplot <- function(x, ...) {
   UseMethod("bootplot")
 }
+# nolint end
 
 #' @rdname bootplot
 #' @export
@@ -1515,7 +1528,7 @@ bootplot <- function(x, ...) {
 bootplot.nlmixr2FitCore <- function(x, ...) {
   .fitName <- as.character(substitute(x))
   if (inherits(x, "nlmixr2FitCore")) {
-    if (exists("bootSummary", x$env) & (!exists(".bootPlotData", x$env))) {
+    if (exists("bootSummary", x$env) && (!exists(".bootPlotData", x$env))) {
       bootstrapFit(x, x$bootSummary$nboot, plotHist = TRUE, fitName = .fitName)
     }
     if (exists(".bootPlotData", x$env)) {

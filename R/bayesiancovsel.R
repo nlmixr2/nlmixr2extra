@@ -48,7 +48,7 @@
   # Global shrinkage parameter, equation
   tau0 <- p0 / (D - p0) / sqrt(n)
 
-  if (!is.finite(tau0) | tau0 < 0) {
+  if (!is.finite(tau0) || tau0 < 0) {
     tau0 <- 0.25
   }
 
@@ -73,7 +73,7 @@ utils::globalVariables("tau0")
     brms::prior(normal(0, 10), class = "b", nlpar = "b")
   )
   # stan variable for parsing
-  stanvars <- brms::stanvar(tau0, name = 'tau0')
+  stanvars <- brms::stanvar(tau0, name = "tau0")
   list(priorString, stanvars)
 }
 
@@ -96,7 +96,7 @@ lasso <- function(...) {}
   )
 
   # stan variable for parsing
-  stanvars <- brms::stanvar(df, name = 'df') + brms::stanvar(scale, name = 'scale')
+  stanvars <- brms::stanvar(df, name = "df") + brms::stanvar(scale, name = "scale")
   list(priorString, stanvars)
 }
 
@@ -127,7 +127,7 @@ lasso <- function(...) {}
   covData <- normalizedData(data, covarsVec)
   # Extract eta parameters
   etaData <- fit$eta
-  etaVector <- colnames(etaData[grepl('eta', colnames(etaData))])
+  etaVector <- colnames(etaData[grepl("eta", colnames(etaData))])
   # Extract Individual column
   uidCol <- .idColumn(data)
   # Make a combined data set of eta parameters and covariate parameters

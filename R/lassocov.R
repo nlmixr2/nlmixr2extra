@@ -71,7 +71,7 @@
   covarsVec,
   tvalue = 0.10,
   nfold = 5,
-  optcrit = 'objf',
+  optcrit = "objf",
   estmethod = "focei",
   adapcoefs = NULL,
   stratVar = NULL
@@ -214,7 +214,7 @@
       covarsVec,
       tvalue = t,
       nfold = 5,
-      optcrit = 'obj',
+      optcrit = "obj",
       estmethod = "focei",
       adapcoefs = NULL,
       stratVar = NULL
@@ -387,7 +387,7 @@ lassoCoefficients <- function(fit, varsVec, covarsVec, catvarsVec, constraint = 
   factorString <- paste0("factor <- ", "exp", "(", "1-", "ratio", ")", "\n")
 
   # construct a Adaptive lasso coefficeints
-  adaptString <- paste0("AL_", colnames(adapcoefs), " <- ", adapcoefs, "\n", collapse = '')
+  adaptString <- paste0("AL_", colnames(adapcoefs), " <- ", adapcoefs, "\n", collapse = "")
 
   # add lasso factor strings from the covparams to the model function
   .covsadapString <- paste0(.covsparams, " * factor * ", "AL_", .covsparams)

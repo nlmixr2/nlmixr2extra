@@ -432,7 +432,7 @@ extractEqHelper.if <- function(x, ..., inModel, alignment, indent = 0L, firstIf 
 
 #' @export
 extractEqHelper.default <- function(x, ..., inModel) {
-  if (inherits(x, "<-") | inherits(x, "=")) {
+  if (inherits(x, "<-") || inherits(x, "=")) {
     # The assignment classes go via extractEqHelper.default to fix an R CMD
     # check issue:
     #   Warning:     'extractEqHelper.<-'

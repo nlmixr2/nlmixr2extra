@@ -72,7 +72,7 @@ test_that("linearize error models", {
     )
   )
 
-  f1 <- f %>% model(effect ~ lnorm(pdadd.err) + prop(pdprop.err))
+  f1 <- f |> model(effect ~ lnorm(pdadd.err) + prop(pdprop.err))
 
   expect_equal(
     f1$linearizeError,
@@ -92,7 +92,7 @@ test_that("linearize error models", {
     )
   )
 
-  f1 <- f %>% model(effect ~ logitNorm(pdadd.err, 10, 20) + prop(pdprop.err) + yeoJohnson(lambda))
+  f1 <- f |> model(effect ~ logitNorm(pdadd.err, 10, 20) + prop(pdprop.err) + yeoJohnson(lambda))
 
   expect_equal(
     f1$linearizeError,
@@ -120,7 +120,7 @@ test_that("linearize error models", {
     )
   )
 
-  f1 <- f %>% model(effect ~ logitNorm(pdadd.err, 10, 20) + prop(pdprop.err) + yeoJohnson(lambda) + comb1())
+  f1 <- f |> model(effect ~ logitNorm(pdadd.err, 10, 20) + prop(pdprop.err) + yeoJohnson(lambda) + comb1())
 
   expect_equal(
     f1$linearizeError,
@@ -178,17 +178,17 @@ test_that("Linearize add err model ", {
   fit <- nlmixr(one.cmpt.adderr, nlmixr2data::theo_sd, est = "focei")
   derv <- getDeriv(fit)
 
-  all(c("O_eta.cl", "O_eta.v", "O_eta.ka") %in% names(derv)) %>% expect_true()
-  all(derv$D_ResVar == 1) %>% expect_equal(TRUE)
-  all(derv$D_VAR_eta.cl == 0) %>% expect_equal(TRUE)
-  all(derv$D_VAR_eta.v == 0) %>% expect_equal(TRUE)
-  all(derv$D_VAR_eta.ka == 0) %>% expect_equal(TRUE)
+  all(c("O_eta.cl", "O_eta.v", "O_eta.ka") %in% names(derv)) |> expect_true()
+  all(derv$D_ResVar == 1) |> expect_equal(TRUE)
+  all(derv$D_VAR_eta.cl == 0) |> expect_equal(TRUE)
+  all(derv$D_VAR_eta.v == 0) |> expect_equal(TRUE)
+  all(derv$D_VAR_eta.ka == 0) |> expect_equal(TRUE)
 
   suppressWarnings(
     fitLin <- linearize(fit)
   )
 
-  linearizePlot(fitLin) %>% expect_no_error()
+  linearizePlot(fitLin) |> expect_no_error()
   expect_true(
     all(sapply(isLinearizeMatch(fitLin), function(x) {
       x[[1]]
@@ -251,7 +251,7 @@ test_that("Linearize prop err model ", {
     fitLin <- linearize(fit, relTol = 0.3, mceta = c(-1, 10))
   )
 
-  isLinearizeMatch(fitLin, tol = 0.15)$ofv[[1]] %>% expect_true()
+  isLinearizeMatch(fitLin, tol = 0.15)$ofv[[1]] |> expect_true()
 })
 
 
@@ -271,7 +271,7 @@ test_that("Linerize pheno prop err", {
             d / dt(center) <- - cl / v * center
             cp <- center / v
             cp <- cp
-            cp ~ prop(prop.sd) 
+            cp ~ prop(prop.sd)
         })
   }
   fit <- nlmixr(one.cmpt.prop.iv, nlmixr2data::pheno_sd, est = "saem")
@@ -456,7 +456,7 @@ test_that("Linearize multiple endpoints ", {
 
   expect_true(isLinearizeMatch(fitLin, 0.1)$ofv[[1]])
 
-  linearizePlot(fitLin) %>% expect_no_error()
+  linearizePlot(fitLin) |> expect_no_error()
 })
 
 
@@ -549,7 +549,7 @@ test_that("linearize correlated eta ", {
   suppressWarnings(
     fitLin <- linearize(fit)
   )
-  isLinearizeMatch(fitLin)$ofv[[1]] %>% expect_true()
+  isLinearizeMatch(fitLin)$ofv[[1]] |> expect_true()
 
   # A fully converged linearized fit reproduces the individual etas to ~13%
   # here (a looser optimizer used to stop near its start -- the nonlinear
@@ -692,16 +692,16 @@ test_that("Adding covariates to lin models", {
     fitLinNoCov <- linearize(nlfitNoCov)
   )
   expect_no_error(
-    x <- addCovariate(fitLinNoCov, eta.v ~ WT / 70 + AGE / median, effect = "power") %>%
+    x <- addCovariate(fitLinNoCov, eta.v ~ WT / 70 + AGE / median, effect = "power") |>
       addCovariate(eta.cl ~ WT / 80)
   )
   expect_error(
-    addCovariate(fitLinNoCov, eta.v ~ WT / 70, effect = "power") %>%
+    addCovariate(fitLinNoCov, eta.v ~ WT / 70, effect = "power") |>
       addCovariate(eta.v ~ WT / 70),
     "Duplicated names found"
   )
   expect_error(
-    addCovariate(fitLinNoCov, eta.v ~ AGPR / 70, effect = "power") %>%
+    addCovariate(fitLinNoCov, eta.v ~ AGPR / 70, effect = "power") |>
       addCovariate(eta.v ~ WT / 70)
   )
   # only Age CL
@@ -765,11 +765,11 @@ test_that("linModGen from any object", {
   }
 
   # call
-  linModGen(one.cmpt.adderr) %>% expect_no_error()
-  linModGen(one.cmpt.adderr, derivFct = TRUE) %>% expect_error()
+  linModGen(one.cmpt.adderr) |> expect_no_error()
+  linModGen(one.cmpt.adderr, derivFct = TRUE) |> expect_error()
 
   # rxUi
-  linModGen(one.cmpt.adderr()) %>% expect_no_error()
+  linModGen(one.cmpt.adderr()) |> expect_no_error()
 
   # fit => in previous models
 })

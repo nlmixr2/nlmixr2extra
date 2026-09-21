@@ -37,7 +37,6 @@ Imports:
     ggplot2,
     knitr,
     lotri,
-    magrittr,
     methods,
     nlme,
     nlmixr2est (>= 6.0.0),

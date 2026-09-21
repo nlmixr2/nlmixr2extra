@@ -20,8 +20,8 @@ getDeriv <- function(fit) {
   theta <- fit$theta
   reps <- ceiling(nrow(eta) / nrow(theta))
   # theta <- as.data.frame(theta)
-  theta <- setNames(fit$theta, paste0("THETA[", seq_along(fit$theta), "]")) %>%
-    t() %>%
+  theta <- setNames(fit$theta, paste0("THETA[", seq_along(fit$theta), "]")) |>
+    t() |>
     as.data.frame()
 
   theta <- theta[rep(1, nrow(eta)), , drop = FALSE]
@@ -205,7 +205,7 @@ linModGen <- function(ui, focei = TRUE, derivFct = FALSE) {
   # add theta.etaname
   iniDf <- addThetaToIniDf(iniDf, paste0("theta.", etaNames), ini = 0, fix = TRUE)
   if (derivFct) {
-    if (derivFct & length(noAdderrNames) < 1) {
+    if (derivFct && length(noAdderrNames) < 1) {
       stop("Having `derivFct= TRUE` is irrelevant for this error model")
     }
     iniDf <- addThetaToIniDf(iniDf, paste0(noAdderrNames, ".l"), ini = noAdderrEstim, fix = TRUE)
@@ -286,26 +286,33 @@ linModGen <- function(ui, focei = TRUE, derivFct = FALSE) {
 #' Perform linearization of a model fitted using FOCEI
 #' @param fit fit of nonlinear model fitted using any method with at least one eta. See details.
 #' @param mceta a numeric vector for mceta to try. See details.
-#' @param relTol relative deviation tolerance between original and linearized models objective functions. Used for switching if focei = NA. See details.
+#' @param relTol relative deviation tolerance between original and linearized models objective
+#'   functions. Used for switching if focei = NA. See details.
 #' @param focei Default is NA for automatic switch from FOCEI to FOCE if failed. See details.
-#' @param addEtas boolean. If TRUE, add etas on every theta and fix it to small value to get derivatives. Default is FALSE.
+#' @param addEtas boolean. If TRUE, add etas on every theta and fix it to small value to get
+#'   derivatives. Default is FALSE.
 #' @param derivFct boolean. If TRUE, turn on derivatives for linearization. Default is FALSE.
 #' @param plot boolean. Print plot of linearized vs original
 #' @param est Character. The estimation method used for the linearized model fit. Only 'focei' is supported.
 #'
 #' @details
 #'
-#' The function accepts a fit object fitted using any method. However, if the method is not FOCE+I, the model is going to be evaluated first.
+#' The function accepts a fit object fitted using any method. However, if the method is not FOCE+I,
+#' the model is going to be evaluated first.
 #'
 #' `mceta` vector will be iterated over to find the best linearization if linearization failed.
-#' Escalating to next mceta will depend on the relative deviation `relTol` of the original and linearized models objective functions.
+#' Escalating to next mceta will depend on the relative deviation `relTol` of the original and
+#' linearized models objective functions.
 #'
 #' If `focei` is set to `NA`, the function will first try to linearize using FOCEI.
-#' If the relative deviation between original and linearized models objective functions is greater than `relTol`, it will switch to FOCE where residual linearization is skipped.
+#' If the relative deviation between original and linearized models objective functions is greater
+#' than `relTol`, it will switch to FOCE where residual linearization is skipped.
 #' If `focei` is set to `TRUE`, the function will use FOCEI linearization with individual and residual linearization.
-#' If `focei` is set to `FALSE`, the function will use FOCE linearization with residual interaction linearization skipped.
+#' If `focei` is set to `FALSE`, the function will use FOCE linearization with residual interaction
+#' linearization skipped.
 #'
-#' If `derivFct` is set to `TRUE`, the function will use an extra factor for linearization that might help in stabilization.
+#' If `derivFct` is set to `TRUE`, the function will use an extra factor for linearization that
+#' might help in stabilization.
 #' This might be useful to try with FOCEI.
 #'
 #' `plot` argument can only print ggplot figure with default settings.
@@ -405,7 +412,7 @@ linearize <- function(
     cli::cli_alert_warning(
       "Switching to linearization around predictions only (Variance interaction linearization skipped)"
     )
-    linMod <- linMod %>% model(foceiLin <- 0)
+    linMod <- linMod |> model(foceiLin <- 0)
     secondEval <- evalFun()
     cli::cli_alert_info("{secondEval$oObj} MAP:{secondEval$lObj_map}")
   }
@@ -460,11 +467,11 @@ linearize <- function(
           "..."
         ))
       } else {
-        if (is.na(focei) & !exists("secondEval")) {
+        if (is.na(focei) && !exists("secondEval")) {
           # final switch iteration (after estimation)
           cli::cli_alert_info("Switching to FOCE after full FOCEI estimation failed ...")
           secondEval <- evalFun()
-          linMod <- linMod %>% model(foceiLin <- 0)
+          linMod <- linMod |> model(foceiLin <- 0)
           fitL <- nlmixr(
             linMod,
             derv,
@@ -485,12 +492,18 @@ linearize <- function(
 
           if (relDev <= relTol) {
             cli::cli_alert_danger(
-              "FOCE Linearization was inadequate for the given tolerance. Try increasing the tolerance, refine the model or fit with mceta"
+              paste0(
+                "FOCE Linearization was inadequate for the given tolerance. ",
+                "Try increasing the tolerance, refine the model or fit with mceta"
+              )
             )
           }
         } else {
           cli::cli_alert_danger(
-            "Linearization was inadequate for the given tolerance. Try increasing the tolerance, refine the model or fit with mceta"
+            paste0(
+              "Linearization was inadequate for the given tolerance. ",
+              "Try increasing the tolerance, refine the model or fit with mceta"
+            )
           )
         }
       }
@@ -507,13 +520,16 @@ linearize <- function(
   }
   m <- paste(
     "Linearization method: {
-              ifelse(is.na(focei), 'Auto', ifelse(focei, 'FOCE (individual + residual)', 'Variance interaction skipped'))
+              ifelse(is.na(focei), 'Auto',
+                ifelse(focei, 'FOCE (individual + residual)', 'Variance interaction skipped'))
               }
         Linearization Relative Tolerance: {relTol}
         {
           ifelse(is.na(focei) & exists('secondEval'), 
-            'Linearization method switched automatically to FOCE approximation (residuals interaction linearization ignored)', 
-              ifelse(is.na(focei) & !exists('secondEval'), 'FOCEI Linearization', ifelse(focei, 'FOCEI Linearization', 'FOCE Linearization')))
+            paste0('Linearization method switched automatically to FOCE approximation ',
+              '(residuals interaction linearization ignored)'),
+              ifelse(is.na(focei) & !exists('secondEval'), 'FOCEI Linearization',
+                ifelse(focei, 'FOCEI Linearization', 'FOCE Linearization')))
           }
         {paste(finalEval$message, collapse = '')}
         Fitted Linear OFV: {lObj}
@@ -544,7 +560,8 @@ linearize <- function(
 #' @param lin linear fitting object
 #'
 #' @details
-#' If the non-linear fit was not FOCEI, the objective functions are not comparable, hence can be ignored upon comparison.
+#' If the non-linear fit was not FOCEI, the objective functions are not comparable, hence can be
+#' ignored upon comparison.
 #'
 #' @return ggplot object
 #' @author Omar I. Elashkar
@@ -565,9 +582,9 @@ linearizePlot <- function(lin) {
   relDev <- abs((oObj - lObj) / lObj)
   relDev <- round(relDev * 100, 2)
 
-  fig <- rbind(originalIval, linearIval) %>%
-    tidyr::pivot_longer(cols = c(-c("ID", "factor")), names_to = "parameter", values_to = "value") %>%
-    tidyr::pivot_wider(names_from = "factor", values_from = "value") %>%
+  fig <- rbind(originalIval, linearIval) |>
+    tidyr::pivot_longer(cols = c(-c("ID", "factor")), names_to = "parameter", values_to = "value") |>
+    tidyr::pivot_wider(names_from = "factor", values_from = "value") |>
     ggplot2::ggplot(aes(x = .data[["original"]], y = .data[["linear"]])) +
     ggplot2::geom_smooth(se = FALSE, method = "lm") +
     ggplot2::geom_point() +
@@ -883,7 +900,7 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect = "power", ...) {
   for (i in seq_along(covParseDf$covariate)) {
     covRelEntity <- paste0("rx.covrel.", covParseDf$param[i])
     covEqEntity <- paste0("rx.eq.", covParseDf$param[i], covParseDf$covariate[i])
-    covRelPrev <- grep(covRelEntity, modelLinesRaw, value = F)
+    covRelPrev <- grep(covRelEntity, modelLinesRaw, value = FALSE)
     if (length(covRelPrev) == 0) {
       # first time add on parameter
       # covrel.eta.v <- eq1*eq2*eq3 ...
@@ -902,7 +919,7 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect = "power", ...) {
     }
   }
   # covTerms = coveta.v + coveta.cl + ...
-  covTermsPrev <- grep("^covTerms = ", modelLinesRaw, value = F)
+  covTermsPrev <- grep("^covTerms = ", modelLinesRaw, value = FALSE)
   if (length(covTermsPrev) == 0) {
     # first time add
     covTermLine <- paste0("covTerms = ", paste0("rx.cov.", covParseDf$param, collapse = "+"))
@@ -929,7 +946,7 @@ addCovariate.nlmixr2Linearize <- function(fit, expr, effect = "power", ...) {
   BASE_TERMS <- NULL
   OPRED <- NULL
   covTerms <- NULL
-  newMod <- newMod %>% model(y = BASE_TERMS+ OPRED + covTerms)
+  newMod <- newMod |> model(y = BASE_TERMS + OPRED + covTerms)
   # rxUi
 
   linEnv <- rxode2::rxUiDecompress(newMod)

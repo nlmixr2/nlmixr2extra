@@ -149,7 +149,7 @@ preconditionFit <- function(fit, estType = c("full", "posthoc", "none"), ntry = 
       .R <- fit$R
       .covMethod <- ""
       .i <- 1
-      while (.i < ntry & !.preCondIsRS(.covMethod)) {
+      while (.i < ntry && !.preCondIsRS(.covMethod)) {
         .i <- .i + 1
         pre <- preCondInv(.R)
         # preCondInv() rejects individual near-zero eigenvalues, but a matrix whose

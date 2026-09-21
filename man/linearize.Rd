@@ -20,11 +20,13 @@ linearize(
 
 \item{mceta}{a numeric vector for mceta to try. See details.}
 
-\item{relTol}{relative deviation tolerance between original and linearized models objective functions. Used for switching if focei = NA. See details.}
+\item{relTol}{relative deviation tolerance between original and linearized models objective
+functions. Used for switching if focei = NA. See details.}
 
 \item{focei}{Default is NA for automatic switch from FOCEI to FOCE if failed. See details.}
 
-\item{addEtas}{boolean. If TRUE, add etas on every theta and fix it to small value to get derivatives. Default is FALSE.}
+\item{addEtas}{boolean. If TRUE, add etas on every theta and fix it to small value to get
+derivatives. Default is FALSE.}
 
 \item{derivFct}{boolean. If TRUE, turn on derivatives for linearization. Default is FALSE.}
 
@@ -39,17 +41,22 @@ a fit object with subclass nlmixr2linearize
 Perform linearization of a model fitted using FOCEI
 }
 \details{
-The function accepts a fit object fitted using any method. However, if the method is not FOCE+I, the model is going to be evaluated first.
+The function accepts a fit object fitted using any method. However, if the method is not FOCE+I,
+the model is going to be evaluated first.
 
 \code{mceta} vector will be iterated over to find the best linearization if linearization failed.
-Escalating to next mceta will depend on the relative deviation \code{relTol} of the original and linearized models objective functions.
+Escalating to next mceta will depend on the relative deviation \code{relTol} of the original and
+linearized models objective functions.
 
 If \code{focei} is set to \code{NA}, the function will first try to linearize using FOCEI.
-If the relative deviation between original and linearized models objective functions is greater than \code{relTol}, it will switch to FOCE where residual linearization is skipped.
+If the relative deviation between original and linearized models objective functions is greater
+than \code{relTol}, it will switch to FOCE where residual linearization is skipped.
 If \code{focei} is set to \code{TRUE}, the function will use FOCEI linearization with individual and residual linearization.
-If \code{focei} is set to \code{FALSE}, the function will use FOCE linearization with residual interaction linearization skipped.
+If \code{focei} is set to \code{FALSE}, the function will use FOCE linearization with residual interaction
+linearization skipped.
 
-If \code{derivFct} is set to \code{TRUE}, the function will use an extra factor for linearization that might help in stabilization.
+If \code{derivFct} is set to \code{TRUE}, the function will use an extra factor for linearization that
+might help in stabilization.
 This might be useful to try with FOCEI.
 
 \code{plot} argument can only print ggplot figure with default settings.

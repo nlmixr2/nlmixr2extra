@@ -158,7 +158,8 @@ covarSearchAuto <- function(
   }
 
   outputDir <-
-    paste0("nlmixr2CovariateSearchCache_", as.character(substitute(fit)), "_", digest::digest(fit)) # a new directory with this name will be created
+    # a new directory with this name will be created
+    paste0("nlmixr2CovariateSearchCache_", as.character(substitute(fit)), "_", digest::digest(fit))
 
   if (!dir.exists(outputDir)) {
     dir.create(outputDir)
@@ -223,7 +224,8 @@ covarSearchAuto <- function(
 #' @param outputDir the name of the output directory that stores the covariate search result
 #' @param restart a boolean that controls if the search should be restarted; default is FALSE
 #'
-#' @return returns the updated 'fit' object at the end of the forward search and a table of information for all the covariates tested
+#' @return returns the updated 'fit' object at the end of the forward search and a table of
+#'   information for all the covariates tested
 #' @author Vipul Mann, Matthew Fidler, Vishal Sarsani
 #' @noRd
 forwardSearch <- function(varsVec, covarsVec, catvarsVec = NULL, fit, pVal = 0.05, outputDir, restart = FALSE) {
@@ -313,8 +315,8 @@ forwardSearch <- function(varsVec, covarsVec, catvarsVec = NULL, fit, pVal = 0.0
       )
 
       covNames <- utils::tail(res$muRefCovariateDataFrame$covariateParameter, n = 1)
-      nam_var <- strsplit(covNames, split = '_', fixed = TRUE)[[1]][3]
-      nam_covar <- strsplit(covNames, split = '_', fixed = TRUE)[[1]][2]
+      nam_var <- strsplit(covNames, split = "_", fixed = TRUE)[[1]][3]
+      nam_covar <- strsplit(covNames, split = "_", fixed = TRUE)[[1]][2]
 
       # fwd: dObjf = base objf - candidate objf, so dObjf > 0 means adding the
       #      covariate improved (lowered) the objective function. The likelihood
@@ -365,7 +367,8 @@ forwardSearch <- function(varsVec, covarsVec, catvarsVec = NULL, fit, pVal = 0.0
       print(bestRow)
 
       fit <-
-        suppressWarnings(.scmRefit(covSearchRes[[which.min(resTable$pchisqr)]], data, fit)) # re-fit the best model to obtain its fit object
+        # re-fit the best model to obtain its fit object
+        suppressWarnings(.scmRefit(covSearchRes[[which.min(resTable$pchisqr)]], data, fit))
 
       covInfo[[paste0(as.character(bestRow$covar), as.character(bestRow$var))]] <- NULL
 
@@ -444,11 +447,13 @@ forwardSearch <- function(varsVec, covarsVec, catvarsVec = NULL, fit, pVal = 0.0
 #' @param fitorig the original 'fit' object before forward search
 #' @param fitupdated the updated 'fit' object, if any, after the forward search
 #' @param pVal p-value that should be used for selecting covariates in the forward search
-#' @param reFitCovars if the covariates should be added before performing backward search - useful for directly performing backward search without forward search; default is FALSE
+#' @param reFitCovars if the covariates should be added before performing backward search - useful
+#'   for directly performing backward search without forward search; default is FALSE
 #' @param outputDir the name of the output directory that stores the covariate search result
 #' @param restart a boolean that controls if the search should be restarted; default is FALSE
 #'
-#' @return returns the updated 'fit' object at the end of the backward search and a table of information for all the covariates tested
+#' @return returns the updated 'fit' object at the end of the backward search and a table of
+#'   information for all the covariates tested
 #' @noRd
 #'
 #' @author Vipul Mann, Matthew Fidler, Vishal Sarsani
@@ -495,7 +500,8 @@ backwardSearch <- function(
 
   if (reFitCovars) {
     xmod <- buildupatedUI(ui, varsVec, covarsVec, indep = FALSE, add = TRUE)
-    fitupdated <- suppressWarnings(.scmRefit(xmod, data, fit)) # get the last fit object with all covariates added # DOES NOT ADD $ini
+    # DOES NOT ADD $ini
+    fitupdated <- suppressWarnings(.scmRefit(xmod, data, fit)) # get the last fit object with all covariates added
     fit <- fitupdated
   }
 
@@ -555,7 +561,8 @@ backwardSearch <- function(
   # Now remove covars step by step until the objf fun value...?
   while (length(covInfo) > 0) {
     # Remove covars on by one: if objf val increases retain covar; otherwise (objf val decreases), remove the covar
-    # At any stage, retain the one that results in highest increase in objf value; exit if removal of none results in increase
+    # At any stage, retain the one that results in highest increase in objf value; exit if removal
+    # of none results in increase
 
     covSearchRes <- buildupatedUI(ui, varsVec, covarsVec, add = FALSE)
 
@@ -574,8 +581,8 @@ backwardSearch <- function(
       )
 
       covNames <- utils::tail(res$muRefCovariateDataFrame$covariateParameter, n = 1)
-      nam_var <- strsplit(covNames, split = '_', fixed = TRUE)[[1]][3]
-      nam_covar <- strsplit(covNames, split = '_', fixed = TRUE)[[1]][2]
+      nam_var <- strsplit(covNames, split = "_", fixed = TRUE)[[1]][3]
+      nam_covar <- strsplit(covNames, split = "_", fixed = TRUE)[[1]][2]
       # fwd: if deltObjf <0: pchisq=1-pchisq(-deltObjf, dof), else pchisq=1
       # bck: if deltObjf >0: pchisq=1-pchisq(deltObjf, dof), else pchisq=1
 
@@ -615,7 +622,8 @@ backwardSearch <- function(
     bestRow <- resTable[which.min(resTable$pchisqr), ]
 
     if (bestRow$pchisqr <= pVal) {
-      # objf function value increased after removal of covariate: retain the best covariate at this stage, test for the rest
+      # objf function value increased after removal of covariate: retain the best covariate at this
+      # stage, test for the rest
 
       resTable[which.min(resTable$pchisqr), "included"] <- "yes"
       bestRow[, "included"] <- "yes"
@@ -624,7 +632,8 @@ backwardSearch <- function(
       print(bestRow)
 
       fit <-
-        suppressWarnings(.scmRefit(covSearchRes[[which.min(resTable$pchisqr)]], data, fit)) # re-fit the best model to obtain its fit object
+        # re-fit the best model to obtain its fit object
+        suppressWarnings(.scmRefit(covSearchRes[[which.min(resTable$pchisqr)]], data, fit))
       covInfo[[paste0(as.character(bestRow$covar), as.character(bestRow$var))]] <- NULL
 
       saveRDS(
@@ -681,7 +690,8 @@ backwardSearch <- function(
       # objf function value did not improve
       cli::cli_h1("objf value did not improve, exiting the search ...")
       resTableComplete <- rbind(resTableComplete, resTable)
-      #saveRDS(resTableComplete, file = paste0(outputDir, "/", "backward_", "step_", stepIdx, "_", "completetable", "_", as.character(bestRow$covar), as.character(bestRow$var), ".RData"))
+      # saveRDS(resTableComplete, file = paste0(outputDir, "/", "backward_", "step_", stepIdx, "_",
+      # "completetable", "_", as.character(bestRow$covar), as.character(bestRow$var), ".RData"))
 
       break
     }

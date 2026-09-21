@@ -239,7 +239,7 @@ profileLlp <- function(fitted, which, control) {
         )
     }
   } else {
-    if (length(control$rseTheta) == 1 & is.null(names(control$rseTheta))) {
+    if (length(control$rseTheta) == 1 && is.null(names(control$rseTheta))) {
       control$rseTheta <- setNames(rep(control$rseTheta, length(which)), which)
     } else {
       checkmate::assert_names(names(control$rseTheta), subset.of = names(nlmixr2est::fixef(fitted)))
@@ -381,7 +381,7 @@ optimProfile <- function(
     converged <- convergedSignif | convergedOfv
 
     if (converged) {
-      if (convergedSignif & convergedOfv) {
+      if (convergedSignif && convergedOfv) {
         messageProfileComplete(
           which,
           direction = direction,

@@ -39,7 +39,7 @@ iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC", mceta = 5, ...) {
     x <- iivSpace[x]
     message(x)
     omegaMat <- filterEtaMat(varCovMat, x)
-    newMod <- fit %>% rxode2::ini(omegaMat)
+    newMod <- fit |> rxode2::ini(omegaMat)
     noCorrSpace <- unlist(strsplit(x, "\\+"))
     noCorrSpace <- grep("~", noCorrSpace, invert = TRUE, value = TRUE)
     etaToRemove <- setdiff(etaNames, noCorrSpace)
@@ -273,7 +273,7 @@ rerunTopN.linIIVSearch <- function(x, n = 5, ...) {
     iniDf <- nlui$iniDf
     iniDf[!is.na(iniDf$neta1), "fix"] <- FALSE
     rxode2::ini(nlui) <- iniDf
-    nlui <- nlui %>% rxode2::ini(omegaMat)
+    nlui <- nlui |> rxode2::ini(omegaMat)
     nlmixr(nlui, origData, est = "focei", control = nlmixr2est::foceiControl())
   })
 

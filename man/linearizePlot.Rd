@@ -16,7 +16,8 @@ ggplot object
 Plot Original Versus Linear Models iObj and Etas
 }
 \details{
-If the non-linear fit was not FOCEI, the objective functions are not comparable, hence can be ignored upon comparison.
+If the non-linear fit was not FOCEI, the objective functions are not comparable, hence can be
+ignored upon comparison.
 }
 \author{
 Omar I. Elashkar
