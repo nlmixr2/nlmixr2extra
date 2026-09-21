@@ -1,5 +1,4 @@
 test_that("precondition tests", {
-
   one.compartment <- function() {
     ini({
       tka <- 0.45 ; label("Log Ka")
@@ -24,7 +23,8 @@ test_that("precondition tests", {
   fit2 <-
     suppressMessages(suppressWarnings(
       nlmixr(
-        one.compartment, nlmixr2data::theo_sd,
+        one.compartment,
+        nlmixr2data::theo_sd,
         est = "focei",
         control = list(print = 0, eval.max = 200)
       )
@@ -98,13 +98,11 @@ test_that(".preCondModExtra handles dotted parameter names (#124)", {
   # symengine cannot parse an identifier containing a `.`, so building these
   # lines symbolically made preconditionFit() fail for a conventional residual
   # name like add.sd.  Build them by string assembly instead.
-  pre <- matrix(c(1.5, -2.25,
-                  0,    3.125), 2, 2, byrow = TRUE)
+  pre <- matrix(c(1.5, -2.25, 0, 3.125), 2, 2, byrow = TRUE)
 
   expect_equal(
     .preCondModExtra(pre, c("tka", "add.sd")),
-    paste0("tka=(1.5)*nlmixr2Pre_tka+(-2.25)*nlmixr2Pre_add.sd\n",
-           "add.sd=(3.125)*nlmixr2Pre_add.sd")
+    paste0("tka=(1.5)*nlmixr2Pre_tka+(-2.25)*nlmixr2Pre_add.sd\n", "add.sd=(3.125)*nlmixr2Pre_add.sd")
   )
 
   # a negative coefficient must not produce `+-1.5`
@@ -114,7 +112,7 @@ test_that(".preCondModExtra handles dotted parameter names (#124)", {
   expect_silent(str2lang(paste0("{", .preCondModExtra(pre, c("tka", "add.sd")), "}")))
 
   # coefficients round-trip through text at full double precision
-  expect_identical(as.numeric(.preCondNum(1/3)), 1/3)
+  expect_identical(as.numeric(.preCondNum(1 / 3)), 1 / 3)
 
   # an all-zero row still yields a valid line
   expect_equal(.preCondModExtra(matrix(0, 1, 1), "a"), "a=0")
@@ -123,8 +121,7 @@ test_that(".preCondModExtra handles dotted parameter names (#124)", {
 test_that(".preCondExpand widens the preconditioner past the theta block (#124)", {
   # fit$R spans only the population parameters while fit$cov also carries the
   # omega elements, so the transform must be the identity off the theta block.
-  pre <- matrix(c(2, 1,
-                  0, 3), 2, 2, byrow = TRUE)
+  pre <- matrix(c(2, 1, 0, 3), 2, 2, byrow = TRUE)
   covNames <- c("nlmixr2Pre_tka", "nlmixr2Pre_add.sd", "om.eta.ka")
 
   a <- .preCondExpand(pre, covNames, c("tka", "add.sd"))
@@ -140,8 +137,10 @@ test_that(".preCondExpand widens the preconditioner past the theta block (#124)"
   expect_equal(a2[3, 2], pre[1, 2])
   expect_equal(a2[1, 1], 1)
 
-  expect_error(.preCondExpand(pre, c("om.eta.ka", "nope"), c("tka", "add.sd")),
-               "could not find the preconditioned parameters")
+  expect_error(
+    .preCondExpand(pre, c("om.eta.ka", "nope"), c("tka", "add.sd")),
+    "could not find the preconditioned parameters"
+  )
 })
 
 test_that(".preCondIsRS accepts a decorated r,s covMethod (#128)", {

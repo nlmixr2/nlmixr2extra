@@ -1,46 +1,45 @@
 test_that(".nlmixrFormulaParser breaks the formula up into the correct bits", {
   # without random effects
   expect_equal(
-    .nlmixrFormulaParser(object = y ~ m*x + b),
+    .nlmixrFormulaParser(object = y ~ m * x + b),
     list(
-      DV=as.name("y"),
-      predictor=list(str2lang("m*x + b")),
-      ranef=NULL
+      DV = as.name("y"),
+      predictor = list(str2lang("m*x + b")),
+      ranef = NULL
     )
   )
   # with random effects
   expect_equal(
-    .nlmixrFormulaParser(object = y ~ m*x + b ~ (m|c)),
+    .nlmixrFormulaParser(object = y ~ m * x + b ~ (m | c)),
     list(
-      DV=as.name("y"),
-      predictor=list(str2lang("m*x + b")),
-      ranef=
+      DV = as.name("y"),
+      predictor = list(str2lang("m*x + b")),
+      ranef = list(
         list(
-          list(
-            ranefVar=as.name("m"),
-            ranefGroup=as.name("c"),
-            start=1
-          )
+          ranefVar = as.name("m"),
+          ranefGroup = as.name("c"),
+          start = 1
         )
+      )
     )
   )
 })
 
 test_that(".nlmixrFormulaParser gives expected errors for invalid formula", {
   expect_error(
-    .nlmixrFormulaParser(object = ~ m*x + b),
+    .nlmixrFormulaParser(object = ~ m * x + b),
     regexp = "formula must be two-sided"
   )
 
   # a weird amalgam of one-sided and two-sided formula that looks like a
   # two-sided formula with simple parsing
   expect_error(
-    .nlmixrFormulaParser(object = ~ m*x + b ~ c),
+    .nlmixrFormulaParser(object = ~ m * x + b ~ c),
     regexp = "formula left-hand-side must be a single variable"
   )
 
   expect_error(
-    .nlmixrFormulaParser(object = m*x + b ~ c),
+    .nlmixrFormulaParser(object = m * x + b ~ c),
     regexp = "formula left-hand-side must be a single variable, not m * x + b",
     fixed = TRUE
   )
@@ -52,9 +51,9 @@ test_that(".nlmixrFormulaParserRanef correctly parses random effects", {
     .nlmixrFormulaParserRanef(str2lang("c|id")),
     list(
       list(
-        ranefVar=as.name("c"),
-        ranefGroup=as.name("id"),
-        start=1
+        ranefVar = as.name("c"),
+        ranefGroup = as.name("id"),
+        start = 1
       )
     )
   )
@@ -63,9 +62,9 @@ test_that(".nlmixrFormulaParserRanef correctly parses random effects", {
     .nlmixrFormulaParserRanef(str2lang("(c|id)")),
     list(
       list(
-        ranefVar=as.name("c"),
-        ranefGroup=as.name("id"),
-        start=1
+        ranefVar = as.name("c"),
+        ranefGroup = as.name("id"),
+        start = 1
       )
     )
   )
@@ -73,14 +72,14 @@ test_that(".nlmixrFormulaParserRanef correctly parses random effects", {
     .nlmixrFormulaParserRanef(str2lang("(c|id)+(d|id2)")),
     list(
       list(
-        ranefVar=as.name("c"),
-        ranefGroup=as.name("id"),
-        start=1
+        ranefVar = as.name("c"),
+        ranefGroup = as.name("id"),
+        start = 1
       ),
       list(
-        ranefVar=as.name("d"),
-        ranefGroup=as.name("id2"),
-        start=1
+        ranefVar = as.name("d"),
+        ranefGroup = as.name("id2"),
+        start = 1
       )
     )
   )
@@ -98,70 +97,66 @@ test_that(".nlmixrFormulaParserRanef expected errors", {
 test_that("nlmixrFormula creates factor parameters correctly", {
   # Base case: no reordering needed because frequencies are tied and the
   # stable sort preserves original level order
-  d_factor <- data.frame(A=factor(c("A", "B")))
+  d_factor <- data.frame(A = factor(c("A", "B")))
   expect_equal(
-    .nlmixrFormulaExpandStartParamFactor(startName="myest", startValue=1, param="A", data=d_factor),
+    .nlmixrFormulaExpandStartParamFactor(startName = "myest", startValue = 1, param = "A", data = d_factor),
     list(
-      ini=
-        list(
-          str2lang('myest.A.A <- 1'),
-          str2lang('myest.A.B <- 0')
-        ),
-      rhs='myest.A.A + myest.A.B * (A == "B")'
+      ini = list(
+        str2lang('myest.A.A <- 1'),
+        str2lang('myest.A.B <- 0')
+      ),
+      rhs = 'myest.A.A + myest.A.B * (A == "B")'
     )
   )
 
   # reorder factors based on prevalence
-  d_factor <- data.frame(A=factor(c("A", "B", "B")))
+  d_factor <- data.frame(A = factor(c("A", "B", "B")))
   expect_message(
-    v1 <- .nlmixrFormulaExpandStartParamFactor(startName="myest", startValue=1, param="A", data=d_factor),
+    v1 <- .nlmixrFormulaExpandStartParamFactor(startName = "myest", startValue = 1, param = "A", data = d_factor),
     regexp = "ordering the parameters by factor frequency: myest with parameter A"
   )
   expect_equal(
     v1,
     list(
-      ini=
-        list(
-          str2lang('myest.A.B <- 1'),
-          str2lang('myest.A.A <- 0')
-        ),
-      rhs='myest.A.B + myest.A.A * (A == "A")'
+      ini = list(
+        str2lang('myest.A.B <- 1'),
+        str2lang('myest.A.A <- 0')
+      ),
+      rhs = 'myest.A.B + myest.A.A * (A == "A")'
     )
   )
 
   # do not reorder when start is the same length as the number of factors
-  d_factor <- data.frame(A=factor(c("A", "B", "B")))
+  d_factor <- data.frame(A = factor(c("A", "B", "B")))
   expect_message(
-    v1 <- .nlmixrFormulaExpandStartParamFactor(startName="myest", startValue=c(1, 2), param="A", data=d_factor),
+    v1 <- .nlmixrFormulaExpandStartParamFactor(startName = "myest", startValue = c(1, 2), param = "A", data = d_factor),
     NA
   )
   expect_equal(
     v1,
     list(
-      ini=
-        list(
-          str2lang('myest.A.A <- 1'),
-          str2lang('myest.A.B <- 2')
-        ),
-      rhs='myest.A.A + myest.A.B * (A == "B")'
+      ini = list(
+        str2lang('myest.A.A <- 1'),
+        str2lang('myest.A.B <- 2')
+      ),
+      rhs = 'myest.A.A + myest.A.B * (A == "B")'
     )
   )
 
   # do not reorder when the factors are ordered
-  d_factor <- data.frame(A=ordered(c("A", "B", "B")))
+  d_factor <- data.frame(A = ordered(c("A", "B", "B")))
   expect_message(
-    v1 <- .nlmixrFormulaExpandStartParamFactor(startName="myest", startValue=1, param="A", data=d_factor),
+    v1 <- .nlmixrFormulaExpandStartParamFactor(startName = "myest", startValue = 1, param = "A", data = d_factor),
     NA
   )
   expect_equal(
     v1,
     list(
-      ini=
-        list(
-          str2lang('myest.A.A <- 1'),
-          str2lang('myest.A.B <- 0')
-        ),
-      rhs='myest.A.A + myest.A.B * (A == "B")'
+      ini = list(
+        str2lang('myest.A.A <- 1'),
+        str2lang('myest.A.B <- 0')
+      ),
+      rhs = 'myest.A.A + myest.A.B * (A == "B")'
     )
   )
 })
@@ -178,7 +173,8 @@ test_that(".nlmixrFormulaSetupIniRandom", {
         list(ranefVar = "bar", start = 2.2)
       )
     ),
-    str2lang("{
+    str2lang(
+      "{
              foo ~ 1.1
              bar ~ 2.2
              }"
@@ -215,19 +211,31 @@ test_that(".nlmixrFormulaExpandStartParamSingle dispatches on column type", {
   )
   # NA in the covariate column
   expect_error(
-    .nlmixrFormulaExpandStartParamSingle(startName = "b", startValue = 5, param = "z", data = data.frame(z = factor(c("a", "b", NA)))),
+    .nlmixrFormulaExpandStartParamSingle(
+      startName = "b",
+      startValue = 5,
+      param = "z",
+      data = data.frame(z = factor(c("a", "b", NA)))
+    ),
     regexp = "NA found in data column: z"
   )
   # Character columns must be converted to factor first
   expect_error(
-    .nlmixrFormulaExpandStartParamSingle(startName = "b", startValue = 5, param = "z", data = data.frame(z = c("a", "b"))),
+    .nlmixrFormulaExpandStartParamSingle(
+      startName = "b",
+      startValue = 5,
+      param = "z",
+      data = data.frame(z = c("a", "b"))
+    ),
     regexp = "Column 'z' in `data` is character; convert it to a factor",
     fixed = TRUE
   )
   # Unsupported column types are rejected
   expect_error(
     .nlmixrFormulaExpandStartParamSingle(
-      startName = "b", startValue = 5, param = "z",
+      startName = "b",
+      startValue = 5,
+      param = "z",
       data = data.frame(z = as.Date("2024-01-01") + 0:1)
     ),
     regexp = "Unsupported column type"
@@ -235,7 +243,9 @@ test_that(".nlmixrFormulaExpandStartParamSingle dispatches on column type", {
 
   # Factor dispatch produces a single model line of the assembled rhs
   factorOut <- .nlmixrFormulaExpandStartParamSingle(
-    startName = "b", startValue = 5, param = "z",
+    startName = "b",
+    startValue = 5,
+    param = "z",
     data = data.frame(z = factor(c("a", "b")))
   )
   expect_equal(
@@ -249,7 +259,12 @@ test_that(".nlmixrFormulaExpandStartParamSingle dispatches on column type", {
 
 test_that(".nlmixrFormulaExpandStartParamFactor", {
   expect_equal(
-    .nlmixrFormulaExpandStartParamFactor(startName = "b", startValue = 5, param = "z", data = data.frame(z = factor(c("a", "b")))),
+    .nlmixrFormulaExpandStartParamFactor(
+      startName = "b",
+      startValue = 5,
+      param = "z",
+      data = data.frame(z = factor(c("a", "b")))
+    ),
     list(
       ini = list(str2lang("b.z.a <- 5"), str2lang("b.z.b <- 0")),
       rhs = 'b.z.a + b.z.b * (z == "b")'
@@ -268,7 +283,12 @@ test_that(".nlmixrFormulaExpandStartParamContinuous", {
   )
   # Length-2 startValue: c(intercept, slope)
   expect_equal(
-    .nlmixrFormulaExpandStartParamContinuous(startName = "b", startValue = c(5, 0.3), param = "w", includeIntercept = TRUE),
+    .nlmixrFormulaExpandStartParamContinuous(
+      startName = "b",
+      startValue = c(5, 0.3),
+      param = "w",
+      includeIntercept = TRUE
+    ),
     list(
       ini = list(str2lang("pop.b <- 5"), str2lang("cov_w_b <- 0.3")),
       rhs = "pop.b + cov_w_b * w"
@@ -285,13 +305,23 @@ test_that(".nlmixrFormulaExpandStartParamContinuous", {
   )
   # Length > 2 (with intercept) is a hard error
   expect_error(
-    .nlmixrFormulaExpandStartParamContinuous(startName = "b", startValue = c(1, 2, 3), param = "w", includeIntercept = TRUE),
+    .nlmixrFormulaExpandStartParamContinuous(
+      startName = "b",
+      startValue = c(1, 2, 3),
+      param = "w",
+      includeIntercept = TRUE
+    ),
     regexp = "must be 1 (intercept only) or 2 (intercept, slope)",
     fixed = TRUE
   )
   # includeIntercept = FALSE requires exactly one slope value
   expect_error(
-    .nlmixrFormulaExpandStartParamContinuous(startName = "b", startValue = c(5, 0.3), param = "w", includeIntercept = FALSE),
+    .nlmixrFormulaExpandStartParamContinuous(
+      startName = "b",
+      startValue = c(5, 0.3),
+      param = "w",
+      includeIntercept = FALSE
+    ),
     regexp = "must contribute a single",
     fixed = TRUE
   )
@@ -324,7 +354,10 @@ test_that(".nlmixrFormulaExpandStartParamSingle mixed factor + continuous", {
   # start contract for mixed: factor first (one per level), then continuous
   # slopes. Here z has 2 levels and w is one continuous covariate, so length 3.
   out <- .nlmixrFormulaExpandStartParamSingle(
-    startName = "b", startValue = c(5, 1, 0.3), param = c("z", "w"), data = d
+    startName = "b",
+    startValue = c(5, 1, 0.3),
+    param = c("z", "w"),
+    data = d
   )
   expect_equal(
     out$ini,
@@ -341,7 +374,10 @@ test_that(".nlmixrFormulaExpandStartParamSingle mixed factor + continuous", {
   # Length mismatch produces a clear error
   expect_error(
     .nlmixrFormulaExpandStartParamSingle(
-      startName = "b", startValue = c(5, 0.3), param = c("z", "w"), data = d
+      startName = "b",
+      startValue = c(5, 0.3),
+      param = c("z", "w"),
+      data = d
     ),
     regexp = "start must have length 3"
   )
@@ -353,8 +389,11 @@ test_that(".nlmixrFormulaExpandStartParamSingle log link wraps mixed rhs", {
     w = c(1.0, 2.0)
   )
   out <- .nlmixrFormulaExpandStartParamSingle(
-    startName = "b", startValue = c(log(5), log(2), 0.3),
-    param = c("z", "w"), link = "log", data = d
+    startName = "b",
+    startValue = c(log(5), log(2), 0.3),
+    param = c("z", "w"),
+    link = "log",
+    data = d
   )
   expect_equal(
     out$model,
@@ -389,45 +428,46 @@ test_that(".paramExpand", {
 test_that(".nlmixrFormulaSetupModel", {
   expect_equal(
     .nlmixrFormulaSetupModel(
-      start =
+      start = list(
         list(
-          list(
-            ini = list(str2lang("a <- 1")),
-            model = list(NULL)
-          ),
-          list(
-            ini = list(str2lang("b <- 2")),
-            model = list(NULL)
-          )
+          ini = list(str2lang("a <- 1")),
+          model = list(NULL)
         ),
+        list(
+          ini = list(str2lang("b <- 2")),
+          model = list(NULL)
+        )
+      ),
       predictor = list(str2lang("a*x + b*y + z")),
-      residualModel = ~add(addSd)
+      residualModel = ~ add(addSd)
     ),
-    str2lang("
+    str2lang(
+      "
     {
       value <- a * x + b * y + z
       value ~ add(addSd)
     }
-    ")
+    "
+    )
   )
 })
 
 test_that(".renameOrOverwrite errors when the destination column already exists", {
-  d <- data.frame(A=1:3, B=4:6)
+  d <- data.frame(A = 1:3, B = 4:6)
   expect_error(
-    .renameOrOverwrite(d, newName="B", oldName="A"),
+    .renameOrOverwrite(d, newName = "B", oldName = "A"),
     regexp = "Cannot rename column 'A' to 'B'",
     fixed = TRUE
   )
   # No-op rename (newName == oldName) is allowed even when the column exists
   expect_equal(
-    .renameOrOverwrite(d, newName="A", oldName="A"),
+    .renameOrOverwrite(d, newName = "A", oldName = "A"),
     d
   )
   # Renaming when only the source exists succeeds and creates the new column
   expect_equal(
-    .renameOrOverwrite(data.frame(A=1:3), newName="B", oldName="A"),
-    data.frame(A=1:3, B=1:3)
+    .renameOrOverwrite(data.frame(A = 1:3), newName = "B", oldName = "A"),
+    data.frame(A = 1:3, B = 1:3)
   )
 })
 
@@ -442,66 +482,75 @@ test_that("nlmixrFormula integrates: continuous covariate only", {
   set.seed(1)
   d <- data.frame(x = 1:6, y = NA_real_, w = c(0.1, 0.3, 0.5, 0.7, 0.9, 1.1))
   built <- .nlmixrFormulaBuild(
-    y ~ m*x + b,
+    y ~ m * x + b,
     data = d,
     start = list(m = 3, b = c(5, 0.2), addSd = 1),
     param = list(b ~ w)
   )
   expect_equal(
     built$ini,
-    str2lang("{
+    str2lang(
+      "{
       m <- 3
       pop.b <- 5
       cov_w_b <- 0.2
       addSd <- 1
-    }")
+    }"
+    )
   )
   expect_equal(
     built$model,
-    str2lang("{
+    str2lang(
+      "{
       b <- pop.b + cov_w_b * w
       value <- m * x + b
       value ~ add(addSd)
-    }")
+    }"
+    )
   )
 })
 
 test_that("nlmixrFormula integrates: factor + continuous covariate together", {
   d <- data.frame(
-    x = 1:6, y = NA_real_,
+    x = 1:6,
+    y = NA_real_,
     w = c(0.1, 0.3, 0.5, 0.7, 0.9, 1.1),
     z = factor(c("a", "b", "a", "b", "a", "b"))
   )
   built <- .nlmixrFormulaBuild(
-    y ~ m*x + b,
+    y ~ m * x + b,
     data = d,
     start = list(m = 3, b = c(5, 1, 0.2), addSd = 1),
     param = list(b ~ z + w)
   )
   expect_equal(
     built$ini,
-    str2lang("{
+    str2lang(
+      "{
       m <- 3
       b.z.a <- 5
       b.z.b <- 1
       cov_w_b <- 0.2
       addSd <- 1
-    }")
+    }"
+    )
   )
   expect_equal(
     built$model,
-    str2lang('{
+    str2lang(
+      '{
       b <- b.z.a + b.z.b * (z == "b") + cov_w_b * w
       value <- m * x + b
       value ~ add(addSd)
-    }')
+    }'
+    )
   )
 })
 
 test_that("nlmixrFormula integrates: log link wraps the assembled rhs", {
   d <- data.frame(x = 1:6, y = NA_real_, w = c(0.1, 0.3, 0.5, 0.7, 0.9, 1.1))
   built <- .nlmixrFormulaBuild(
-    y ~ m*x + b,
+    y ~ m * x + b,
     data = d,
     start = list(m = 3, b = c(log(5), 0.2), addSd = 1),
     param = list(b ~ w),
@@ -509,18 +558,20 @@ test_that("nlmixrFormula integrates: log link wraps the assembled rhs", {
   )
   expect_equal(
     built$model,
-    str2lang("{
+    str2lang(
+      "{
       b <- exp(pop.b + cov_w_b * w)
       value <- m * x + b
       value ~ add(addSd)
-    }")
+    }"
+    )
   )
 })
 
 test_that("nlmixrFormula integrates: rich residual model passes through", {
   d <- data.frame(x = 1:6, y = NA_real_)
   built <- .nlmixrFormulaBuild(
-    y ~ m*x + b,
+    y ~ m * x + b,
     data = d,
     start = list(m = 3, b = 5, addSd = 1, propSd = 0.1),
     residualModel = ~ add(addSd) + prop(propSd)
@@ -529,12 +580,14 @@ test_that("nlmixrFormula integrates: rich residual model passes through", {
   # residual model expression verbatim.
   expect_equal(
     built$ini,
-    str2lang("{
+    str2lang(
+      "{
       m <- 3
       b <- 5
       addSd <- 1
       propSd <- 0.1
-    }")
+    }"
+    )
   )
   # The residual line is the last statement in the model body.
   expect_equal(
@@ -547,12 +600,12 @@ test_that("nlmixrFormula errors when ID column already exists with different val
   d <- data.frame(
     id = rep(c("X", "Y"), each = 3),
     ID = rep(c("Z", "W"), each = 3),
-    x  = 1:6,
-    y  = NA_real_
+    x = 1:6,
+    y = NA_real_
   )
   expect_error(
     .nlmixrFormulaBuild(
-      y ~ m*x + b ~ (bRe|id),
+      y ~ m * x + b ~ (bRe | id),
       data = d,
       start = list(m = 3, b = 5, addSd = 1)
     ),
@@ -565,7 +618,7 @@ test_that("nlmixrFormula rejects multiple grouping variables", {
   d <- data.frame(id = 1:6, occ = 1:6, x = 1:6, y = NA_real_)
   expect_error(
     .nlmixrFormulaBuild(
-      y ~ m*x + b ~ (mRe|id) + (bRe|occ),
+      y ~ m * x + b ~ (mRe | id) + (bRe | occ),
       data = d,
       start = list(m = 3, b = 5, addSd = 1)
     ),
@@ -577,13 +630,13 @@ test_that("nlmixr2.formula S3 dispatch produces an equivalent build", {
   skip_on_cran()
   d <- data.frame(x = 1:6, y = c(1, 2, 3, 4, 5, 6))
   fit_s3 <- nlmixr2(
-    y ~ m*x + b,
+    y ~ m * x + b,
     data = d,
     start = list(m = 1, b = 1, addSd = 1),
     est = "rxSolve"
   )
   fit_direct <- nlmixrFormula(
-    y ~ m*x + b,
+    y ~ m * x + b,
     data = d,
     start = list(m = 1, b = 1, addSd = 1),
     est = "rxSolve"

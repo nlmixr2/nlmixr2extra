@@ -25,8 +25,12 @@ skip_on_cran()
 
 .msTestFit <- function() {
   suppressMessages(suppressWarnings(
-    nlmixr2est::nlmixr2(.msTestModel(), nlmixr2data::theo_sd, est = "focei",
-                        control = nlmixr2est::foceiControl(print = 0))
+    nlmixr2est::nlmixr2(
+      .msTestModel(),
+      nlmixr2data::theo_sd,
+      est = "focei",
+      control = nlmixr2est::foceiControl(print = 0)
+    )
   ))
 }
 
@@ -88,8 +92,7 @@ test_that(".msPerturbIni() respects fix, bounds and 'which'", {
   fixed <- iniDf
   fixed$fix[fixed$name == "tcl"] <- TRUE
   starts <- rxode2::rxWithSeed(1, .msPerturbIni(fixed, multistartControl(n = 5, spread = 1)))
-  expect_equal(unique(vapply(starts, function(x) x$est[x$name == "tcl"], numeric(1))),
-               fixed$est[fixed$name == "tcl"])
+  expect_equal(unique(vapply(starts, function(x) x$est[x$name == "tcl"], numeric(1))), fixed$est[fixed$name == "tcl"])
 
   # 'which' restricts the perturbation to the named parameters
   starts <- rxode2::rxWithSeed(1, .msPerturbIni(iniDf, multistartControl(n = 4, which = c("tka", "tv"))))
@@ -151,14 +154,18 @@ test_that(".msPerturbIni() keeps a correlated omega positive definite", {
   }
   iniDf <- suppressMessages(rxode2::rxUiDecompress(rxode2::as.rxUi(corMod)))$iniDf
   starts <- rxode2::rxWithSeed(1, .msPerturbIni(iniDf, multistartControl(n = 30, omegaFold = 8, spread = 0.5)))
-  minEigen <- vapply(starts, function(x) {
-    e <- x[!is.na(x$neta1), ]
-    m <- matrix(0, 2, 2)
-    for (i in seq_len(nrow(e))) {
-      m[e$neta1[i], e$neta2[i]] <- m[e$neta2[i], e$neta1[i]] <- e$est[i]
-    }
-    min(eigen(m, symmetric = TRUE, only.values = TRUE)$values)
-  }, numeric(1))
+  minEigen <- vapply(
+    starts,
+    function(x) {
+      e <- x[!is.na(x$neta1), ]
+      m <- matrix(0, 2, 2)
+      for (i in seq_len(nrow(e))) {
+        m[e$neta1[i], e$neta2[i]] <- m[e$neta2[i], e$neta1[i]] <- e$est[i]
+      }
+      min(eigen(m, symmetric = TRUE, only.values = TRUE)$values)
+    },
+    numeric(1)
+  )
   expect_true(all(minEigen > 0))
 })
 
@@ -183,8 +190,10 @@ test_that(".msPerturbIni() leaves a same() block alone", {
   ui <- suppressWarnings(suppressMessages(rxode2::rxUiDecompress(rxode2::as.rxUi(sameMod))))
   expect_false(is.null(ui$omegaSameMap))
   expect_warning(
-    starts <- rxode2::rxWithSeed(1, .msPerturbIni(ui$iniDf, multistartControl(n = 3, spread = 0.3),
-                                                 omegaSameMap = ui$omegaSameMap)),
+    starts <- rxode2::rxWithSeed(
+      1,
+      .msPerturbIni(ui$iniDf, multistartControl(n = 3, spread = 0.3), omegaSameMap = ui$omegaSameMap)
+    ),
     "same"
   )
   m <- .msEstMatrix(starts)
@@ -220,14 +229,12 @@ test_that(".msQuietControl() leaves a character covMethod alone", {
 
 test_that("multistart() estimates every start and picks the best", {
   fit <- .msTestFit()
-  ms <- multistart(fit, control = list(n = 3, spread = 0.3, screen = "none",
-                                       cacheDir = NA, refitBest = FALSE))
+  ms <- multistart(fit, control = list(n = 3, spread = 0.3, screen = "none", cacheDir = NA, refitBest = FALSE))
   expect_s3_class(ms, "nlmixr2Multistart")
   expect_equal(nrow(ms$starts), 3L)
   expect_true(all(ms$starts$fitted))
   expect_equal(nrow(ms$summary), 3L)
-  expect_true(all(c("start", "OBJF", "dOBJF", "AIC", "BIC", "converged",
-                    "boundary", "elapsed") %in% names(ms$summary)))
+  expect_true(all(c("start", "OBJF", "dOBJF", "AIC", "BIC", "converged", "boundary", "elapsed") %in% names(ms$summary)))
   # the final estimates are carried alongside the objective functions
   expect_true(all(c("tka", "tcl", "tv", "add.sd") %in% names(ms$summary)))
   # sorted best first, with dOBJF measured from the best
@@ -246,9 +253,10 @@ test_that("multistart() estimates every start and picks the best", {
 
 test_that("multistart() screening fits only the best candidates", {
   fit <- .msTestFit()
-  ms <- multistart(fit, control = list(n = 4, nFit = 2, spread = 0.4,
-                                       screen = "posthoc", cacheDir = NA,
-                                       refitBest = FALSE))
+  ms <- multistart(
+    fit,
+    control = list(n = 4, nFit = 2, spread = 0.4, screen = "posthoc", cacheDir = NA, refitBest = FALSE)
+  )
   expect_equal(nrow(ms$starts), 4L)
   # every candidate is screened ...
   expect_true(all(is.finite(ms$starts$screenOFV)))
@@ -256,14 +264,15 @@ test_that("multistart() screening fits only the best candidates", {
   expect_equal(sum(ms$starts$fitted), 2L)
   expect_equal(nrow(ms$summary), 2L)
   # and the ones estimated are the ones that screened best
-  expect_setequal(ms$starts$start[ms$starts$fitted],
-                  ms$starts$start[order(ms$starts$screenOFV)][1:2])
+  expect_setequal(ms$starts$start[ms$starts$fitted], ms$starts$start[order(ms$starts$screenOFV)][1:2])
 })
 
 test_that("multistart() works from a model and data", {
-  ms <- multistart(.msTestModel(), nlmixr2data::theo_sd,
-                   control = list(n = 2, screen = "none", cacheDir = NA,
-                                  refitBest = FALSE))
+  ms <- multistart(
+    .msTestModel(),
+    nlmixr2data::theo_sd,
+    control = list(n = 2, screen = "none", cacheDir = NA, refitBest = FALSE)
+  )
   expect_s3_class(ms, "nlmixr2Multistart")
   expect_equal(nrow(ms$summary), 2L)
   expect_null(ms$origFit)
@@ -276,26 +285,24 @@ test_that("multistart() rejects things that are not models", {
 test_that("multistart() resumes from its cache", {
   withr::with_tempdir({
     fit <- .msTestFit()
-    args <- list(spread = 0.3, screen = "none", cacheDir = "msCache",
-                 refitBest = FALSE)
+    args <- list(spread = 0.3, screen = "none", cacheDir = "msCache", refitBest = FALSE)
     m1 <- multistart(fit, control = c(list(n = 2), args))
-    expect_equal(sort(list.files("msCache", pattern = "^fit_")),
-                 c("fit_0001.rds", "fit_0002.rds"))
+    expect_equal(sort(list.files("msCache", pattern = "^fit_")), c("fit_0001.rds", "fit_0002.rds"))
 
     m2 <- multistart(fit, control = c(list(n = 4), args))
     # only the two new starts were added
-    expect_equal(sort(list.files("msCache", pattern = "^fit_")),
-                 c("fit_0001.rds", "fit_0002.rds", "fit_0003.rds", "fit_0004.rds"))
+    expect_equal(
+      sort(list.files("msCache", pattern = "^fit_")),
+      c("fit_0001.rds", "fit_0002.rds", "fit_0003.rds", "fit_0004.rds")
+    )
     # and the cached starts came back unchanged
     keep <- setdiff(names(m1$starts), "fitted")
     expect_equal(m1$starts[, keep], m2$starts[1:2, keep])
-    expect_equal(sort(m1$summary$OBJF),
-                 sort(m2$summary$OBJF[m2$summary$start <= 2]))
+    expect_equal(sort(m1$summary$OBJF), sort(m2$summary$OBJF[m2$summary$start <= 2]))
 
     # restart = TRUE throws the cache away
     m3 <- multistart(fit, control = c(list(n = 2, restart = TRUE), args))
-    expect_equal(sort(list.files("msCache", pattern = "^fit_")),
-                 c("fit_0001.rds", "fit_0002.rds"))
+    expect_equal(sort(list.files("msCache", pattern = "^fit_")), c("fit_0001.rds", "fit_0002.rds"))
     expect_equal(sort(m1$summary$OBJF), sort(m3$summary$OBJF))
   })
 })
@@ -303,14 +310,12 @@ test_that("multistart() resumes from its cache", {
 test_that("multistart() drops a cached start that no longer matches", {
   withr::with_tempdir({
     fit <- .msTestFit()
-    args <- list(sampling = "lhs", screen = "none", cacheDir = "lhsCache",
-                 refitBest = FALSE)
+    args <- list(sampling = "lhs", screen = "none", cacheDir = "lhsCache", refitBest = FALSE)
     m1 <- multistart(fit, control = c(list(n = 2), args))
     m2 <- multistart(fit, control = c(list(n = 4), args))
     # the Latin hypercube design changed, so start 2 is a different start
     keep <- setdiff(names(m1$starts), "fitted")
-    expect_false(isTRUE(all.equal(m1$starts[2, keep], m2$starts[2, keep],
-                                  check.attributes = FALSE)))
+    expect_false(isTRUE(all.equal(m1$starts[2, keep], m2$starts[2, keep], check.attributes = FALSE)))
     # and it was re-estimated rather than reported against the wrong start
     expect_equal(nrow(m2$summary), 4L)
   })
@@ -318,8 +323,7 @@ test_that("multistart() drops a cached start that no longer matches", {
 
 test_that("plot() draws the waterfall and parameter-stability plots", {
   fit <- .msTestFit()
-  ms <- multistart(fit, control = list(n = 3, spread = 0.3, screen = "none",
-                                       cacheDir = NA, refitBest = FALSE))
+  ms <- multistart(fit, control = list(n = 3, spread = 0.3, screen = "none", cacheDir = NA, refitBest = FALSE))
   expect_s3_class(plot(ms), "ggplot")
   expect_s3_class(plot(ms, "waterfall"), "ggplot")
   expect_s3_class(plot(ms, "waterfall", dOfvMax = 1), "ggplot")

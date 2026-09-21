@@ -25,8 +25,7 @@
     .par <- .cov$covariateParameter[.i]
     .x <- .cov$covariate[.i]
     .w <- which(.ini$name == .par & !is.na(.ini$ntheta))
-    if (length(.w) != 1L || .ini$est[.w] != 0 || .ini$fix[.w] ||
-          !(.x %in% names(data)) || !is.numeric(data[[.x]])) {
+    if (length(.w) != 1L || .ini$est[.w] != 0 || .ini$fix[.w] || !(.x %in% names(data)) || !is.numeric(data[[.x]])) {
       next
     }
     .max <- suppressWarnings(max(abs(data[[.x]]), na.rm = TRUE))
@@ -124,13 +123,15 @@
 #'                 searchType = "forward")
 #' })
 #' }
-covarSearchAuto <- function(fit,
-                            varsVec,
-                            covarsVec,
-                            pVal = list(fwd = 0.05, bck = 0.01), # diff default vals for fwd and backward
-                            catvarsVec=NULL ,#character vector of categorical covariates that need to be added
-                            searchType = c("scm", "forward", "backward"),
-                            restart = FALSE) {
+covarSearchAuto <- function(
+  fit,
+  varsVec,
+  covarsVec,
+  pVal = list(fwd = 0.05, bck = 0.01), # diff default vals for fwd and backward
+  catvarsVec = NULL, #character vector of categorical covariates that need to be added
+  searchType = c("scm", "forward", "backward"),
+  restart = FALSE
+) {
   if (!is.numeric(AIC(fit))) {
     cli::cli_alert_danger("the 'fit' object needs to have an objective functions value associated with it")
     cli::cli_alert_info("try computing 'AIC(fitobject)' in console to compute and store the corresponding OBJF value")
@@ -138,9 +139,9 @@ covarSearchAuto <- function(fit,
   }
 
   ## Update data and covarsvec if categorical variables are provided
-  if(!is.null(catvarsVec)){
-    covarsVec <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]]
-    data <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]]
+  if (!is.null(catvarsVec)) {
+    covarsVec <- addCatCovariates(nlme::getData(fit), covarsVec = covarsVec, catcovarsVec = catvarsVec)[[2]]
+    data <- addCatCovariates(nlme::getData(fit), covarsVec = covarsVec, catcovarsVec = catvarsVec)[[1]]
   } else {
     covarsVec <- covarsVec
     data <- nlme::getData(fit)
@@ -161,25 +162,51 @@ covarSearchAuto <- function(fit,
 
   if (!dir.exists(outputDir)) {
     dir.create(outputDir)
-  }
-  else if (dir.exists(outputDir) && restart == TRUE) {
+  } else if (dir.exists(outputDir) && restart == TRUE) {
     unlink(outputDir, recursive = TRUE, force = TRUE) # unlink any of the previous directories
     dir.create(outputDir) # create a fresh directory
   }
 
   if (searchType %in% "scm") {
-    resFwd <- forwardSearch(varsVec,covarsVec,catvarsVec, fit, pVal$fwd, outputDir = outputDir, restart = restart)
-    resBck <- backwardSearch(varsVec,covarsVec,catvarsVec, fitorig = fit, fitupdated = resFwd[[1]], pVal = pVal$bck, reFitCovars = FALSE, outputDir = outputDir, restart = restart)
+    resFwd <- forwardSearch(varsVec, covarsVec, catvarsVec, fit, pVal$fwd, outputDir = outputDir, restart = restart)
+    resBck <- backwardSearch(
+      varsVec,
+      covarsVec,
+      catvarsVec,
+      fitorig = fit,
+      fitupdated = resFwd[[1]],
+      pVal = pVal$bck,
+      reFitCovars = FALSE,
+      outputDir = outputDir,
+      restart = restart
+    )
     summaryTable <- Reduce(rbind, list(resFwd[[2]], resBck[[2]]))
 
     return(list(summaryTable = summaryTable, resFwd = resFwd, resBck = resBck))
   } else if (searchType %in% "forward") {
-    resFwd <- forwardSearch(varsVec,covarsVec,catvarsVec, fit, pVal = pVal$fwd, outputDir = outputDir, restart = restart)
+    resFwd <- forwardSearch(
+      varsVec,
+      covarsVec,
+      catvarsVec,
+      fit,
+      pVal = pVal$fwd,
+      outputDir = outputDir,
+      restart = restart
+    )
     summaryTable <- Reduce(rbind, list(resFwd[[2]], NULL))
 
     return(list(summaryTable = summaryTable, resFwd = resFwd, resBck = NULL))
   } else {
-    resBck <- backwardSearch(varsVec,covarsVec,catvarsVec, fitorig = fit, pVal = pVal$bck, reFitCovars = TRUE, outputDir = outputDir, restart = restart)
+    resBck <- backwardSearch(
+      varsVec,
+      covarsVec,
+      catvarsVec,
+      fitorig = fit,
+      pVal = pVal$bck,
+      reFitCovars = TRUE,
+      outputDir = outputDir,
+      restart = restart
+    )
     summaryTable <- Reduce(rbind, list(NULL, resBck[[2]]))
 
     return(list(summaryTable = summaryTable, resFwd = NULL, resBck = resBck))
@@ -199,16 +226,16 @@ covarSearchAuto <- function(fit,
 #' @return returns the updated 'fit' object at the end of the forward search and a table of information for all the covariates tested
 #' @author Vipul Mann, Matthew Fidler, Vishal Sarsani
 #' @noRd
-forwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL,fit, pVal = 0.05, outputDir, restart = FALSE) {
+forwardSearch <- function(varsVec, covarsVec, catvarsVec = NULL, fit, pVal = 0.05, outputDir, restart = FALSE) {
   ## Update data and covarsvec if categorical variables are provided
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
   } else {
     ui <- fit$finalUiEnv
   }
-  if(!is.null(catvarsVec)){
-    covarsVec <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]]
-    data <- addCatCovariates(nlme::getData(fit),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]]
+  if (!is.null(catvarsVec)) {
+    covarsVec <- addCatCovariates(nlme::getData(fit), covarsVec = covarsVec, catcovarsVec = catvarsVec)[[2]]
+    data <- addCatCovariates(nlme::getData(fit), covarsVec = covarsVec, catcovarsVec = catvarsVec)[[1]]
   } else {
     covarsVec <- covarsVec
     data <- nlme::getData(fit)
@@ -219,24 +246,18 @@ forwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL,fit, pVal = 0.05, ou
   }
 
   # construct covInfo
-  covInfo <-  buildcovInfo(varsVec,covarsVec)
+  covInfo <- buildcovInfo(varsVec, covarsVec)
 
   resTableComplete <- data.frame(matrix(ncol = 14, nrow = 0))
   cli::cli_h1("starting forward search...")
   stepIdx <- 1
 
   fnameTablePatternForward <-
-    paste0("forward_step_", "[0-9]+", "_table_", "[a-zA-Z0-9]+", ".RData",
-      sep = ""
-    )
+    paste0("forward_step_", "[0-9]+", "_table_", "[a-zA-Z0-9]+", ".RData", sep = "")
   fnameFitPatternForward <-
-    paste0("forward_step_", "[0-9]+", "_fit_", "[a-zA-Z0-9]+", ".RData",
-      sep = ""
-    )
+    paste0("forward_step_", "[0-9]+", "_fit_", "[a-zA-Z0-9]+", ".RData", sep = "")
   fnameCompleteTablePatternForward <-
-    paste0("forward_step_", "[0-9]+", "_completetable_", "[a-zA-Z0-9]+", ".RData",
-      sep = ""
-    )
+    paste0("forward_step_", "[0-9]+", "_completetable_", "[a-zA-Z0-9]+", ".RData", sep = "")
 
   fileExistsTab <-
     list.files(paste0("./", outputDir), pattern = fnameTablePatternForward)
@@ -275,24 +296,25 @@ forwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL,fit, pVal = 0.05, ou
 
   while (length(covInfo) > 0) {
     # forward covariate search
-    covSearchRes <- buildupatedUI(ui,varsVec,covarsVec,indep = TRUE,add=TRUE)
+    covSearchRes <- buildupatedUI(ui, varsVec, covarsVec, indep = TRUE, add = TRUE)
 
     resTable <- lapply(covSearchRes, function(res) {
-       xmod <- res
-       x <- tryCatch(
-         {
-           x <-
-             suppressWarnings(.scmRefit(xmod, data, fit))
-           x # to return 'model fit'
-         },
-         error = function(error_message) {
-           print("error fitting the model for the covariate ")
-           print(error_message)
-         })
+      xmod <- res
+      x <- tryCatch(
+        {
+          x <-
+            suppressWarnings(.scmRefit(xmod, data, fit))
+          x # to return 'model fit'
+        },
+        error = function(error_message) {
+          print("error fitting the model for the covariate ")
+          print(error_message)
+        }
+      )
 
-      covNames <- utils::tail(res$muRefCovariateDataFrame$covariateParameter,n=1)
-      nam_var <- strsplit(covNames,split='_', fixed=TRUE)[[1]][3]
-      nam_covar <- strsplit(covNames,split='_', fixed=TRUE)[[1]][2]
+      covNames <- utils::tail(res$muRefCovariateDataFrame$covariateParameter, n = 1)
+      nam_var <- strsplit(covNames, split = '_', fixed = TRUE)[[1]][3]
+      nam_covar <- strsplit(covNames, split = '_', fixed = TRUE)[[1]][2]
 
       # fwd: dObjf = base objf - candidate objf, so dObjf > 0 means adding the
       #      covariate improved (lowered) the objective function. The likelihood
@@ -303,12 +325,24 @@ forwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL,fit, pVal = 0.05, ou
       dof <- length(x$finalUiEnv$ini$est) - length(fit$finalUiEnv$ini$est)
       if (dObjf > 0) {
         pchisqr <- 1 - pchisq(dObjf, df = dof)
-      }
-      else {
+      } else {
         pchisqr <- 1
       }
 
-      l1 <- list(step = stepIdx, covar = nam_covar, var = nam_var, objf = x$objf, deltObjf = dObjf, AIC = x$AIC, BIC = x$BIC, numParams = length(x$finalUiEnv$ini$est), qchisqr = qchisq(1 - pVal, dof), pchisqr = pchisqr, included = "no", searchType = "forward")
+      l1 <- list(
+        step = stepIdx,
+        covar = nam_covar,
+        var = nam_var,
+        objf = x$objf,
+        deltObjf = dObjf,
+        AIC = x$AIC,
+        BIC = x$BIC,
+        numParams = length(x$finalUiEnv$ini$est),
+        qchisqr = qchisq(1 - pVal, dof),
+        pchisqr = pchisqr,
+        included = "no",
+        searchType = "forward"
+      )
       l2 <- list(covNames = covNames, covarEffect = x$parFixedDf[covNames, "Estimate"])
 
       c(l1, l2)
@@ -320,7 +354,8 @@ forwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL,fit, pVal = 0.05, ou
 
     colnames(resTableComplete) <- colnames(resTable)
 
-    if (bestRow$pchisqr <= pVal) { # should be based on p-value
+    if (bestRow$pchisqr <= pVal) {
+      # should be based on p-value
 
       # objf function value improved
       resTable[which.min(resTable$pchisqr), "included"] <- "yes"
@@ -334,12 +369,57 @@ forwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL,fit, pVal = 0.05, ou
 
       covInfo[[paste0(as.character(bestRow$covar), as.character(bestRow$var))]] <- NULL
 
-      cli::cli_h2("excluding {paste0(as.character(bestRow$covar), as.character(bestRow$var))} from list of covariates ...")
+      cli::cli_h2(
+        "excluding {paste0(as.character(bestRow$covar), as.character(bestRow$var))} from list of covariates ..."
+      )
 
-      saveRDS(fit, file = paste0(outputDir, "/", "forward_", "step_", stepIdx, "_", "fit", "_", paste0(as.character(bestRow$covar), as.character(bestRow$var)), ".RData"))
-      saveRDS(bestRow, file = paste0(outputDir, "/", "forward_", "step_", stepIdx, "_", "table", "_", paste0(as.character(bestRow$covar), as.character(bestRow$var)), ".RData"))
+      saveRDS(
+        fit,
+        file = paste0(
+          outputDir,
+          "/",
+          "forward_",
+          "step_",
+          stepIdx,
+          "_",
+          "fit",
+          "_",
+          paste0(as.character(bestRow$covar), as.character(bestRow$var)),
+          ".RData"
+        )
+      )
+      saveRDS(
+        bestRow,
+        file = paste0(
+          outputDir,
+          "/",
+          "forward_",
+          "step_",
+          stepIdx,
+          "_",
+          "table",
+          "_",
+          paste0(as.character(bestRow$covar), as.character(bestRow$var)),
+          ".RData"
+        )
+      )
       resTableComplete <- rbind(resTableComplete, resTable)
-      saveRDS(resTableComplete, file = paste0(outputDir, "/", "forward_", "step_", stepIdx, "_", "completetable", "_", as.character(bestRow$covar), as.character(bestRow$var), ".RData"))
+      saveRDS(
+        resTableComplete,
+        file = paste0(
+          outputDir,
+          "/",
+          "forward_",
+          "step_",
+          stepIdx,
+          "_",
+          "completetable",
+          "_",
+          as.character(bestRow$covar),
+          as.character(bestRow$var),
+          ".RData"
+        )
+      )
 
       stepIdx <- stepIdx + 1
     } else {
@@ -372,16 +452,25 @@ forwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL,fit, pVal = 0.05, ou
 #' @noRd
 #'
 #' @author Vipul Mann, Matthew Fidler, Vishal Sarsani
-backwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL, fitorig, fitupdated, pVal = 0.01, reFitCovars = FALSE, outputDir, restart = FALSE) {
-
+backwardSearch <- function(
+  varsVec,
+  covarsVec,
+  catvarsVec = NULL,
+  fitorig,
+  fitupdated,
+  pVal = 0.01,
+  reFitCovars = FALSE,
+  outputDir,
+  restart = FALSE
+) {
   if (!inherits(fitorig, "nlmixr2FitCore")) {
     stop("'fitorig' needs to be a nlmixr2 fit")
   } else {
     ui <- fitorig$finalUiEnv
   }
-  if(!is.null(catvarsVec)){
-    covarsVec <- addCatCovariates(nlme::getData(fitorig),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[2]]
-    data <- addCatCovariates(nlme::getData(fitorig),covarsVec = covarsVec,catcovarsVec = catvarsVec)[[1]]
+  if (!is.null(catvarsVec)) {
+    covarsVec <- addCatCovariates(nlme::getData(fitorig), covarsVec = covarsVec, catcovarsVec = catvarsVec)[[2]]
+    data <- addCatCovariates(nlme::getData(fitorig), covarsVec = covarsVec, catcovarsVec = catvarsVec)[[1]]
   } else {
     covarsVec <- covarsVec
     data <- nlme::getData(fitorig)
@@ -405,24 +494,18 @@ backwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL, fitorig, fitupdate
   }
 
   if (reFitCovars) {
-    xmod <- buildupatedUI(ui,varsVec,covarsVec,indep = FALSE,add=TRUE)
+    xmod <- buildupatedUI(ui, varsVec, covarsVec, indep = FALSE, add = TRUE)
     fitupdated <- suppressWarnings(.scmRefit(xmod, data, fit)) # get the last fit object with all covariates added # DOES NOT ADD $ini
     fit <- fitupdated
   }
 
   fnameTablePatternBackward <-
-    paste0("backward_step_", "[0-9]+", "_table_", "[a-zA-Z0-9]+", ".RData",
-      sep = ""
-    )
+    paste0("backward_step_", "[0-9]+", "_table_", "[a-zA-Z0-9]+", ".RData", sep = "")
   fnameFitPatternBackward <-
-    paste0("backward_step_", "[0-9]+", "_fit_", "[a-zA-Z0-9]+", ".RData",
-      sep = ""
-    )
+    paste0("backward_step_", "[0-9]+", "_fit_", "[a-zA-Z0-9]+", ".RData", sep = "")
 
   fnameCompleteTablePatternBackward <-
-    paste0("forward_step_", "[0-9]+", "_completetable_", "[a-zA-Z0-9]+", ".RData",
-      sep = ""
-    )
+    paste0("forward_step_", "[0-9]+", "_completetable_", "[a-zA-Z0-9]+", ".RData", sep = "")
 
   fileExistsTab <-
     list.files(paste0("./", outputDir), pattern = fnameTablePatternBackward)
@@ -450,7 +533,7 @@ backwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL, fitorig, fitupdate
     testedCovarVars <- paste0(unlist(resumeTable$covar), unlist(resumeTable$var))
 
     # construct covInfo
-    covInfo <-  buildcovInfo(varsVec,covarsVec)
+    covInfo <- buildcovInfo(varsVec, covarsVec)
 
     for (x in testedCovarVars) {
       covInfo[[x]] <- NULL
@@ -467,14 +550,14 @@ backwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL, fitorig, fitupdate
 
   # check if covInfo vars in fit; abort if none of the covariates added in the forward search step
 
-  covSearchRes <- buildupatedUI(ui,varsVec,covarsVec,indep = TRUE,add=TRUE)
+  covSearchRes <- buildupatedUI(ui, varsVec, covarsVec, indep = TRUE, add = TRUE)
 
   # Now remove covars step by step until the objf fun value...?
   while (length(covInfo) > 0) {
     # Remove covars on by one: if objf val increases retain covar; otherwise (objf val decreases), remove the covar
     # At any stage, retain the one that results in highest increase in objf value; exit if removal of none results in increase
 
-    covSearchRes <- buildupatedUI(ui,varsVec,covarsVec,add=FALSE)
+    covSearchRes <- buildupatedUI(ui, varsVec, covarsVec, add = FALSE)
 
     resTable <- lapply(covSearchRes, function(res) {
       xmod <- res
@@ -487,11 +570,12 @@ backwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL, fitorig, fitupdate
         error = function(error_message) {
           print("error fitting the model for the covariate ")
           print(error_message)
-        })
+        }
+      )
 
-      covNames <- utils::tail(res$muRefCovariateDataFrame$covariateParameter,n=1)
-      nam_var <- strsplit(covNames,split='_', fixed=TRUE)[[1]][3]
-      nam_covar <- strsplit(covNames,split='_', fixed=TRUE)[[1]][2]
+      covNames <- utils::tail(res$muRefCovariateDataFrame$covariateParameter, n = 1)
+      nam_var <- strsplit(covNames, split = '_', fixed = TRUE)[[1]][3]
+      nam_covar <- strsplit(covNames, split = '_', fixed = TRUE)[[1]][2]
       # fwd: if deltObjf <0: pchisq=1-pchisq(-deltObjf, dof), else pchisq=1
       # bck: if deltObjf >0: pchisq=1-pchisq(deltObjf, dof), else pchisq=1
 
@@ -500,12 +584,24 @@ backwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL, fitorig, fitupdate
 
       if (dObjf > 0) {
         pchisqr <- 1 - pchisq(dObjf, df = dof)
-      }
-      else {
+      } else {
         pchisqr <- 1
       }
 
-      l1 <- list(step = stepIdx, covar = nam_covar, var = nam_var, objf = x$objf, deltObjf = dObjf, AIC = x$AIC, BIC = x$BIC, numParams = length(x$finalUiEnv$ini$est), qchisqr = qchisq(1 - pVal, dof), pchisqr = pchisqr, included = "", searchType = "backward")
+      l1 <- list(
+        step = stepIdx,
+        covar = nam_covar,
+        var = nam_var,
+        objf = x$objf,
+        deltObjf = dObjf,
+        AIC = x$AIC,
+        BIC = x$BIC,
+        numParams = length(x$finalUiEnv$ini$est),
+        qchisqr = qchisq(1 - pVal, dof),
+        pchisqr = pchisqr,
+        included = "",
+        searchType = "backward"
+      )
       l2 <- list(covNames = covNames, covarEffect = fit$parFixedDf[covNames, "Estimate"])
 
       c(l1, l2)
@@ -518,13 +614,11 @@ backwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL, fitorig, fitupdate
 
     bestRow <- resTable[which.min(resTable$pchisqr), ]
 
-
     if (bestRow$pchisqr <= pVal) {
       # objf function value increased after removal of covariate: retain the best covariate at this stage, test for the rest
 
       resTable[which.min(resTable$pchisqr), "included"] <- "yes"
       bestRow[, "included"] <- "yes"
-
 
       cli::cli_h1("best model at step {stepIdx}: ")
       print(bestRow)
@@ -533,11 +627,54 @@ backwardSearch <- function(varsVec,covarsVec,catvarsVec=NULL, fitorig, fitupdate
         suppressWarnings(.scmRefit(covSearchRes[[which.min(resTable$pchisqr)]], data, fit)) # re-fit the best model to obtain its fit object
       covInfo[[paste0(as.character(bestRow$covar), as.character(bestRow$var))]] <- NULL
 
-      saveRDS(fit, file = paste0(outputDir, "/", "backward_", "step_", stepIdx, "_", "fit", "_", paste0(as.character(bestRow$covar), as.character(bestRow$var)), ".RData"))
-      saveRDS(bestRow, file = paste0(outputDir, "/", "backward_", "step_", stepIdx, "_", "table", "_", paste0(as.character(bestRow$covar), as.character(bestRow$var)), ".RData"))
+      saveRDS(
+        fit,
+        file = paste0(
+          outputDir,
+          "/",
+          "backward_",
+          "step_",
+          stepIdx,
+          "_",
+          "fit",
+          "_",
+          paste0(as.character(bestRow$covar), as.character(bestRow$var)),
+          ".RData"
+        )
+      )
+      saveRDS(
+        bestRow,
+        file = paste0(
+          outputDir,
+          "/",
+          "backward_",
+          "step_",
+          stepIdx,
+          "_",
+          "table",
+          "_",
+          paste0(as.character(bestRow$covar), as.character(bestRow$var)),
+          ".RData"
+        )
+      )
       cli::cli_h2("retaining {paste0(as.character(bestRow$covar), as.character(bestRow$var))}")
       resTableComplete <- rbind(resTableComplete, resTable)
-      saveRDS(resTableComplete, file = paste0(outputDir, "/", "backward_", "step_", stepIdx, "_", "completetable", "_", as.character(bestRow$covar), as.character(bestRow$var), ".RData"))
+      saveRDS(
+        resTableComplete,
+        file = paste0(
+          outputDir,
+          "/",
+          "backward_",
+          "step_",
+          stepIdx,
+          "_",
+          "completetable",
+          "_",
+          as.character(bestRow$covar),
+          as.character(bestRow$var),
+          ".RData"
+        )
+      )
 
       stepIdx <- stepIdx + 1
     } else {

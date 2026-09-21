@@ -9,7 +9,7 @@ knitr::knit_print
 #' @param ... Ignored
 #' @param output The type of output to request (currently, just "equations")
 #' @export
-knit_print.nlmixr2FitCore <- function(x,  ..., output = "equations") {
+knit_print.nlmixr2FitCore <- function(x, ..., output = "equations") {
   output <- match.arg(output)
   if ("equations" %in% output) {
     ret <-
@@ -40,7 +40,7 @@ extractEqHelperSeqDrop <- function(x, ..., inModel, dropIdx = 1) {
   ret <- character()
   retNames <- names(x)
   for (idx in setdiff(seq_along(x), dropIdx)) {
-    ret <- c(ret, extractEqHelper(x[[idx]], name=retNames[[idx]], ..., inModel = inModel))
+    ret <- c(ret, extractEqHelper(x[[idx]], name = retNames[[idx]], ..., inModel = inModel))
   }
   ret
 }
@@ -71,17 +71,17 @@ extractEqHelperLhsRhs <- function(x, ..., inModel, prefix = "", middle, suffix =
 
 #' @export
 extractEqHelper.nlmixr2FitCore <- function(x, ..., inModel) {
-  extractEqHelper(as.function(x), ..., inModel=FALSE)
+  extractEqHelper(as.function(x), ..., inModel = FALSE)
 }
 
 #' @export
 extractEqHelper.rxUi <- function(x, ..., inModel, name) {
-  extractEqHelper(as.function(x), ..., inModel=FALSE)
+  extractEqHelper(as.function(x), ..., inModel = FALSE)
 }
 
 #' @export
 extractEqHelper.function <- function(x, ..., inModel, name) {
-  extractEqHelper(methods::functionBody(x), ..., inModel=FALSE)
+  extractEqHelper(methods::functionBody(x), ..., inModel = FALSE)
 }
 
 #' @export
@@ -157,7 +157,9 @@ extractEqHelperAssign <- function(x, ..., inModel, alignment = "&", name) {
     middleForce <- sprintf(" %s = ", alignment)
     ret <-
       extractEqHelperLhsRhs(
-        x, ..., inModel = inModel,
+        x,
+        ...,
+        inModel = inModel,
         middle = middleForce,
         lhsForce = lhsForce,
         rhsForce = rhsForce
@@ -170,17 +172,17 @@ extractEqHelperAssign <- function(x, ..., inModel, alignment = "&", name) {
 
 latexOpMap <-
   list(
-    "<"="<",
-    "<="="{\\leq}",
-    "=="="{\\equiv}",
-    ">="="{\\geq}",
-    ">"=">",
-    "&"="{\\land}",
-    "&&"="{\\land}",
-    "|"="{\\lor}",
-    "||"="{\\lor}",
-    "!="="{\\ne}",
-    "!"="{\\lnot}"
+    "<" = "<",
+    "<=" = "{\\leq}",
+    "==" = "{\\equiv}",
+    ">=" = "{\\geq}",
+    ">" = ">",
+    "&" = "{\\land}",
+    "&&" = "{\\land}",
+    "|" = "{\\lor}",
+    "||" = "{\\lor}",
+    "!=" = "{\\ne}",
+    "!" = "{\\lnot}"
   )
 
 #' @export
@@ -197,7 +199,7 @@ extractEqHelper.call <- function(x, ..., inModel, name) {
             extractEqHelper(x[[2]], ..., inModel = inModel)
           )
         stopifnot(length(ret) == 1)
-      } else if (x1c %in% c("<", "<=",  "==", ">=", ">", "&", "&&", "|", "||", "!=")) {
+      } else if (x1c %in% c("<", "<=", "==", ">=", ">", "&", "&&", "|", "||", "!=")) {
         # binary logical operators
         ret <- extractEqHelperLhsRhs(x, ..., inModel = inModel, middle = latexOpMap[[x1c]])
       } else if (x1c %in% "!") {
@@ -224,7 +226,9 @@ extractEqHelper.call <- function(x, ..., inModel, name) {
       } else if (x1c == "/") {
         ret <-
           extractEqHelperLhsRhs(
-            x, ..., inModel = inModel,
+            x,
+            ...,
+            inModel = inModel,
             prefix = "\\frac{",
             middle = "}{",
             suffix = "}"
@@ -232,7 +236,9 @@ extractEqHelper.call <- function(x, ..., inModel, name) {
       } else if (x1c %in% c("**", "^")) {
         ret <-
           extractEqHelperLhsRhs(
-            x, ..., inModel = inModel,
+            x,
+            ...,
+            inModel = inModel,
             prefix = "{",
             middle = "}^{",
             suffix = "}"
@@ -240,7 +246,8 @@ extractEqHelper.call <- function(x, ..., inModel, name) {
       } else if (x1c == "~") {
         ret <-
           extractEqHelperLhsRhs(
-            x, ...,
+            x,
+            ...,
             inModel = inModel,
             middle = " & \\sim "
           )
@@ -324,16 +331,18 @@ extractEqHelper.numeric <- function(x, ..., inModel, name = NULL) {
 }
 
 # copied from knitr:::escape_latex
-escapeLatex <- function (x, newlines = FALSE, spaces = FALSE) {
-  x = gsub("\\\\", "\\\\textbackslash", x)
-  x = gsub("([#$%&_{}])", "\\\\\\1", x)
-  x = gsub("\\\\textbackslash", "\\\\textbackslash{}", x)
-  x = gsub("~", "\\\\textasciitilde{}", x)
-  x = gsub("\\^", "\\\\textasciicircum{}", x)
-  if (newlines)
-    x = gsub("(?<!\n)\n(?!\n)", "\\\\\\\\", x, perl = TRUE)
-  if (spaces)
-    x = gsub("(?<= ) ", "\\\\ ", x, perl = TRUE)
+escapeLatex <- function(x, newlines = FALSE, spaces = FALSE) {
+  x <- gsub("\\\\", "\\\\textbackslash", x)
+  x <- gsub("([#$%&_{}])", "\\\\\\1", x)
+  x <- gsub("\\\\textbackslash", "\\\\textbackslash{}", x)
+  x <- gsub("~", "\\\\textasciitilde{}", x)
+  x <- gsub("\\^", "\\\\textasciicircum{}", x)
+  if (newlines) {
+    x <- gsub("(?<!\n)\n(?!\n)", "\\\\\\\\", x, perl = TRUE)
+  }
+  if (spaces) {
+    x <- gsub("(?<= ) ", "\\\\ ", x, perl = TRUE)
+  }
   x
 }
 
@@ -381,11 +390,25 @@ extractEqHelper.if <- function(x, ..., inModel, alignment, indent = 0L, firstIf 
   stopifnot(length(x) %in% c(3, 4))
   # Generate the text for what is in the braces "{}" for this part of the if
   # block
-  conditionalPart <- extractEqHelper(x[[2]], ..., inModel = inModel, alignment = "", indent = indent + 1L, firstIf = firstIf + 1L)
+  conditionalPart <- extractEqHelper(
+    x[[2]],
+    ...,
+    inModel = inModel,
+    alignment = "",
+    indent = indent + 1L,
+    firstIf = firstIf + 1L
+  )
   bracedPart <- braceWrap(x[[3]], ..., inModel = inModel, alignment = "", indent = indent + 1L, firstIf = firstIf + 1L)
 
   if (length(x) == 4) {
-    appendPart <- extractEqHelper(x[[4]], ..., inModel = inModel, alignment = "", indent = indent, firstIf = firstIf + 1L)
+    appendPart <- extractEqHelper(
+      x[[4]],
+      ...,
+      inModel = inModel,
+      alignment = "",
+      indent = indent,
+      firstIf = firstIf + 1L
+    )
     appendPart[1] <-
       sprintf(
         " \\quad & \\mathrm{else} \\: %s",

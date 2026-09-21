@@ -82,7 +82,10 @@ test_that("isBoundaryFit, getMinAICFit, listModelsTested work", {
   )
 
   # listModelsTested ----
-  tabTested <- listModelsTested(list(Emax = fitEmaxBoundaryIssue, Step = fitStep, Linear = fitLinear, "Model error" = fitError), caption = "Listing of models tested.")
+  tabTested <- listModelsTested(
+    list(Emax = fitEmaxBoundaryIssue, Step = fitStep, Linear = fitLinear, "Model error" = fitError),
+    caption = "Listing of models tested."
+  )
   expect_equal(
     tabTested$Description,
     c("Emax", "Step", "Linear", "Model error")

@@ -56,46 +56,68 @@
 #' @family Multistart
 #' @seealso [nlmixr2extra::multistart()]
 #' @export
-multistartControl <- function(n = 10L,
-                              nFit = NULL,
-                              sampling = c("uniform", "lhs", "normal"),
-                              spread = 0.2,
-                              which = NULL,
-                              perturbOmega = TRUE,
-                              omegaFold = 2,
-                              around = c("final", "initial"),
-                              screen = c("posthoc", "none"),
-                              refitBest = TRUE,
-                              excludeBoundary = TRUE,
-                              keepFits = TRUE,
-                              seed = 1234L,
-                              cores = 1L,
-                              cacheDir = NULL,
-                              restart = FALSE) {
+multistartControl <- function(
+  n = 10L,
+  nFit = NULL,
+  sampling = c("uniform", "lhs", "normal"),
+  spread = 0.2,
+  which = NULL,
+  perturbOmega = TRUE,
+  omegaFold = 2,
+  around = c("final", "initial"),
+  screen = c("posthoc", "none"),
+  refitBest = TRUE,
+  excludeBoundary = TRUE,
+  keepFits = TRUE,
+  seed = 1234L,
+  cores = 1L,
+  cacheDir = NULL,
+  restart = FALSE
+) {
   ret <-
     list(
       n = checkmate::assert_integerish(n, lower = 1, len = 1, any.missing = FALSE, null.ok = FALSE, coerce = TRUE),
       nFit = checkmate::assert_integerish(nFit, lower = 1, len = 1, any.missing = FALSE, null.ok = TRUE, coerce = TRUE),
       sampling = match.arg(sampling),
-      spread = checkmate::assert_number(spread, lower = 1e-8, upper = 10, finite = TRUE, na.ok = FALSE, null.ok = FALSE),
+      spread = checkmate::assert_number(
+        spread,
+        lower = 1e-8,
+        upper = 10,
+        finite = TRUE,
+        na.ok = FALSE,
+        null.ok = FALSE
+      ),
       which = checkmate::assert_character(which, any.missing = FALSE, min.len = 1, null.ok = TRUE),
       perturbOmega = checkmate::assert_logical(perturbOmega, len = 1, any.missing = FALSE, null.ok = FALSE),
-      omegaFold = checkmate::assert_number(omegaFold, lower = 1.000001, upper = 1000, finite = TRUE, na.ok = FALSE, null.ok = FALSE),
+      omegaFold = checkmate::assert_number(
+        omegaFold,
+        lower = 1.000001,
+        upper = 1000,
+        finite = TRUE,
+        na.ok = FALSE,
+        null.ok = FALSE
+      ),
       around = match.arg(around),
       screen = match.arg(screen),
       refitBest = checkmate::assert_logical(refitBest, len = 1, any.missing = FALSE, null.ok = FALSE),
       excludeBoundary = checkmate::assert_logical(excludeBoundary, len = 1, any.missing = FALSE, null.ok = FALSE),
       keepFits = checkmate::assert_logical(keepFits, len = 1, any.missing = FALSE, null.ok = FALSE),
       seed = checkmate::assert_integerish(seed, len = 1, any.missing = FALSE, null.ok = FALSE, coerce = TRUE),
-      cores = checkmate::assert_integerish(cores, lower = 1, len = 1, any.missing = FALSE, null.ok = FALSE, coerce = TRUE),
+      cores = checkmate::assert_integerish(
+        cores,
+        lower = 1,
+        len = 1,
+        any.missing = FALSE,
+        null.ok = FALSE,
+        coerce = TRUE
+      ),
       cacheDir = .msAssertCacheDir(cacheDir),
       restart = checkmate::assert_logical(restart, len = 1, any.missing = FALSE, null.ok = FALSE)
     )
   if (is.null(ret$nFit)) {
     ret$nFit <- ret$n
   } else if (ret$nFit > ret$n) {
-    warning("'nFit' is larger than 'n'; using nFit = ", ret$n,
-            call. = FALSE)
+    warning("'nFit' is larger than 'n'; using nFit = ", ret$n, call. = FALSE)
     ret$nFit <- ret$n
   }
   class(ret) <- "multistartControl"
@@ -214,30 +236,41 @@ multistart <- function(object, ...) {
 
 #' @rdname multistart
 #' @export
-multistart.nlmixr2FitCore <- function(object, ..., data = NULL, est = NULL,
-                                      estControl = NULL, control = list()) {
+multistart.nlmixr2FitCore <- function(object, ..., data = NULL, est = NULL, estControl = NULL, control = list()) {
   control <- do.call(multistartControl, control)
   if (control$around == "final") {
     ui <- object$finalUiEnv
   } else {
     ui <- rxode2::rxUiDecompress(object$iniUi)
   }
-  if (is.null(data)) data <- nlme::getData(object)
-  if (is.null(est)) est <- getFitMethod(object)
-  if (is.null(estControl)) estControl <- object$control
-  .multistartRun(ui = ui, data = data, est = est, estControl = estControl,
-                 control = control, origFit = object)
+  if (is.null(data)) {
+    data <- nlme::getData(object)
+  }
+  if (is.null(est)) {
+    est <- getFitMethod(object)
+  }
+  if (is.null(estControl)) {
+    estControl <- object$control
+  }
+  .multistartRun(ui = ui, data = data, est = est, estControl = estControl, control = control, origFit = object)
 }
 
 #' @rdname multistart
 #' @export
-multistart.rxUi <- function(object, data, ..., est = "focei",
-                            estControl = NULL, control = list()) {
+multistart.rxUi <- function(object, data, ..., est = "focei", estControl = NULL, control = list()) {
   control <- do.call(multistartControl, control)
   checkmate::assert_data_frame(data, min.rows = 1)
-  if (is.null(estControl)) estControl <- .msDefaultControl(est)
-  .multistartRun(ui = rxode2::rxUiDecompress(object), data = data, est = est,
-                 estControl = estControl, control = control, origFit = NULL)
+  if (is.null(estControl)) {
+    estControl <- .msDefaultControl(est)
+  }
+  .multistartRun(
+    ui = rxode2::rxUiDecompress(object),
+    data = data,
+    est = est,
+    estControl = estControl,
+    control = control,
+    origFit = NULL
+  )
 }
 
 #' @rdname multistart
@@ -249,8 +282,7 @@ multistart.function <- function(object, data, ...) {
 #' @rdname multistart
 #' @export
 multistart.default <- function(object, ...) {
-  stop("'multistart()' needs a nlmixr2 fit or a nlmixr2 model",
-       call. = FALSE)
+  stop("'multistart()' needs a nlmixr2 fit or a nlmixr2 model", call. = FALSE)
 }
 
 # The default control for an estimation method, e.g. foceiControl() for
@@ -292,8 +324,12 @@ multistart.default <- function(object, ...) {
 # after a failure.  `lower` and `upper` are single values; `x` may be a vector.
 .msClip <- function(x, lower, upper) {
   margin <- .Machine$double.eps^(1 / 7)
-  if (is.finite(lower)) x <- pmax(x, lower + margin)
-  if (is.finite(upper)) x <- pmin(x, upper - margin)
+  if (is.finite(lower)) {
+    x <- pmax(x, lower + margin)
+  }
+  if (is.finite(upper)) {
+    x <- pmin(x, upper - margin)
+  }
   x
 }
 
@@ -309,7 +345,9 @@ multistart.default <- function(object, ...) {
   n <- control$n
   ret <- vector(mode = "list", length = n)
   ret[[1]] <- iniDf
-  if (n == 1L) return(ret)
+  if (n == 1L) {
+    return(ret)
+  }
   nPerturb <- n - 1L
 
   isTheta <- !is.na(iniDf$ntheta)
@@ -319,16 +357,14 @@ multistart.default <- function(object, ...) {
   if (!is.null(control$which)) {
     unknown <- setdiff(control$which, iniDf$name)
     if (length(unknown) > 0) {
-      stop("'which' names parameters that are not in the model: ",
-           paste(unknown, collapse = ", "), call. = FALSE)
+      stop("'which' names parameters that are not in the model: ", paste(unknown, collapse = ", "), call. = FALSE)
     }
     eligible <- eligible & iniDf$name %in% control$which
   }
 
   perturbOmega <- control$perturbOmega
   if (perturbOmega && !is.null(omegaSameMap)) {
-    warning("the model uses 'same()' variability blocks; leaving 'omega' at its initial estimates",
-            call. = FALSE)
+    warning("the model uses 'same()' variability blocks; leaving 'omega' at its initial estimates", call. = FALSE)
     perturbOmega <- FALSE
   }
 
@@ -337,9 +373,10 @@ multistart.default <- function(object, ...) {
 
   changed <- c(thetaRows, etaRows)
   if (length(changed) == 0L) {
-    warning("no parameters left to perturb; every start is the same",
-            call. = FALSE)
-    for (j in seq_len(nPerturb)) ret[[j + 1L]] <- iniDf
+    warning("no parameters left to perturb; every start is the same", call. = FALSE)
+    for (j in seq_len(nPerturb)) {
+      ret[[j + 1L]] <- iniDf
+    }
     return(ret)
   }
 
@@ -350,12 +387,10 @@ multistart.default <- function(object, ...) {
   # cannot have that property and is drawn per parameter.
   nEl <- length(changed)
   if (control$sampling == "lhs") {
-    z <- vapply(changed, function(i) .msSpreadDraws(nPerturb, "lhs"),
-                numeric(nPerturb))
+    z <- vapply(changed, function(i) .msSpreadDraws(nPerturb, "lhs"), numeric(nPerturb))
     dim(z) <- c(nPerturb, nEl)
   } else {
-    z <- matrix(.msSpreadDraws(nPerturb * nEl, control$sampling),
-                nrow = nPerturb, ncol = nEl, byrow = TRUE)
+    z <- matrix(.msSpreadDraws(nPerturb * nEl, control$sampling), nrow = nPerturb, ncol = nEl, byrow = TRUE)
   }
 
   logFold <- log(control$omegaFold)
@@ -385,7 +420,9 @@ multistart.default <- function(object, ...) {
 .msFixOmega <- function(iniDf) {
   isEta <- !is.na(iniDf$neta1)
   isOff <- isEta & iniDf$neta1 != iniDf$neta2
-  if (!any(isOff)) return(iniDf)
+  if (!any(isOff)) {
+    return(iniDf)
+  }
   # each `condition` (id, occasion, ...) is its own block
   for (cond in unique(iniDf$condition[isOff])) {
     rows <- which(isEta & iniDf$condition %in% cond)
@@ -397,9 +434,13 @@ multistart.default <- function(object, ...) {
       m[r, cc] <- m[cc, r] <- iniDf$est[i]
     }
     ev <- try(min(eigen(m, symmetric = TRUE, only.values = TRUE)$values), silent = TRUE)
-    if (inherits(ev, "try-error") || !is.finite(ev) || ev > 1e-8) next
+    if (inherits(ev, "try-error") || !is.finite(ev) || ev > 1e-8) {
+      next
+    }
     fixed <- try(lotri::lotriNearPD(m), silent = TRUE)
-    if (inherits(fixed, "try-error")) next
+    if (inherits(fixed, "try-error")) {
+      next
+    }
     for (i in rows) {
       iniDf$est[i] <- fixed[match(iniDf$neta1[i], idx), match(iniDf$neta2[i], idx)]
     }
@@ -416,8 +457,11 @@ multistart.default <- function(object, ...) {
   wasChar <- !is.null(ctl$covMethod) && is.character(ctl$covMethod)
   orig <- ctl$covMethod
   ctl <- setQuietFastControl(ctl)
-  if (wasChar) ctl$covMethod <- ""
-  else if (is.null(orig)) ctl$covMethod <- NULL
+  if (wasChar) {
+    ctl$covMethod <- ""
+  } else if (is.null(orig)) {
+    ctl$covMethod <- NULL
+  }
   ctl
 }
 
@@ -426,14 +470,20 @@ multistart.default <- function(object, ...) {
 # objective is computed, which reading `fit$objf` triggers.
 .msOfv <- function(fit) {
   objDf <- fit$objDf
-  if (is.null(objDf) || nrow(objDf) == 0L) return(NA_real_)
+  if (is.null(objDf) || nrow(objDf) == 0L) {
+    return(NA_real_)
+  }
   w <- which(tolower(rownames(objDf)) == tolower(fit$ofvType))
-  if (length(w) != 1L) w <- 1L
+  if (length(w) != 1L) {
+    w <- 1L
+  }
   ret <- objDf[w, "OBJF"]
   if (is.na(ret)) {
     # lazily computed for saem; costs a quadrature evaluation
     ret <- try(suppressWarnings(fit$objf), silent = TRUE)
-    if (inherits(ret, "try-error") || length(ret) != 1L) return(NA_real_)
+    if (inherits(ret, "try-error") || length(ret) != 1L) {
+      return(NA_real_)
+    }
     ret <- as.numeric(ret)
   }
   ret
@@ -444,13 +494,24 @@ multistart.default <- function(object, ...) {
 .msSummaryRow <- function(fit, index, elapsed) {
   if (inherits(fit, "try-error") || !inherits(fit, "nlmixr2FitCore")) {
     msg <- if (inherits(fit, "try-error")) trimws(conditionMessage(attr(fit, "condition"))) else "not estimated"
-    return(data.frame(start = index, OBJF = NA_real_, AIC = NA_real_, BIC = NA_real_,
-                      converged = NA, boundary = NA, covMethod = NA_character_,
-                      message = msg, elapsed = elapsed, stringsAsFactors = FALSE))
+    return(data.frame(
+      start = index,
+      OBJF = NA_real_,
+      AIC = NA_real_,
+      BIC = NA_real_,
+      converged = NA,
+      boundary = NA,
+      covMethod = NA_character_,
+      message = msg,
+      elapsed = elapsed,
+      stringsAsFactors = FALSE
+    ))
   }
   objDf <- fit$objDf
   w <- which(tolower(rownames(objDf)) == tolower(fit$ofvType))
-  if (length(w) != 1L) w <- 1L
+  if (length(w) != 1L) {
+    w <- 1L
+  }
   conv <- fit$convergence
   msg <- fit$message
   data.frame(
@@ -471,7 +532,9 @@ multistart.default <- function(object, ...) {
 # between-subject variances.  Only the "Estimate" column of `parFixedDf` is
 # used; the other columns come and go with the model and the covariance step.
 .msEstimateRow <- function(fit) {
-  if (!inherits(fit, "nlmixr2FitCore")) return(NULL)
+  if (!inherits(fit, "nlmixr2FitCore")) {
+    return(NULL)
+  }
   pf <- fit$parFixedDf
   ret <- list()
   if (!is.null(pf) && "Estimate" %in% names(pf)) {
@@ -481,36 +544,54 @@ multistart.default <- function(object, ...) {
   if (!is.null(om) && nrow(om) > 0L) {
     ret <- c(ret, stats::setNames(as.list(diag(om)), colnames(om)))
   }
-  if (length(ret) == 0L) return(NULL)
+  if (length(ret) == 0L) {
+    return(NULL)
+  }
   as.data.frame(ret, stringsAsFactors = FALSE, check.names = FALSE)
 }
 
 # The starting estimates of one candidate as a one-row data.frame.
 .msStartRow <- function(iniDf) {
   keep <- !is.na(iniDf$ntheta) | (!is.na(iniDf$neta1) & iniDf$neta1 == iniDf$neta2)
-  as.data.frame(as.list(stats::setNames(iniDf$est[keep], iniDf$name[keep])),
-                stringsAsFactors = FALSE, check.names = FALSE)
+  as.data.frame(
+    as.list(stats::setNames(iniDf$est[keep], iniDf$name[keep])),
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
 }
 
 # cbind that tolerates a NULL half; `cbind(data.frame(), NULL)` errors rather
 # than returning the non-NULL side.
 .msCbind <- function(a, b) {
-  if (is.null(b)) a else if (is.null(a)) b else cbind(a, b)
+  if (is.null(b)) {
+    a
+  } else if (is.null(a)) {
+    b
+  } else {
+    cbind(a, b)
+  }
 }
 
 # rbind a list of one-row data frames whose columns may differ, padding the
 # missing ones with NA.  do.call(rbind, ...) errors on mismatched names.
 .msRbindFill <- function(lst) {
   lst <- lst[!vapply(lst, is.null, logical(1))]
-  if (length(lst) == 0L) return(NULL)
+  if (length(lst) == 0L) {
+    return(NULL)
+  }
   nms <- unique(unlist(lapply(lst, names)))
-  do.call(rbind, lapply(lst, function(x) {
-    miss <- setdiff(nms, names(x))
-    # logical NA rather than NA_real_, so padding a character column still
-    # rbinds to a character column
-    for (m in miss) x[[m]] <- NA
-    x[, nms, drop = FALSE]
-  }))
+  do.call(
+    rbind,
+    lapply(lst, function(x) {
+      miss <- setdiff(nms, names(x))
+      # logical NA rather than NA_real_, so padding a character column still
+      # rbinds to a character column
+      for (m in miss) {
+        x[[m]] <- NA
+      }
+      x[, nms, drop = FALSE]
+    })
+  )
 }
 
 # Estimate one start.  Never throws: a failure comes back as a try-error so the
@@ -521,9 +602,13 @@ multistart.default <- function(object, ...) {
   ctl <- estControl
   # each start gets its own stream; the estimators run inside rxWithSeed(), so
   # this is the only thing that varies their Monte-Carlo draws
-  if ("seed" %in% names(ctl)) ctl$seed <- seed
+  if ("seed" %in% names(ctl)) {
+    ctl$seed <- seed
+  }
   # do not inherit the previous fit's ETAs, which would correlate the starts
-  if ("etaMat" %in% names(ctl)) ctl$etaMat <- NA
+  if ("etaMat" %in% names(ctl)) {
+    ctl$etaMat <- NA
+  }
   fn <- function() {
     nlmixr2est::nlmixr2(cur, data, est = est, control = ctl)
   }
@@ -541,35 +626,48 @@ multistart.default <- function(object, ...) {
 }
 
 .msCacheSetup <- function(control, ui, est, origFit) {
-  if (length(control$cacheDir) == 1L && is.na(control$cacheDir)) return(NULL)
+  if (length(control$cacheDir) == 1L && is.na(control$cacheDir)) {
+    return(NULL)
+  }
   dir <- control$cacheDir
   if (is.null(dir)) {
     # Everything that changes what a start *is* goes into the key, so changing
     # the spread or the sampling method cannot silently re-use stale fits.  `n`,
     # `nFit` and the run-time options are deliberately left out: varying those
     # is exactly what resuming a cached run means.
-    md5 <- digest::digest(list(ui$iniDf, ui$lstExpr, est,
-                               control[c("sampling", "spread", "which",
-                                         "perturbOmega", "omegaFold", "seed")]))
+    md5 <- digest::digest(list(
+      ui$iniDf,
+      ui$lstExpr,
+      est,
+      control[c("sampling", "spread", "which", "perturbOmega", "omegaFold", "seed")]
+    ))
     dir <- paste0("nlmixr2MultistartCache_", md5)
   }
   if (dir.exists(dir) && control$restart) {
     unlink(dir, recursive = TRUE, force = TRUE)
   }
-  if (!dir.exists(dir)) dir.create(dir, recursive = TRUE)
+  if (!dir.exists(dir)) {
+    dir.create(dir, recursive = TRUE)
+  }
   dir
 }
 
 .msCacheRead <- function(dir, what, index) {
-  if (is.null(dir)) return(NULL)
+  if (is.null(dir)) {
+    return(NULL)
+  }
   f <- .msCacheFile(dir, what, index)
-  if (!file.exists(f)) return(NULL)
+  if (!file.exists(f)) {
+    return(NULL)
+  }
   ret <- try(readRDS(f), silent = TRUE)
   if (inherits(ret, "try-error")) NULL else ret
 }
 
 .msCacheWrite <- function(dir, what, index, value) {
-  if (is.null(dir)) return(invisible(NULL))
+  if (is.null(dir)) {
+    return(invisible(NULL))
+  }
   saveRDS(value, file = .msCacheFile(dir, what, index))
   invisible(NULL)
 }
@@ -578,17 +676,17 @@ multistart.default <- function(object, ...) {
 
 # Apply `fn` over `seq_len(n)`, in parallel when asked for it and possible.
 .msLapply <- function(n, cores, fn) {
-  if (cores <= 1L) return(lapply(seq_len(n), fn))
+  if (cores <= 1L) {
+    return(lapply(seq_len(n), fn))
+  }
   if (.Platform$OS.type == "windows") {
-    warning("parallel multistart estimation is not available on Windows; estimating serially",
-            call. = FALSE)
+    warning("parallel multistart estimation is not available on Windows; estimating serially", call. = FALSE)
     return(lapply(seq_len(n), fn))
   }
   # mclapply forks, so the thread count each worker pins for itself (see the
   # setRxThreads() calls in the loops below) stays in that worker's process and
   # the parent's is left alone.
-  parallel::mclapply(seq_len(n), fn, mc.cores = min(cores, n),
-                     mc.preschedule = FALSE)
+  parallel::mclapply(seq_len(n), fn, mc.cores = min(cores, n), mc.preschedule = FALSE)
 }
 
 .multistartRun <- function(ui, data, est, estControl, control, origFit) {
@@ -622,12 +720,19 @@ multistart.default <- function(object, ...) {
     cli::cli_h1("Multistart screening ({n} candidates)")
     scr <- .msLapply(n, control$cores, function(i) {
       cached <- .msCacheRead(cacheDir, "screen", i)
-      if (!is.null(cached)) return(cached)
-      if (control$cores <= 1L) cli::cli_alert_info("screening start {i}/{n}")
-      else rxode2::setRxThreads(1L)
+      if (!is.null(cached)) {
+        return(cached)
+      }
+      if (control$cores <= 1L) {
+        cli::cli_alert_info("screening start {i}/{n}")
+      } else {
+        rxode2::setRxThreads(1L)
+      }
       f <- .msRunOne(ui, starts[[i]], data, "posthoc", quietControl, seeds[i])
       v <- if (inherits(f, "nlmixr2FitCore")) .msOfv(f) else NA_real_
-      if (!is.finite(v)) v <- Inf
+      if (!is.finite(v)) {
+        v <- Inf
+      }
       .msCacheWrite(cacheDir, "screen", i, v)
       v
     })
@@ -644,11 +749,16 @@ multistart.default <- function(object, ...) {
     i <- toFit[j]
     cached <- .msCacheRead(cacheDir, "fit", i)
     if (!is.null(cached)) {
-      if (control$cores <= 1L) cli::cli_alert_success("start {i} loaded from cache")
+      if (control$cores <= 1L) {
+        cli::cli_alert_success("start {i} loaded from cache")
+      }
       return(cached)
     }
-    if (control$cores <= 1L) cli::cli_alert_info("estimating start {i} ({j}/{length(toFit)})")
-    else rxode2::setRxThreads(1L)
+    if (control$cores <= 1L) {
+      cli::cli_alert_info("estimating start {i} ({j}/{length(toFit)})")
+    } else {
+      rxode2::setRxThreads(1L)
+    }
     t0 <- proc.time()[["elapsed"]]
     f <- .msRunOne(ui, starts[[i]], data, est, quietControl, seeds[i])
     out <- list(fit = f, elapsed = proc.time()[["elapsed"]] - t0)
@@ -660,15 +770,13 @@ multistart.default <- function(object, ...) {
   names(fits) <- as.character(toFit)
 
   summary <- .msRbindFill(lapply(seq_along(toFit), function(j) {
-    .msCbind(.msSummaryRow(res[[j]]$fit, toFit[j], res[[j]]$elapsed),
-             .msEstimateRow(res[[j]]$fit))
+    .msCbind(.msSummaryRow(res[[j]]$fit, toFit[j], res[[j]]$elapsed), .msEstimateRow(res[[j]]$fit))
   }))
   row.names(summary) <- NULL
 
   ok <- !is.na(summary$OBJF) & is.finite(summary$OBJF)
   if (!any(ok)) {
-    stop("every multistart estimation failed; first message: ",
-         summary$message[1], call. = FALSE)
+    stop("every multistart estimation failed; first message: ", summary$message[1], call. = FALSE)
   }
   eligible <- ok
   if (control$excludeBoundary && any(ok & !summary$boundary %in% TRUE)) {
@@ -677,28 +785,30 @@ multistart.default <- function(object, ...) {
   bestRow <- which(eligible)[which.min(summary$OBJF[eligible])]
   bestIndex <- summary$start[bestRow]
   summary$dOBJF <- summary$OBJF - summary$OBJF[bestRow]
-  summary <- summary[, c("start", "OBJF", "dOBJF",
-                         setdiff(names(summary), c("start", "OBJF", "dOBJF")))]
+  summary <- summary[, c("start", "OBJF", "dOBJF", setdiff(names(summary), c("start", "OBJF", "dOBJF")))]
   summary <- summary[order(summary$OBJF, na.last = TRUE), , drop = FALSE]
   row.names(summary) <- NULL
 
   best <- fits[[as.character(bestIndex)]]
   if (control$refitBest) {
     cli::cli_h1("Re-estimating the best start ({bestIndex}) with the full control")
-    refit <- .msRunOne(ui, starts[[bestIndex]], data, est, estControl,
-                       seeds[bestIndex], quiet = FALSE)
+    refit <- .msRunOne(ui, starts[[bestIndex]], data, est, estControl, seeds[bestIndex], quiet = FALSE)
     if (inherits(refit, "nlmixr2FitCore")) {
       best <- refit
     } else {
-      warning("could not re-estimate the best start with the full control; ",
-              "returning the exploratory fit", call. = FALSE)
+      warning(
+        "could not re-estimate the best start with the full control; ",
+        "returning the exploratory fit",
+        call. = FALSE
+      )
     }
   }
 
   startsDf <- .msRbindFill(lapply(seq_len(n), function(i) {
-    .msCbind(data.frame(start = i, seed = seeds[i], screenOFV = screenOfv[i],
-                        fitted = i %in% toFit, stringsAsFactors = FALSE),
-             .msStartRow(starts[[i]]))
+    .msCbind(
+      data.frame(start = i, seed = seeds[i], screenOFV = screenOfv[i], fitted = i %in% toFit, stringsAsFactors = FALSE),
+      .msStartRow(starts[[i]])
+    )
   }))
   row.names(startsDf) <- NULL
 
@@ -732,13 +842,10 @@ print.nlmixr2Multistart <- function(x, ..., n = 10L) {
   if (nBoundary > 0) {
     cli::cli_li(cli::col_yellow("{nBoundary} start{?s} finished with a parameter at a boundary"))
   }
-  cli::cli_li(cli::col_magenta(cli::style_bold("Objective functions"),
-                               cli::col_yellow(" (x$summary)")))
-  cols <- intersect(c("start", "OBJF", "dOBJF", "AIC", "BIC", "converged", "boundary"),
-                    names(x$summary))
+  cli::cli_li(cli::col_magenta(cli::style_bold("Objective functions"), cli::col_yellow(" (x$summary)")))
+  cols <- intersect(c("start", "OBJF", "dOBJF", "AIC", "BIC", "converged", "boundary"), names(x$summary))
   print(utils::head(x$summary[, cols, drop = FALSE], n))
-  cli::cli_li(cli::col_magenta(cli::style_bold("Best fit"),
-                               cli::col_yellow(" (x$best)")))
+  cli::cli_li(cli::col_magenta(cli::style_bold("Best fit"), cli::col_yellow(" (x$best)")))
   cli::cli_h1("end")
   invisible(x)
 }
@@ -761,8 +868,7 @@ as.data.frame.nlmixr2Multistart <- function(x, ...) {
 #' @returns A ggplot2 object
 #' @family Multistart
 #' @export
-plot.nlmixr2Multistart <- function(x, type = c("waterfall", "parameters"),
-                                   kBest = 20L, dOfvMax = NULL, ...) {
+plot.nlmixr2Multistart <- function(x, type = c("waterfall", "parameters"), kBest = 20L, dOfvMax = NULL, ...) {
   type <- match.arg(type)
   if (type == "waterfall") {
     .msPlotWaterfall(x, dOfvMax = dOfvMax)
@@ -780,9 +886,7 @@ plot.nlmixr2Multistart <- function(x, type = c("waterfall", "parameters"),
   factor(status, levels = c("converged", "boundary issue", "not converged"))
 }
 
-.msStatusColors <- c("converged" = "#2c7fb8",
-                     "boundary issue" = "#d95f02",
-                     "not converged" = "#999999")
+.msStatusColors <- c("converged" = "#2c7fb8", "boundary issue" = "#d95f02", "not converged" = "#999999")
 
 .msPlotWaterfall <- function(x, dOfvMax = NULL) {
   df <- x$summary[!is.na(x$summary$OBJF), , drop = FALSE]
@@ -799,8 +903,7 @@ plot.nlmixr2Multistart <- function(x, type = c("waterfall", "parameters"),
     sub <- paste0(sub, "; ", nFail, " start", if (nFail > 1) "s" else "", " failed")
   }
   .plot <-
-    ggplot2::ggplot(df, ggplot2::aes(x = .data$rank, y = .data$dOBJF,
-                                     fill = .data$status)) +
+    ggplot2::ggplot(df, ggplot2::aes(x = .data$rank, y = .data$dOBJF, fill = .data$status)) +
     ggplot2::geom_col() +
     ggplot2::geom_hline(yintercept = 0, linetype = "dashed") +
     ggplot2::scale_fill_manual(name = "Status", values = .msStatusColors) +
@@ -828,42 +931,58 @@ plot.nlmixr2Multistart <- function(x, type = c("waterfall", "parameters"),
     stop("no successfully estimated starts to plot", call. = FALSE)
   }
   df <- df[order(df$dOBJF), , drop = FALSE]
-  if (kBest < nrow(df)) df <- df[seq_len(kBest), , drop = FALSE]
+  if (kBest < nrow(df)) {
+    df <- df[seq_len(kBest), , drop = FALSE]
+  }
   df$rank <- seq_len(nrow(df))
   df$status <- .msStatus(df)
 
-  meta <- c("start", "OBJF", "dOBJF", "AIC", "BIC", "converged", "boundary",
-            "covMethod", "message", "elapsed", "rank", "status")
+  meta <- c(
+    "start",
+    "OBJF",
+    "dOBJF",
+    "AIC",
+    "BIC",
+    "converged",
+    "boundary",
+    "covMethod",
+    "message",
+    "elapsed",
+    "rank",
+    "status"
+  )
   pars <- setdiff(names(df), meta)
   pars <- pars[vapply(df[pars], is.numeric, logical(1))]
   if (length(pars) == 0L) {
     stop("no parameter estimates were kept for these starts", call. = FALSE)
   }
 
-  long <- do.call(rbind, lapply(pars, function(p) {
-    data.frame(rank = df$rank, status = df$status, parameter = p,
-               value = df[[p]], stringsAsFactors = FALSE)
-  }))
+  long <- do.call(
+    rbind,
+    lapply(pars, function(p) {
+      data.frame(rank = df$rank, status = df$status, parameter = p, value = df[[p]], stringsAsFactors = FALSE)
+    })
+  )
   long$parameter <- factor(long$parameter, levels = pars)
   # the best start's value, as the reference line in each panel
-  ref <- data.frame(parameter = factor(pars, levels = pars),
-                    value = vapply(pars, function(p) df[[p]][1], numeric(1)),
-                    stringsAsFactors = FALSE)
+  ref <- data.frame(
+    parameter = factor(pars, levels = pars),
+    value = vapply(pars, function(p) df[[p]][1], numeric(1)),
+    stringsAsFactors = FALSE
+  )
 
   ggplot2::ggplot(long, ggplot2::aes(x = .data$rank, y = .data$value)) +
-    ggplot2::geom_hline(data = ref,
-                        ggplot2::aes(yintercept = .data$value),
-                        linetype = "dashed", color = "grey40") +
+    ggplot2::geom_hline(data = ref, ggplot2::aes(yintercept = .data$value), linetype = "dashed", color = "grey40") +
     ggplot2::geom_point(ggplot2::aes(color = .data$status)) +
     ggplot2::scale_color_manual(name = "Status", values = .msStatusColors) +
     ggplot2::scale_x_continuous(breaks = .msIntBreaks) +
     ggplot2::facet_wrap("parameter", scales = "free_y") +
     ggplot2::xlab("Start (best to worst)") +
     ggplot2::ylab("Estimate") +
-    ggplot2::labs(title = "Multistart parameter stability",
-                  subtitle = paste0("Best ", nrow(df), " start",
-                                    if (nrow(df) > 1) "s" else "",
-                                    "; dashed line is the best start")) +
+    ggplot2::labs(
+      title = "Multistart parameter stability",
+      subtitle = paste0("Best ", nrow(df), " start", if (nrow(df) > 1) "s" else "", "; dashed line is the best start")
+    ) +
     rxode2::rxTheme() +
     ggplot2::theme(legend.position = "bottom", legend.box = "horizontal")
 }

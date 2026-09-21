@@ -66,10 +66,7 @@
 #' proftka <- profile(fit, which = "tka")
 #' }
 #' @export
-profile.nlmixr2FitCore <- function(fitted, ...,
-                                   which = NULL,
-                                   method = c("llp", "fixed"),
-                                   control = list()) {
+profile.nlmixr2FitCore <- function(fitted, ..., which = NULL, method = c("llp", "fixed"), control = list()) {
   method <- match.arg(method)
 
   if (method == "llp") {
@@ -167,10 +164,9 @@ profileFixedSingle <- function(fitted, which) {
 
   message("Profiling ", paste(names(which), "=", unlist(which), collapse = ", "))
   # Update the model by fixing all of the parameters
-  paramToFix <- lapply(X = which,
-                       FUN = function(x) {
-                         str2lang(sprintf("fixed(%s)", x))
-                       })
+  paramToFix <- lapply(X = which, FUN = function(x) {
+    str2lang(sprintf("fixed(%s)", x))
+  })
   iniArgs <- append(list(x = fitted), paramToFix)
   modelToFit <- suppressMessages(do.call(rxode2::ini, iniArgs))
   controlFit <- fitted$control
@@ -266,11 +262,11 @@ profileLlp <- function(fitted, which, control) {
     # Find the lower and upper limits
     for (direction in c(-1, 1)) {
       if (direction == -1) {
-        currentInitialEst = estInitial[1]
+        currentInitialEst <- estInitial[1]
         currentUpper <- nlmixr2est::fixef(fitted)[[which]]
         currentLower <- effectRange$lower
       } else {
-        currentInitialEst = estInitial[2]
+        currentInitialEst <- estInitial[2]
         currentLower <- nlmixr2est::fixef(fitted)[[which]]
         currentUpper <- effectRange$upper
       }
@@ -283,7 +279,8 @@ profileLlp <- function(fitted, which, control) {
           optimDf = ret,
           direction = direction,
           ofvIncrease = control$ofvIncrease,
-          lower = currentLower, upper = currentUpper,
+          lower = currentLower,
+          upper = currentUpper,
           itermax = control$itermax,
           ofvtol = control$ofvtol,
           paramDigits = control$paramDigits
@@ -295,9 +292,20 @@ profileLlp <- function(fitted, which, control) {
 }
 
 # Single-parameter, single-direction optimization of likelihood profiling
-optimProfile <- function(par, fitted, optimDf, which, ofvIncrease, direction, lower = -Inf, upper = Inf,
-                         itermax = 10, ofvtol = 0.005, paramDigits = 3,
-                         extrapolateExpand = 1.5) {
+optimProfile <- function(
+  par,
+  fitted,
+  optimDf,
+  which,
+  ofvIncrease,
+  direction,
+  lower = -Inf,
+  upper = Inf,
+  itermax = 10,
+  ofvtol = 0.005,
+  paramDigits = 3,
+  extrapolateExpand = 1.5
+) {
   currentOFVDiff <- Inf
   currentIter <- 0
   currentPar <- par
@@ -316,11 +324,16 @@ optimProfile <- function(par, fitted, optimDf, which, ofvIncrease, direction, lo
       origMinOFV <- NA # Only give the warning once
     }
     targetOfv <- currentMinOFV + ofvIncrease
-    if (all(targetOfv > ret$OFV)) { # extrapolate
+    if (all(targetOfv > ret$OFV)) {
+      # extrapolate
       # Find the closest two rows for extrapolation
       extrapRows <- ret[!is.na(ret$OFV), ]
       if (nrow(extrapRows) < 2) {
-        messageProfileComplete(which, direction = direction, "aborted due to lack of convergence prior to attempted extrapolation")
+        messageProfileComplete(
+          which,
+          direction = direction,
+          "aborted due to lack of convergence prior to attempted extrapolation"
+        )
         currentIter <- Inf
       }
       # When generating the extrapolation rows, always have the first row as the
@@ -331,17 +344,26 @@ optimProfile <- function(par, fitted, optimDf, which, ofvIncrease, direction, lo
         extrapRows <- ret[1:2, ]
       }
       currentPar <-
-        extrapolateExpand*diff(extrapRows[[which]])/diff(extrapRows$OFV)*(targetOfv - extrapRows$OFV[1]) + extrapRows[[which]][1]
+        extrapolateExpand *
+        diff(extrapRows[[which]]) /
+        diff(extrapRows$OFV) *
+        (targetOfv - extrapRows$OFV[1]) +
+        extrapRows[[which]][1]
       # ensure that we are within the boundaries with a slight margin
       margin <- sqrt(.Machine$double.eps)
       currentPar <- min(max(currentPar, lower + margin), upper - margin)
-    } else { # interpolate
+    } else {
+      # interpolate
       currentPar <- stats::approx(x = ret$OFV, y = ret[[which]], xout = targetOfv)$y
     }
     if (currentPar %in% ret[[which]]) {
       # Don't try to test the same parameter value multiple times (usually the
       # case for hitting a limit)
-      messageProfileComplete(which, direction = direction, "aborted due to attempted repeated parameter value estimation")
+      messageProfileComplete(
+        which,
+        direction = direction,
+        "aborted due to attempted repeated parameter value estimation"
+      )
       currentIter <- Inf
     }
     # Check if the parameter significant digits are sufficiently precise.  This
@@ -360,7 +382,11 @@ optimProfile <- function(par, fitted, optimDf, which, ofvIncrease, direction, lo
 
     if (converged) {
       if (convergedSignif & convergedOfv) {
-        messageProfileComplete(which, direction = direction, "complete due to significant digits precision and achieving OFV within specified tolerance")
+        messageProfileComplete(
+          which,
+          direction = direction,
+          "complete due to significant digits precision and achieving OFV within specified tolerance"
+        )
       } else if (convergedSignif) {
         messageProfileComplete(which, direction = direction, "complete due to significant digits precision")
       } else if (convergedOfv) {
@@ -368,7 +394,7 @@ optimProfile <- function(par, fitted, optimDf, which, ofvIncrease, direction, lo
       } else {
         stop("Unclear convergece criteria, please report a bug") # nocov
       }
-      storeBound <- data.frame(Parameter = which, X = currentPar, profileBound = direction*ofvIncrease)
+      storeBound <- data.frame(Parameter = which, X = currentPar, profileBound = direction * ofvIncrease)
       names(storeBound)[2] <- which
       ret <- dplyr::bind_rows(storeBound, ret)
       currentIter <- Inf
@@ -410,20 +436,50 @@ optimProfile <- function(par, fitted, optimDf, which, ofvIncrease, direction, lo
 #' @family Profiling
 #' @seealso [nlmixr2extra::profileLlp()]
 #' @export
-llpControl <- function(ofvIncrease = qchisq(0.95, df = 1),
-                       rseTheta = 30,
-                       itermax = 10,
-                       ofvtol = 0.005,
-                       paramDigits = 3,
-                       extrapolateExpand = 1.5) {
+llpControl <- function(
+  ofvIncrease = qchisq(0.95, df = 1),
+  rseTheta = 30,
+  itermax = 10,
+  ofvtol = 0.005,
+  paramDigits = 3,
+  extrapolateExpand = 1.5
+) {
   ret <-
     list(
       ofvIncrease = checkmate::assert_number(ofvIncrease, lower = 0, finite = TRUE, null.ok = FALSE, na.ok = FALSE),
       rseTheta = checkmate::assert_number(rseTheta, lower = 0, finite = TRUE, null.ok = FALSE, na.ok = FALSE),
-      ofvtol = checkmate::assert_number(ofvtol, na.ok = FALSE, lower = 1e-10, upper = 1, finite = TRUE, null.ok = FALSE),
-      itermax = checkmate::assert_integerish(itermax, lower = 1, any.missing = FALSE, len = 1, null.ok = FALSE, coerce = TRUE),
-      paramDigits = checkmate::assert_integerish(paramDigits, lower = 1, upper = 10, any.missing = FALSE, len = 1, null.ok = FALSE, coerce = TRUE),
-      extrapolateExpand = checkmate::assert_number(extrapolateExpand, lower = 1.001, na.ok = FALSE, finite = TRUE, null.ok = FALSE)
+      ofvtol = checkmate::assert_number(
+        ofvtol,
+        na.ok = FALSE,
+        lower = 1e-10,
+        upper = 1,
+        finite = TRUE,
+        null.ok = FALSE
+      ),
+      itermax = checkmate::assert_integerish(
+        itermax,
+        lower = 1,
+        any.missing = FALSE,
+        len = 1,
+        null.ok = FALSE,
+        coerce = TRUE
+      ),
+      paramDigits = checkmate::assert_integerish(
+        paramDigits,
+        lower = 1,
+        upper = 10,
+        any.missing = FALSE,
+        len = 1,
+        null.ok = FALSE,
+        coerce = TRUE
+      ),
+      extrapolateExpand = checkmate::assert_number(
+        extrapolateExpand,
+        lower = 1.001,
+        na.ok = FALSE,
+        finite = TRUE,
+        null.ok = FALSE
+      )
     )
   class(ret) <- "llpControl"
   ret
@@ -450,7 +506,7 @@ profileNlmixr2FitDataEstInitial <- function(estimates, which, ofvIncrease, rseTh
   }
 
   # The -1,1 makes the estimate go up and down
-  ret <- estimates[[which]] + c(-1, 1)*ofvIncrease*currentRseTheta/100*abs(estimates[[which]])
+  ret <- estimates[[which]] + c(-1, 1) * ofvIncrease * currentRseTheta / 100 * abs(estimates[[which]])
   # Ensure that the estimate is within the bounds with a slight margin
   margin <- sqrt(.Machine$double.eps)
   pmax(pmin(ret, upper - margin), lower + margin)

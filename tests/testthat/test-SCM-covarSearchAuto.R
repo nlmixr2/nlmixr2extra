@@ -42,20 +42,24 @@ simCovModel <- function() {
 makeCovData <- function() {
   set.seed(3)
   obsT <- seq(0.5, 60, length.out = 12)
-  ev <- do.call(rbind, lapply(seq_len(50), function(id) {
-    z <- round(stats::rnorm(1), 3)
-    e <- as.data.frame(rxode2::et(amt = 320) |> rxode2::et(obsT))
-    e$ID <- id
-    e$SCWT <- z
-    e
-  }))
+  ev <- do.call(
+    rbind,
+    lapply(seq_len(50), function(id) {
+      z <- round(stats::rnorm(1), 3)
+      e <- as.data.frame(rxode2::et(amt = 320) |> rxode2::et(obsT))
+      e$ID <- id
+      e$SCWT <- z
+      e
+    })
+  )
   s <- rxode2::rxSolve(simCovModel(), ev, returnType = "data.frame")
-  dose <- do.call(rbind, lapply(seq_len(50), function(id) {
-    data.frame(ID = id, time = 0, DV = NA, amt = 320, evid = 1,
-               SCWT = ev$SCWT[ev$ID == id][1])
-  }))
-  obs <- data.frame(ID = s$id, time = s$time, DV = s$sim, amt = NA, evid = 0,
-                    SCWT = s$SCWT)
+  dose <- do.call(
+    rbind,
+    lapply(seq_len(50), function(id) {
+      data.frame(ID = id, time = 0, DV = NA, amt = 320, evid = 1, SCWT = ev$SCWT[ev$ID == id][1])
+    })
+  )
+  obs <- data.frame(ID = s$id, time = s$time, DV = s$sim, amt = NA, evid = 0, SCWT = s$SCWT)
   d <- rbind(dose, obs)
   d[order(d$ID, d$time, -d$evid), ]
 }
@@ -81,13 +85,11 @@ baseCovModel <- function() {
 test_that("covarSearchAuto completes and selects a real covariate (Issue 103)", {
   d <- makeCovData()
   fit <- suppressWarnings(
-    nlmixr2(baseCovModel(), d, est = "focei",
-            control = nlmixr2est::foceiControl(print = 0))
+    nlmixr2(baseCovModel(), d, est = "focei", control = nlmixr2est::foceiControl(print = 0))
   )
 
   res <- suppressWarnings(
-    covarSearchAuto(fit, varsVec = c("cl", "v"), covarsVec = "SCWT",
-                    searchType = "forward", restart = TRUE)
+    covarSearchAuto(fit, varsVec = c("cl", "v"), covarsVec = "SCWT", searchType = "forward", restart = TRUE)
   )
 
   # returns the documented structure ...
@@ -114,9 +116,13 @@ test_that("covarSearchAuto completes and selects a real covariate (Issue 103)", 
 
 test_that(".scmCovIni() scales new covariate coefficients by the data", {
   d <- data.frame(ID = 1:4, SCWT = c(-2, -1, 1, 2), WT = c(50, 70, 90, 100))
-  ui <- nlmixr2extra::buildupatedUI(baseCovModel(), varsVec = c("cl", "v"),
-                                    covarsVec = c("SCWT", "WT"),
-                                    indep = FALSE, add = TRUE)
+  ui <- nlmixr2extra::buildupatedUI(
+    baseCovModel(),
+    varsVec = c("cl", "v"),
+    covarsVec = c("SCWT", "WT"),
+    indep = FALSE,
+    add = TRUE
+  )
   ini <- .cur$.scmCovIni(ui, d)$iniDf
   est <- setNames(ini$est, ini$name)
   expect_equal(est[["cov_SCWT_cl"]], 0.1 / 2)
@@ -128,16 +134,12 @@ test_that(".scmCovIni() scales new covariate coefficients by the data", {
 })
 
 test_that(".scmCovIni() leaves estimated or unusable coefficients alone", {
-  ui <- nlmixr2extra::buildupatedUI(baseCovModel(), varsVec = "cl",
-                                    covarsVec = "SCWT", indep = FALSE, add = TRUE)
+  ui <- nlmixr2extra::buildupatedUI(baseCovModel(), varsVec = "cl", covarsVec = "SCWT", indep = FALSE, add = TRUE)
   # already estimated: kept
-  ini <- .cur$.scmCovIni(rxode2::ini(ui, cov_SCWT_cl = 0.3),
-                         data.frame(SCWT = c(-2, 2)))$iniDf
+  ini <- .cur$.scmCovIni(rxode2::ini(ui, cov_SCWT_cl = 0.3), data.frame(SCWT = c(-2, 2)))$iniDf
   expect_equal(ini$est[ini$name == "cov_SCWT_cl"], 0.3)
   # covariate missing, constant zero, or non-numeric: left at 0
-  for (d in list(data.frame(AGE = 1:3),
-                 data.frame(SCWT = c(0, 0, 0)),
-                 data.frame(SCWT = c("a", "b", "c")))) {
+  for (d in list(data.frame(AGE = 1:3), data.frame(SCWT = c(0, 0, 0)), data.frame(SCWT = c("a", "b", "c")))) {
     ini <- .cur$.scmCovIni(ui, d)$iniDf
     expect_equal(ini$est[ini$name == "cov_SCWT_cl"], 0)
   }
@@ -166,29 +168,31 @@ test_that("covarSearchAuto selects a covariate measured in the tens", {
   }
   set.seed(11)
   obsT <- seq(0.5, 60, length.out = 12)
-  ev <- do.call(rbind, lapply(seq_len(60), function(id) {
-    e <- as.data.frame(rxode2::et(amt = 320) |> rxode2::et(obsT))
-    e$ID <- id
-    e$WT <- round(stats::runif(1, 50, 110))
-    e
-  }))
+  ev <- do.call(
+    rbind,
+    lapply(seq_len(60), function(id) {
+      e <- as.data.frame(rxode2::et(amt = 320) |> rxode2::et(obsT))
+      e$ID <- id
+      e$WT <- round(stats::runif(1, 50, 110))
+      e
+    })
+  )
   s <- rxode2::rxSolve(wtModel(), ev, returnType = "data.frame")
-  dose <- do.call(rbind, lapply(seq_len(60), function(id) {
-    data.frame(ID = id, time = 0, DV = NA, amt = 320, evid = 1,
-               WT = ev$WT[ev$ID == id][1])
-  }))
-  obs <- data.frame(ID = s$id, time = s$time, DV = s$sim, amt = NA, evid = 0,
-                    WT = s$WT)
+  dose <- do.call(
+    rbind,
+    lapply(seq_len(60), function(id) {
+      data.frame(ID = id, time = 0, DV = NA, amt = 320, evid = 1, WT = ev$WT[ev$ID == id][1])
+    })
+  )
+  obs <- data.frame(ID = s$id, time = s$time, DV = s$sim, amt = NA, evid = 0, WT = s$WT)
   d <- rbind(dose, obs)
   d <- d[order(d$ID, d$time, -d$evid), ]
 
   fit <- suppressWarnings(
-    nlmixr2(baseCovModel(), d, est = "focei",
-            control = nlmixr2est::foceiControl(print = 0))
+    nlmixr2(baseCovModel(), d, est = "focei", control = nlmixr2est::foceiControl(print = 0))
   )
   res <- suppressWarnings(
-    covarSearchAuto(fit, varsVec = "cl", covarsVec = "WT",
-                    searchType = "forward", restart = TRUE)
+    covarSearchAuto(fit, varsVec = "cl", covarsVec = "WT", searchType = "forward", restart = TRUE)
   )
   included <- res$summaryTable[res$summaryTable$included == "yes", ]
   expect_true(any(unlist(included$covar) == "WT" & unlist(included$var) == "cl"))

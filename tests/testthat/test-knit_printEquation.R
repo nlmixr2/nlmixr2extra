@@ -18,15 +18,24 @@ test_that("knit_print, simple version", {
   ui <- rxode2::rxode(mod)
   expect_equal(
     knit_print(ui),
-    knitr::asis_output("\\begin{align*}\n{ka} & = \\exp\\left({lka}\\right) \\\\\n{cl} & = \\exp\\left({lcl}\\right) \\\\\n{vc} & = \\exp\\left({lvc}\\right) \\\\\n{cp} & = linCmt() \\\\\n{cp} & \\sim prop({propSd})\n\\end{align*}\n")
+    knitr::asis_output(
+      "\\begin{align*}\n{ka} & = \\exp\\left({lka}\\right) \\\\\n{cl} & = \\exp\\left({lcl}\\right) \\\\\n{vc} & = \\exp\\left({lvc}\\right) \\\\\n{cp} & = linCmt() \\\\\n{cp} & \\sim prop({propSd})\n\\end{align*}\n"
+    )
   )
 
   suppressMessages(
-    fit <- nlmixr2est::nlmixr(mod, data = nlmixr2data::theo_sd, est = "focei", control = nlmixr2est::foceiControl(eval.max = 1, print = 0))
+    fit <- nlmixr2est::nlmixr(
+      mod,
+      data = nlmixr2data::theo_sd,
+      est = "focei",
+      control = nlmixr2est::foceiControl(eval.max = 1, print = 0)
+    )
   )
   expect_equal(
     knit_print(fit),
-    knitr::asis_output("\\begin{align*}\n{ka} & = \\exp\\left({lka}\\right) \\\\\n{cl} & = \\exp\\left({lcl}\\right) \\\\\n{vc} & = \\exp\\left({lvc}\\right) \\\\\n{cp} & = linCmt() \\\\\n{cp} & \\sim prop({propSd})\n\\end{align*}\n")
+    knitr::asis_output(
+      "\\begin{align*}\n{ka} & = \\exp\\left({lka}\\right) \\\\\n{cl} & = \\exp\\left({lcl}\\right) \\\\\n{vc} & = \\exp\\left({lvc}\\right) \\\\\n{cp} & = linCmt() \\\\\n{cp} & \\sim prop({propSd})\n\\end{align*}\n"
+    )
   )
 })
 
@@ -66,7 +75,9 @@ test_that("knit_print, less common models", {
   ui <- rxode2::rxode(mod)
   expect_equal(
     knit_print(ui),
-    knitr::asis_output("\\begin{align*}\n{ka} & = \\exp\\left({lka}\\right)<{1} \\\\\n{cl} & = \\exp\\left({lcl}\\right){\\leq}{2} \\\\\n{vc} & = \\exp\\left({lvc}\\right){\\equiv}{3} \\\\\n{vc4} & = {vc}{\\geq}{4} \\\\\n{vc5} & = {vc}>{5} \\\\\n{vc6} & = {vc}{\\land}{6} \\\\\n{vc7} & = {vc}{\\land}{7} \\\\\n{vc8} & = {vc}{\\lor}{8} \\\\\n{vc9} & = {vc}{\\lor}{9} \\\\\n{vc10} & = {vc}{\\ne}{10} \\\\\n{vc11} & = {\\lnot} {vc} \\\\\n\\mathrm{if} & \\left({vc}>{11}\\right) \\{ \\\\\n & {cl}  = {12} \\\\\n\\}  \\quad & \\mathrm{else} \\: \\mathrm{if}  \\left({vc}>{13}\\right) \\{ \\\\\n & {cl}  = {14} \\\\\n & {cl}  = {15} \\\\\n\\}  \\quad & \\mathrm{else} \\: {cl}  = {16} \\\\\n{cp} & = linCmt() \\\\\n{cp} & \\sim c({p0=0}, {p1=1}, {p2=2}, {3})\n\\end{align*}\n")
+    knitr::asis_output(
+      "\\begin{align*}\n{ka} & = \\exp\\left({lka}\\right)<{1} \\\\\n{cl} & = \\exp\\left({lcl}\\right){\\leq}{2} \\\\\n{vc} & = \\exp\\left({lvc}\\right){\\equiv}{3} \\\\\n{vc4} & = {vc}{\\geq}{4} \\\\\n{vc5} & = {vc}>{5} \\\\\n{vc6} & = {vc}{\\land}{6} \\\\\n{vc7} & = {vc}{\\land}{7} \\\\\n{vc8} & = {vc}{\\lor}{8} \\\\\n{vc9} & = {vc}{\\lor}{9} \\\\\n{vc10} & = {vc}{\\ne}{10} \\\\\n{vc11} & = {\\lnot} {vc} \\\\\n\\mathrm{if} & \\left({vc}>{11}\\right) \\{ \\\\\n & {cl}  = {12} \\\\\n\\}  \\quad & \\mathrm{else} \\: \\mathrm{if}  \\left({vc}>{13}\\right) \\{ \\\\\n & {cl}  = {14} \\\\\n & {cl}  = {15} \\\\\n\\}  \\quad & \\mathrm{else} \\: {cl}  = {16} \\\\\n{cp} & = linCmt() \\\\\n{cp} & \\sim c({p0=0}, {p1=1}, {p2=2}, {3})\n\\end{align*}\n"
+    )
   )
 })
 
@@ -95,13 +106,21 @@ test_that("knit_print, model with 'if' and a character string", {
   ui <- rxode2::rxode(mod)
   expect_equal(
     knit_print(ui),
-    knitr::asis_output("\\begin{align*}\n{ka} & = \\exp\\left({lka}\\right)<{1} \\\\\n{cl} & = \\exp\\left({lcl}\\right){\\leq}{2} \\\\\n{vc} & = \\exp\\left({lvc}\\right){\\equiv}{3} \\\\\n\\mathrm{if} & \\left({vc}{\\equiv}\\text{\"a\"}\\right) \\{ \\\\\n & {cl}  = {12} \\\\\n\\}  \\quad & \\mathrm{else} \\: {cl}  = {16} \\\\\n{cp} & = linCmt() \\\\\n{cp} & \\sim c({p0=0}, {p1=1}, {p2=2}, {3})\n\\end{align*}\n")
+    knitr::asis_output(
+      "\\begin{align*}\n{ka} & = \\exp\\left({lka}\\right)<{1} \\\\\n{cl} & = \\exp\\left({lcl}\\right){\\leq}{2} \\\\\n{vc} & = \\exp\\left({lvc}\\right){\\equiv}{3} \\\\\n\\mathrm{if} & \\left({vc}{\\equiv}\\text{\"a\"}\\right) \\{ \\\\\n & {cl}  = {12} \\\\\n\\}  \\quad & \\mathrm{else} \\: {cl}  = {16} \\\\\n{cp} & = linCmt() \\\\\n{cp} & \\sim c({p0=0}, {p1=1}, {p2=2}, {3})\n\\end{align*}\n"
+    )
   )
 })
 
 test_that("function extraction works", {
   expect_equal(
-    extractEqHelper.function(function() {ini({a <- 1});model({log(foo)+exp(bar)})}, inModel = FALSE),
+    extractEqHelper.function(
+      function() {
+        ini({a <- 1})
+        model({log(foo)+exp(bar)})
+      },
+      inModel = FALSE
+    ),
     "\\log\\left({foo}\\right)+\\exp\\left({bar}\\right)"
   )
 })
@@ -249,29 +268,37 @@ test_that("extractEqHelper.character", {
 })
 
 test_that("extractEqHelper.if", {
-  ifOnly <- str2lang("
+  ifOnly <- str2lang(
+    "
   if (vc > 11) {
     cl <- 12
-  }")
+  }"
+  )
   ifOnlyNoBrace <- str2lang("if (vc > 11) cl <- 12")
-  ifOnlyMultiline <- str2lang("
+  ifOnlyMultiline <- str2lang(
+    "
   if (vc > 11) {
     cl <- 12
     cl2 <- 13
-  }")
-  ifElse <- str2lang("if (vc > 11) {
+  }"
+  )
+  ifElse <- str2lang(
+    "if (vc > 11) {
     cl <- 12
   } else {
     cl <- 16
-  }")
-  ifElseIf <- str2lang("if (vc > 11) {
+  }"
+  )
+  ifElseIf <- str2lang(
+    "if (vc > 11) {
     cl <- 12
   } else if (vc > 13) {
     cl <- 14
     cl <- 15
   } else {
     cl <- 16
-  }")
+  }"
+  )
   expect_equal(
     extractEqHelper.if(ifOnly, inModel = TRUE),
     c("\\mathrm{if} & \\left({vc}>{11}\\right) \\{", " & {cl}  = {12}", "\\} ")
@@ -290,7 +317,14 @@ test_that("extractEqHelper.if", {
   )
   expect_equal(
     extractEqHelper.if(ifElseIf, inModel = TRUE),
-    c("\\mathrm{if} & \\left({vc}>{11}\\right) \\{", " & {cl}  = {12}", "\\}  \\quad & \\mathrm{else} \\: \\mathrm{if}  \\left({vc}>{13}\\right) \\{", " & {cl}  = {14}", " & {cl}  = {15}", "\\}  \\quad & \\mathrm{else} \\: {cl}  = {16}")
+    c(
+      "\\mathrm{if} & \\left({vc}>{11}\\right) \\{",
+      " & {cl}  = {12}",
+      "\\}  \\quad & \\mathrm{else} \\: \\mathrm{if}  \\left({vc}>{13}\\right) \\{",
+      " & {cl}  = {14}",
+      " & {cl}  = {15}",
+      "\\}  \\quad & \\mathrm{else} \\: {cl}  = {16}"
+    )
   )
 })
 

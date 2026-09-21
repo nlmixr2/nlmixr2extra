@@ -34,4 +34,3 @@ test_that("preCondInv still works correctly on a well-conditioned matrix", {
   expect_equal(dim(result), c(3L, 3L))
   expect_true(all(is.finite(result)))
 })
-

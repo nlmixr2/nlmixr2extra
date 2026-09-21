@@ -1,7 +1,6 @@
 test_that("add missing etas", {
-  
   mod <- function() {
-      ini({
+    ini({
           tktr <- 0.326787337229061
           tka <- 0.573847838322594
           tcl <- -2.02615620220267
@@ -22,7 +21,7 @@ test_that("add missing etas", {
           # eta.kout ~ 0.0228239781890516
           # eta.e0 ~ 0.0107988390114995
       })
-      model({
+    model({
           ktr <- exp(tktr)
           ka <- exp(tka)
           cl <- exp(tcl)
@@ -47,10 +46,10 @@ test_that("add missing etas", {
   # no etas
   modupdate <- addAllEtas(mod)
   expect_true(length(modupdate$eta) == 8)
-  
-  # one etas 
+
+  # one etas
   mod <- function() {
-      ini({
+    ini({
           tktr <- 0.326787337229061
           tka <- 0.573847838322594
           tcl <- -2.02615620220267
@@ -71,7 +70,7 @@ test_that("add missing etas", {
           # eta.kout ~ 0.0228239781890516
           # eta.e0 ~ 0.0107988390114995
       })
-      model({
+    model({
           ktr <- exp(tktr)
           ka <- exp(tka)
           cl <- exp(tcl)
@@ -96,10 +95,10 @@ test_that("add missing etas", {
   mod <- mod()
   modupdate <- addAllEtas(mod)
   expect_true(length(modupdate$eta) == 8)
-  
+
   # all etas
   mod <- function() {
-      ini({
+    ini({
           tktr <- 0.326787337229061
           tka <- 0.573847838322594
           tcl <- -2.02615620220267
@@ -120,7 +119,7 @@ test_that("add missing etas", {
           eta.kout ~ 0.0228239781890516
           eta.e0 ~ 0.0107988390114995
       })
-      model({
+    model({
           ktr <- exp(tktr + eta.ktr)
           ka <- exp(tka + eta.ka)
           cl <- exp(tcl + eta.cl)
@@ -142,7 +141,7 @@ test_that("add missing etas", {
           effect ~ add(pdadd.err) | pca
       })
   }
-  
+
   modupdate <- addAllEtas(mod)
   expect_true(length(modupdate$eta) == 8)
 })
@@ -173,18 +172,17 @@ test_that("linearized eta search", {
       cp <- center / v
       cp ~ add(add.sd)
     })
-    }
+  }
   set.seed(42)
   ev <- rxode2::et(amountUnits = "mg", timeUnits = "hours") |>
-      rxode2::et(amt = 350, cmt = "depot") |>
-      rxode2::et(time = c(0.25, 0.5, 1,2,3,6,8,12,16,24))
+    rxode2::et(amt = 350, cmt = "depot") |>
+    rxode2::et(time = c(0.25, 0.5, 1, 2, 3, 6, 8, 12, 16, 24))
   sim <- rxode2::rxSolve(one.cmpt.adderr, ev, nSub = 200, addDosing = TRUE)
   # plot(sim)
   sim$dv <- sim$sim
   sim$id <- sim$sim.id
   sim$sim.id <- NULL
-  sim <- sim[,c("id", "time", "amt", "dv", "evid")]
-  
+  sim <- sim[, c("id", "time", "amt", "dv", "evid")]
 
   one.cmpt.adderr <- function() {
     ini({
@@ -196,7 +194,7 @@ test_that("linearized eta search", {
         # eta.ka ~ 0.6
         add.sd <- 0.7
       })
-      model({
+    model({
         ka <- exp(tka)
         cl <- exp(tcl)
         v <- exp(tv)
@@ -205,21 +203,20 @@ test_that("linearized eta search", {
         cp <- center / v
         cp ~ add(add.sd)
       })
-    }
+  }
   # one.cmpt.adderr <- addAllEtas(one.cmpt.adderr)
   fit <- nlmixr(one.cmpt.adderr, sim, est = "focei")
-  
+
   suppressWarnings(
     fitLin <- linearize(fit, addEtas = TRUE, focei = TRUE)
   )
   isLinearizeMatch(fitLin, 0.2)
   linearizePlot(fitLin)
-  
+
   res <- iivSearch(fitLin)
   expect_true(inherits(res, "linIIVSearch"))
-  res$summary[order(res$summary$BIC),]
-  
-  resLast <- rerunTopN(res)
-  resLast$summary  |> expect_no_error()
+  res$summary[order(res$summary$BIC), ]
 
+  resLast <- rerunTopN(res)
+  resLast$summary |> expect_no_error()
 })

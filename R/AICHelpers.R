@@ -173,6 +173,9 @@ listModelsTested <- function(fitList, caption, excludeBoundary = TRUE, k = 2) {
 
   ret$dAIC[calcdAIC] <- dAICPretty
 
-  attr(ret, "caption") <- paste(caption, "Abbreviations: AIC = Akaike's Information Criterion; dAIC = change from minimum AIC")
+  attr(ret, "caption") <- paste(
+    caption,
+    "Abbreviations: AIC = Akaike's Information Criterion; dAIC = change from minimum AIC"
+  )
   ret
 }

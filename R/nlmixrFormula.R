@@ -69,18 +69,22 @@
 #' )
 #' }
 #' @export
-nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., residualModel=~add(addSd)) {
+nlmixrFormula <- function(object, data, start, param = NULL, paramLink = NULL, ..., residualModel = ~ add(addSd)) {
   if (missing(data)) {
     data <- NULL
   }
   built <- .nlmixrFormulaBuild(
-    object=object, data=data, start=start, param=param,
-    paramLink=paramLink, residualModel=residualModel
+    object = object,
+    data = data,
+    start = start,
+    param = param,
+    paramLink = paramLink,
+    residualModel = residualModel
   )
   if (is.null(built$data)) {
-    nlmixr2est::nlmixr(object=built$modelFun, ...)
+    nlmixr2est::nlmixr(object = built$modelFun, ...)
   } else {
-    nlmixr2est::nlmixr(object=built$modelFun, data=built$data, ...)
+    nlmixr2est::nlmixr(object = built$modelFun, data = built$data, ...)
   }
 }
 
@@ -97,7 +101,7 @@ nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., 
 #'   \code{TIME}/\code{DV}/\code{ID} rename), \code{ini} (the assembled ini
 #'   body), and \code{model} (the assembled model body).
 #' @noRd
-.nlmixrFormulaBuild <- function(object, data, start, param=NULL, paramLink=NULL, residualModel=~add(addSd)) {
+.nlmixrFormulaBuild <- function(object, data, start, param = NULL, paramLink = NULL, residualModel = ~ add(addSd)) {
   parsedFormula <- .nlmixrFormulaParser(object)
 
   # Setup the random effects
@@ -110,23 +114,26 @@ nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., 
       # see follow-up issue.
       stop(
         "Only one random-effect grouping variable is supported; got both '",
-        deparse(ranefGroup), "' and '", deparse(currentRanef$ranefGroup), "'."
+        deparse(ranefGroup),
+        "' and '",
+        deparse(currentRanef$ranefGroup),
+        "'."
       )
     }
   }
-  data <- .nlmixrFormulaDataPrep(data, dvName=parsedFormula$DV, idName=ranefGroup)
-  startAll <- .nlmixrFormulaExpandStartParam(start=start, param=param, paramLink=paramLink, data=data)
-  iniFixed <- .nlmixrFormulaSetupIniFixed(start=startAll)
+  data <- .nlmixrFormulaDataPrep(data, dvName = parsedFormula$DV, idName = ranefGroup)
+  startAll <- .nlmixrFormulaExpandStartParam(start = start, param = param, paramLink = paramLink, data = data)
+  iniFixed <- .nlmixrFormulaSetupIniFixed(start = startAll)
   iniComplete <-
     .nlmixrFormulaSetupIniRandom(
-      ranefDefinition=parsedFormula$ranef,
-      base=iniFixed
+      ranefDefinition = parsedFormula$ranef,
+      base = iniFixed
     )
   modelComplete <-
     .nlmixrFormulaSetupModel(
-      start=startAll,
-      predictor=parsedFormula$predictor,
-      residualModel=residualModel
+      start = startAll,
+      predictor = parsedFormula$predictor,
+      residualModel = residualModel
     )
 
   modelFun <- function() {
@@ -135,7 +142,7 @@ nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., 
   }
   body(modelFun)[[2]][[2]] <- iniComplete
   body(modelFun)[[3]][[2]] <- modelComplete
-  list(modelFun=modelFun, data=data, ini=iniComplete, model=modelComplete)
+  list(modelFun = modelFun, data = data, ini = iniComplete, model = modelComplete)
 }
 
 #' Perform any required data modifications for the nlmixrFormula interface
@@ -146,16 +153,18 @@ nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., 
 #' @return A data frame modified, as needed for nlmixrFormula; if data is NULL,
 #'   return NULL
 .nlmixrFormulaDataPrep <- function(data, dvName, idName) {
-  if (is.null(data)) return(NULL)
+  if (is.null(data)) {
+    return(NULL)
+  }
   # Add "TIME", if needed to the data
   if (!("TIME" %in% names(data))) {
     data$TIME <- seq_len(nrow(data))
   }
   # Setup DV
-  data <- .renameOrOverwrite(data, newName="DV", oldName=dvName)
+  data <- .renameOrOverwrite(data, newName = "DV", oldName = dvName)
   # Setup ID
   if (length(idName) != 0) {
-    data <- .renameOrOverwrite(data, newName="ID", oldName=idName)
+    data <- .renameOrOverwrite(data, newName = "ID", oldName = idName)
   }
   data
 }
@@ -176,12 +185,17 @@ nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., 
 #' }
 .renameOrOverwrite <- function(data, newName, oldName) {
   charOld <- as.character(oldName)
-  checkmate::assertChoice(charOld, choices=names(data))
+  checkmate::assertChoice(charOld, choices = names(data))
   if (charOld != newName) {
     if (newName %in% names(data)) {
       stop(
-        "Cannot rename column '", charOld, "' to '", newName,
-        "': '", newName, "' already exists in the data. ",
+        "Cannot rename column '",
+        charOld,
+        "' to '",
+        newName,
+        "': '",
+        newName,
+        "' already exists in the data. ",
         "Rename or remove the existing column first."
       )
     }
@@ -239,9 +253,9 @@ nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., 
   }
 
   list(
-    DV=dvPart,
-    predictor=list(predictorPart),
-    ranef=ranefPart
+    DV = dvPart,
+    predictor = list(predictorPart),
+    ranef = ranefPart
   )
 }
 
@@ -284,11 +298,11 @@ nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., 
     ret <-
       list(
         list(
-          ranefVar=object[[2]],
-          ranefGroup=object[[3]],
+          ranefVar = object[[2]],
+          ranefGroup = object[[3]],
           # TODO: allow start[[ranefVar]] to set this from the user; see
           # follow-up issue.
-          start=1
+          start = 1
         )
       )
   } else {
@@ -343,7 +357,8 @@ nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., 
     return(c(.paramExpandRhs(rhs[[2]]), .paramExpandRhs(rhs[[3]])))
   }
   stop(
-    "Invalid right-hand side in `param`: ", deparse(rhs),
+    "Invalid right-hand side in `param`: ",
+    deparse(rhs),
     ". Only single column names or `+`-joined names are supported."
   )
 }
@@ -370,13 +385,13 @@ nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., 
 #' @param data The dataset
 #' @return A list with the ini and model parts needed to use the parameter
 #' @keywords Internal
-.nlmixrFormulaExpandStartParam <- function(start, param, paramLink=NULL, data) {
+.nlmixrFormulaExpandStartParam <- function(start, param, paramLink = NULL, data) {
   paramExpanded <- .paramExpand(param)
-  checkmate::assertSubset(names(paramExpanded), choices=names(start))
+  checkmate::assertSubset(names(paramExpanded), choices = names(start))
   if (!is.null(paramLink)) {
-    checkmate::assertCharacter(paramLink, names="named")
-    checkmate::assertSubset(paramLink, choices=c("identity", "log"))
-    checkmate::assertSubset(names(paramLink), choices=names(start))
+    checkmate::assertCharacter(paramLink, names = "named")
+    checkmate::assertSubset(paramLink, choices = c("identity", "log"))
+    checkmate::assertSubset(names(paramLink), choices = names(start))
   }
   ret <- list()
   for (currentStart in names(start)) {
@@ -389,11 +404,11 @@ nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., 
       append(
         ret,
         list(.nlmixrFormulaExpandStartParamSingle(
-          startName=currentStart,
-          startValue=start[[currentStart]],
-          param=paramExpanded[[currentStart]],
-          link=currentLink,
-          data=data
+          startName = currentStart,
+          startValue = start[[currentStart]],
+          param = paramExpanded[[currentStart]],
+          link = currentLink,
+          data = data
         ))
       )
   }
@@ -404,34 +419,37 @@ nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., 
 #'   model using dataset covariates, if applicable
 #' @param link Optional link function for this parameter (\code{"identity"} or
 #'   \code{"log"}). Defaults to \code{"identity"}.
-.nlmixrFormulaExpandStartParamSingle <- function(startName, startValue, param=NULL, link=NULL, data=NULL) {
+.nlmixrFormulaExpandStartParamSingle <- function(startName, startValue, param = NULL, link = NULL, data = NULL) {
   checkmate::assertString(startName)
   checkmate::assertNumeric(startValue)
   if (is.null(link) || identical(link, NA_character_)) {
     link <- "identity"
   }
-  checkmate::assertChoice(link, choices=c("identity", "log"))
+  checkmate::assertChoice(link, choices = c("identity", "log"))
 
   if (length(param) == 0 || (length(param) == 1 && is.na(param))) {
     # Scalar fixed effect with no covariate model
-    checkmate::assertNumeric(startValue, len=1)
+    checkmate::assertNumeric(startValue, len = 1)
     if (!identical(link, "identity")) {
       stop(
-        "paramLink for '", startName, "' is '", link,
+        "paramLink for '",
+        startName,
+        "' is '",
+        link,
         "' but the parameter has no covariate model in `param`."
       )
     }
     return(list(
-      ini=list(str2lang(paste(startName, "<-", startValue))),
-      model=list(NULL)
+      ini = list(str2lang(paste(startName, "<-", startValue))),
+      model = list(NULL)
     ))
   }
 
   if (is.null(data)) {
     stop("data must be given when parameters are not single fixed effects")
   }
-  checkmate::assertCharacter(param, min.len=1)
-  checkmate::assertSubset(param, choices=names(data))
+  checkmate::assertCharacter(param, min.len = 1)
+  checkmate::assertSubset(param, choices = names(data))
 
   # Build one fragment per covariate column. A factor fragment emits its own
   # baseline level so we *omit* the global pop.<startName> intercept when any
@@ -457,14 +475,22 @@ nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., 
       consumeSizes[idx] <- 1L
     } else if (is.character(data[[col]])) {
       stop(
-        "Column '", col, "' in `data` is character; convert it to a factor ",
-        "(e.g. data$", col, " <- factor(data$", col, ")) before passing to ",
+        "Column '",
+        col,
+        "' in `data` is character; convert it to a factor ",
+        "(e.g. data$",
+        col,
+        " <- factor(data$",
+        col,
+        ")) before passing to ",
         "nlmixrFormula()."
       )
     } else {
       stop(
-        "Unsupported column type for parameter covariate '", col,
-        "': ", paste(class(data[[col]]), collapse="/")
+        "Unsupported column type for parameter covariate '",
+        col,
+        "': ",
+        paste(class(data[[col]]), collapse = "/")
       )
     }
   }
@@ -477,12 +503,17 @@ nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., 
     expectedLen <- sum(consumeSizes) + if (hasFactor) 0L else 1L
     if (length(startValue) != expectedLen) {
       stop(
-        "For parameter '", startName, "' with covariates ",
-        paste0("'", param, "'", collapse=", "),
-        ", start must have length ", expectedLen,
+        "For parameter '",
+        startName,
+        "' with covariates ",
+        paste0("'", param, "'", collapse = ", "),
+        ", start must have length ",
+        expectedLen,
         " (one per factor level plus one slope per continuous covariate",
         if (!hasFactor) " plus one intercept" else "",
-        "); got ", length(startValue), "."
+        "); got ",
+        length(startValue),
+        "."
       )
     }
     # Slice up startValue: factors take their level count, continuous take 1.
@@ -506,13 +537,19 @@ nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., 
       # Continuous covariate
       if (singleCovariate) {
         part <- .nlmixrFormulaExpandStartParamContinuous(
-          startName, slice, col, includeIntercept = TRUE
+          startName,
+          slice,
+          col,
+          includeIntercept = TRUE
         )
       } else {
         # In the mixed case a factor already supplies the intercept; pass only
         # the slope to the continuous helper.
         part <- .nlmixrFormulaExpandStartParamContinuous(
-          startName, slice, col, includeIntercept = FALSE
+          startName,
+          slice,
+          col,
+          includeIntercept = FALSE
         )
       }
     }
@@ -520,13 +557,13 @@ nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., 
     rhsFragments <- c(rhsFragments, part$rhs)
   }
 
-  rhs <- paste(rhsFragments, collapse=" + ")
+  rhs <- paste(rhsFragments, collapse = " + ")
   if (identical(link, "log")) {
     rhs <- paste0("exp(", rhs, ")")
   }
   modelLine <- str2lang(sprintf("%s <- %s", startName, rhs))
 
-  list(ini=iniLines, model=list(modelLine))
+  list(ini = iniLines, model = list(modelLine))
 }
 
 # Provide start and ini lines for one factor covariate on a parameter. Returns
@@ -537,10 +574,17 @@ nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., 
   checkmate::assertNumeric(startValue)
   if (!length(startValue) %in% c(1, length(paramLabel))) {
     stop(
-      "For factor covariate '", param, "' on parameter '", startName,
-      "', length(start[['", startName, "']]) must be 1 or ",
-      length(paramLabel), " (number of factor levels); got ",
-      length(startValue), "."
+      "For factor covariate '",
+      param,
+      "' on parameter '",
+      startName,
+      "', length(start[['",
+      startName,
+      "']]) must be 1 or ",
+      length(paramLabel),
+      " (number of factor levels); got ",
+      length(startValue),
+      "."
     )
   }
   if (length(startValue) == 1 && !is.ordered(data[[param]])) {
@@ -573,8 +617,8 @@ nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., 
     modelString <- c(modelString, modelStringCurrent)
   }
   list(
-    ini=iniLines,
-    rhs=paste(modelString, collapse=" + ")
+    ini = iniLines,
+    rhs = paste(modelString, collapse = " + ")
   )
 }
 
@@ -599,9 +643,16 @@ nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., 
   if (includeIntercept) {
     if (!length(startValue) %in% c(1, 2)) {
       stop(
-        "For continuous covariate '", param, "' on parameter '", startName,
-        "', length(start[['", startName, "']]) must be 1 (intercept only) ",
-        "or 2 (intercept, slope); got ", length(startValue), "."
+        "For continuous covariate '",
+        param,
+        "' on parameter '",
+        startName,
+        "', length(start[['",
+        startName,
+        "']]) must be 1 (intercept only) ",
+        "or 2 (intercept, slope); got ",
+        length(startValue),
+        "."
       )
     }
     intercept <- startValue[1]
@@ -611,9 +662,14 @@ nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., 
     # the same parameter; this helper only contributes the slope term.
     if (length(startValue) != 1) {
       stop(
-        "When combined with another covariate on parameter '", startName,
-        "', continuous covariate '", param, "' must contribute a single ",
-        "slope value; got ", length(startValue), "."
+        "When combined with another covariate on parameter '",
+        startName,
+        "', continuous covariate '",
+        param,
+        "' must contribute a single ",
+        "slope value; got ",
+        length(startValue),
+        "."
       )
     }
     slope <- startValue[1]
@@ -632,7 +688,7 @@ nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., 
     rhs <- paste(popName, "+", rhs)
   }
 
-  list(ini=iniLines, rhs=rhs)
+  list(ini = iniLines, rhs = rhs)
 }
 
 #' Setup the ini() part of the model for fixed effects
@@ -641,7 +697,7 @@ nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., 
 #' @param base The initial basis for the ini definition
 #' @return The inside of the ini() part of the model
 #' @keywords Internal
-.nlmixrFormulaSetupIniFixed <- function(start, base=str2lang("{}")) {
+.nlmixrFormulaSetupIniFixed <- function(start, base = str2lang("{}")) {
   checkmate::assertList(start, min.len = 1)
   for (idxOuter in seq_along(start)) {
     for (idxInner in seq_along(start[[idxOuter]]$ini)) {
@@ -653,7 +709,7 @@ nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., 
 
 #' @describeIn dot-nlmixrFormulaSetupIniFixed Setup the ini() part of the model for fixed effects
 #' @param ranefDefinition The random effect definitions
-.nlmixrFormulaSetupIniRandom <- function(ranefDefinition, base=str2lang("{}")) {
+.nlmixrFormulaSetupIniRandom <- function(ranefDefinition, base = str2lang("{}")) {
   if (!is.null(ranefDefinition)) {
     checkmate::assertList(ranefDefinition)
     for (currentRanef in ranefDefinition) {
@@ -679,7 +735,7 @@ nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., 
 #' @return the interior of the model()
 #' @noRd
 #' @author William Denney
-.nlmixrFormulaSetupModel <- function(start, predictor, residualModel, predictorVar="value") {
+.nlmixrFormulaSetupModel <- function(start, predictor, residualModel, predictorVar = "value") {
   checkmate::assertClass(residualModel, classes = "formula")
   if (length(residualModel) != 2) {
     stop("residualModel must be a one-sided formula (e.g. ~ add(addSd))")
@@ -703,22 +759,33 @@ nlmixrFormula <- function(object, data, start, param=NULL, paramLink=NULL, ..., 
 }
 
 #' @export
-nlmixr2.formula <- function(object, data=NULL, est = NULL, control = NULL,
-                            table = nlmixr2est::tableControl(), ...,
-                            start=NULL, param=NULL, paramLink=NULL,
-                            residualModel=~add(addSd),
-                            save = NULL, envir = parent.frame()) {
-  .lst <- c(list(object=object,
-                 data=data,
-                 start=start,
-                 param=param,
-                 paramLink=paramLink,
-                 est=est,
-                 control=control,
-                 table=table),
-            list(...),
-            list(save=save,
-                 envir=envir,
-                 residualModel=residualModel))
+nlmixr2.formula <- function(
+  object,
+  data = NULL,
+  est = NULL,
+  control = NULL,
+  table = nlmixr2est::tableControl(),
+  ...,
+  start = NULL,
+  param = NULL,
+  paramLink = NULL,
+  residualModel = ~ add(addSd),
+  save = NULL,
+  envir = parent.frame()
+) {
+  .lst <- c(
+    list(
+      object = object,
+      data = data,
+      start = start,
+      param = param,
+      paramLink = paramLink,
+      est = est,
+      control = control,
+      table = table
+    ),
+    list(...),
+    list(save = save, envir = envir, residualModel = residualModel)
+  )
   do.call("nlmixrFormula", .lst)
 }
