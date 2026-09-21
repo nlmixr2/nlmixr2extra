@@ -2,7 +2,7 @@
 
 Refits a model from several perturbed sets of initial estimates and
 collects the results, so that a fit which settled in a local optimum can
-be recognised. Use
+be recognized. Use
 [`plot()`](https://rdrr.io/r/graphics/plot.default.html) on the result
 for the objective-function waterfall and the parameter-stability plots.
 
