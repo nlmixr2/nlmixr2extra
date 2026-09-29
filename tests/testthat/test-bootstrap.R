@@ -505,6 +505,15 @@ withr::with_tempdir({
     expect_equal(.built$data[[2]]$label, .bootPlotData$dfD$label)
     expect_equal(.built$data[[2]]$y, .bootPlotData$dfD$deltaofv)
 
+    # Nor does the figure keep the frame bootplot() is called from, through an
+    # argument or S3 dispatch: plot() of a fit calls it from a frame holding
+    # the fit and every figure built before.
+    .fromCaller <- local({
+      .callerData <- data.frame(x = seq_len(1000))
+      bootplot(fit)
+    })
+    expect_identical(.figureHeldData(.fromCaller), character(0))
+
     # Without 'ggtext' the title is plain text and the legend is kept.  The
     # reference df goes only into the markdown title, so this figure is where
     # an unevaluated argument of the builder would keep bootplot()'s frame,
@@ -524,6 +533,11 @@ withr::with_tempdir({
       )
     )
     expect_equal(.plain$theme$legend.position, "bottom")
+    .plainFromCaller <- local({
+      .callerData <- data.frame(x = seq_len(1000))
+      bootplot(fit)
+    })
+    expect_identical(.figureHeldData(.plainFromCaller), character(0))
 
     lapply(
       list.files("./", pattern = "nlmixr2BootstrapCache_.*"),

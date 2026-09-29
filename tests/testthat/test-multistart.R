@@ -339,6 +339,12 @@ test_that("plot() draws the waterfall and parameter-stability plots", {
     invisible(ggplot2::ggplot_build(.fig))
     expect_identical(.figureHeldData(.fig), character(0))
   }
+  # nor the frame plot() is called from, through its argument or S3 dispatch
+  .fromCaller <- local({
+    .callerData <- data.frame(x = seq_len(1000))
+    plot(ms)
+  })
+  expect_identical(.figureHeldData(.fromCaller), character(0))
 
   # The dashed line in each parameter panel is the best start's estimate
   .par <- plot(ms, "parameters")
