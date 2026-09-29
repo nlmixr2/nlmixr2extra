@@ -331,6 +331,21 @@ test_that("plot() draws the waterfall and parameter-stability plots", {
   expect_s3_class(plot(ms, "parameters", kBest = 2), "ggplot")
   expect_error(plot(ms, "nope"))
 
+  # Each figure holds its data only in `$data`: none of the environments it
+  # references holds the multistart object, its fits or the plotting data,
+  # before or after the figure is built (printed).
+  for (.fig in list(plot(ms), plot(ms, dOfvMax = 1), plot(ms, "parameters"))) {
+    expect_identical(.figureHeldData(.fig), character(0))
+    invisible(ggplot2::ggplot_build(.fig))
+    expect_identical(.figureHeldData(.fig), character(0))
+  }
+
+  # The dashed line in each parameter panel is the best start's estimate
+  .par <- plot(ms, "parameters")
+  .pars <- levels(.par$data$parameter)
+  .best <- ms$summary[which.min(ms$summary$dOBJF), .pars]
+  expect_equal(ggplot2::layer_data(.par, 1L)$yintercept, unname(unlist(.best)))
+
   # nothing to plot when every start failed
   empty <- ms
   empty$summary$OBJF <- NA_real_

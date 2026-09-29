@@ -456,4 +456,64 @@ withr::with_tempdir({
       function(x) unlink(x, recursive = TRUE, force = TRUE)
     )
   })
+
+  test_that("bootplot() figure holds its data only in $data", {
+    one.cmt <- function() {
+      ini({
+        tka <- 0.45 ; label("Log Ka")
+        tcl <- 1 ; label("Log Cl")
+        tv <- 3.45 ; label("log V")
+        eta.ka ~ 0.6
+        eta.cl ~ 0.3
+        eta.v ~ 0.1
+        add.sd <- 0.7
+      })
+      model({
+        ka <- exp(tka + eta.ka)
+        cl <- exp(tcl + eta.cl)
+        v <- exp(tv + eta.v)
+        linCmt() ~ add(add.sd)
+      })
+    }
+    suppressMessages(suppressWarnings(
+      fit <-
+        nlmixr(
+          one.cmt,
+          nlmixr2data::theo_sd,
+          est = "focei",
+          control = list(print = 0, eval.max = 10)
+        )
+    ))
+    suppressMessages(suppressWarnings(
+      bootstrapFit(fit, nboot = 3, restart = TRUE, plotHist = TRUE)
+    ))
+
+    # None of the environments the figure references (plot_env, aes()
+    # quosures, the frames behind the layers and the layout) holds the fit or
+    # the plotting data, which saveRDS() would otherwise write out again with
+    # the figure; nor do they once the figure has been built (printed).
+    .fig <- bootplot(fit)
+    expect_s3_class(.fig, "ggplot")
+    expect_identical(.figureHeldData(.fig), character(0))
+    .built <- ggplot2::ggplot_build(.fig)
+    expect_identical(.figureHeldData(.fig), character(0))
+
+    # The curves and the df labels are drawn from the one plot data frame
+    .bootPlotData <- fit$env$.bootPlotData
+    expect_equal(nrow(.fig$data), nrow(.bootPlotData$chisq) + 2L)
+    expect_equal(sort(.built$data[[1]]$y), sort(.bootPlotData$chisq$deltaofv))
+    expect_equal(.built$data[[2]]$label, .bootPlotData$dfD$label)
+    expect_equal(.built$data[[2]]$y, .bootPlotData$dfD$deltaofv)
+
+    # Without 'ggtext' the title is plain text and the legend is kept
+    .plain <- .bootplotFigure(deltaN = 3L, df2 = 2, nPar = 7L, markdown = FALSE)
+    expect_s3_class(.plain, "ggplot")
+    expect_equal(.plain$labels$title, "Distribution of \u0394 objective function values for 3 df=2 models")
+    expect_equal(.plain$theme$legend.position, "bottom")
+
+    lapply(
+      list.files("./", pattern = "nlmixr2BootstrapCache_.*"),
+      function(x) unlink(x, recursive = TRUE, force = TRUE)
+    )
+  })
 })

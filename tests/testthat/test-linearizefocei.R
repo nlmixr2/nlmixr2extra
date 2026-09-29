@@ -194,6 +194,13 @@ test_that("Linearize add err model ", {
       x[[1]]
     }))
   )
+
+  # The figure holds its data only in `$data`, not the linearized or original
+  # fit; after it is built too, when ggplot2 keeps the smoother's parameters.
+  .fig <- linearizePlot(fitLin)
+  expect_identical(.figureHeldData(.fig), character(0))
+  invisible(suppressMessages(ggplot2::ggplot_build(.fig)))
+  expect_identical(.figureHeldData(.fig), character(0))
 })
 
 
