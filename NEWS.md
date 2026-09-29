@@ -1,3 +1,17 @@
+# nlmixr2extra (development version)
+
+## Bug fixes
+
+- The figures from `bootplot()` (also shown by `plot()` of a bootstrapped
+  fit), `plot()` of a `multistart()` result and `linearizePlot()` no longer
+  carry the fit, the multistart or linearized object or the full plotting
+  data in their environments, so saving them (with `saveRDS()` or as a
+  'targets' target) is far smaller.  Each figure now stores its data once, in
+  `$data`; the plots look the same.
+
+- `bootplot()` returns the figure when 'ggtext' is not installed; it returned
+  only the plot labels.
+
 # nlmixr2extra 5.2.1
 
 ## New features

@@ -1535,48 +1535,111 @@ bootplot.nlmixr2FitCore <- function(x, ...) {
       if (x$bootSummary$nboot != x$env$.bootPlotData$deltaN) {
         bootstrapFit(x, x$bootSummary$nboot, plotHist = TRUE, fitName = .fitName)
       }
-      .chisq <- x$env$.bootPlotData$chisq
-      .dfD <- x$env$.bootPlotData$dfD
-      .deltaN <- x$env$.bootPlotData$deltaN
-      .df2 <- x$env$.bootPlotData$df2
-      .plot <- ggplot2::ggplot(.chisq, ggplot2::aes(.data$quantiles, .data$deltaofv, color = .data$Distribution)) +
-        ggplot2::geom_line() +
-        ggplot2::ylab("\u0394 objective function") +
-        ggplot2::geom_text(data = .dfD, ggplot2::aes(label = .data$label), hjust = 0) +
-        ggplot2::xlab("Distribution quantiles") +
-        ggplot2::scale_color_manual(values = c("red", "blue")) +
-        rxode2::rxTheme() +
-        ggplot2::theme(legend.position = "bottom", legend.box = "horizontal")
-
-      if (requireNamespace("ggtext", quietly = TRUE)) {
-        .plot <- .plot +
-          ggplot2::theme(
-            plot.title = ggtext::element_markdown(),
-            legend.position = "none"
-          ) +
-          ggplot2::labs(
-            title = paste0(
-              'Bootstrap <span style="color:blue; opacity: 0.2;">\u0394 objective function (',
-              .deltaN,
-              " models, df\u2248",
-              .df2,
-              ')</span> vs <span style="color:red; opacity: 0.2;">reference \u03C7\u00B2(df=',
-              length(x$ini$est),
-              ")</style>"
-            ),
-            caption = "\u0394 objective function curve should be on or below the reference distribution curve"
-          )
-      } else {
-        .plot <- ggplot2::labs(
-          title = paste0("Distribution of \u0394 objective function values for ", .deltaN, " df=", .df2, " models"),
-          caption = "\u0394 objective function curve should be on or below the reference distribution curve"
-        )
-      }
-      .plot
+      .bootPlotData <- x$env$.bootPlotData
+      .plotData(
+        .bootplotFigure(
+          deltaN = .bootPlotData$deltaN,
+          df2 = .bootPlotData$df2,
+          nPar = length(x$ini$est),
+          markdown = requireNamespace("ggtext", quietly = TRUE)
+        ),
+        .bootplotData(.bootPlotData$chisq, .bootPlotData$dfD)
+      )
     } else {
       stop("this nlmixr2 object does not include boostrap distribution statics for comparison", call. = FALSE)
     }
   } else {
     stop("this is not a nlmixr2 object", call. = FALSE)
+  }
+}
+
+#' Plot data for `bootplot()`
+#'
+#' The distribution curves and their df labels in one data frame; each layer
+#' selects its rows at build time (`.bootplotCurves()`, `.bootplotLabels()`),
+#' so the figure stores no separate data for its layers.
+#'
+#' @param chisq reference and bootstrap Delta objective function curves
+#' @param dfD df label positions, with a `label` column
+#' @return `chisq` (with `label` set to `NA`) followed by `dfD`
+#' @noRd
+.bootplotData <- function(chisq, dfD) {
+  chisq$label <- NA_character_
+  rbind(chisq, dfD)
+}
+
+#' Layer data for the `bootplot()` curves
+#'
+#' @param data plot data from `.bootplotData()`
+#' @return the curve rows of `data` (those without a label)
+#' @noRd
+.bootplotCurves <- function(data) {
+  data[is.na(data$label), ]
+}
+
+#' Layer data for the `bootplot()` df labels
+#'
+#' @inheritParams .bootplotCurves
+#' @return the label rows of `data`
+#' @noRd
+.bootplotLabels <- function(data) {
+  data[!is.na(data$label), ]
+}
+
+#' `bootplot()` figure, without its data
+#'
+#' @param deltaN number of bootstrap models with a Delta objective function
+#' @param df2 degrees of freedom matching the bootstrap Delta objective
+#'   function
+#' @param nPar degrees of freedom of the reference chi-squared distribution
+#' @param markdown use a 'ggtext' markdown title colored like the curves, in
+#'   place of the legend
+#' @return ggplot without data; see `.plotData()`
+#' @noRd
+.bootplotFigure <- function(deltaN, df2, nPar, markdown) {
+  ggplot2::ggplot(mapping = ggplot2::aes(.data$quantiles, .data$deltaofv, color = .data$Distribution)) +
+    ggplot2::geom_line(data = .bootplotCurves) +
+    ggplot2::ylab("\u0394 objective function") +
+    ggplot2::geom_text(data = .bootplotLabels, ggplot2::aes(label = .data$label), hjust = 0) +
+    ggplot2::xlab("Distribution quantiles") +
+    ggplot2::scale_color_manual(values = c("red", "blue")) +
+    rxode2::rxTheme() +
+    ggplot2::theme(legend.position = "bottom", legend.box = "horizontal") +
+    .bootplotTitle(deltaN = deltaN, df2 = df2, nPar = nPar, markdown = markdown)
+}
+
+#' Title and caption of the `bootplot()` figure
+#'
+#' @inheritParams .bootplotFigure
+#' @return list of ggplot components to add to the figure
+#' @noRd
+.bootplotTitle <- function(deltaN, df2, nPar, markdown) {
+  .caption <- "\u0394 objective function curve should be on or below the reference distribution curve"
+  if (markdown) {
+    list(
+      ggplot2::theme(
+        plot.title = ggtext::element_markdown(),
+        legend.position = "none"
+      ),
+      ggplot2::labs(
+        title = paste0(
+          'Bootstrap <span style="color:blue; opacity: 0.2;">\u0394 objective function (',
+          deltaN,
+          " models, df\u2248",
+          df2,
+          ')</span> vs <span style="color:red; opacity: 0.2;">reference \u03C7\u00B2(df=',
+          nPar,
+          ")</style>"
+        ),
+        caption = .caption
+      )
+    )
+  } else {
+    list(
+      ggplot2::labs(
+        title = paste0("Distribution of \u0394 objective function values for ", deltaN, " df=", df2, " models"),
+        caption = .caption
+      )
+    )
   }
 }
