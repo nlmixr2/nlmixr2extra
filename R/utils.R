@@ -21,7 +21,8 @@ setQuietFastControl <- function(ctl) {
 #' frame they were built in, and `serialize()` (so `saveRDS()` and 'targets')
 #' writes such a frame out in full with every figure; building in a small frame
 #' keeps the fit and the full data out of the figure, which then holds its data
-#' only in `$data`.
+#' only in `$data`.  A builder must evaluate every argument it takes: an
+#' argument it never uses stays a promise, which keeps the caller's frame.
 #'
 #' @param p ggplot built without data
 #' @param data data frame for the figure

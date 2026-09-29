@@ -505,10 +505,24 @@ withr::with_tempdir({
     expect_equal(.built$data[[2]]$label, .bootPlotData$dfD$label)
     expect_equal(.built$data[[2]]$y, .bootPlotData$dfD$deltaofv)
 
-    # Without 'ggtext' the title is plain text and the legend is kept
-    .plain <- .bootplotFigure(deltaN = 3L, df2 = 2, nPar = 7L, markdown = FALSE)
+    # Without 'ggtext' the title is plain text and the legend is kept.  The
+    # reference df goes only into the markdown title, so this figure is where
+    # an unevaluated argument of the builder would keep bootplot()'s frame,
+    # and with it the fit.
+    local_mocked_bindings(.bootplotMarkdown = function() FALSE)
+    .plain <- bootplot(fit)
     expect_s3_class(.plain, "ggplot")
-    expect_equal(.plain$labels$title, "Distribution of \u0394 objective function values for 3 df=2 models")
+    expect_identical(.figureHeldData(.plain), character(0))
+    expect_equal(
+      .plain$labels$title,
+      paste0(
+        "Distribution of \u0394 objective function values for ",
+        .bootPlotData$deltaN,
+        " df=",
+        .bootPlotData$df2,
+        " models"
+      )
+    )
     expect_equal(.plain$theme$legend.position, "bottom")
 
     lapply(
