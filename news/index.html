@@ -37,11 +37,19 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/nlmixr2/nlmixr2extra/blob/v5.2.1/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/nlmixr2/nlmixr2extra/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="5.2.1" id="nlmixr2extra-521">nlmixr2extra 5.2.1<a class="anchor" aria-label="anchor" href="#nlmixr2extra-521"></a></h2>
+<h2 class="pkg-version" data-toc-text="development version" id="nlmixr2extra-development-version">nlmixr2extra (development version)<a class="anchor" aria-label="anchor" href="#nlmixr2extra-development-version"></a></h2>
+<div class="section level3">
+<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
+<ul><li><p>The figures from <code><a href="../reference/bootplot.html">bootplot()</a></code> (also shown by <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> of a bootstrapped fit), <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> of a <code><a href="../reference/multistart.html">multistart()</a></code> result and <code><a href="../reference/linearizePlot.html">linearizePlot()</a></code> no longer carry the fit, the multistart or linearized object, the full plotting data or the frame they were called from in their environments, so saving them (with <code><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS()</a></code> or as a ‘targets’ target) is far smaller. Each figure now stores its data once, in <code>$data</code>; the plots look the same.</p></li>
+<li><p><code><a href="../reference/bootplot.html">bootplot()</a></code> returns the figure when ‘ggtext’ is not installed; it returned only the plot labels.</p></li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="5.2.1" id="nlmixr2extra-521">nlmixr2extra 5.2.1<a class="anchor" aria-label="anchor" href="#nlmixr2extra-521"></a></h2><p class="text-muted">CRAN release: 2026-09-21</p>
 <div class="section level3">
 <h3 id="new-features-5-2-1">New features<a class="anchor" aria-label="anchor" href="#new-features-5-2-1"></a></h3>
 <ul><li>

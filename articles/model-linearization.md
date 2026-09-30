@@ -190,7 +190,6 @@ A visual check is available via
 ``` r
 
 linearizePlot(fitLin)
-#> `geom_smooth()` using formula = 'y ~ x'
 ```
 
 ![](model-linearization_files/figure-html/linplot-1.png)

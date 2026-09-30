@@ -68,7 +68,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Helpers for writing modeling reports</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/nlmixr2/nlmixr2extra/blob/v5.2.1/vignettes/reporting-helpers.Rmd" class="external-link"><code>vignettes/reporting-helpers.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/nlmixr2/nlmixr2extra/blob/main/vignettes/reporting-helpers.Rmd" class="external-link"><code>vignettes/reporting-helpers.Rmd</code></a></small>
       <div class="d-none name"><code>reporting-helpers.Rmd</code></div>
     </div>
 
@@ -164,22 +164,19 @@ concentration), and we fit three competing structural models.</p>
 <span><span class="co"># Fit the models</span></span>
 <span><span class="va">fitEmaxBoundaryIssue</span> <span class="op">:=</span> <span class="fu">nlmixr2est</span><span class="fu">::</span><span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">modEmax</span>, data <span class="op">=</span> <span class="va">d_noec50</span>, est <span class="op">=</span> <span class="st">"focei"</span>, control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>print <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> loading fit from reporting-helpers-fitEmaxBoundaryIssue.zip</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> loading fit from fitEmaxBoundaryIssue.R</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> loading fit from reporting-helpers-fitEmaxBoundaryIssue.zip</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> parameter labels from comments are typically ignored in non-interactive mode</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Need to run with the source intact to parse comments</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> removing unzipped fit files</span></span>
 <span><span class="va">fitStep</span> <span class="op">:=</span> <span class="fu">nlmixr2est</span><span class="fu">::</span><span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">modStep</span>, data <span class="op">=</span> <span class="va">d_noec50</span>, est <span class="op">=</span> <span class="st">"focei"</span>, control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>print <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> loading fit from reporting-helpers-fitStep.zip</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> loading fit from fitStep.R</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> loading fit from reporting-helpers-fitStep.zip</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> parameter labels from comments are typically ignored in non-interactive mode</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Need to run with the source intact to parse comments</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> removing unzipped fit files</span></span>
 <span><span class="va">fitLinear</span> <span class="op">:=</span> <span class="fu">nlmixr2est</span><span class="fu">::</span><span class="fu"><a href="https://nlmixr2.github.io/nlmixr2est/reference/nlmixr2.html" class="external-link">nlmixr2</a></span><span class="op">(</span><span class="va">modLinear</span>, data <span class="op">=</span> <span class="va">d_noec50</span>, est <span class="op">=</span> <span class="st">"focei"</span>, control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>print <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> loading fit from reporting-helpers-fitLinear.zip</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> loading fit from fitLinear.R</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> loading fit from reporting-helpers-fitLinear.zip</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> parameter labels from comments are typically ignored in non-interactive mode</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Need to run with the source intact to parse comments</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> removing unzipped fit files</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Need to run with the source intact to parse comments</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">

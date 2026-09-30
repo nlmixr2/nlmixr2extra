@@ -1,6 +1,32 @@
 # Changelog
 
+## nlmixr2extra (development version)
+
+### Bug fixes
+
+- The figures from
+  [`bootplot()`](https://nlmixr2.github.io/nlmixr2extra/reference/bootplot.md)
+  (also shown by
+  [`plot()`](https://rdrr.io/r/graphics/plot.default.html) of a
+  bootstrapped fit),
+  [`plot()`](https://rdrr.io/r/graphics/plot.default.html) of a
+  [`multistart()`](https://nlmixr2.github.io/nlmixr2extra/reference/multistart.md)
+  result and
+  [`linearizePlot()`](https://nlmixr2.github.io/nlmixr2extra/reference/linearizePlot.md)
+  no longer carry the fit, the multistart or linearized object, the full
+  plotting data or the frame they were called from in their
+  environments, so saving them (with
+  [`saveRDS()`](https://rdrr.io/r/base/readRDS.html) or as a ‘targets’
+  target) is far smaller. Each figure now stores its data once, in
+  `$data`; the plots look the same.
+
+- [`bootplot()`](https://nlmixr2.github.io/nlmixr2extra/reference/bootplot.md)
+  returns the figure when ‘ggtext’ is not installed; it returned only
+  the plot labels.
+
 ## nlmixr2extra 5.2.1
+
+CRAN release: 2026-09-21
 
 ### New features
 

@@ -89,22 +89,19 @@ modLinear <- function() {
 # Fit the models
 fitEmaxBoundaryIssue := nlmixr2est::nlmixr2(modEmax, data = d_noec50, est = "focei", control = list(print = 0))
 #> ℹ loading fit from reporting-helpers-fitEmaxBoundaryIssue.zip
-#> ℹ loading fit from fitEmaxBoundaryIssue.R
+#> ℹ loading fit from reporting-helpers-fitEmaxBoundaryIssue.zip
 #> ℹ parameter labels from comments are typically ignored in non-interactive mode
 #> ℹ Need to run with the source intact to parse comments
-#> ℹ removing unzipped fit files
 fitStep := nlmixr2est::nlmixr2(modStep, data = d_noec50, est = "focei", control = list(print = 0))
 #> ℹ loading fit from reporting-helpers-fitStep.zip
-#> ℹ loading fit from fitStep.R
+#> ℹ loading fit from reporting-helpers-fitStep.zip
 #> ℹ parameter labels from comments are typically ignored in non-interactive mode
 #> ℹ Need to run with the source intact to parse comments
-#> ℹ removing unzipped fit files
 fitLinear := nlmixr2est::nlmixr2(modLinear, data = d_noec50, est = "focei", control = list(print = 0))
 #> ℹ loading fit from reporting-helpers-fitLinear.zip
-#> ℹ loading fit from fitLinear.R
+#> ℹ loading fit from reporting-helpers-fitLinear.zip
 #> ℹ parameter labels from comments are typically ignored in non-interactive mode
 #> ℹ Need to run with the source intact to parse comments
-#> ℹ removing unzipped fit files
 ```
 
 ## Detecting boundary issues

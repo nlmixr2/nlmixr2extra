@@ -62,10 +62,9 @@ modLm :=
     est = "focei"
   )
 #> ℹ loading fit from nlmixrFormula-modLm.zip
-#> ℹ loading fit from modLm.R
+#> ℹ loading fit from nlmixrFormula-modLm.zip
 #> ℹ parameter labels from comments are typically ignored in non-interactive mode
 #> ℹ Need to run with the source intact to parse comments
-#> ℹ removing unzipped fit files
 ```
 
 You can also use a call to `nlmixr` or `nlmixr2`, the arguments are the
@@ -81,10 +80,9 @@ modLm2 :=
     est = "focei"
   )
 #> ℹ loading fit from nlmixrFormula-modLm2.zip
-#> ℹ loading fit from modLm2.R
+#> ℹ loading fit from nlmixrFormula-modLm2.zip
 #> ℹ parameter labels from comments are typically ignored in non-interactive mode
 #> ℹ Need to run with the source intact to parse comments
-#> ℹ removing unzipped fit files
 ```
 
 ### Quick start, mixed-effects model
@@ -140,10 +138,9 @@ modNlme :=
     est = "focei"
   )
 #> ℹ loading fit from nlmixrFormula-modNlme.zip
-#> ℹ loading fit from modNlme.R
+#> ℹ loading fit from nlmixrFormula-modNlme.zip
 #> ℹ parameter labels from comments are typically ignored in non-interactive mode
 #> ℹ Need to run with the source intact to parse comments
-#> ℹ removing unzipped fit files
 
 modNlme
 ```
@@ -217,10 +214,9 @@ modParam :=
     est = "focei"
   )
 #> ℹ loading fit from nlmixrFormula-modParam.zip
-#> ℹ loading fit from modParam.R
+#> ℹ loading fit from nlmixrFormula-modParam.zip
 #> ℹ parameter labels from comments are typically ignored in non-interactive mode
 #> ℹ Need to run with the source intact to parse comments
-#> ℹ removing unzipped fit files
 
 modParam
 ```
@@ -285,10 +281,9 @@ modCont :=
     est = "focei"
   )
 #> ℹ loading fit from nlmixrFormula-modCont.zip
-#> ℹ loading fit from modCont.R
+#> ℹ loading fit from nlmixrFormula-modCont.zip
 #> ℹ parameter labels from comments are typically ignored in non-interactive mode
 #> ℹ Need to run with the source intact to parse comments
-#> ℹ removing unzipped fit files
 
 modCont
 ```
@@ -435,10 +430,9 @@ fitFE :=
     est   = "bobyqa"
   )
 #> ℹ loading fit from nlmixrFormula-fitFE.zip
-#> ℹ loading fit from fitFE.R
+#> ℹ loading fit from nlmixrFormula-fitFE.zip
 #> ℹ parameter labels from comments are typically ignored in non-interactive mode
 #> ℹ Need to run with the source intact to parse comments
-#> ℹ removing unzipped fit files
 
 fitFE
 ```
@@ -468,10 +462,9 @@ fitRE :=
     est   = "focei"
   )
 #> ℹ loading fit from nlmixrFormula-fitRE.zip
-#> ℹ loading fit from fitRE.R
+#> ℹ loading fit from nlmixrFormula-fitRE.zip
 #> ℹ parameter labels from comments are typically ignored in non-interactive mode
 #> ℹ Need to run with the source intact to parse comments
-#> ℹ removing unzipped fit files
 
 fitRE
 ```
