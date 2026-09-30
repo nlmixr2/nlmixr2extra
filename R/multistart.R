@@ -902,21 +902,23 @@ plot.nlmixr2Multistart <- function(x, type = c("waterfall", "parameters"), kBest
   if (nFail > 0) {
     sub <- paste0(sub, "; ", nFail, " start", if (nFail > 1) "s" else "", " failed")
   }
-  .plot <-
-    ggplot2::ggplot(df, ggplot2::aes(x = .data$rank, y = .data$dOBJF, fill = .data$status)) +
+  .plotData(.msWaterfallFigure(subtitle = sub, dOfvMax = dOfvMax), df)
+}
+
+# The waterfall figure without its data (see .plotData()), so that the figure
+# does not keep the multistart object and its fits through the build frame.
+.msWaterfallFigure <- function(subtitle, dOfvMax) {
+  ggplot2::ggplot(mapping = ggplot2::aes(x = .data$rank, y = .data$dOBJF, fill = .data$status)) +
     ggplot2::geom_col() +
     ggplot2::geom_hline(yintercept = 0, linetype = "dashed") +
     ggplot2::scale_fill_manual(name = "Status", values = .msStatusColors) +
     ggplot2::scale_x_continuous(breaks = .msIntBreaks) +
     ggplot2::xlab("Start (best to worst)") +
     ggplot2::ylab("Delta objective function") +
-    ggplot2::labs(title = "Multistart objective functions", subtitle = sub) +
+    ggplot2::labs(title = "Multistart objective functions", subtitle = subtitle) +
     rxode2::rxTheme() +
-    ggplot2::theme(legend.position = "bottom", legend.box = "horizontal")
-  if (!is.null(dOfvMax)) {
-    .plot <- .plot + ggplot2::coord_cartesian(ylim = c(0, dOfvMax))
-  }
-  .plot
+    ggplot2::theme(legend.position = "bottom", legend.box = "horizontal") +
+    if (!is.null(dOfvMax)) ggplot2::coord_cartesian(ylim = c(0, dOfvMax))
 }
 
 # Integer-only axis breaks; the x axis counts starts.
@@ -964,25 +966,32 @@ plot.nlmixr2Multistart <- function(x, type = c("waterfall", "parameters"), kBest
     })
   )
   long$parameter <- factor(long$parameter, levels = pars)
-  # the best start's value, as the reference line in each panel
-  ref <- data.frame(
-    parameter = factor(pars, levels = pars),
-    value = vapply(pars, function(p) df[[p]][1], numeric(1)),
-    stringsAsFactors = FALSE
-  )
+  sub <- paste0("Best ", nrow(df), " start", if (nrow(df) > 1) "s" else "", "; dashed line is the best start")
+  .plotData(.msParametersFigure(subtitle = sub), long)
+}
 
-  ggplot2::ggplot(long, ggplot2::aes(x = .data$rank, y = .data$value)) +
-    ggplot2::geom_hline(data = ref, ggplot2::aes(yintercept = .data$value), linetype = "dashed", color = "grey40") +
+# The best start's rows of the parameter-stability data: the reference line in
+# each panel, selected at build time so the layer holds no data of its own.
+.msBestStart <- function(data) {
+  data[data$rank == 1L, , drop = FALSE]
+}
+
+# The parameter-stability figure without its data (see .plotData()).
+.msParametersFigure <- function(subtitle) {
+  ggplot2::ggplot(mapping = ggplot2::aes(x = .data$rank, y = .data$value)) +
+    ggplot2::geom_hline(
+      data = .msBestStart,
+      ggplot2::aes(yintercept = .data$value),
+      linetype = "dashed",
+      color = "grey40"
+    ) +
     ggplot2::geom_point(ggplot2::aes(color = .data$status)) +
     ggplot2::scale_color_manual(name = "Status", values = .msStatusColors) +
     ggplot2::scale_x_continuous(breaks = .msIntBreaks) +
     ggplot2::facet_wrap("parameter", scales = "free_y") +
     ggplot2::xlab("Start (best to worst)") +
     ggplot2::ylab("Estimate") +
-    ggplot2::labs(
-      title = "Multistart parameter stability",
-      subtitle = paste0("Best ", nrow(df), " start", if (nrow(df) > 1) "s" else "", "; dashed line is the best start")
-    ) +
+    ggplot2::labs(title = "Multistart parameter stability", subtitle = subtitle) +
     rxode2::rxTheme() +
     ggplot2::theme(legend.position = "bottom", legend.box = "horizontal")
 }

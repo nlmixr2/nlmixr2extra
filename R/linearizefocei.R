@@ -582,20 +582,38 @@ linearizePlot <- function(lin) {
   relDev <- abs((oObj - lObj) / lObj)
   relDev <- round(relDev * 100, 2)
 
-  fig <- rbind(originalIval, linearIval) |>
-    tidyr::pivot_longer(cols = c(-c("ID", "factor")), names_to = "parameter", values_to = "value") |>
-    tidyr::pivot_wider(names_from = "factor", values_from = "value") |>
-    ggplot2::ggplot(aes(x = .data[["original"]], y = .data[["linear"]])) +
-    ggplot2::geom_smooth(se = FALSE, method = "lm") +
+  .plotData(
+    .linearizePlotFigure(
+      title = paste("Original OBJ:", oObj, "Linearized OBJ:", lObj),
+      subtitle = paste("Rel. Dev: ", relDev, "%")
+    ),
+    rbind(originalIval, linearIval) |>
+      tidyr::pivot_longer(cols = c(-c("ID", "factor")), names_to = "parameter", values_to = "value") |>
+      tidyr::pivot_wider(names_from = "factor", values_from = "value")
+  )
+}
+
+#' `linearizePlot()` figure, without its data
+#'
+#' Built apart from `linearizePlot()` so the figure does not keep the
+#' linearized and original fits through the frame it was built in.  The
+#' smoother's formula is given because ggplot2's default one is created in a
+#' frame holding the layer data, which the built layer then keeps.
+#'
+#' @param title,subtitle plot title and subtitle
+#' @return ggplot without data; see `.plotData()`
+#' @noRd
+.linearizePlotFigure <- function(title, subtitle) {
+  ggplot2::ggplot(mapping = aes(x = .data[["original"]], y = .data[["linear"]])) +
+    ggplot2::geom_smooth(se = FALSE, method = "lm", formula = y ~ x) +
     ggplot2::geom_point() +
     ggplot2::facet_wrap("parameter", scales = "free") +
     ggplot2::labs(
-      title = paste("Original OBJ:", oObj, "Linearized OBJ:", lObj),
-      subtitle = paste("Rel. Dev: ", relDev, "%"),
+      title = title,
+      subtitle = subtitle,
       x = "Original Model",
       y = "Linearized Model"
     )
-  fig
 }
 
 #' Evaluate A Linear Model Without Estimation
