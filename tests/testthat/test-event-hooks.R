@@ -37,6 +37,27 @@ test_that(".extraEventExit picks the event from what the driver returned", {
   expect_identical(rxode2::rxEventDepth(), 0L)
 })
 
+test_that("a driver started from a model logs its best fit with the summary", {
+  .evListen()
+  best <- .evFake()
+  .extraEventEnter()
+  .extraEventExit(list(best = best, tab = data.frame(a = 1)), function() 1, quote(drv(m)), "k", "drv")
+  expect_identical(.evNames(), c("fitComplete", "fitResult"))
+  expect_identical(.evRec$ev[[1]]$p$fit, best)
+  expect_null(.evRec$ev[[1]]$p$object)
+  expect_identical(.evRec$ev[[2]]$p$fit, best)
+  ## no best fit: nothing
+  .extraEventEnter()
+  .extraEventExit(list(tab = 1), function() 1, NULL, "k", "drv")
+  expect_length(.evRec$ev, 2L)
+  ## from a fit whose best is the fit itself: only the summary
+  fit <- .evFake()
+  .extraEventEnter()
+  .extraEventExit(list(best = fit), fit, NULL, "k", "drv")
+  expect_identical(.evNames()[3:length(.evRec$ev)], "fitResult")
+  expect_identical(rxode2::rxEventDepth(), 0L)
+})
+
 test_that("summaries never carry fits", {
   .e <- new.env()
   assign("objDf", data.frame(OBJF = 12.5), envir = .e)
@@ -93,8 +114,11 @@ test_that("multistart and profile: one fitResult each, with no fit inside", {
     n = 2, spread = 0.3, screen = "none", cacheDir = NA, refitBest = FALSE
   ))))
   suppressMessages(profile(fit, which = data.frame(tka = log(c(1.4, 1.6))), method = "fixed"))
-  expect_identical(.evNames(), c("fitResult", "fitResult"))
-  expect_identical(vapply(.evRec$ev, function(e) e$p$kind, ""), c("multistart", "profile"))
+  ## multistart: its summary, then its best start as a run linked to the fit
+  expect_identical(.evNames(), c("fitResult", "fitComplete", "fitResult"))
+  expect_identical(vapply(.evRec$ev, function(e) e$p$kind %||% e$p$source, ""),
+                   c("multistart", "multistart", "profile"))
+  expect_identical(.evRec$ev[[2]]$p$object, fit)
   .has <- function(x) inherits(x, "nlmixr2FitCore") ||
     (is.list(x) && !is.data.frame(x) && any(vapply(x, .has, TRUE)))
   expect_false(.has(.evRec$ev[[1]]$p$result))

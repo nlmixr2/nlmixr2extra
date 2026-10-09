@@ -8,7 +8,9 @@
   has one) and emit one event per call: `fitUpdate` when the fit is changed
   in place (`bootstrapFit()`, `preconditionFit()`), `fitComplete` linked to
   the input fit when a new fit is returned (`linearize()`, `regularmodel()`),
-  and otherwise one `fitResult` with a summary that contains no fits.  A
+  and otherwise one `fitResult` with a summary that contains no fits.  The
+  best fit of a result (`multistart()`'s `best`) is also announced, linked to
+  the input fit, or on its own when the driver started from a model.  A
   logger such as nlmixr2log then stores one entry per call instead of one
   run per internal fit.  Nothing changes without a listener.
 

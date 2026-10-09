@@ -38,8 +38,24 @@
     return(invisible())
   }
   .exit <- getExportedValue("rxode2", ".rxEventExit")
-  if (is.null(result) || !inherits(fit, "nlmixr2FitCore")) {
+  .emit <- getExportedValue("rxode2", "rxEventEmit")
+  if (is.null(result)) {
     return(.exit())
+  }
+  .best <- .extraEventBest(result)
+  if (!inherits(fit, "nlmixr2FitCore")) {
+    ## started from a model (e.g. multistart(model, data)): the best fit is
+    ## the only fit to keep; it is logged, with the summary attached to it
+    if (is.null(.best)) {
+      return(.exit())
+    }
+    .exit("fitComplete", fit = .best, object = NULL, call = call, objName = NULL,
+          source = kind, fun = fun)
+    .summary <- tryCatch(.extraEventSummary(result), error = function(e) NULL)
+    if (!is.null(.summary) && !inherits(result, "nlmixr2FitCore")) {
+      .emit("fitResult", fit = .best, result = .summary, kind = kind, call = call, fun = fun)
+    }
+    return(invisible())
   }
   if (update || (inherits(result, "nlmixr2FitCore") && identical(result$env, fit$env))) {
     return(.exit("fitUpdate", fit = fit, original = fit, name = NULL, what = kind,
@@ -55,6 +71,23 @@
     return(.exit())
   }
   .exit("fitResult", fit = fit, result = .summary, kind = kind, call = call, fun = fun)
+  ## a better fit found from the input (e.g. multistart's best start) is kept
+  ## as its own run, linked to the input fit
+  if (!is.null(.best) && !identical(.best$env, fit$env)) {
+    .emit("fitComplete", fit = .best, object = fit, call = call, objName = NULL,
+          source = kind, fun = fun)
+  }
+  invisible()
+}
+
+#' The best fit a driver result holds (`result$best`), or NULL
+#' @noRd
+.extraEventBest <- function(result) {
+  if (inherits(result, "nlmixr2FitCore")) {
+    return(result)
+  }
+  .b <- if (is.list(result) && !is.data.frame(result)) result[["best"]]
+  if (inherits(.b, "nlmixr2FitCore")) .b else NULL
 }
 
 #' A small, fit-free copy of a driver result
