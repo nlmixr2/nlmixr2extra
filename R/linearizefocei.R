@@ -332,6 +332,12 @@ linearize <- function(
   plot = FALSE,
   est = "focei"
 ) {
+  ## event bus: internal fits are silent; one event on exit (see rxEvents.R)
+  force(fit)
+  .evFit <- fit # the input, even if the driver reassigns `fit`
+  .extraEventEnter()
+  .evCall <- sys.call()
+  on.exit(.extraEventExit(returnValue(), .evFit, .evCall, "linearize", "linearize"), add = TRUE)
   checkmate::assertIntegerish(mceta, lower = -1, upper = 2000, unique = TRUE)
   checkmate::assertNumeric(relTol, lower = 0, upper = 1.0)
   checkmate::assertLogical(plot)

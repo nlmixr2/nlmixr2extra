@@ -7,6 +7,12 @@
 #' @author Omar I. Elashkar
 #' @export
 iivSearch <- function(fit, ...) {
+  ## event bus: internal fits are silent; one event on exit (see rxEvents.R)
+  force(fit)
+  .evFit <- fit # the input, even if the driver reassigns `fit`
+  .extraEventEnter()
+  .evCall <- sys.call()
+  on.exit(.extraEventExit(returnValue(), .evFit, .evCall, "iivSearch", "iivSearch"), add = TRUE)
   UseMethod("iivSearch")
 }
 
@@ -240,6 +246,12 @@ print.linIIVSearch <- function(x, ...) {
 #' @author Omar I. Elashkar
 #' @export
 rerunTopN <- function(x, ...) {
+  ## event bus: the refits are silent; x is not a fit, so nothing is
+  ## emitted (see rxEvents.R)
+  force(x)
+  .evFit <- x # the input, even if the driver reassigns `x`
+  .extraEventEnter()
+  on.exit(.extraEventExit(returnValue(), .evFit, NULL, "iivSearch", "rerunTopN"), add = TRUE)
   UseMethod("rerunTopN")
 }
 

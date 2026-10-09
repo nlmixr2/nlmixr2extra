@@ -140,6 +140,12 @@
 #'   Variance-Covariance Matrix Computations. AAPS
 #'   J. 2016;18(2):505-518. doi:10.1208/s12248-016-9866-5
 preconditionFit <- function(fit, estType = c("full", "posthoc", "none"), ntry = 10L) {
+  ## event bus: internal fits are silent; one event on exit (see rxEvents.R)
+  force(fit)
+  .evFit <- fit # the input, even if the driver reassigns `fit`
+  .extraEventEnter()
+  .evCall <- sys.call()
+  on.exit(.extraEventExit(returnValue(), .evFit, .evCall, "covariance", "preconditionFit", update = TRUE), add = TRUE)
   nlmixrWithTiming(
     "covariance",
     {

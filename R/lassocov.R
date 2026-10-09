@@ -277,6 +277,12 @@
 #' lassoDf <- lassoCoefficients(fit, varsVec, covarsVec, catvarsVec, constraint=1e-08, stratVar = NULL)
 #' }
 lassoCoefficients <- function(fit, varsVec, covarsVec, catvarsVec, constraint = 1e-08, stratVar = NULL, ...) {
+  ## event bus: internal fits are silent; one event on exit (see rxEvents.R)
+  force(fit)
+  .evFit <- fit # the input, even if the driver reassigns `fit`
+  .extraEventEnter()
+  .evCall <- sys.call()
+  on.exit(.extraEventExit(returnValue(), .evFit, .evCall, "lasso", "lassoCoefficients"), add = TRUE)
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
   } else {
@@ -460,6 +466,12 @@ lassoCoefficients <- function(fit, varsVec, covarsVec, catvarsVec, constraint = 
 #' lassoDf <- adaptivelassoCoefficients(fit, varsVec, covarsVec, catvarsVec)
 #' }
 adaptivelassoCoefficients <- function(fit, varsVec, covarsVec, catvarsVec, constraint = 1e-08, stratVar = NULL, ...) {
+  ## event bus: internal fits are silent; one event on exit (see rxEvents.R)
+  force(fit)
+  .evFit <- fit # the input, even if the driver reassigns `fit`
+  .extraEventEnter()
+  .evCall <- sys.call()
+  on.exit(.extraEventExit(returnValue(), .evFit, .evCall, "lasso", "adaptivelassoCoefficients"), add = TRUE)
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
   } else {
@@ -599,6 +611,12 @@ regularmodel <- function(
   stratVar = NULL,
   ...
 ) {
+  ## event bus: internal fits are silent; one event on exit (see rxEvents.R)
+  force(fit)
+  .evFit <- fit # the input, even if the driver reassigns `fit`
+  .extraEventEnter()
+  .evCall <- sys.call()
+  on.exit(.extraEventExit(returnValue(), .evFit, .evCall, "lasso", "regularmodel"), add = TRUE)
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
   } else {
@@ -732,6 +750,12 @@ regularmodel <- function(
 #' lassoDf <- adjustedlassoCoefficients(fit,varsVec,covarsVec,catvarsVec)
 #' }
 adjustedlassoCoefficients <- function(fit, varsVec, covarsVec, catvarsVec, constraint = 1e-08, stratVar = NULL, ...) {
+  ## event bus: internal fits are silent; one event on exit (see rxEvents.R)
+  force(fit)
+  .evFit <- fit # the input, even if the driver reassigns `fit`
+  .extraEventEnter()
+  .evCall <- sys.call()
+  on.exit(.extraEventExit(returnValue(), .evFit, .evCall, "lasso", "adjustedlassoCoefficients"), add = TRUE)
   if (!inherits(fit, "nlmixr2FitCore")) {
     stop("'fit' needs to be a nlmixr2 fit")
   } else {
