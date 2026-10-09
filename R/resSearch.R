@@ -4,6 +4,12 @@
 #' @author Omar I. Elashkar
 #' @export
 resSearch <- function(fit) {
+  ## event bus: internal fits are silent; one event on exit (see rxEvents.R)
+  force(fit)
+  .evFit <- fit # the input, even if the driver reassigns `fit`
+  .extraEventEnter()
+  .evCall <- sys.call()
+  on.exit(.extraEventExit(returnValue(), .evFit, .evCall, "resSearch", "resSearch"), add = TRUE)
   UseMethod("resSearch")
 }
 

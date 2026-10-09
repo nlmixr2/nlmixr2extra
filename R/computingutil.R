@@ -399,6 +399,12 @@ bootstrapFit <- function(
   fitName = as.character(substitute(fit)),
   returnType = c("model", "fitList", "modelList")
 ) {
+  ## event bus: internal fits are silent; one event on exit (see rxEvents.R)
+  force(fit)
+  .evFit <- fit # the input, even if the driver reassigns `fit`
+  .extraEventEnter()
+  .evCall <- sys.call()
+  on.exit(.extraEventExit(returnValue(), .evFit, .evCall, "bootstrap", "bootstrapFit"), add = TRUE)
   stdErrType <- match.arg(stdErrType)
   returnType <- match.arg(returnType)
   checkmate::assertNumeric(ci, lower = 0, upper = 1, len = 1, any.missing = FALSE, null.ok = FALSE)
@@ -1518,6 +1524,12 @@ assignToEnv <- function(namedVars, fitobject) {
 #' <https://www.page-meeting.org/Abstracts/are-datasets-for-nlme-models-large-enough-for-a-bootstrap-to-provide-reliable-parameter-uncertainty-distributions/>
 #' @export
 bootplot <- function(x, ...) {
+  ## event bus: internal fits are silent; one event on exit (see rxEvents.R)
+  force(x)
+  .evFit <- x # the input, even if the driver reassigns `x`
+  .extraEventEnter()
+  .evCall <- sys.call()
+  on.exit(.extraEventExit(returnValue(), .evFit, .evCall, "bootplot", "bootplot"), add = TRUE)
   UseMethod("bootplot")
 }
 # nolint end
