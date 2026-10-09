@@ -20,7 +20,9 @@
 
 #' @noRd
 .extraEventEnter <- function() {
-  if (.extraEventBus()) getExportedValue("rxode2", ".rxEventEnter")()
+  if (.extraEventBus()) {
+    getExportedValue("rxode2", ".rxEventEnter")()
+  }
   invisible()
 }
 
@@ -49,8 +51,7 @@
     if (is.null(.best)) {
       return(.exit())
     }
-    .exit("fitComplete", fit = .best, object = NULL, call = call, objName = NULL,
-          source = kind, fun = fun)
+    .exit("fitComplete", fit = .best, object = NULL, call = call, objName = NULL, source = kind, fun = fun)
     .summary <- tryCatch(.extraEventSummary(result), error = function(e) NULL)
     if (!is.null(.summary) && !inherits(result, "nlmixr2FitCore")) {
       .emit("fitResult", fit = .best, result = .summary, kind = kind, call = call, fun = fun)
@@ -58,12 +59,19 @@
     return(invisible())
   }
   if (update || (inherits(result, "nlmixr2FitCore") && identical(result$env, fit$env))) {
-    return(.exit("fitUpdate", fit = fit, original = fit, name = NULL, what = kind,
-                 inPlace = TRUE, call = call, fun = fun))
+    return(.exit(
+      "fitUpdate",
+      fit = fit,
+      original = fit,
+      name = NULL,
+      what = kind,
+      inPlace = TRUE,
+      call = call,
+      fun = fun
+    ))
   }
   if (inherits(result, "nlmixr2FitCore")) {
-    return(.exit("fitComplete", fit = result, object = fit, call = call, objName = NULL,
-                 source = kind, fun = fun))
+    return(.exit("fitComplete", fit = result, object = fit, call = call, objName = NULL, source = kind, fun = fun))
   }
   ## never let summarizing break the driver: on failure just leave the scope
   .summary <- tryCatch(.extraEventSummary(result), error = function(e) NULL)
@@ -74,8 +82,7 @@
   ## a better fit found from the input (e.g. multistart's best start) is kept
   ## as its own run, linked to the input fit
   if (!is.null(.best) && !identical(.best$env, fit$env)) {
-    .emit("fitComplete", fit = .best, object = fit, call = call, objName = NULL,
-          source = kind, fun = fun)
+    .emit("fitComplete", fit = .best, object = fit, call = call, objName = NULL, source = kind, fun = fun)
   }
   invisible()
 }
@@ -98,7 +105,9 @@
 .extraEventSummary <- function(x, depth = 0L) {
   if (inherits(x, "nlmixr2FitCore")) {
     .env <- if (is.environment(x)) x else tryCatch(x$env, error = function(e) NULL)
-    if (!is.environment(.env) && is.list(x)) .env <- .subset2(x, "env")
+    if (!is.environment(.env) && is.list(x)) {
+      .env <- .subset2(x, "env")
+    }
     if (!is.environment(.env)) {
       return(list(OBJF = NA_real_, parFixedDf = NULL))
     }

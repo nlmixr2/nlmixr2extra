@@ -1,5 +1,4 @@
-skip_if_not(exists("rxEventEmit", envir = asNamespace("rxode2"), inherits = FALSE),
-            "rxode2 has no event bus")
+skip_if_not(exists("rxEventEmit", envir = asNamespace("rxode2"), inherits = FALSE), "rxode2 has no event bus")
 
 .evRec <- new.env()
 .evListen <- function(env = parent.frame()) {
@@ -62,8 +61,10 @@ test_that("summaries never carry fits", {
   .e <- new.env()
   assign("objDf", data.frame(OBJF = 12.5), envir = .e)
   fit <- structure(list(env = .e), class = c("nlmixr2FitCore", "list"))
-  s <- .extraEventSummary(structure(list(best = fit, tab = data.frame(x = 1), fn = sum,
-                                         nest = list(fit)), class = "myResult"))
+  s <- .extraEventSummary(structure(
+    list(best = fit, tab = data.frame(x = 1), fn = sum, nest = list(fit)),
+    class = "myResult"
+  ))
   expect_identical(s$best$OBJF, 12.5)
   expect_null(s$fn)
   expect_identical(s$nest[[1]]$OBJF, 12.5)
@@ -82,9 +83,11 @@ test_that("summaries never carry fits", {
     linCmt() ~ add(add.sd)
   })
 }
-.evFit <- function() rxode2::rxEventScope(suppressMessages(suppressWarnings(
-  nlmixr2(.evModel, nlmixr2data::theo_sd, est = "focei", control = list(print = 0))
-)))
+.evFit <- function() {
+  rxode2::rxEventScope(suppressMessages(suppressWarnings(
+    nlmixr2(.evModel, nlmixr2data::theo_sd, est = "focei", control = list(print = 0))
+  )))
+}
 
 test_that("bootstrapFit: one fitUpdate, no fitComplete from the bootstrap fits", {
   skip_on_cran()
@@ -110,17 +113,28 @@ test_that("multistart and profile: one fitResult each, with no fit inside", {
   skip_on_cran()
   fit <- .evFit()
   .evListen()
-  suppressMessages(suppressWarnings(multistart(fit, control = list(
-    n = 2, spread = 0.3, screen = "none", cacheDir = NA, refitBest = FALSE
-  ))))
+  suppressMessages(suppressWarnings(multistart(
+    fit,
+    control = list(
+      n = 2,
+      spread = 0.3,
+      screen = "none",
+      cacheDir = NA,
+      refitBest = FALSE
+    )
+  )))
   suppressMessages(profile(fit, which = data.frame(tka = log(c(1.4, 1.6))), method = "fixed"))
   ## multistart: its summary, then its best start as a run linked to the fit
   expect_identical(.evNames(), c("fitResult", "fitComplete", "fitResult"))
-  expect_identical(vapply(.evRec$ev, function(e) e$p$kind %||% e$p$source, ""),
-                   c("multistart", "multistart", "profile"))
+  expect_identical(
+    vapply(.evRec$ev, function(e) e$p$kind %||% e$p$source, ""),
+    c("multistart", "multistart", "profile")
+  )
   expect_identical(.evRec$ev[[2]]$p$object, fit)
-  .has <- function(x) inherits(x, "nlmixr2FitCore") ||
-    (is.list(x) && !is.data.frame(x) && any(vapply(x, .has, TRUE)))
+  .has <- function(x) {
+    inherits(x, "nlmixr2FitCore") ||
+      (is.list(x) && !is.data.frame(x) && any(vapply(x, .has, TRUE)))
+  }
   expect_false(.has(.evRec$ev[[1]]$p$result))
   expect_true(object.size(.evRec$ev[[1]]$p$result) < 1e6)
 })
