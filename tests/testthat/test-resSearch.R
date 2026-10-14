@@ -40,3 +40,37 @@ test_that("Test residual search on linearized models", {
     resRes$summary$OBJF[resRes$summary$search == "prop"]
   )
 })
+
+test_that("resSearch refits scale the residuals like linearize() (#133)", {
+  skip_on_cran()
+  one.cmpt.comb1 <- function() {
+    ini({
+      tcl <- log(2.7)
+      tv <- log(30)
+      tka <- log(1.56)
+      eta.cl ~ 0.3
+      eta.v ~ 0.1
+      eta.ka ~ 0.6
+      add.sd <- 0.7
+      prop.sd <- 0.1
+    })
+    model({
+      ka <- exp(tka + eta.ka)
+      cl <- exp(tcl + eta.cl)
+      v <- exp(tv + eta.v)
+      d / dt(depot) <- -ka * depot
+      d / dt(center) <- ka * depot - cl / v * center
+      cp <- center / v
+      cp ~ add(add.sd) + prop(prop.sd) + combined1()
+    })
+  }
+  fit <- nlmixr(one.cmpt.comb1, nlmixr2data::theo_sd, est = "focei")
+  suppressWarnings({
+    linFit <- linearize(fit)
+    resRes <- resSearch(linFit)
+  })
+  .obj <- stats::setNames(resRes$summary$OBJF, resRes$summary$search)
+  # combined1 refits the base model's own error model, so it ends where the
+  # base fit is, not at a diverged OFV (about 191 vs 158 before)
+  expect_lt(abs(.obj[["combined1"]] - .obj[["base fit"]]), 1)
+})

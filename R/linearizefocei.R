@@ -236,10 +236,12 @@ linModGen <- function(ui, focei = TRUE, derivFct = FALSE) {
 #'
 #' @param linMod linearized `rxUi` from `linModGen()`
 #' @param fit the nonlinear fit being linearized
+#' @param errType named error types for residual thetas that `fit` does
+#'   not have (like a `prop.sd` added by `resSearch()`)
 #' @return numeric `scaleC` vector, one entry per linearized theta
 #' @noRd
 #' @author Matthew L. Fidler
-.linScaleC <- function(linMod, fit) {
+.linScaleC <- function(linMod, fit, errType = NULL) {
   .ini <- linMod$iniDf
   .th <- .ini[!is.na(.ini$ntheta), , drop = FALSE]
   .th <- .th[order(.th$ntheta), , drop = FALSE]
@@ -247,7 +249,7 @@ linModGen <- function(ui, focei = TRUE, derivFct = FALSE) {
     return(NULL)
   }
   .fi <- fit$iniDf[!is.na(fit$iniDf$err), c("name", "err"), drop = FALSE]
-  .errType <- stats::setNames(.fi$err, .fi$name)
+  .errType <- c(stats::setNames(.fi$err, .fi$name), errType)
   .sdLike <- c(
     "prop",
     "propT",

@@ -35,6 +35,7 @@ iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC", mceta = 5, ...) {
   iivSpace <- iivCombn(etaNames)
 
   varCovMat <- cov(fit$eta[, -1])
+  originalFit <- fit$env$originalFit
   res <- lapply(cli::cli_progress_along(iivSpace, "IIV Search"), function(x) {
     x <- iivSpace[x]
     message(x)
@@ -49,10 +50,6 @@ iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC", mceta = 5, ...) {
     # }
     unfixedIni <- newMod$iniDf
     unfixedIni$fix[!is.na(unfixedIni$neta1) & !(unfixedIni$name %in% etaToRemove)] <- FALSE
-    unfixedIni$upper[!is.na(unfixedIni$ntheta) & unfixedIni$fix == FALSE] <- unfixedIni$est[
-      !is.na(unfixedIni$ntheta) & unfixedIni$fix == FALSE
-    ] *
-      2 # set upper to residual to 2x
     rxode2::ini(newMod) <- unfixedIni
     tryCatch(
       {
@@ -64,7 +61,8 @@ iivSearch.nlmixr2Linearize <- function(fit, sortBy = "BIC", mceta = 5, ...) {
             mceta = mceta,
             print = 10,
             maxInnerIterations = 9999,
-            etaMat = as.matrix(fit$eta[, c(noCorrSpace)])
+            etaMat = as.matrix(fit$eta[, c(noCorrSpace)]),
+            scaleC = .linScaleC(newMod, originalFit)
           )
         )
 
