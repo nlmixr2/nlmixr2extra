@@ -62,8 +62,9 @@ print.cuiBinary <- function(x, ...) {
 #' @return Matrix of probabilities, doses x endpoints.
 #' @noRd
 .cuiDrFit <- function(y, dose, doses, endpoints) {
-  .n <- as.vector(table(factor(dose, levels = doses)))
-  .p <- rowsum(y, factor(dose, levels = doses), reorder = TRUE) / .n
+  .g <- match(dose, doses)
+  .n <- tabulate(.g, nbins = length(doses))
+  .p <- rowsum(y, .g, reorder = TRUE) / .n
   for (.k in seq_along(endpoints)) {
     .model <- endpoints[[.k]]$model
     if (.model != "empirical") {
@@ -90,7 +91,7 @@ print.cuiBinary <- function(x, ...) {
   .status <- rep("ok", nBoot + 1L)
   .msg <- rep("", nBoot + 1L)
   # resample whole patients within each dose: every endpoint uses the same rows
-  .rowsByDose <- split(seq_along(dose), factor(dose, levels = doses))
+  .rowsByDose <- split(seq_along(dose), match(dose, doses))
   for (.b in seq_len(nBoot)) {
     .idx <- unlist(lapply(.rowsByDose, function(.r) .r[sample.int(length(.r), replace = TRUE)]),
                    use.names = FALSE)
@@ -193,6 +194,10 @@ cuiDoseResponse <- function(data, endpoints, dose, id, weights = NULL,
   }, numeric(nrow(data)))
   .y <- matrix(.y, nrow = nrow(data), dimnames = list(NULL, .epNames))
   .doses <- sort(unique(.doseVal))
+  if (anyDuplicated(.cuiNumLabel(.doses)) != 0L) {
+    stop(sprintf("dose column '%s' has distinct values that agree to 15 digits; round it",
+                 .doseCol), call. = FALSE)
+  }
   .fitFun <- function(y, dose) .cuiDrFit(y, dose, .doses, endpoints)
   .run <- .cuiWithSeed(seed, .cuiDrRun(.y, .doseVal, .doses, endpoints, nBoot, .fitFun))
   .nOk <- sum(.run$draws$status[-1] == "ok")
@@ -210,8 +215,8 @@ cuiDoseResponse <- function(data, endpoints, dose, id, weights = NULL,
                                   models = setNames(.models, .epNames),
                                   description = sprintf("Dose-response: %s; patient bootstrap within dose",
                                                         paste(unique(.models), collapse = ", "))))
-  .n <- as.vector(table(factor(.doseVal, levels = .doses)))
-  .events <- rowsum(.y, factor(.doseVal, levels = .doses), reorder = TRUE)
+  .n <- tabulate(match(.doseVal, .doses), nbins = length(.doses))
+  .events <- rowsum(.y, match(.doseVal, .doses), reorder = TRUE)
   .ret$observed <- data.frame(regimen = rep(.cuiNumLabel(.doses), times = length(.epNames)),
                               endpoint = rep(.epNames, each = length(.doses)),
                               n = rep(.n, times = length(.epNames)),

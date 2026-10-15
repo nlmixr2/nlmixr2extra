@@ -152,3 +152,30 @@ test_that("too few successful draws is an error", {
   expect_s3_class(cuiDoseResponse(.d, cuiBinary(eff), dose = dose, nBoot = 10, seed = 1,
                                   minSuccess = 0.5), "nlmixr2Cui")
 })
+
+test_that("unsorted, non-integer doses keep rates aligned", {
+  .d <- data.frame(dose = c(10, 0.5, 2.5, 10, 0.5, 2.5, 0.5),
+                   eff = c(1, 0, 1, 1, 1, 0, 0))
+  .r <- cuiDoseResponse(.d, cuiBinary(eff), dose = dose, nBoot = 5, seed = 1)
+  expect_equal(.r$summary$regimen, c("0.5", "2.5", "10"))
+  expect_equal(.r$summary$est, c(1 / 3, 1 / 2, 1))
+  .obs <- as.data.frame(.r, type = "observed")
+  expect_equal(.obs$n, c(3, 2, 2))
+  .near <- data.frame(dose = c(0.3, 0.1 + 0.2), eff = c(1, 0))
+  expect_error(cuiDoseResponse(.near, cuiBinary(eff), dose = dose, nBoot = 0), "15 digits")
+})
+
+test_that("the seed helper removes a new .Random.seed and restores after errors", {
+  .env <- globalenv()
+  .had <- exists(".Random.seed", envir = .env, inherits = FALSE)
+  .old <- if (.had) get(".Random.seed", envir = .env)
+  withr::defer(if (.had) assign(".Random.seed", .old, envir = .env))
+  if (.had) rm(".Random.seed", envir = .env)
+  .cur$.cuiWithSeed(1, stats::runif(1))
+  expect_false(exists(".Random.seed", envir = .env, inherits = FALSE))
+  set.seed(5)
+  .want <- stats::runif(1)
+  set.seed(5)
+  expect_error(.cur$.cuiWithSeed(1, stop("inside")), "inside")
+  expect_equal(stats::runif(1), .want)
+})

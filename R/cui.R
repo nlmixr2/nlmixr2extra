@@ -111,7 +111,7 @@ cuiRegimens <- function(dose, ii = NA_real_, duration = NA_real_,
 #' @return Character labels (`10`, `2.5`, `1e+05`).
 #' @noRd
 .cuiNumLabel <- function(x) {
-  vapply(x, function(.x) format(.x, trim = TRUE), character(1), USE.NAMES = FALSE)
+  vapply(x, function(.x) format(.x, digits = 15, trim = TRUE), character(1), USE.NAMES = FALSE)
 }
 
 #' Normalize the eligibility specification to a full grid
