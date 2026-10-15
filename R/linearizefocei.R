@@ -238,13 +238,16 @@ linModGen <- function(ui, focei = TRUE, derivFct = FALSE) {
 #' @param fit the nonlinear fit being linearized
 #' @param errType named error types for residual thetas that `fit` does
 #'   not have (like a `prop.sd` added by `resSearch()`)
-#' @return numeric `scaleC` vector, one entry per linearized theta
+#' @return numeric `scaleC` vector, one entry per estimated (not fixed)
+#'   linearized theta
 #' @noRd
 #' @author Matthew L. Fidler
 .linScaleC <- function(linMod, fit, errType = NULL) {
   .ini <- linMod$iniDf
   .th <- .ini[!is.na(.ini$ntheta), , drop = FALSE]
   .th <- .th[order(.th$ntheta), , drop = FALSE]
+  # literalFix drops the fixed thetas before FOCEi reads scaleC by position
+  .th <- .th[!.th$fix, , drop = FALSE]
   if (nrow(.th) == 0L) {
     return(NULL)
   }

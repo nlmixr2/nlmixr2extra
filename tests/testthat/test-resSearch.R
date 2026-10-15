@@ -39,6 +39,22 @@ test_that("Test residual search on linearized models", {
     resRes$summary$OBJF[resRes$summary$search == "base fit"],
     resRes$summary$OBJF[resRes$summary$search == "prop"]
   )
+
+  # the refits scale only the thetas FOCEi estimates: prop.sd is added after
+  # the fixed theta.eta.* thetas, which literalFix drops (#133)
+  .orig <- linFit$env$originalFit
+  suppressMessages({
+    .prop <- linFit |> model(rxR2 <- (prop.sd^2 * OPRED^2)) |> ini(prop.sd <- 0.1)
+    .comb <- linFit |>
+      model(rxR2 <- (prop.sd^2 * OPRED^2 + add.sd^2)) |>
+      ini(prop.sd <- 0.1)
+  })
+  expect_equal(.linScaleC(.prop, .orig, c(prop.sd = "prop")), 0.05)
+  .addSd <- linFit$iniDf$est[linFit$iniDf$name == "add.sd"]
+  expect_equal(
+    .linScaleC(.comb, .orig, c(prop.sd = "prop")),
+    c(0.5 * abs(.addSd), 0.05)
+  )
 })
 
 test_that("resSearch refits scale the residuals like linearize() (#133)", {
@@ -71,6 +87,6 @@ test_that("resSearch refits scale the residuals like linearize() (#133)", {
   })
   .obj <- stats::setNames(resRes$summary$OBJF, resRes$summary$search)
   # combined1 refits the base model's own error model, so it ends where the
-  # base fit is, not at a diverged OFV (about 191 vs 158 before)
+  # base fit is; with linear residual scaling it ended 8.3 above it (#133)
   expect_lt(abs(.obj[["combined1"]] - .obj[["base fit"]]), 1)
 })
