@@ -112,3 +112,22 @@ test_that("sensitivity agrees with the recommendation at the current weights", {
   .lab <- cuiFromValues(transform(.cuiPlotValues(), regimen = letters[regimen]), .cuiPlotEps())
   expect_s3_class(plot(cuiSensitivity(.lab)), "ggplot")
 })
+
+test_that("lines carry percentile bands for the CUI and every endpoint", {
+  .r <- .cuiPlotDr()
+  .ep <- plot(.r, "endpoints")
+  .line <- .ep$data[.ep$data$layer == "line", ]
+  expect_false(anyNA(.line$lower))
+  expect_true(all(.line$lower <= .line$value + 1e-12 | .line$series != "CUI"))
+  # endpoint bands are the utility percentiles over the draws
+  .u <- .r$utility[.r$utility$draw > 0 & .r$utility$endpoint == "eff" & .r$utility$regimen == "100", ]
+  expect_equal(.line$upper[.line$series == "eff" & .line$regimen == "100"],
+               unname(stats::quantile(.u$utility, 0.975)))
+  expect_true(any(vapply(.ep$layers, function(l) inherits(l$geom, "GeomRibbon"), logical(1))))
+  .nb <- plot(.r, "endpoints", bands = FALSE)
+  expect_false(any(vapply(.nb$layers, function(l) inherits(l$geom, "GeomRibbon"), logical(1))))
+  expect_match(.ep$labels$subtitle, "bands: 95% percentile interval")
+  expect_false(any(vapply(plot(.r, "doseResponse", bands = FALSE)$layers,
+                          function(l) inherits(l$geom, "GeomLinerange"), logical(1))))
+  expect_identical(.figureHeldData(.ep), character(0))
+})

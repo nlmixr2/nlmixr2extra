@@ -10,6 +10,7 @@
   assessment = NULL,
   reference = NULL,
   colors = NULL,
+  bands = TRUE,
   ...
 )
 }
@@ -29,6 +30,9 @@ draws none.}
 \item{colors}{Optional named colors replacing the defaults, by endpoint
 name and \code{"CUI"} / \code{"Peak"}.}
 
+\item{bands}{Draw percentile bands from the uncertainty draws (when
+there are any) around the lines.}
+
 \item{...}{Not used.}
 }
 \value{
@@ -36,12 +40,13 @@ A ggplot object.
 }
 \description{
 \itemize{
-\item \code{"cui"}: the CUI of each regimen (point estimate, with its percentile
-interval when there are uncertainty draws); the peak (recommended
-regimen) is marked and ineligible regimens are grey.
+\item \code{"cui"}: the CUI of each regimen (point estimate line, with its
+percentile band when there are uncertainty draws); the peak
+(recommended regimen) is marked and ineligible regimens are grey.
 \item \code{"endpoints"}: each endpoint's utility (after its utility function and
-direction) with the CUI, at the point estimate; endpoints with
-\code{direction = "lower"} are dashed or dotted.
+direction) with the CUI, as point-estimate lines with percentile bands
+from the uncertainty draws; endpoints with \code{direction = "lower"} are
+dashed or dotted.
 \item \code{"selection"}: how often each eligible regimen has the highest CUI
 across uncertainty draws.
 \item \code{"doseResponse"}: for \code{\link[=cuiDoseResponse]{cuiDoseResponse()}} results, the observed rate of

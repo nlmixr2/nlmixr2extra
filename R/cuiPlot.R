@@ -53,12 +53,13 @@
 
 #' Plot a clinical utility index
 #'
-#' - `"cui"`: the CUI of each regimen (point estimate, with its percentile
-#'   interval when there are uncertainty draws); the peak (recommended
-#'   regimen) is marked and ineligible regimens are grey.
+#' - `"cui"`: the CUI of each regimen (point estimate line, with its
+#'   percentile band when there are uncertainty draws); the peak
+#'   (recommended regimen) is marked and ineligible regimens are grey.
 #' - `"endpoints"`: each endpoint's utility (after its utility function and
-#'   direction) with the CUI, at the point estimate; endpoints with
-#'   `direction = "lower"` are dashed or dotted.
+#'   direction) with the CUI, as point-estimate lines with percentile bands
+#'   from the uncertainty draws; endpoints with `direction = "lower"` are
+#'   dashed or dotted.
 #' - `"selection"`: how often each eligible regimen has the highest CUI
 #'   across uncertainty draws.
 #' - `"doseResponse"`: for [cuiDoseResponse()] results, the observed rate of
@@ -79,6 +80,8 @@
 #'   draws none.
 #' @param colors Optional named colors replacing the defaults, by endpoint
 #'   name and `"CUI"` / `"Peak"`.
+#' @param bands Draw percentile bands from the uncertainty draws (when
+#'   there are any) around the lines.
 #' @param ... Not used.
 #' @return A ggplot object.
 #' @family Clinical utility
@@ -98,15 +101,17 @@
 #' plot(res)
 #' plot(res, "endpoints", reference = c("low" = 2, "high" = 4))
 plot.nlmixr2Cui <- function(x, type = c("cui", "endpoints", "selection", "doseResponse"),
-                            assessment = NULL, reference = NULL, colors = NULL, ...) {
+                            assessment = NULL, reference = NULL, colors = NULL, bands = TRUE,
+                            ...) {
   type <- match.arg(type)
+  checkmate::assertFlag(bands)
   .a <- .cuiPickAssessment(x, assessment)
   .cols <- .cuiPlotColors(x, colors)
   switch(type,
-    cui = .cuiPlotLines(x, .a, reference, .cols, endpoints = FALSE),
-    endpoints = .cuiPlotLines(x, .a, reference, .cols, endpoints = TRUE),
+    cui = .cuiPlotLines(x, .a, reference, .cols, endpoints = FALSE, bands = bands),
+    endpoints = .cuiPlotLines(x, .a, reference, .cols, endpoints = TRUE, bands = bands),
     selection = .cuiPlotSelection(x, .a),
-    doseResponse = .cuiPlotDoseResponse(x, .cols)
+    doseResponse = .cuiPlotDoseResponse(x, .cols, bands)
   )
 }
 
@@ -152,12 +157,12 @@ plot.nlmixr2Cui <- function(x, type = c("cui", "endpoints", "selection", "doseRe
 
 #' CUI (and optionally endpoint) lines with the peak and reference regimens
 #' @noRd
-.cuiPlotLines <- function(x, assessments, reference, cols, endpoints) {
+.cuiPlotLines <- function(x, assessments, reference, cols, endpoints, bands = TRUE) {
   .rx <- .cuiRegimenX(x$regimens)
   .epNames <- vapply(x$endpoints, `[[`, character(1), "name")
   .dir <- vapply(x$endpoints, `[[`, character(1), "direction")
   .s <- x$summary[x$summary$assessment %in% assessments, , drop = FALSE]
-  .hasCi <- .cuiNOk(x) > 0
+  .hasCi <- bands && .cuiNOk(x) > 0
   .line <- data.frame(layer = "line", assessment = .s$assessment, regimen = .s$regimen,
                       series = "CUI", value = .s$est,
                       lower = if (.hasCi) .s$lower else NA_real_,
@@ -165,10 +170,22 @@ plot.nlmixr2Cui <- function(x, type = c("cui", "endpoints", "selection", "doseRe
                       eligible = .s$eligible, label = NA_character_, stringsAsFactors = FALSE)
   if (endpoints) {
     .u <- x$utility[x$utility$draw == 0 & x$utility$assessment %in% assessments, , drop = FALSE]
-    .line <- rbind(data.frame(layer = "line", assessment = .u$assessment, regimen = .u$regimen,
-                              series = .u$endpoint, value = .u$utility, lower = NA_real_,
-                              upper = NA_real_, eligible = TRUE, label = NA_character_,
-                              stringsAsFactors = FALSE), .line)
+    .ep <- data.frame(layer = "line", assessment = .u$assessment, regimen = .u$regimen,
+                      series = .u$endpoint, value = .u$utility, lower = NA_real_,
+                      upper = NA_real_, eligible = TRUE, label = NA_character_,
+                      stringsAsFactors = FALSE)
+    if (.hasCi) {
+      # percentile band of each endpoint's utility over the uncertainty draws
+      .ud <- x$utility[x$utility$draw > 0 & x$utility$assessment %in% assessments, , drop = FALSE]
+      .k <- paste(.ud$assessment, .ud$regimen, .ud$endpoint, sep = "\r")
+      .alpha <- (1 - x$level) / 2
+      .lo <- tapply(.ud$utility, .k, stats::quantile, probs = .alpha, names = FALSE)
+      .hi <- tapply(.ud$utility, .k, stats::quantile, probs = 1 - .alpha, names = FALSE)
+      .ek <- paste(.ep$assessment, .ep$regimen, .ep$series, sep = "\r")
+      .ep$lower <- as.numeric(.lo[.ek])
+      .ep$upper <- as.numeric(.hi[.ek])
+    }
+    .line <- rbind(.ep, .line)
   }
   .units <- x$regimens$units[match(.s$regimen, x$regimens$label)]
   .pk <- .s[.s$best, , drop = FALSE]
@@ -202,8 +219,11 @@ plot.nlmixr2Cui <- function(x, type = c("cui", "endpoints", "selection", "doseRe
   } else {
     ""
   }
-  if (.hasCi && !endpoints) .sub <- sprintf("Band: %g%% percentile interval", 100 * x$level)
-  .plotData(.cuiLinesFigure(.rx, cols[.lv], .lty, .lwd, .hasCi && !endpoints,
+  if (.hasCi) {
+    .band <- sprintf("bands: %g%% percentile interval", 100 * x$level)
+    .sub <- if (nzchar(.sub)) paste0(.sub, "; ", .band) else paste0("B", substring(.band, 2))
+  }
+  .plotData(.cuiLinesFigure(.rx, cols[.lv], .lty, .lwd, .hasCi,
                             any(!.s$eligible), !is.null(.ref), .sub,
                             if (endpoints) "Desirability / CUI" else "CUI",
                             if (endpoints) "Endpoint utilities and clinical utility index"
@@ -227,10 +247,13 @@ plot.nlmixr2Cui <- function(x, type = c("cui", "endpoints", "selection", "doseRe
       )
     }) +
     (if (hasCi) {
-      ggplot2::geom_ribbon(data = function(d) d[d$layer == "line" & d$series == "CUI", , drop = FALSE],
-                           ggplot2::aes(ymin = .data$lower, ymax = .data$upper,
-                                        group = .data$assessment),
-                           fill = cols[["CUI"]], alpha = 0.15)
+      list(
+        ggplot2::geom_ribbon(data = function(d) d[d$layer == "line" & !is.na(d$lower), , drop = FALSE],
+                             ggplot2::aes(ymin = .data$lower, ymax = .data$upper, fill = .data$series,
+                                          group = interaction(.data$series, .data$assessment)),
+                             alpha = 0.13, show.legend = FALSE),
+        ggplot2::scale_fill_manual(values = cols, guide = "none")
+      )
     }) +
     ggplot2::geom_line(data = .lineRows,
                        ggplot2::aes(color = .data$series, linetype = .data$series,
@@ -296,7 +319,7 @@ plot.nlmixr2Cui <- function(x, type = c("cui", "endpoints", "selection", "doseRe
     .cuiTheme()
 }
 
-.cuiPlotDoseResponse <- function(x, cols) {
+.cuiPlotDoseResponse <- function(x, cols, bands = TRUE) {
   if (is.null(x$observed)) {
     stop("dose-response plots need a cuiDoseResponse() result", call. = FALSE)
   }
@@ -314,7 +337,7 @@ plot.nlmixr2Cui <- function(x, type = c("cui", "endpoints", "selection", "doseRe
     data.frame(endpoint = e, dose = .dd, value = .cuiDrPredict(.f, .dd), stringsAsFactors = FALSE)
   }))
   .ci <- NULL
-  if (.cuiNOk(x) > 0) {
+  if (bands && .cuiNOk(x) > 0) {
     .v <- x$values[x$values$draw > 0, , drop = FALSE]
     .alpha <- (1 - x$level) / 2
     .ci <- stats::aggregate(value ~ endpoint + regimen, data = .v,
