@@ -743,12 +743,15 @@ sampling <- function(data, nsamp = NULL, uid_colname, pvalues = NULL, performStr
   # would hand the same new id to subjects from different strata
   .env <- new.env(parent = emptyenv())
   .env$new_id <- 1
+  # original ids in the order of the new ids, so a resample can be identified
+  .env$ids <- NULL
 
   # the rows of each subject, so a draw is a lookup instead of a scan
   uidRows <- split(seq_len(nrow(data)), idCol)
 
   # populate a dataframe from the sampled uids, giving each draw a new id
   .sliceUid <- function(uids_samp) {
+    .env$ids <- c(.env$ids, uids_samp)
     do.call(
       rbind,
       lapply(uids_samp, function(u) {
@@ -792,10 +795,12 @@ sampling <- function(data, nsamp = NULL, uid_colname, pvalues = NULL, performStr
       uids_samp <- .sampleUid(uids, size = stratN[[i]], prob = .stratProb(pvalues, allUid, uids))
       .sliceUid(uids_samp)
     })
-    do.call("rbind", sampledDataSubsets)
+    .ret <- do.call("rbind", sampledDataSubsets)
   } else {
-    .sliceUid(.sampleUid(allUid, size = nsamp, prob = pvalues))
+    .ret <- .sliceUid(.sampleUid(allUid, size = nsamp, prob = pvalues))
   }
+  attr(.ret, "bootIds") <- .env$ids
+  .ret
 }
 
 #' Fitting multiple bootstrapped models without aggregaion; called by the function bootstrapFit()
@@ -868,6 +873,7 @@ modelBootstrap <- function(
     bootstrapMd5 <- fit$md5
     assign("bootstrapMd5", bootstrapMd5, envir = fit$env)
   }
+  .parentMd5 <- fit$bootstrapMd5
 
   output_dir <-
     paste0("nlmixr2BootstrapCache_", fitName, "_", fit$bootstrapMd5) # a new directory with this name will be created
@@ -1035,6 +1041,10 @@ modelBootstrap <- function(
       fit <- tryCatch(
         {
           fit <- suppressWarnings(nlmixr2(ui, boot_data, est = fitMeth, control = .ctl))
+          # which original subjects this fit was estimated on, and of which fit
+          assign("bootstrapResample",
+                 list(parentMd5 = .parentMd5, index = modIdx, ids = attr(boot_data, "bootIds")),
+                 envir = fit$env)
 
           .env$multipleFits <- list(
             # objf = fit$OBJF,
