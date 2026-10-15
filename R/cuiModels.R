@@ -85,13 +85,30 @@ cuiModelDraws.default <- function(fit, n, ...) {
 #' @rdname cuiModelPredict
 #' @export
 cuiModelRefit.default <- function(fit, data, ...) {
-  stats::update(fit, data = data)
+  .cuiUpdateIn(fit, "data", data)
+}
+
+#' Refit a model to new data, evaluating its call where its formula was made
+#'
+#' So fits built inside functions (with local family, weights or formula
+#' variables) can be refit.
+#' @noRd
+.cuiUpdateIn <- function(fit, arg, data, ...) {
+  .call <- stats::update(fit, ..., evaluate = FALSE)
+  .call[[arg]] <- quote(.cuiRefitData)
+  .f <- tryCatch(stats::formula(fit), error = function(e) NULL)
+  .parent <- if (is.null(.f) || is.null(environment(.f))) globalenv() else environment(.f)
+  .env <- new.env(parent = .parent)
+  assign(".cuiRefitData", data, envir = .env)
+  eval(.call, .env)
 }
 
 #' @rdname cuiModelPredict
 #' @export
 cuiModelVars.default <- function(fit, ...) {
-  all.vars(stats::delete.response(stats::terms(fit)))
+  # an offset given as an argument is not part of the terms
+  unique(c(all.vars(stats::delete.response(stats::terms(fit))),
+           if (is.call(fit$call)) all.vars(fit$call$offset)))
 }
 
 .cuiNoDraws <- function(fit) {
@@ -111,11 +128,20 @@ cuiModelVars.default <- function(fit, ...) {
 
 #' Inverse link of a fixed-effects design times a coefficient draw
 #' @noRd
+#' Factor levels of a model frame, for predicting on data missing levels
+#' @noRd
+.cuiFrameLevels <- function(frame) {
+  .f <- Filter(function(x) is.factor(x) || is.character(x), frame)
+  lapply(.f, function(x) levels(factor(x)))
+}
+
 .cuiLinkPredict <- function(tt, newdata, beta, linkinv, xlev = NULL, contrasts = NULL) {
   tt <- stats::delete.response(tt)
   if (!is.null(attr(tt, "offset"))) {
     stop("models with an offset are not supported for parameter draws", call. = FALSE)
   }
+  # only factors of these terms (not, say, random-effect grouping variables)
+  if (!is.null(xlev)) xlev <- xlev[intersect(names(xlev), all.vars(tt))]
   .mf <- stats::model.frame(tt, newdata, xlev = xlev, na.action = stats::na.pass)
   .x <- stats::model.matrix(tt, .mf, contrasts.arg = contrasts)
   .miss <- setdiff(names(beta), colnames(.x))
@@ -131,6 +157,9 @@ cuiModelVars.default <- function(fit, ...) {
 cuiModelPredict.lm <- function(fit, newdata, draw = NULL, ...) {
   if (is.null(draw)) {
     return(as.numeric(stats::predict(fit, newdata = newdata, type = "response")))
+  }
+  if (is.call(fit$call) && !is.null(fit$call$offset)) {
+    stop("models with an offset are not supported for parameter draws", call. = FALSE)
   }
   .cuiLinkPredict(stats::terms(fit), newdata, draw, stats::family(fit)$linkinv,
                   xlev = fit$xlevels, contrasts = fit$contrasts)
@@ -149,7 +178,8 @@ cuiModelPredict.merMod <- function(fit, newdata, draw = NULL, ...) {
     return(as.numeric(stats::predict(fit, newdata = newdata, type = "response", re.form = NA)))
   }
   .cuiLinkPredict(stats::terms(fit, fixed.only = TRUE), newdata, draw,
-                  stats::family(fit)$linkinv)
+                  stats::family(fit)$linkinv, xlev = .cuiFrameLevels(fit@frame),
+                  contrasts = attr(lme4::getME(fit, "X"), "contrasts"))
 }
 
 #' @rdname cuiModelPredict
@@ -171,8 +201,10 @@ cuiModelPredict.glmmTMB <- function(fit, newdata, draw = NULL, ...) {
   if (is.null(draw)) {
     return(as.numeric(stats::predict(fit, newdata = newdata, type = "response", re.form = NA)))
   }
-  .cuiLinkPredict(stats::terms(stats::formula(fit, fixed.only = TRUE)), newdata, draw,
-                  stats::family(fit)$linkinv)
+  # these terms keep predvars, so poly() and scale() use the training basis
+  .cuiLinkPredict(fit$modelInfo$terms$cond$fixed, newdata, draw, stats::family(fit)$linkinv,
+                  xlev = .cuiFrameLevels(fit$frame),
+                  contrasts = attr(glmmTMB::getME(fit, "X"), "contrasts"))
 }
 
 #' @rdname cuiModelPredict

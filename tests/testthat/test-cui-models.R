@@ -181,3 +181,51 @@ test_that("brms fits use posterior draws", {
   # random-effect terms are not needed for population-level predictions
   expect_equal(all.vars(.cur$.cuiNoBars(y ~ dose + (1 | site) + age)), c("y", "dose", "age"))
 })
+
+test_that("mixed-model draws keep transformed terms and factor levels of the fit", {
+  skip_if_not_installed("lme4")
+  skip_if_not_installed("glmmTMB")
+  .d <- .trial(60)
+  .d$grp <- factor(rep(1:8, length.out = nrow(.d)))
+  .nd <- data.frame(dose = c(0, 50, 100), age = c(30, 45, 60),
+                    site = factor(c("b", "c", "c"), levels = c("b", "c")))
+  .g <- suppressMessages(lme4::glmer(eff ~ poly(dose, 2) + scale(age) + site + (1 | grp),
+                                     binomial, data = .d))
+  expect_equal(cuiModelPredict(.g, .nd, draw = lme4::fixef(.g)), cuiModelPredict(.g, .nd),
+               tolerance = 1e-6)
+  .t <- glmmTMB::glmmTMB(eff ~ poly(dose, 2) + scale(age) + site + (1 | grp), binomial,
+                         data = .d)
+  expect_equal(cuiModelPredict(.t, .nd, draw = glmmTMB::fixef(.t)$cond),
+               cuiModelPredict(.t, .nd), tolerance = 1e-6)
+  # a single level of a factor covariate
+  .one <- transform(.nd, site = factor("c"))
+  expect_equal(cuiModelPredict(.g, .one, draw = lme4::fixef(.g)), cuiModelPredict(.g, .one),
+               tolerance = 1e-6)
+  expect_equal(cuiModelPredict(.t, .one, draw = glmmTMB::fixef(.t)$cond),
+               cuiModelPredict(.t, .one), tolerance = 1e-6)
+})
+
+test_that("refits work for models built inside functions, offsets are handled", {
+  .d <- .trial()
+  .make <- function(dd) {
+    fam <- stats::binomial
+    form <- tox ~ dose
+    stats::glm(form, family = fam, data = dd)
+  }
+  .r <- cuiDoseResponse(.d, cuiBinary(tox, model = .make(.d)), dose = dose, nBoot = 5, seed = 1)
+  expect_equal(sum(.r$draws$status == "ok"), 6)
+  .d$t <- 1 + .d$age / 100
+  .off <- stats::glm(tox ~ dose, poisson, data = .d, offset = log(t))
+  expect_true("t" %in% cuiModelVars(.off))
+  expect_error(cuiModelPredict(.off, data.frame(dose = 1, t = 1), draw = stats::coef(.off)),
+               "offset")
+})
+
+test_that("a fit shared by endpoints with and without a dose column needs every input", {
+  .d <- .trial()
+  .fit <- stats::glm(eff ~ dose, binomial, data = .d)
+  expect_error(cui(list(cuiEndpoint(a, .fit, cuiResponse(dose = dose)),
+                        cuiEndpoint(b, .fit, cuiResponse())),
+                   cuiRegimens(dose = c(0, 50)), 10, seed = 1),
+               "not in 'population': dose")
+})

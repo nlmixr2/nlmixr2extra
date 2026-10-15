@@ -120,7 +120,8 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
   }
   list(kind = "fitted", group = group, fit = fit, isFit = FALSE, ui = NULL, theta = NULL,
        struct = NULL, omega = NULL, md5 = NULL, vars = .vars,
-       covs = setdiff(.vars, unlist(lapply(.sums, `[[`, "doseVar"))),
+       # variables every endpoint needs besides its own dose column
+       covs = unique(unlist(lapply(.sums, function(s) setdiff(.vars, s$doseVar)))),
        summaries = .sums, exposures = list())
 }
 
