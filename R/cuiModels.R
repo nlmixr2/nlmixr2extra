@@ -126,8 +126,6 @@ cuiModelVars.default <- function(fit, ...) {
   lapply(seq_len(n), function(i) beta + drop(stats::rnorm(length(beta)) %*% .r))
 }
 
-#' Inverse link of a fixed-effects design times a coefficient draw
-#' @noRd
 #' Factor levels of a model frame, for predicting on data missing levels
 #' @noRd
 .cuiFrameLevels <- function(frame) {
@@ -135,6 +133,8 @@ cuiModelVars.default <- function(fit, ...) {
   lapply(.f, function(x) levels(factor(x)))
 }
 
+#' Inverse link of a fixed-effects design times a coefficient draw
+#' @noRd
 .cuiLinkPredict <- function(tt, newdata, beta, linkinv, xlev = NULL, contrasts = NULL) {
   tt <- stats::delete.response(tt)
   if (!is.null(attr(tt, "offset"))) {

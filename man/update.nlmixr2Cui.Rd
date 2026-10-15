@@ -52,6 +52,8 @@ Other Clinical utility:
 \code{\link[=cuiModelPredict]{cuiModelPredict()}},
 \code{\link[=cuiPopulation]{cuiPopulation()}},
 \code{\link[=cuiProb]{cuiProb()}},
-\code{\link[=cuiRegimens]{cuiRegimens()}}
+\code{\link[=cuiRegimens]{cuiRegimens()}},
+\code{\link[=cuiSensitivity]{cuiSensitivity()}},
+\code{\link[=plot.nlmixr2Cui]{plot.nlmixr2Cui()}}
 }
 \concept{Clinical utility}

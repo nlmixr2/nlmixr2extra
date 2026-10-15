@@ -30,6 +30,12 @@
   model into exposure-response models, `cuiBootstrap()` uses bootstrap
   refits as parameter draws, and `cacheDir` caches draws so a run resumes.
 
+- `plot()` of a CUI shows the CUI per regimen with its interval, the
+  endpoint utilities, how often each regimen is selected, or (for
+  `cuiDoseResponse()`) the observed rates with the fitted dose-response;
+  `cuiSensitivity()` shows how the recommendation changes as each endpoint
+  weight varies.
+
 - Fitted regression models can be CUI endpoints: `cuiBinary(tox, model =
   fit)` in `cuiDoseResponse()` (averaged over the patients and refit in
   each bootstrap draw) and `cuiEndpoint(eff, fit, cuiResponse(dose =

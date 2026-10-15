@@ -107,6 +107,8 @@ Other Clinical utility:
 \code{\link[=cuiPopulation]{cuiPopulation()}},
 \code{\link[=cuiProb]{cuiProb()}},
 \code{\link[=cuiRegimens]{cuiRegimens()}},
+\code{\link[=cuiSensitivity]{cuiSensitivity()}},
+\code{\link[=plot.nlmixr2Cui]{plot.nlmixr2Cui()}},
 \code{\link[=update.nlmixr2Cui]{update.nlmixr2Cui()}}
 }
 \concept{Clinical utility}
