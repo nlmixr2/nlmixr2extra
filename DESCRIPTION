@@ -52,6 +52,8 @@ Suggests:
     nlmixr2save (>= 0.2.0),
     pander,
     rmarkdown,
+    shiny,
+    bslib,
     ggtext,
     glmmTMB,
     lme4,

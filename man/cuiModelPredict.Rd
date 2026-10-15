@@ -125,12 +125,15 @@ cuiModelPredict(fit, data.frame(dose = c(0, 40)), draw = dr[[1]])
 \seealso{
 Other Clinical utility:
 \code{\link[=cui]{cui()}},
+\code{\link[=cuiApp]{cuiApp()}},
+\code{\link[=cuiAppExport]{cuiAppExport()}},
 \code{\link[=cuiBinary]{cuiBinary()}},
 \code{\link[=cuiBootstrap]{cuiBootstrap()}},
 \code{\link[=cuiDoseResponse]{cuiDoseResponse()}},
 \code{\link[=cuiEndpoint]{cuiEndpoint()}},
 \code{\link[=cuiExposure]{cuiExposure()}},
 \code{\link[=cuiFromValues]{cuiFromValues()}},
+\code{\link[=cuiGroupWeights]{cuiGroupWeights()}},
 \code{\link[=cuiIdentity]{cuiIdentity()}},
 \code{\link[=cuiPopulation]{cuiPopulation()}},
 \code{\link[=cuiProb]{cuiProb()}},

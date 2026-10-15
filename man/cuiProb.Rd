@@ -82,12 +82,15 @@ cuiThreshold(bmdchg > .env$cut)
 \seealso{
 Other Clinical utility:
 \code{\link[=cui]{cui()}},
+\code{\link[=cuiApp]{cuiApp()}},
+\code{\link[=cuiAppExport]{cuiAppExport()}},
 \code{\link[=cuiBinary]{cuiBinary()}},
 \code{\link[=cuiBootstrap]{cuiBootstrap()}},
 \code{\link[=cuiDoseResponse]{cuiDoseResponse()}},
 \code{\link[=cuiEndpoint]{cuiEndpoint()}},
 \code{\link[=cuiExposure]{cuiExposure()}},
 \code{\link[=cuiFromValues]{cuiFromValues()}},
+\code{\link[=cuiGroupWeights]{cuiGroupWeights()}},
 \code{\link[=cuiIdentity]{cuiIdentity()}},
 \code{\link[=cuiModelPredict]{cuiModelPredict()}},
 \code{\link[=cuiPopulation]{cuiPopulation()}},

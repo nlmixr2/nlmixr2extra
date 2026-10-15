@@ -10,6 +10,7 @@ cuiEndpoint(
   summary = NULL,
   utility = cuiIdentity(),
   direction = c("higher", "lower"),
+  group = NULL,
   ...,
   .name = NULL
 )
@@ -31,6 +32,11 @@ by the simulation-based CUI).}
 \item{direction}{\code{"higher"} when larger utilities are better, \code{"lower"}
 to use \code{1 - utility} (for example a probability of an adverse event).}
 
+\item{group}{Classification of the endpoint for hierarchical weights
+(see \code{\link[=cuiGroupWeights]{cuiGroupWeights()}}), such as \code{"efficacy"} or \code{"safety"}; by
+default \code{"safety"} for \code{direction = "lower"} and \code{"efficacy"}
+otherwise.}
+
 \item{...}{Not used.}
 
 \item{.name}{Endpoint name as a string, for programmatic use instead of
@@ -51,11 +57,14 @@ cuiEndpoint(.name = nm, utility = cuiLinear(0, 50))
 \seealso{
 Other Clinical utility:
 \code{\link[=cui]{cui()}},
+\code{\link[=cuiApp]{cuiApp()}},
+\code{\link[=cuiAppExport]{cuiAppExport()}},
 \code{\link[=cuiBinary]{cuiBinary()}},
 \code{\link[=cuiBootstrap]{cuiBootstrap()}},
 \code{\link[=cuiDoseResponse]{cuiDoseResponse()}},
 \code{\link[=cuiExposure]{cuiExposure()}},
 \code{\link[=cuiFromValues]{cuiFromValues()}},
+\code{\link[=cuiGroupWeights]{cuiGroupWeights()}},
 \code{\link[=cuiIdentity]{cuiIdentity()}},
 \code{\link[=cuiModelPredict]{cuiModelPredict()}},
 \code{\link[=cuiPopulation]{cuiPopulation()}},

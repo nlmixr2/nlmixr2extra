@@ -106,11 +106,14 @@ Multiple-Outcome Randomized Trial Designs.  arXiv:2505.03633.
 \seealso{
 Other Clinical utility:
 \code{\link[=cui]{cui()}},
+\code{\link[=cuiApp]{cuiApp()}},
+\code{\link[=cuiAppExport]{cuiAppExport()}},
 \code{\link[=cuiBinary]{cuiBinary()}},
 \code{\link[=cuiBootstrap]{cuiBootstrap()}},
 \code{\link[=cuiEndpoint]{cuiEndpoint()}},
 \code{\link[=cuiExposure]{cuiExposure()}},
 \code{\link[=cuiFromValues]{cuiFromValues()}},
+\code{\link[=cuiGroupWeights]{cuiGroupWeights()}},
 \code{\link[=cuiIdentity]{cuiIdentity()}},
 \code{\link[=cuiModelPredict]{cuiModelPredict()}},
 \code{\link[=cuiPopulation]{cuiPopulation()}},

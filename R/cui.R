@@ -39,6 +39,10 @@
 #'   [cuiStep()] mapping the endpoint to `[0, 1]`.
 #' @param direction `"higher"` when larger utilities are better, `"lower"`
 #'   to use `1 - utility` (for example a probability of an adverse event).
+#' @param group Classification of the endpoint for hierarchical weights
+#'   (see [cuiGroupWeights()]), such as `"efficacy"` or `"safety"`; by
+#'   default `"safety"` for `direction = "lower"` and `"efficacy"`
+#'   otherwise.
 #' @param ... Not used.
 #' @param .name Endpoint name as a string, for programmatic use instead of
 #'   `name`.
@@ -51,15 +55,75 @@
 #' nm <- "tol"
 #' cuiEndpoint(.name = nm, utility = cuiLinear(0, 50))
 cuiEndpoint <- function(name, fit = NULL, summary = NULL, utility = cuiIdentity(),
-                        direction = c("higher", "lower"), ..., .name = NULL) {
+                        direction = c("higher", "lower"), group = NULL, ..., .name = NULL) {
   .name <- .cuiCaptureName(substitute(name), missing(name), .name, "name")
   if (!inherits(utility, "cuiUtility")) {
     stop("'utility' must come from cuiIdentity(), cuiLinear() or cuiStep()", call. = FALSE)
   }
   direction <- match.arg(direction)
+  if (is.null(group)) group <- if (direction == "lower") "safety" else "efficacy"
+  checkmate::assertString(group, min.chars = 1)
   structure(list(name = .name, fit = fit, summary = summary,
-                 utility = utility, direction = direction),
+                 utility = utility, direction = direction, group = group),
             class = "cuiEndpoint")
+}
+
+#' Endpoint weights from group and within-group weights
+#'
+#' Hierarchical weights: each group of endpoints (for example efficacy and
+#' safety, from [cuiEndpoint()]'s `group`) gets a weight, and the endpoints
+#' of a group share it in proportion to their within-group weights.  The
+#' endpoint weight is `group[g] * within[k] / sum(within[group g])`, so a
+#' group's endpoints together always carry the group's weight.  The result
+#' is given to `weights` of [update()] or any CUI function.
+#'
+#' @param x An `nlmixr2Cui` object (for the endpoints and their groups).
+#' @param group Named weight per group; groups left out weigh 1.
+#' @param within Named within-group weight per endpoint; endpoints left out
+#'   weigh 1.  A group whose endpoints all weigh 0 contributes nothing.
+#' @return Named endpoint weights.
+#' @family Clinical utility
+#' @export
+#' @examples
+#' values <- data.frame(regimen = rep(1:3, 3),
+#'                      endpoint = rep(c("eff1", "eff2", "ae"), each = 3),
+#'                      value = c(0.2, 0.5, 0.7, 0.1, 0.4, 0.6, 0.05, 0.1, 0.3))
+#' res <- cuiFromValues(values, list(cuiEndpoint(eff1), cuiEndpoint(eff2),
+#'                                   cuiEndpoint(ae, direction = "lower")))
+#' w <- cuiGroupWeights(res, group = c(efficacy = 2, safety = 1),
+#'                      within = c(eff1 = 3, eff2 = 1))
+#' w
+#' update(res, weights = w)
+cuiGroupWeights <- function(x, group = NULL, within = NULL) {
+  if (!inherits(x, "nlmixr2Cui")) stop("'x' must be an nlmixr2Cui object", call. = FALSE)
+  .epNames <- vapply(x$endpoints, `[[`, character(1), "name")
+  .grp <- .cuiEndpointGroups(x)
+  .g <- setNames(rep(1, length(unique(.grp))), unique(.grp))
+  .w <- setNames(rep(1, length(.epNames)), .epNames)
+  .set <- function(target, given, what) {
+    if (is.null(given)) return(target)
+    checkmate::assertNumeric(given, lower = 0, finite = TRUE, any.missing = FALSE,
+                             names = "unique", .var.name = what)
+    .bad <- setdiff(names(given), names(target))
+    if (length(.bad) > 0) {
+      stop(sprintf("unknown name(s) in '%s': %s", what, paste(.bad, collapse = ", ")), call. = FALSE)
+    }
+    target[names(given)] <- given
+    target
+  }
+  .g <- .set(.g, group, "group")
+  .w <- .set(.w, within, "within")
+  .tot <- tapply(.w, .grp, sum)[.grp]
+  .ret <- ifelse(.tot > 0, .g[.grp] * .w / .tot, 0)
+  setNames(as.numeric(.ret), .epNames)
+}
+
+#' Group of each endpoint (objects made before groups existed use direction)
+#' @noRd
+.cuiEndpointGroups <- function(x) {
+  vapply(x$endpoints, function(e) {
+    if (!is.null(e$group)) e$group else if (e$direction == "lower") "safety" else "efficacy"
+  }, character(1))
 }
 
 #' @export
@@ -345,7 +409,7 @@ cuiFromValues <- function(values, endpoints = NULL, regimens = NULL, weights = N
   .obj <- structure(list(
     schema = 1L,
     endpoints = lapply(endpoints, function(e) {
-      list(name = e$name, utility = e$utility, direction = e$direction,
+      list(name = e$name, utility = e$utility, direction = e$direction, group = e$group,
            summary = if (inherits(e$summary, "cuiSummary")) format(e$summary))
     }),
     regimens = regimens,

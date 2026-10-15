@@ -12,6 +12,7 @@ cuiBinary(
   penalty = FALSE,
   boundary = c("glm", "correction", "error"),
   backend = c("internal", "DoseFinding"),
+  group = NULL,
   ...,
   .name = NULL
 )
@@ -50,6 +51,9 @@ does); \code{"correction"} adds 0.5 to the counts; \code{"error"} stops.}
 \code{DoseFinding::fitMod()}, without \code{monotone}) for \code{"emax"} and
 \code{"exponential"}.}
 
+\item{group}{Endpoint classification for hierarchical weights, as in
+\code{\link[=cuiEndpoint]{cuiEndpoint()}}.}
+
 \item{...}{Not used.}
 
 \item{.name}{Column name as a string, for programmatic use instead of
@@ -68,11 +72,14 @@ cuiBinary("eff", model = "logitQuadratic", monotone = "increasing")
 \seealso{
 Other Clinical utility:
 \code{\link[=cui]{cui()}},
+\code{\link[=cuiApp]{cuiApp()}},
+\code{\link[=cuiAppExport]{cuiAppExport()}},
 \code{\link[=cuiBootstrap]{cuiBootstrap()}},
 \code{\link[=cuiDoseResponse]{cuiDoseResponse()}},
 \code{\link[=cuiEndpoint]{cuiEndpoint()}},
 \code{\link[=cuiExposure]{cuiExposure()}},
 \code{\link[=cuiFromValues]{cuiFromValues()}},
+\code{\link[=cuiGroupWeights]{cuiGroupWeights()}},
 \code{\link[=cuiIdentity]{cuiIdentity()}},
 \code{\link[=cuiModelPredict]{cuiModelPredict()}},
 \code{\link[=cuiPopulation]{cuiPopulation()}},

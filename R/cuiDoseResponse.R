@@ -26,6 +26,8 @@
 #' @param backend `"internal"` or `"DoseFinding"` (uses
 #'   `DoseFinding::fitMod()`, without `monotone`) for `"emax"` and
 #'   `"exponential"`.
+#' @param group Endpoint classification for hierarchical weights, as in
+#'   [cuiEndpoint()].
 #' @param ... Not used.
 #' @param .name Column name as a string, for programmatic use instead of
 #'   `name`.
@@ -40,7 +42,7 @@ cuiBinary <- function(name, model = c("empirical", "logitLinear", "logitQuadrati
                       direction = c("higher", "lower"),
                       monotone = c("none", "increasing", "decreasing"), penalty = FALSE,
                       boundary = c("glm", "correction", "error"),
-                      backend = c("internal", "DoseFinding"), ..., .name = NULL) {
+                      backend = c("internal", "DoseFinding"), group = NULL, ..., .name = NULL) {
   .name <- .cuiCaptureName(substitute(name), missing(name), .name, "name")
   .fitModel <- NULL
   if (!is.character(model)) {
@@ -59,7 +61,8 @@ cuiBinary <- function(name, model = c("empirical", "logitLinear", "logitQuadrati
   if (model == "fitted" && monotone != "none") {
     stop("'monotone' applies to the built-in models, not a fitted model", call. = FALSE)
   }
-  .ret <- cuiEndpoint(.name = .name, utility = cuiIdentity(), direction = match.arg(direction))
+  .ret <- cuiEndpoint(.name = .name, utility = cuiIdentity(), direction = match.arg(direction),
+                      group = group)
   .ret$model <- model
   .ret$monotone <- monotone
   .ret$penalty <- penalty
