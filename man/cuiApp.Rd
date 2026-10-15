@@ -31,7 +31,8 @@ vector of endpoint weights, or a list with \code{group} and \code{within} as in
 
 \item{reference, colors}{Passed to \code{\link[=plot.nlmixr2Cui]{plot.nlmixr2Cui()}}.}
 
-\item{maxWeight}{Upper end of the weight sliders.}
+\item{maxWeight}{Upper end of the weight sliders; raised when a starting
+or preset weight (or a group's total) is larger.}
 }
 \value{
 A \code{shiny.appobj}; printing it (or \code{\link[shiny:runApp]{shiny::runApp()}}) starts the

@@ -28,7 +28,8 @@
 #'   [cuiGroupWeights()].
 #' @param title App title.
 #' @param reference,colors Passed to [plot.nlmixr2Cui()].
-#' @param maxWeight Upper end of the weight sliders.
+#' @param maxWeight Upper end of the weight sliders; raised when a starting
+#'   or preset weight (or a group's total) is larger.
 #' @return A `shiny.appobj`; printing it (or [shiny::runApp()]) starts the
 #'   app.
 #' @family Clinical utility
@@ -72,9 +73,8 @@ cuiApp <- function(x, mode = c("explorer", "desk"), eligible = NULL, presets = N
     stop("'presets' must be a named list", call. = FALSE)
   }
   .start <- .cuiAppPreset(.raw, x, .epNames, .grp)
-  if (max(c(unlist(.start), unlist(.presets))) > maxWeight) {
-    stop("a starting or preset weight exceeds 'maxWeight'", call. = FALSE)
-  }
+  # a group slider starts at its endpoints' total, which can exceed maxWeight
+  maxWeight <- max(maxWeight, ceiling(max(c(unlist(.start), unlist(.presets)))))
   # start on the preset that matches the starting weights, if any
   .match <- Filter(function(p) {
     isTRUE(all.equal(cuiGroupWeights(x, p$group, p$within), cuiGroupWeights(x, .start$group, .start$within)))
@@ -269,8 +269,11 @@ cuiApp <- function(x, mode = c("explorer", "desk"), eligible = NULL, presets = N
         .tab$Selected <- sprintf("%.0f%%", 100 * .s$selFreq)
       }
       .v <- .r$values[.r$values$draw == 0 & .r$values$assessment == assessment(), , drop = FALSE]
+      .fixed <- c(names(.tab), "Recommended")
       for (.e in spec$epNames) {
-        .tab[[.e]] <- .v$value[.v$endpoint == .e][match(.s$regimen, .v$regimen[.v$endpoint == .e])]
+        # an endpoint named like a fixed column keeps its own column
+        .col <- if (.e %in% .fixed) paste0(.e, " (endpoint)") else .e
+        .tab[[.col]] <- .v$value[.v$endpoint == .e][match(.s$regimen, .v$regimen[.v$endpoint == .e])]
       }
       .tab$Recommended <- ifelse(.s$best, "yes", "")
       .tab

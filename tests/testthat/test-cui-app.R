@@ -56,7 +56,12 @@ test_that("presets map exactly onto group and within-group sliders", {
                "dce")
   expect_error(.cur$.cuiAppSpec(.r, list(c(dysm = 1)), 5), "named list")
   expect_error(.cur$.cuiAppSpec(.r, list(a = c(nope = 1)), 5), "unknown endpoint")
-  expect_error(.cur$.cuiAppSpec(.r, list(a = c(dysm = 9)), 5), "maxWeight")
+  # sliders are widened for large weights or group totals instead of refusing
+  expect_equal(.cur$.cuiAppSpec(.r, list(a = c(dysm = 9)), 5)$maxWeight, 10)
+  .six <- cuiFromValues(data.frame(regimen = rep(1:2, 6), endpoint = rep(letters[1:6], each = 2),
+                                   value = 0.5))
+  expect_equal(.cur$.cuiAppSpec(.six, NULL, 5)$maxWeight, 6)
+  expect_s3_class(cuiApp(.six), "shiny.appobj")
 })
 
 test_that("the app builds its sliders and tabs", {
@@ -104,6 +109,7 @@ test_that("the server re-weights, restricts eligibility and downloads", {
     expect_equal(.wt$group, c("efficacy", "efficacy", "safety", "safety"))
     expect_equal(nrow(utils::read.csv(output$downloadResults)), 2)
     expect_match(output$sensitivityText, "now")
+    expect_equal(names(regimenTable())[c(1, ncol(regimenTable()))], c("Regimen", "Recommended"))
     # all weights zero is a message, not a crash
     session$setInputs(cuiGroup1 = 0, cuiGroup2 = 0)
     session$elapse(500)
@@ -149,4 +155,20 @@ test_that("cuiAppExport() writes a runnable app", {
   skip_if_not_installed("bslib")
   .app <- withr::with_dir(.dir, eval(parse(file.path("app.R"))))
   expect_s3_class(.app, "shiny.appobj")
+})
+
+test_that("endpoints named like table columns keep their own column", {
+  skip_if_not_installed("shiny")
+  skip_if_not_installed("bslib")
+  .r <- cuiFromValues(data.frame(regimen = rep(1:2, 2), endpoint = rep(c("CUI", "Recommended"), each = 2),
+                                 value = c(0.2, 0.6, 0.3, 0.4)))
+  shiny::testServer(cuiApp(.r), {
+    session$setInputs(cuiGroup1 = 1, cuiWithin1 = 1, cuiWithin2 = 1, combine = "additive")
+    session$elapse(500)
+    .t <- regimenTable()
+    expect_equal(.t$`CUI (endpoint)`, c(0.2, 0.6))
+    expect_equal(.t$`Recommended (endpoint)`, c(0.3, 0.4))
+    expect_equal(.t$CUI, c(0.25, 0.5))
+    expect_equal(.t$Recommended, c("", "yes"))
+  })
 })
