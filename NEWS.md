@@ -1,5 +1,16 @@
 # nlmixr2extra (development version)
 
+## New features
+
+- New clinical utility index (CUI) tools.  `cuiFromValues()` combines
+  endpoint summaries per regimen (and optional uncertainty draws) into a
+  weighted CUI with percentile intervals, the recommended regimen and how
+  often each regimen is selected across draws.  Endpoints are defined with
+  `cuiEndpoint()` and mapped to `[0, 1]` with `cuiIdentity()`,
+  `cuiLinear()` or `cuiStep()`; candidates come from `cuiRegimens()`.
+  `update()` re-weights or restricts the eligible regimens without
+  recomputing endpoints.
+
 ## Bug fixes
 
 - The figures from `bootplot()` (also shown by `plot()` of a bootstrapped
