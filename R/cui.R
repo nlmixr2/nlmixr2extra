@@ -89,9 +89,9 @@ cuiRegimens <- function(dose, ii = NA_real_, duration = NA_real_,
   .ret <- data.frame(dose = dose, ii = as.numeric(ii), duration = as.numeric(duration),
                      units = as.character(units), stringsAsFactors = FALSE)
   if (is.null(label)) {
-    label <- format(.ret$dose, trim = TRUE)
+    label <- .cuiNumLabel(.ret$dose)
     .hasIi <- !is.na(.ret$ii)
-    label[.hasIi] <- paste0(label[.hasIi], " q", format(.ret$ii[.hasIi], trim = TRUE))
+    label[.hasIi] <- paste0(label[.hasIi], " q", .cuiNumLabel(.ret$ii[.hasIi]))
   }
   label <- as.character(label)
   if (length(label) != nrow(.ret)) {
@@ -103,6 +103,15 @@ cuiRegimens <- function(dose, ii = NA_real_, duration = NA_real_,
   .ret <- cbind(data.frame(label = label, stringsAsFactors = FALSE), .ret)
   class(.ret) <- c("cuiRegimens", "data.frame")
   .ret
+}
+
+#' Label numbers one at a time, so labels match however a vector is formatted
+#'
+#' @param x Numeric vector.
+#' @return Character labels (`10`, `2.5`, `1e+05`).
+#' @noRd
+.cuiNumLabel <- function(x) {
+  vapply(x, function(.x) format(.x, trim = TRUE), character(1), USE.NAMES = FALSE)
 }
 
 #' Normalize the eligibility specification to a full grid
@@ -123,11 +132,24 @@ cuiRegimens <- function(dose, ii = NA_real_, duration = NA_real_,
     if (!all(c("regimen", "assessment") %in% names(eligible))) {
       stop("an 'eligible' data frame needs 'regimen' and 'assessment' columns", call. = FALSE)
     }
-    .key <- paste(as.character(eligible$assessment), as.character(eligible$regimen), sep = "\r")
-    .bad <- setdiff(as.character(eligible$regimen), regimens)
+    if ("eligible" %in% names(eligible)) {
+      if (!checkmate::testLogical(eligible[["eligible"]], any.missing = FALSE)) {
+        stop("the 'eligible' column of an 'eligible' data frame must be TRUE/FALSE", call. = FALSE)
+      }
+      eligible <- eligible[eligible[["eligible"]], , drop = FALSE]
+    }
+    .reg <- as.character(eligible[["regimen"]])
+    .ass <- as.character(eligible[["assessment"]])
+    .bad <- setdiff(.reg, regimens)
     if (length(.bad) > 0) {
       stop(sprintf("unknown regimen(s) in 'eligible': %s", paste(.bad, collapse = ", ")), call. = FALSE)
     }
+    .bad <- setdiff(.ass, assessments)
+    if (length(.bad) > 0) {
+      stop(sprintf("unknown assessment(s) in 'eligible': %s", paste(.bad, collapse = ", ")),
+           call. = FALSE)
+    }
+    .key <- paste(.ass, .reg, sep = "\r")
     .grid$eligible <- paste(.grid$assessment, .grid$regimen, sep = "\r") %in% .key
   } else if (is.logical(eligible)) {
     if (is.null(names(eligible)) || !setequal(names(eligible), regimens) || anyNA(eligible)) {
@@ -181,7 +203,8 @@ cuiRegimens <- function(dose, ii = NA_real_, duration = NA_real_,
 #' @param eligible Regimens the recommendation may choose from: `NULL`
 #'   (all), a character vector of regimen labels, a logical vector named by
 #'   regimen, or a data frame listing eligible `regimen` and `assessment`
-#'   pairs.
+#'   pairs (with an optional logical `eligible` column, as in the
+#'   `eligible` element of the result).
 #' @param level Confidence level of the percentile intervals.
 #' @param tieTol CUI differences up to `tieTol` count as ties.
 #' @return An `nlmixr2Cui` object.
@@ -227,13 +250,22 @@ cuiFromValues <- function(values, endpoints = NULL, regimens = NULL, weights = N
   }
   checkmate::assertNumber(level, lower = 0, upper = 1)
   checkmate::assertNumber(tieTol, lower = 0, finite = TRUE)
-  .regIn <- values$regimen
+  # [[ ]] rather than $, which partial-matches (a 'draws' column is not 'draw')
+  .regIn <- values[["regimen"]]
+  .assIn <- values[["assessment"]]
+  .drawIn <- values[["draw"]]
+  if (!is.numeric(values[["value"]])) {
+    stop("'values$value' must be numeric", call. = FALSE)
+  }
+  if (!is.null(.drawIn) && !checkmate::testIntegerish(.drawIn)) {
+    stop("'values$draw' must be whole numbers", call. = FALSE)
+  }
   .v <- data.frame(
-    assessment = if (is.null(values$assessment)) "all" else as.character(values$assessment),
-    regimen = as.character(values$regimen),
-    draw = if (is.null(values$draw)) 0L else as.integer(values$draw),
-    endpoint = as.character(values$endpoint),
-    value = as.numeric(values$value),
+    assessment = if (is.null(.assIn)) "all" else as.character(.assIn),
+    regimen = if (is.numeric(.regIn)) .cuiNumLabel(.regIn) else as.character(.regIn),
+    draw = if (is.null(.drawIn)) 0L else as.integer(.drawIn),
+    endpoint = as.character(values[["endpoint"]]),
+    value = values[["value"]],
     stringsAsFactors = FALSE
   )
   if (anyNA(.v)) {
@@ -263,7 +295,7 @@ cuiFromValues <- function(values, endpoints = NULL, regimens = NULL, weights = N
   if (is.null(regimens)) {
     if (is.numeric(.regIn)) {
       .d <- sort(unique(.regIn))
-      regimens <- cuiRegimens(dose = .d, label = as.character(.d))
+      regimens <- cuiRegimens(dose = .d, label = .cuiNumLabel(.d))
     } else {
       .l <- unique(.v$regimen)
       regimens <- cuiRegimens(dose = rep(NA_real_, length(.l)), label = .l)
@@ -278,8 +310,8 @@ cuiFromValues <- function(values, endpoints = NULL, regimens = NULL, weights = N
          call. = FALSE)
   }
   .assess <- unique(.v$assessment)
-  if (is.factor(values$assessment)) {
-    .assess <- intersect(levels(values$assessment), .assess)
+  if (is.factor(.assIn)) {
+    .assess <- intersect(levels(.assIn), .assess)
   }
   # complete grid: one value per endpoint x regimen x draw in every assessment
   if (anyDuplicated(.v[, c("assessment", "regimen", "draw", "endpoint")]) != 0L) {

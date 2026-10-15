@@ -37,7 +37,8 @@ a zero utility gives a zero CUI).}
 \item{eligible}{Regimens the recommendation may choose from: \code{NULL}
 (all), a character vector of regimen labels, a logical vector named by
 regimen, or a data frame listing eligible \code{regimen} and \code{assessment}
-pairs.}
+pairs (with an optional logical \code{eligible} column, as in the
+\code{eligible} element of the result).}
 
 \item{level}{Confidence level of the percentile intervals.}
 

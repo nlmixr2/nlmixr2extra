@@ -253,3 +253,77 @@ test_that("regimens, printing and data frames", {
   # the result carries no environments, so it serializes compactly
   expect_false(any(vapply(unlist(unclass(.r), recursive = TRUE), is.environment, logical(1))))
 })
+
+# draws where the winner changes, so misaligned draws or regimens show up
+.varyValues <- function() {
+  .cui <- rbind(c(0.5, 0.6, 0.4),  # draw 0: mid
+                c(0.7, 0.6, 0.4),  # draw 1: lo
+                c(0.5, 0.6, 0.4),  # draw 2: mid
+                c(0.5, 0.6, 0.9),  # draw 3: hi
+                c(0.5, 0.8, 0.4))  # draw 4: mid
+  data.frame(regimen = rep(c("lo", "mid", "hi"), 5), draw = rep(0:4, each = 3),
+             endpoint = "e", value = as.vector(t(.cui)))
+}
+
+test_that("selection follows the winner of each draw", {
+  .reg <- cuiRegimens(dose = 1:3, label = c("lo", "mid", "hi"))
+  .r <- cuiFromValues(.varyValues(), regimens = .reg)
+  expect_equal(.r$summary$selFreq, c(0.25, 0.5, 0.25))
+  expect_equal(.r$summary$mean, c(0.55, 0.65, 0.525))
+  # regimens given in another order than the values give the same answer
+  .rev <- cuiFromValues(.varyValues()[15:1, ],
+                        regimens = cuiRegimens(dose = 3:1, label = c("hi", "mid", "lo")))
+  .m <- match(.r$summary$regimen, .rev$summary$regimen)
+  expect_equal(.rev$summary$selFreq[.m], .r$summary$selFreq)
+  expect_equal(.rev$summary$lower[.m], .r$summary$lower)
+  # per-assessment selection and intervals
+  .two <- rbind(cbind(.varyValues(), assessment = "a1"),
+                cbind(.varyValues()[c(3:1, 6:4, 9:7, 12:10, 15:13), ], assessment = "a2"))
+  .two$value[.two$assessment == "a2"] <- rev(.two$value[.two$assessment == "a2"])
+  .t <- cuiFromValues(.two, regimens = .reg)
+  .s1 <- .t$summary[.t$summary$assessment == "a1", ]
+  expect_equal(.s1$selFreq, c(0.25, 0.5, 0.25))
+  expect_equal(sum(.t$summary$selFreq[.t$summary$assessment == "a2"]), 1)
+})
+
+test_that("an eligible data frame honors its eligible column and the object's own format", {
+  .r <- cuiFromValues(.drawValues(), weights = c(e1 = 2, e2 = 1))
+  .df <- data.frame(regimen = c("lo", "mid", "hi"), assessment = "all",
+                    eligible = c(TRUE, TRUE, FALSE))
+  .e <- update(.r, eligible = .df)
+  expect_equal(.e$eligible$eligible, c(TRUE, TRUE, FALSE))
+  expect_equal(.e$summary$regimen[.e$summary$best], "mid")
+  # feeding back the result's own eligibility table keeps it
+  expect_equal(update(.e, eligible = .e$eligible)$summary, .e$summary)
+  expect_error(update(.r, eligible = data.frame(regimen = "lo", assessment = "All")),
+               "unknown assessment")
+  expect_error(update(.r, eligible = transform(.df, eligible = c(1, 1, 0))), "TRUE/FALSE")
+})
+
+test_that("update() equals building from scratch for every setting", {
+  .v <- .varyValues()
+  .r <- cuiFromValues(.v)
+  expect_equal(update(.r, eligible = c("lo", "hi"))$summary,
+               cuiFromValues(.v, eligible = c("lo", "hi"))$summary)
+  expect_equal(update(.r, combine = "geometric")$summary,
+               cuiFromValues(.v, combine = "geometric")$summary)
+  expect_equal(update(.r, tieTol = 0.15)$summary, cuiFromValues(.v, tieTol = 0.15)$summary)
+  expect_equal(update(.r, level = 0.5)$summary, cuiFromValues(.v, level = 0.5)$summary)
+})
+
+test_that("numeric regimens match cuiRegimens() labels and inputs are validated", {
+  .v <- data.frame(regimen = rep(c(2.5, 10), 2), draw = rep(0:1, each = 2),
+                   endpoint = "e", value = c(0.1, 0.2, 0.3, 0.1))
+  .r <- cuiFromValues(.v, regimens = cuiRegimens(dose = c(2.5, 10)))
+  expect_equal(.r$summary$regimen, c("2.5", "10"))
+  expect_equal(.r$summary$selFreq, c(1, 0))
+  .big <- data.frame(regimen = c(1e5, 1.5e5), endpoint = "e", value = c(0.1, 0.2))
+  expect_equal(cuiFromValues(.big, regimens = cuiRegimens(dose = c(1e5, 1.5e5)))$summary$est,
+               c(0.1, 0.2))
+  expect_error(cuiFromValues(data.frame(regimen = 1:2, endpoint = "e",
+                                        value = factor(c("90", "10")))), "numeric")
+  expect_error(cuiFromValues(transform(.v, draw = draw + 0.5)), "whole numbers")
+  # a 'draws' column is not partially matched as 'draw'
+  .p <- data.frame(regimen = c(1, 2), endpoint = "e", value = c(0.1, 0.2), draws = c(3, 4))
+  expect_equal(unique(cuiFromValues(.p)$cui$draw), 0L)
+})
