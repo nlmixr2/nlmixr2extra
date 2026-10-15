@@ -290,3 +290,42 @@ test_that("parameter uncertainty from a fit's covariance", {
   expect_false(isTRUE(all.equal(.t1[["tcl"]], .mg$theta[["tcl"]])))
   expect_equal(.cur$.cuiDrawTheta(.mg, .ch, 1, 1), .t1)
 })
+
+test_that("seed = NULL follows the current random stream", {
+  .ep <- cuiEndpoint(c1, .ui, cuiMean(cp, time = 4), utility = cuiLinear(0, 20))
+  .reg <- cuiRegimens(dose = c(100, 200))
+  set.seed(1)
+  .a <- cui(.ep, .reg, .pop, mcTol = 1)
+  set.seed(2)
+  .b <- cui(.ep, .reg, .pop, mcTol = 1)
+  set.seed(1)
+  .c <- cui(.ep, .reg, .pop, mcTol = 1)
+  expect_false(isTRUE(all.equal(.a$values, .b$values)))
+  expect_equal(.a$values, .c$values)
+})
+
+test_that("one subject and one regimen, and zero-variance etas", {
+  .r <- cui(cuiEndpoint(c1, .uiFixed, cuiMean(cp, time = 4), utility = cuiLinear(0, 20)),
+            regimens = cuiRegimens(dose = 100), population = 1)
+  expect_equal(nrow(.r$summary), 1)
+  .zero <- function() {
+    ini({
+      tcl <- log(3)
+      tv <- log(30)
+      eta.cl ~ 0.1
+      eta.v ~ fix(0)
+      add.sd <- 0.7
+    })
+    model({
+      cl <- exp(tcl + eta.cl)
+      v <- exp(tv + eta.v)
+      cp <- linCmt()
+      cp ~ add(add.sd)
+    })
+  }
+  .uz <- suppressMessages(rxode2::rxode2(.zero))
+  expect_equal(.cur$.cuiOmegaFactor(.uz$omega)[2, ], c(0, 0))
+  .z <- cui(cuiEndpoint(v, .uz, cuiMean(v, time = 1), utility = cuiLinear(0, 100)),
+            regimens = cuiRegimens(dose = 100), population = 20, seed = 1, mcTol = 1)
+  expect_equal(.z$summary$est, 30 / 100)
+})

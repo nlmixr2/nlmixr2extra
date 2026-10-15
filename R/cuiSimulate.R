@@ -93,6 +93,15 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
        omega = .omega, covs = .ui$allCovs, summaries = .sums)
 }
 
+#' Cholesky factor of omega, with zero-variance etas held at zero
+#' @noRd
+.cuiOmegaFactor <- function(omega) {
+  .pos <- diag(omega) > 0
+  .r <- matrix(0, nrow(omega), ncol(omega))
+  if (any(.pos)) .r[.pos, .pos] <- chol(omega[.pos, .pos, drop = FALSE])
+  .r
+}
+
 #' Draw structural thetas from the fit's covariance, respecting bounds
 #' @noRd
 .cuiDrawTheta <- function(mg, covChol, seed, draw) {
@@ -157,7 +166,8 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
   .s <- suppressMessages(rxode2::rxSolve(mg$ui, params = .p, events = .ev, nStud = 1,
                                          thetaMat = NULL, simVariability = FALSE, sigma = NA,
                                          returnType = "data.frame"))
-  .id <- as.integer(.s$id)
+  # rxode2 drops the id column when there is a single subject
+  .id <- if (is.null(.s$id)) rep(1L, nrow(.s)) else as.integer(.s$id)
   .s$.reg <- (.id - 1L) %/% .nSub + 1L
   .s$.sub <- (.id - 1L) %% .nSub + 1L
   .s
@@ -252,7 +262,7 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
 #'   error.
 #' @param mcTol Warn when the Monte Carlo standard error of the CUI
 #'   difference between the two best regimens exceeds this.
-#' @param seed Seed, or `NULL` for the current random stream.
+#' @param seed Seed, or `NULL` to take one from the current random stream.
 #' @param minSuccess Minimum fraction of draws that must simulate.
 #' @inheritParams cuiFromValues
 #' @return An `nlmixr2Cui` object.
@@ -292,6 +302,8 @@ cui <- function(endpoints, regimens, population, times = NULL, weights = NULL,
                 minSuccess = 0.9, level = 0.95, tieTol = sqrt(.Machine$double.eps)) {
   uncertainty <- match.arg(uncertainty)
   mode <- match.arg(mode)
+  # one base seed from the current stream; every keyed stream derives from it
+  if (is.null(seed)) seed <- sample.int(.Machine$integer.max, 1L)
   combine <- match.arg(combine)
   checkmate::assertCount(nDraw)
   checkmate::assertCount(nBatch)
@@ -389,7 +401,7 @@ cui <- function(endpoints, regimens, population, times = NULL, weights = NULL,
     if (.nEta == 0L) return(matrix(numeric(0), nrow = n, ncol = 0))
     .z <- .cuiWithSeed(.cuiStreamSeed(seed, "eta", mg$group, draw),
                        matrix(stats::rnorm(n * .nEta), nrow = n))
-    .e <- .z %*% chol(mg$omega)
+    .e <- .z %*% .cuiOmegaFactor(mg$omega)
     colnames(.e) <- rownames(mg$omega)
     .e
   }

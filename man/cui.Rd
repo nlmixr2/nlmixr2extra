@@ -74,7 +74,7 @@ error.}
 \item{mcTol}{Warn when the Monte Carlo standard error of the CUI
 difference between the two best regimens exceeds this.}
 
-\item{seed}{Seed, or \code{NULL} for the current random stream.}
+\item{seed}{Seed, or \code{NULL} to take one from the current random stream.}
 
 \item{minSuccess}{Minimum fraction of draws that must simulate.}
 
