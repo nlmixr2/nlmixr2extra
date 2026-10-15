@@ -133,6 +133,8 @@ test_that("bootstrap refits give the parameter draws", {
   }
   .fit <- suppressMessages(nlmixr2est::nlmixr2(.mod, nlmixr2data::theo_sd, "focei",
                                                control = nlmixr2est::foceiControl(print = 0)))
+  # a copy saved before bootstrapping, as nlmixr2save or readRDS() give back
+  saveRDS(.fit, "fit.rds")
   .boot <- suppressMessages(suppressWarnings(
     withr::with_seed(1, bootstrapFit(.fit, nboot = 3, returnType = "fitList"))))
   for (.i in 1:3) {
@@ -168,6 +170,26 @@ test_that("bootstrap refits give the parameter draws", {
   expect_error(cui(list(cuiEndpoint(eff, .other, cuiProb(peff, time = 4))), .reg, 100,
                    uncertainty = cuiBootstrap(.boot), seed = 1), "does not belong")
   expect_output(print(cuiBootstrap(.boot)), "3 of 3 refits")
+  # a reloaded fit (no bootstrapMd5 in memory) still matches its ensemble
+  .reloaded <- readRDS("fit.rds")
+  expect_null(.reloaded$bootstrapMd5)
+  .rl <- cui(list(cuiEndpoint(eff, .reloaded, cuiProb(peff, time = 4))), .reg, 100,
+             uncertainty = cuiBootstrap(.boot), seed = 1, mcTol = 1)
+  expect_equal(.rl$summary, .b$summary)
+  # adding refits resumes the cache and simulates only the new draws
+  .calls <- 0
+  .real <- .cur$.cuiSolveDraw
+  local_mocked_bindings(.cuiSolveDraw = function(...) {
+    .calls <<- .calls + 1
+    .real(...)
+  })
+  .two <- .boot[.ord[1:2]]
+  cui(.eps, .reg, 100, uncertainty = cuiBootstrap(.two), seed = 1, mcTol = 1, cacheDir = "bc")
+  .calls <- 0
+  .all <- cui(.eps, .reg, 100, uncertainty = cuiBootstrap(.boot), seed = 1, mcTol = 1,
+              cacheDir = "bc")
+  expect_equal(.calls, 1)
+  expect_equal(.all$summary, .b$summary)
 })
 
 test_that("draws are cached, resumed and restarted", {
@@ -200,11 +222,27 @@ test_that("draws are cached, resumed and restarted", {
   .calls <- 0
   .run(3, cacheDir = "cc", restart = TRUE)
   expect_equal(.calls, 4)
+  # failed draws are not cached, so a rerun retries them
+  .fail <- TRUE
+  local_mocked_bindings(.cuiSolveDraw = function(...) {
+    .calls <<- .calls + 1
+    if (.fail && .calls == 2) stop("transient")
+    .real(...)
+  })
+  .calls <- 0
+  .f1 <- .run(2, cacheDir = "ff", minSuccess = 0)
+  expect_equal(.f1$draws$status, c("ok", "failed", "ok"))
+  expect_false(file.exists(file.path("ff", "draw_00001.rds")))
+  .fail <- FALSE
+  .calls <- 0
+  .f2 <- .run(2, cacheDir = "ff")
+  expect_equal(.calls, 1)
+  expect_equal(.f2$draws$status, rep("ok", 3))
   # a cache belongs to one simulation
   expect_error(cui(.eps, .reg, 50, mode = "trial", nDraw = 2, nSub = 20, seed = 2,
                    cacheDir = "cc"), "different simulation")
   # NULL derives the directory name; NA (the default) writes nothing
   .run(1, cacheDir = NULL)
   expect_length(list.files(pattern = "^nlmixr2CuiCache_"), 1)
-  expect_equal(sort(list.files()), sort(c("cc", list.files(pattern = "^nlmixr2CuiCache_"))))
+  expect_equal(sort(list.files()), sort(c("cc", "ff", list.files(pattern = "^nlmixr2CuiCache_"))))
 })

@@ -96,7 +96,10 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
   list(group = group, fit = fit, isFit = .isFit, ui = .sim, theta = .theta, struct = .struct,
        lower = setNames(.ini$lower, .ini$name), upper = setNames(.ini$upper, .ini$name),
        omega = .omega, covs = .ui$allCovs, summaries = .sums, exposures = .expo,
-       md5 = if (.isFit) fit$bootstrapMd5 else NULL)
+       # bootstrapMd5 is only set in memory; a reloaded fit still has md5
+       md5 = if (.isFit) {
+         if (is.null(fit$bootstrapMd5)) fit$md5 else fit$bootstrapMd5
+       })
 }
 
 #' Cholesky factor of omega, with zero-variance etas held at zero
@@ -361,12 +364,13 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
 
 .cuiCacheFile <- function(dir, d) file.path(dir, sprintf("draw_%05d.rds", d))
 
-.cuiCacheRead <- function(dir, d) {
+.cuiCacheRead <- function(dir, d, check) {
   if (is.null(dir)) return(NULL)
   .f <- .cuiCacheFile(dir, d)
   if (!file.exists(.f)) return(NULL)
   .ret <- try(readRDS(.f), silent = TRUE)
-  if (inherits(.ret, "try-error")) NULL else .ret
+  # a draw whose parameters changed (for example new bootstrap refits) is redone
+  if (inherits(.ret, "try-error") || !identical(.ret$check, check)) NULL else .ret
 }
 
 .cuiCacheWrite <- function(dir, d, value) {
@@ -641,7 +645,7 @@ cui <- function(endpoints, regimens, population, times = NULL, weights = NULL,
            lapply(c(mg$summaries, mg$exposures), function(s) s[c("type", "expr", "time", "window")]))
     }),
     as.data.frame(population), as.data.frame(regimens), times, mode, nSub, uncertainty,
-    .covChol, if (!is.null(.boot)) lapply(seq_len(nrow(.bootDraws)), .params), cmt, nBatch, seed,
+    .covChol, cmt, nBatch, seed,
     as.character(utils::packageVersion("rxode2")),
     as.character(utils::packageVersion("nlmixr2extra"))))
   # draws
@@ -651,7 +655,9 @@ cui <- function(endpoints, regimens, population, times = NULL, weights = NULL,
   .status <- rep("ok", nDraw + 1L)
   .msg <- rep("", nDraw + 1L)
   for (.d in 0:nDraw) {
-    .res <- .cuiCacheRead(.cache, .d)
+    .pd <- .params(.d)
+    .check <- digest::digest(.pd)
+    .res <- .cuiCacheRead(.cache, .d, .check)
     if (is.null(.res)) {
       .trial <- mode == "trial" && .d > 0
       .rows <- if (.trial) {
@@ -662,13 +668,15 @@ cui <- function(endpoints, regimens, population, times = NULL, weights = NULL,
       .n <- length(.rows)
       .bt <- if (.d == 0 && nBatch >= 2 && .n >= 2 * nBatch) (seq_len(.n) - 1L) %% nBatch + 1L else NULL
       .res <- tryCatch(
-        list(ok = TRUE, out = .cuiRunDraw(.d, .groups, .params(.d), .rows, if (.trial) .d else 0L,
+        list(ok = TRUE, check = .check,
+             out = .cuiRunDraw(.d, .groups, .pd, .rows, if (.trial) .d else 0L,
                                           population, regimens, times, .obsTimes, cmt, .bt, seed)),
         error = function(e) {
           if (.d == 0) stop(e)
           list(ok = FALSE, message = conditionMessage(e))
         })
-      .cuiCacheWrite(.cache, .d, .res)
+      # failed draws are not cached, so a rerun retries them
+      if (.res$ok) .cuiCacheWrite(.cache, .d, .res)
     }
     if (!.res$ok) {
       .status[.d + 1L] <- "failed"
