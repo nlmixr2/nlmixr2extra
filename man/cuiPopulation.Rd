@@ -40,6 +40,7 @@ Other Clinical utility:
 \code{\link[=cuiExposure]{cuiExposure()}},
 \code{\link[=cuiFromValues]{cuiFromValues()}},
 \code{\link[=cuiIdentity]{cuiIdentity()}},
+\code{\link[=cuiModelPredict]{cuiModelPredict()}},
 \code{\link[=cuiProb]{cuiProb()}},
 \code{\link[=cuiRegimens]{cuiRegimens()}},
 \code{\link[=update.nlmixr2Cui]{update.nlmixr2Cui()}}

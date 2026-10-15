@@ -68,6 +68,26 @@ cuiAuc <- function(x, ..., window, .x = NULL) {
 }
 
 #' @rdname cuiProb
+#' @param dose For `cuiResponse()`: the column of a fitted regression model
+#'   (see [cuiModelPredict()]) that takes the regimen dose, as a bare name or
+#'   a string, or missing for a model driven only by covariates and chained
+#'   exposures; `cuiResponse()` is the mean predicted response of such a
+#'   model over the population.
+#' @param .dose The dose column as a string, for programmatic use.
+#' @export
+cuiResponse <- function(dose, ..., .dose = NULL) {
+  .cuiNoDots(...)
+  .doseVar <- if (missing(dose) && is.null(.dose)) {
+    NULL
+  } else {
+    .cuiCaptureName(substitute(dose), missing(dose), .dose, "dose")
+  }
+  .s <- .cuiSummaryNew("response", NULL, NULL)
+  .s$doseVar <- .doseVar
+  .s
+}
+
+#' @rdname cuiProb
 #' @export
 cuiThreshold <- function(cond, ..., time = NULL, .cond = NULL) {
   .cuiNoDots(...)
@@ -95,6 +115,9 @@ cuiThreshold <- function(cond, ..., time = NULL, .cond = NULL) {
 
 #' @export
 format.cuiSummary <- function(x, ...) {
+  if (x$type == "response") {
+    return(if (is.null(x$doseVar)) "response()" else sprintf("response(%s = dose)", x$doseVar))
+  }
   .e <- if (is.character(x$expr)) x$expr else paste(deparse(x$expr), collapse = " ")
   .when <- if (!is.null(x$window)) {
     sprintf(" over [%s, %s]", format(x$window[1]), format(x$window[2]))

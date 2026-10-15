@@ -86,6 +86,7 @@ Other Clinical utility:
 \code{\link[=cuiEndpoint]{cuiEndpoint()}},
 \code{\link[=cuiExposure]{cuiExposure()}},
 \code{\link[=cuiIdentity]{cuiIdentity()}},
+\code{\link[=cuiModelPredict]{cuiModelPredict()}},
 \code{\link[=cuiPopulation]{cuiPopulation()}},
 \code{\link[=cuiProb]{cuiProb()}},
 \code{\link[=cuiRegimens]{cuiRegimens()}},

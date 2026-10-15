@@ -4,6 +4,7 @@
 \alias{cuiProb}
 \alias{cuiMean}
 \alias{cuiAuc}
+\alias{cuiResponse}
 \alias{cuiThreshold}
 \title{Endpoint summaries for a simulated clinical utility index}
 \usage{
@@ -12,6 +13,8 @@ cuiProb(x, ..., time = NULL, .x = NULL)
 cuiMean(x, ..., time = NULL, window = NULL, .x = NULL)
 
 cuiAuc(x, ..., window, .x = NULL)
+
+cuiResponse(dose, ..., .dose = NULL)
 
 cuiThreshold(cond, ..., time = NULL, .cond = NULL)
 }
@@ -27,6 +30,14 @@ each assessment time given to \code{\link[=cui]{cui()}}.}
 for programmatic use.}
 
 \item{window}{Time interval \code{c(from, to)} for averages and integrals.}
+
+\item{dose}{For \code{cuiResponse()}: the column of a fitted regression model
+(see \code{\link[=cuiModelPredict]{cuiModelPredict()}}) that takes the regimen dose, as a bare name or
+a string, or missing for a model driven only by covariates and chained
+exposures; \code{cuiResponse()} is the mean predicted response of such a
+model over the population.}
+
+\item{.dose}{The dose column as a string, for programmatic use.}
 
 \item{cond}{Logical expression of columns and constants.}
 }
@@ -78,6 +89,7 @@ Other Clinical utility:
 \code{\link[=cuiExposure]{cuiExposure()}},
 \code{\link[=cuiFromValues]{cuiFromValues()}},
 \code{\link[=cuiIdentity]{cuiIdentity()}},
+\code{\link[=cuiModelPredict]{cuiModelPredict()}},
 \code{\link[=cuiPopulation]{cuiPopulation()}},
 \code{\link[=cuiRegimens]{cuiRegimens()}},
 \code{\link[=update.nlmixr2Cui]{update.nlmixr2Cui()}}

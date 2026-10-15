@@ -121,7 +121,7 @@ test_that("failed draws are recorded and minSuccess is enforced", {
   .y <- as.matrix(.d[, c("tox", "eff")])
   .eps <- list(cuiBinary(tox), cuiBinary(eff))
   .calls <- 0
-  .flaky <- function(y, dose) {
+  .flaky <- function(y, dose, ...) {
     .calls <<- .calls + 1
     if (.calls %in% c(3, 5)) stop("no convergence")
     .cur$.cuiDrFit(y, dose, 1:5, .eps)

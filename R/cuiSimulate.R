@@ -93,13 +93,35 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
   for (.l in .lines) {
     .sim <- suppressMessages(eval(bquote(rxode2::model(.(.sim), .(.l), append = TRUE))))
   }
-  list(group = group, fit = fit, isFit = .isFit, ui = .sim, theta = .theta, struct = .struct,
+  list(kind = "nlmixr2", group = group, fit = fit, isFit = .isFit, ui = .sim, theta = .theta,
+       struct = .struct,
        lower = setNames(.ini$lower, .ini$name), upper = setNames(.ini$upper, .ini$name),
        omega = .omega, covs = .ui$allCovs, summaries = .sums, exposures = .expo,
        # bootstrapMd5 is only set in memory; a reloaded fit still has md5
        md5 = if (.isFit) {
          if (is.null(fit$bootstrapMd5)) fit$md5 else fit$bootstrapMd5
        })
+}
+
+#' Model group for endpoints from a fitted regression model
+#'
+#' Predictions come from the [cuiModelPredict()] generics; the regimen dose
+#' goes into each summary's dose column.
+#' @noRd
+.cuiFittedGroup <- function(fit, eps, group) {
+  .sums <- lapply(eps, `[[`, "summary")
+  names(.sums) <- vapply(eps, `[[`, character(1), "name")
+  .vars <- cuiModelVars(fit)
+  for (.n in names(.sums)) {
+    if (!is.null(.sums[[.n]]$doseVar) && !(.sums[[.n]]$doseVar %in% .vars)) {
+      stop(sprintf("the model of endpoint '%s' does not use the dose column '%s'", .n,
+                   .sums[[.n]]$doseVar), call. = FALSE)
+    }
+  }
+  list(kind = "fitted", group = group, fit = fit, isFit = FALSE, ui = NULL, theta = NULL,
+       struct = NULL, omega = NULL, md5 = NULL, vars = .vars,
+       covs = setdiff(.vars, unlist(lapply(.sums, `[[`, "doseVar"))),
+       summaries = .sums, exposures = list())
 }
 
 #' Cholesky factor of omega, with zero-variance etas held at zero
@@ -235,7 +257,13 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
 #' @return List with `value` (per regimen) and `batch` (regimen x batch).
 #' @noRd
 .cuiEvalSummary <- function(s, sim, time, nReg, nSub, batch, ep) {
-  .m <- matrix(.cuiSubjectValues(s, sim, time, nReg, nSub, ep), nrow = nSub, ncol = nReg)
+  .cuiAggregate(.cuiSubjectValues(s, sim, time, nReg, nSub, ep), nReg, nSub, batch)
+}
+
+#' Mean per regimen (and per batch) of per-subject values, regimen-major
+#' @noRd
+.cuiAggregate <- function(v, nReg, nSub, batch) {
+  .m <- matrix(v, nrow = nSub, ncol = nReg)
   .ret <- list(value = colMeans(.m))
   if (!is.null(batch)) {
     .ret$batch <- rowsum(.m, batch, reorder = TRUE) / as.vector(table(batch))
@@ -251,6 +279,11 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
 .cuiGroups <- function(endpoints, exposure) {
   .fits <- c(lapply(endpoints, `[[`, "fit"), lapply(exposure, `[[`, "fit"))
   .key <- lapply(.fits, function(f) if (inherits(f, "nlmixr2FitCore")) f$env else f)
+  .isSim <- vapply(.fits, function(f) inherits(f, "nlmixr2FitCore") || inherits(f, "rxUi"),
+                   logical(1))
+  if (length(exposure) > 0 && !all(.isSim[length(endpoints) + seq_along(exposure)])) {
+    stop("exposures come from nlmixr2 fits or rxUi models", call. = FALSE)
+  }
   .grp <- integer(length(.fits))
   for (.i in seq_along(.fits)) {
     .grp[.i] <- .i
@@ -272,6 +305,7 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
     if (anyDuplicated(names(.exps)) != 0L) {
       stop("exposure names must be unique", call. = FALSE)
     }
+    if (!.isSim[.g]) return(.cuiFittedGroup(.fits[[.g]], endpoints[.epGrp == .g], .k))
     .cuiModelGroup(.fits[[.g]], endpoints[.epGrp == .g], .k, .exps)
   })
   .exNames <- unlist(lapply(.groups, function(mg) names(mg$exposures)))
@@ -303,6 +337,11 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
     .mg <- groups[[.k]]
     # params follow the order of groups; .mg$group only keys random streams
     .p <- params[[.k]]
+    if (identical(.mg$kind, "fitted")) {
+      .out <- c(.out, .cuiFittedDraw(.mg, .p$draw, rows, population, regimens, .extra, times,
+                                     d, bt))
+      next
+    }
     .eta <- if (is.null(.p$omega) || nrow(.p$omega) == 0) {
       matrix(numeric(0), nrow = .n, ncol = 0)
     } else {
@@ -334,6 +373,43 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
                        value = as.vector(.r$batch), stringsAsFactors = FALSE)
           })
       }
+    }
+  }
+  .out
+}
+
+#' Predict and summarize the endpoints of a fitted-model group for one draw
+#' @noRd
+.cuiFittedDraw <- function(mg, draw, rows, population, regimens, extra, times, d, bt) {
+  .n <- length(rows)
+  .nReg <- nrow(regimens)
+  .out <- list()
+  for (.ep in names(mg$summaries)) {
+    .s <- mg$summaries[[.ep]]
+    .nd <- data.frame(row.names = seq_len(.n * .nReg))
+    for (.v in setdiff(mg$vars, .s$doseVar)) {
+      .nd[[.v]] <- if (.v %in% names(extra)) {
+        extra[[.v]]
+      } else {
+        rep(population[[.v]][rows], times = .nReg)
+      }
+    }
+    if (!is.null(.s$doseVar)) .nd[[.s$doseVar]] <- rep(regimens$dose, each = .n)
+    .v <- cuiModelPredict(mg$fit, .nd, draw)
+    if (!is.numeric(.v) || length(.v) != nrow(.nd) || anyNA(.v)) {
+      stop(sprintf("the model of endpoint '%s' must predict one number per subject", .ep),
+           call. = FALSE)
+    }
+    .r <- .cuiAggregate(.v, .nReg, .n, bt)
+    for (.a in names(times)) {
+      .out[[length(.out) + 1L]] <- list(
+        value = data.frame(assessment = .a, regimen = regimens$label, draw = d,
+                           endpoint = .ep, value = .r$value, stringsAsFactors = FALSE),
+        batch = if (!is.null(.r$batch)) {
+          data.frame(assessment = .a, regimen = rep(regimens$label, each = nrow(.r$batch)),
+                     endpoint = .ep, batch = rep(seq_len(nrow(.r$batch)), .nReg),
+                     value = as.vector(.r$batch), stringsAsFactors = FALSE)
+        })
     }
   }
   .out
@@ -503,11 +579,15 @@ cui <- function(endpoints, regimens, population, times = NULL, weights = NULL,
   checkmate::assertFlag(restart)
   if (inherits(endpoints, "cuiEndpoint")) endpoints <- list(endpoints)
   if (!all(vapply(endpoints, function(e) {
-    inherits(e, "cuiEndpoint") && inherits(e$summary, "cuiSummary") &&
-      (inherits(e$fit, "nlmixr2FitCore") || inherits(e$fit, "rxUi"))
+    if (!inherits(e, "cuiEndpoint") || !inherits(e$summary, "cuiSummary") || is.null(e$fit)) {
+      return(FALSE)
+    }
+    .sim <- inherits(e$fit, "nlmixr2FitCore") || inherits(e$fit, "rxUi")
+    .sim == (e$summary$type != "response")
   }, logical(1)))) {
-    stop("each endpoint needs cuiEndpoint(name, fit, summary) with an nlmixr2 fit or rxUi ",
-         "and a cuiProb()/cuiMean()/cuiAuc()/cuiThreshold() summary", call. = FALSE)
+    stop("each endpoint needs cuiEndpoint(name, fit, summary): an nlmixr2 fit or rxUi with a ",
+         "cuiProb()/cuiMean()/cuiAuc()/cuiThreshold() summary, or another fitted model ",
+         "with cuiResponse()", call. = FALSE)
   }
   if (inherits(exposure, "cuiExposure")) exposure <- list(exposure)
   if (!all(vapply(exposure, inherits, logical(1), what = "cuiExposure"))) {
@@ -539,7 +619,7 @@ cui <- function(endpoints, regimens, population, times = NULL, weights = NULL,
   if (is.null(times)) {
     .dur <- unique(regimens$duration)
     .needsTime <- vapply(endpoints, function(e) {
-      is.null(e$summary$time) && is.null(e$summary$window)
+      e$summary$type != "response" && is.null(e$summary$time) && is.null(e$summary$window)
     }, logical(1))
     if (any(.needsTime) && (length(.dur) != 1L || is.na(.dur))) {
       stop("give 'times', or a time/window in every summary (regimens have no common duration)",
@@ -565,8 +645,12 @@ cui <- function(endpoints, regimens, population, times = NULL, weights = NULL,
          call. = FALSE)
   }
   # parameter draws per group
+  .fitDraws <- lapply(.groups, function(mg) {
+    if (uncertainty != "cov" || !identical(mg$kind, "fitted")) return(NULL)
+    .cuiWithSeed(.cuiStreamSeed(seed, "model", mg$group), cuiModelDraws(mg$fit, nDraw))
+  })
   .covChol <- lapply(.groups, function(mg) {
-    if (uncertainty != "cov") return(NULL)
+    if (uncertainty != "cov" || identical(mg$kind, "fitted")) return(NULL)
     if (!mg$isFit || is.null(mg$fit$cov)) {
       stop("uncertainty = \"cov\" needs fits with a covariance matrix", call. = FALSE)
     }
@@ -586,7 +670,7 @@ cui <- function(endpoints, regimens, population, times = NULL, weights = NULL,
     for (.i in seq_along(.ens)) {
       .m <- which(vapply(.gMd5, function(m) identical(m, .ens[[.i]]$parentMd5), logical(1)))
       if (length(.m) == 0 && is.na(.ens[[.i]]$parentMd5) && length(.ens) == 1L &&
-        length(.groups) == 1L) {
+        length(.groups) == 1L && identical(.groups[[1]]$kind, "nlmixr2")) {
         .m <- 1L
       }
       if (length(.m) != 1L) {
@@ -620,6 +704,9 @@ cui <- function(endpoints, regimens, population, times = NULL, weights = NULL,
   .params <- function(d) {
     lapply(seq_along(.groups), function(.k) {
       .mg <- .groups[[.k]]
+      if (identical(.mg$kind, "fitted")) {
+        return(list(draw = if (d > 0 && uncertainty == "cov") .fitDraws[[.k]][[d]]))
+      }
       if (d > 0 && uncertainty == "cov") {
         return(list(theta = .cuiDrawTheta(.mg, .covChol[[.k]], seed, d), omega = .mg$omega))
       }
@@ -641,8 +728,10 @@ cui <- function(endpoints, regimens, population, times = NULL, weights = NULL,
   # so a larger nDraw resumes
   .cache <- .cuiCacheSetup(cacheDir, restart, list(
     lapply(.groups, function(mg) {
-      list(mg$ui$iniDf, mg$ui$lstExpr,
-           lapply(c(mg$summaries, mg$exposures), function(s) s[c("type", "expr", "time", "window")]))
+      .sums <- lapply(c(mg$summaries, mg$exposures),
+                      function(s) s[c("type", "expr", "time", "window", "doseVar")])
+      if (identical(mg$kind, "fitted")) return(list(digest::digest(mg$fit), .sums))
+      list(mg$ui$iniDf, mg$ui$lstExpr, .sums)
     }),
     as.data.frame(population), as.data.frame(regimens), times, mode, nSub, uncertainty,
     .covChol, cmt, nBatch, seed,

@@ -30,6 +30,15 @@
   model into exposure-response models, `cuiBootstrap()` uses bootstrap
   refits as parameter draws, and `cacheDir` caches draws so a run resumes.
 
+- Fitted regression models can be CUI endpoints: `cuiBinary(tox, model =
+  fit)` in `cuiDoseResponse()` (averaged over the patients and refit in
+  each bootstrap draw) and `cuiEndpoint(eff, fit, cuiResponse(dose =
+  DOSE))` in `cui()` (averaged over the population, optionally driven by a
+  chained exposure).  Models are used through the generics
+  `cuiModelPredict()`, `cuiModelDraws()`, `cuiModelRefit()` and
+  `cuiModelVars()`, with methods for `lm`/`glm`, lme4, glmmTMB and brms; any
+  other class works once it has methods.
+
 - Bootstrap refits from `bootstrapFit()` now record which original subjects
   they were estimated on (`fit$bootstrapResample`), so refits of different
   models on the same resamples can be paired.

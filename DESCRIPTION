@@ -53,6 +53,8 @@ Suggests:
     pander,
     rmarkdown,
     ggtext,
+    glmmTMB,
+    lme4,
     tidyr,
     nlmixr2lib,
     testthat (>= 3.0.0),

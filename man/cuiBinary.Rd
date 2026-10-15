@@ -23,7 +23,12 @@ cuiBinary(
 \item{model}{How the probability of \code{1} at each dose is estimated:
 \code{"empirical"} (observed rate), \code{"logitLinear"}, \code{"logitQuadratic"}
 (logistic regression on dose), \code{"emax"} or \code{"exponential"} (curve fit
-to the per-dose log-odds, the generalized MCP-Mod fitting step).}
+to the per-dose log-odds, the generalized MCP-Mod fitting step), or a
+fitted model of the endpoint on the trial data (for example \code{glm()},
+\code{lme4::glmer()}, \code{glmmTMB::glmmTMB()} or \code{brms::brm()}; see
+\code{\link[=cuiModelPredict]{cuiModelPredict()}} to support other classes).  A fitted model is
+averaged over the patients with every dose in turn, and refit in each
+bootstrap draw.}
 
 \item{direction}{\code{"higher"} when a \code{1} is desirable, \code{"lower"} when it is
 not (for example toxicity), giving utility \code{1 - p}.}
@@ -69,6 +74,7 @@ Other Clinical utility:
 \code{\link[=cuiExposure]{cuiExposure()}},
 \code{\link[=cuiFromValues]{cuiFromValues()}},
 \code{\link[=cuiIdentity]{cuiIdentity()}},
+\code{\link[=cuiModelPredict]{cuiModelPredict()}},
 \code{\link[=cuiPopulation]{cuiPopulation()}},
 \code{\link[=cuiProb]{cuiProb()}},
 \code{\link[=cuiRegimens]{cuiRegimens()}},

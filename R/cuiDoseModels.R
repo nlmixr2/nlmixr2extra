@@ -31,7 +31,7 @@
 #' Predict a fitted dose-response model at doses
 #' @noRd
 .cuiDrPredict <- function(fit, dose) {
-  if (fit$model == "empirical") {
+  if (fit$model %in% c("empirical", "fitted")) {
     return(fit$p[match(dose, fit$doses)])
   }
   .d <- dose / fit$scale

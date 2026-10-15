@@ -5,7 +5,12 @@
 #' @param model How the probability of `1` at each dose is estimated:
 #'   `"empirical"` (observed rate), `"logitLinear"`, `"logitQuadratic"`
 #'   (logistic regression on dose), `"emax"` or `"exponential"` (curve fit
-#'   to the per-dose log-odds, the generalized MCP-Mod fitting step).
+#'   to the per-dose log-odds, the generalized MCP-Mod fitting step), or a
+#'   fitted model of the endpoint on the trial data (for example `glm()`,
+#'   `lme4::glmer()`, `glmmTMB::glmmTMB()` or `brms::brm()`; see
+#'   [cuiModelPredict()] to support other classes).  A fitted model is
+#'   averaged over the patients with every dose in turn, and refit in each
+#'   bootstrap draw.
 #' @param direction `"higher"` when a `1` is desirable, `"lower"` when it is
 #'   not (for example toxicity), giving utility `1 - p`.
 #' @param monotone Constrain the probability of `1` to be `"increasing"` or
@@ -37,7 +42,13 @@ cuiBinary <- function(name, model = c("empirical", "logitLinear", "logitQuadrati
                       boundary = c("glm", "correction", "error"),
                       backend = c("internal", "DoseFinding"), ..., .name = NULL) {
   .name <- .cuiCaptureName(substitute(name), missing(name), .name, "name")
-  model <- match.arg(model)
+  .fitModel <- NULL
+  if (!is.character(model)) {
+    .fitModel <- model
+    model <- "fitted"
+  } else {
+    model <- match.arg(model)
+  }
   monotone <- match.arg(monotone)
   boundary <- match.arg(boundary)
   backend <- match.arg(backend)
@@ -45,19 +56,24 @@ cuiBinary <- function(name, model = c("empirical", "logitLinear", "logitQuadrati
   if (backend == "DoseFinding" && monotone != "none") {
     stop("backend = \"DoseFinding\" does not support 'monotone'", call. = FALSE)
   }
+  if (model == "fitted" && monotone != "none") {
+    stop("'monotone' applies to the built-in models, not a fitted model", call. = FALSE)
+  }
   .ret <- cuiEndpoint(.name = .name, utility = cuiIdentity(), direction = match.arg(direction))
   .ret$model <- model
   .ret$monotone <- monotone
   .ret$penalty <- penalty
   .ret$boundary <- boundary
   .ret$backend <- backend
+  .ret$fitModel <- .fitModel
   class(.ret) <- c("cuiBinary", class(.ret))
   .ret
 }
 
 #' @export
 print.cuiBinary <- function(x, ...) {
-  cat(sprintf("cuiBinary '%s': %s model%s, %s is better\n", x$name, x$model,
+  .m <- if (x$model == "fitted") paste0("fitted ", class(x$fitModel)[1]) else x$model
+  cat(sprintf("cuiBinary '%s': %s model%s, %s is better\n", x$name, .m,
               if (x$monotone == "none") "" else paste0(" (", x$monotone, ")"), x$direction))
   invisible(x)
 }
@@ -90,17 +106,24 @@ print.cuiBinary <- function(x, ...) {
 #' @param dose Dose of each row.
 #' @param doses Sorted unique doses.
 #' @param endpoints List of `cuiBinary` endpoints matching the columns.
+#' @param data,doseCol The patients of this draw and the dose column, for
+#'   fitted models.
+#' @param refit Refit fitted models to `data` (bootstrap draws).
 #' @return Matrix of probabilities, doses x endpoints, with the fits as
 #'   attribute `fits`.
 #' @noRd
-.cuiDrFit <- function(y, dose, doses, endpoints) {
+.cuiDrFit <- function(y, dose, doses, endpoints, data = NULL, doseCol = NULL, refit = FALSE) {
   .g <- match(dose, doses)
   .n <- tabulate(.g, nbins = length(doses))
   .x <- rowsum(y, .g, reorder = TRUE)
   .fits <- vector("list", length(endpoints))
   .p <- .x / .n
   for (.k in seq_along(endpoints)) {
-    .f <- .cuiDrModel(endpoints[[.k]], .x[, .k], .n, doses)
+    .f <- if (endpoints[[.k]]$model == "fitted") {
+      .cuiDrFitted(endpoints[[.k]], data, doseCol, doses, refit)
+    } else {
+      .cuiDrModel(endpoints[[.k]], .x[, .k], .n, doses)
+    }
     .p[, .k] <- .f$p
     .fits[[.k]] <- .f$fit
   }
@@ -109,9 +132,50 @@ print.cuiBinary <- function(x, ...) {
   .p
 }
 
+#' Probability per dose from a fitted model of the endpoint
+#'
+#' Predictions are averaged over the patients of `data` with each dose in
+#' turn (standardization), or made at the doses alone when the model uses
+#' no other variables.
+#' @noRd
+.cuiDrFitted <- function(ep, data, doseCol, doses, refit) {
+  .fit <- if (refit) cuiModelRefit(ep$fitModel, data) else ep$fitModel
+  .vars <- cuiModelVars(.fit)
+  if (!(doseCol %in% .vars)) {
+    stop(sprintf("the fitted model of endpoint '%s' does not use the dose column '%s'",
+                 ep$name, doseCol), call. = FALSE)
+  }
+  .other <- setdiff(.vars, doseCol)
+  if (length(.other) == 0) {
+    .p <- cuiModelPredict(.fit, setNames(data.frame(doses), doseCol))
+  } else {
+    .miss <- setdiff(.other, names(data))
+    if (length(.miss) > 0) {
+      stop(sprintf("the fitted model of endpoint '%s' needs column(s) %s", ep$name,
+                   paste(.miss, collapse = ", ")), call. = FALSE)
+    }
+    .nd <- data[rep(seq_len(nrow(data)), times = length(doses)), .other, drop = FALSE]
+    .nd[[doseCol]] <- rep(doses, each = nrow(data))
+    .pr <- cuiModelPredict(.fit, .nd)
+    if (length(.pr) != nrow(.nd)) {
+      stop(sprintf("the fitted model of endpoint '%s' gave %d predictions for %d rows",
+                   ep$name, length(.pr), nrow(.nd)), call. = FALSE)
+    }
+    .p <- colMeans(matrix(.pr, nrow = nrow(data)))
+  }
+  if (length(.p) != length(doses) || anyNA(.p) || any(.p < 0 | .p > 1)) {
+    stop(sprintf("the fitted model of endpoint '%s' must predict probabilities in [0, 1]",
+                 ep$name), call. = FALSE)
+  }
+  list(p = as.numeric(.p),
+       fit = list(model = "fitted", class = class(.fit)[1], p = as.numeric(.p), doses = doses))
+}
+
 #' Fit the original data and the stratified patient bootstrap draws
 #'
-#' @param fitFun Function `(y, dose)` returning a doses x endpoints matrix.
+#' @param fitFun Function `(y, dose, rows)` returning a doses x endpoints
+#'   matrix; `rows` is `NULL` for the original data, otherwise the
+#'   resampled rows.
 #' @return List with `values` (long table) and `draws` (manifest).
 #' @noRd
 .cuiDrRun <- function(y, dose, doses, endpoints, nBoot, fitFun) {
@@ -121,7 +185,7 @@ print.cuiBinary <- function(x, ...) {
                endpoint = rep(.epNames, each = nrow(p)),
                draw = draw, value = as.vector(p), stringsAsFactors = FALSE)
   }
-  .p0 <- fitFun(y, dose)
+  .p0 <- fitFun(y, dose, NULL)
   .fits0 <- attr(.p0, "fits")
   .vals <- list(.long(.p0, 0L))
   .status <- rep("ok", nBoot + 1L)
@@ -131,7 +195,7 @@ print.cuiBinary <- function(x, ...) {
   for (.b in seq_len(nBoot)) {
     .idx <- unlist(lapply(.rowsByDose, function(.r) .r[sample.int(length(.r), replace = TRUE)]),
                    use.names = FALSE)
-    .p <- tryCatch(fitFun(y[.idx, , drop = FALSE], dose[.idx]),
+    .p <- tryCatch(fitFun(y[.idx, , drop = FALSE], dose[.idx], .idx),
                    error = function(e) conditionMessage(e))
     if (is.character(.p)) {
       .status[.b + 1L] <- "failed"
@@ -238,7 +302,8 @@ cuiDoseResponse <- function(data, endpoints, dose, id, weights = NULL,
                  .doseCol), call. = FALSE)
   }
   .models <- vapply(endpoints, `[[`, character(1), "model")
-  .need <- c(empirical = 1, logitLinear = 2, logitQuadratic = 3, emax = 2, exponential = 2)
+  .need <- c(empirical = 1, logitLinear = 2, logitQuadratic = 3, emax = 2, exponential = 2,
+             fitted = 1)
   .few <- .need[.models] > length(.doses)
   if (any(.few)) {
     stop(sprintf("endpoint(s) %s need more dose levels than the %d in the data",
@@ -248,7 +313,10 @@ cuiDoseResponse <- function(data, endpoints, dose, id, weights = NULL,
   if (any(.models %in% c("emax", "exponential")) && any(.doses < 0)) {
     stop("emax and exponential models need nonnegative doses", call. = FALSE)
   }
-  .fitFun <- function(y, dose) .cuiDrFit(y, dose, .doses, endpoints)
+  .fitFun <- function(y, dose, rows) {
+    .cuiDrFit(y, dose, .doses, endpoints, if (is.null(rows)) data else data[rows, , drop = FALSE],
+              .doseCol, refit = !is.null(rows))
+  }
   .run <- .cuiWithSeed(seed, .cuiDrRun(.y, .doseVal, .doses, endpoints, nBoot, .fitFun))
   .nOk <- sum(.run$draws$status[-1] == "ok")
   if (nBoot > 0 && .nOk / nBoot < minSuccess) {
