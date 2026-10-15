@@ -15,6 +15,8 @@ cuiDoseResponse(
   nBoot = 1000L,
   seed = NULL,
   minSuccess = 0.9,
+  cacheDir = NULL,
+  restart = FALSE,
   level = 0.95,
   tieTol = sqrt(.Machine$double.eps),
   .dose = NULL,
@@ -52,6 +54,13 @@ stream; the caller's stream is restored afterwards.}
 
 \item{minSuccess}{Minimum fraction of bootstrap draws that must succeed.}
 
+\item{cacheDir}{Directory caching each bootstrap draw, so a rerun loads
+the refits and a larger \code{nBoot} only fits the new draws.  \code{NULL}
+(default) uses \verb{nlmixr2CuiCache_<md5>} from the inputs when a \code{seed}
+is given (otherwise nothing is cached); \code{NA} caches nothing.}
+
+\item{restart}{Discard the cache and refit every draw.}
+
 \item{level}{Confidence level of the percentile intervals.}
 
 \item{tieTol}{CUI differences up to \code{tieTol} count as ties.}
@@ -83,7 +92,7 @@ p <- data.frame(dose = 1:5,
 d <- p[rep(1:5, each = 30), ]
 d$id <- seq_len(nrow(d))
 for (v in c("tox", "eff", "tol")) d[[v]] <- rbinom(nrow(d), 1, d[[v]])
-res <- cuiDoseResponse(d, dose = dose, id = id,
+res <- cuiDoseResponse(d, dose = dose, id = id, cacheDir = NA,
   endpoints = list(cuiBinary(tox, direction = "lower"),
                    cuiBinary(eff), cuiBinary(tol)),
   weights = c(tox = 0.2, eff = 0.5, tol = 0.3), nBoot = 200, seed = 1)

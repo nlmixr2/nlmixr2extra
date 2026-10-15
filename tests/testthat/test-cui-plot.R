@@ -1,3 +1,6 @@
+# caches default to the working directory; keep them out of the package
+withr::local_dir(withr::local_tempdir())
+
 .cur <- loadNamespace("nlmixr2extra")
 
 .cuiPlotValues <- function() {

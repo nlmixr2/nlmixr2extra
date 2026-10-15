@@ -1,5 +1,8 @@
 skip_on_cran()
 
+# caches default to the working directory; keep them out of the package
+withr::local_dir(withr::local_tempdir())
+
 .cur <- loadNamespace("nlmixr2extra")
 
 # one-compartment oral model with weight on clearance and two probability outputs
@@ -187,13 +190,13 @@ test_that("failed draws are recorded and the Monte Carlo warning fires", {
     .real(...)
   })
   .t <- cui(.eps, regimens = .reg, population = .pop, mode = "trial", nDraw = 10, nSub = 30,
-            seed = 1, mcTol = 1)
+            seed = 1, mcTol = 1, cacheDir = NA)
   expect_equal(.t$draws$status[3], "failed")
   expect_equal(.t$draws$message[3], "solver failed")
   expect_equal(sum(.t$summary$selFreq), 1)
   .calls <- 0
   expect_error(cui(.eps, regimens = .reg, population = .pop, mode = "trial", nDraw = 4,
-                   nSub = 30, seed = 1, mcTol = 1), "only 3 of 4 draws")
+                   nSub = 30, seed = 1, mcTol = 1, cacheDir = NA), "only 3 of 4 draws")
   .calls <- -100
   expect_warning(cui(.eps, regimens = .reg, population = .pop, seed = 1, mcTol = 1e-12),
                  "Monte Carlo standard error")
@@ -328,4 +331,16 @@ test_that("one subject and one regimen, and zero-variance etas", {
   .z <- cui(cuiEndpoint(v, .uz, cuiMean(v, time = 1), utility = cuiLinear(0, 100)),
             regimens = cuiRegimens(dose = 100), population = 20, seed = 1, mcTol = 1)
   expect_equal(.z$summary$est, 30 / 100)
+})
+
+test_that("cui() caches by default with a seed, not without", {
+  .ep <- cuiEndpoint(eff, .ui, cuiProb(peff, time = 4))
+  .reg <- cuiRegimens(dose = c(100, 400))
+  .r <- cui(.ep, .reg, .pop, seed = 9, mcTol = 1)
+  expect_true(dir.exists(.r$settings$cacheDir))
+  expect_true(startsWith(basename(.r$settings$cacheDir), "nlmixr2CuiCache_"))
+  .n <- length(list.files(pattern = "^nlmixr2CuiCache_"))
+  expect_null(cui(.ep, .reg, .pop, mcTol = 1)$settings$cacheDir)
+  expect_null(cui(.ep, .reg, .pop, seed = 9, mcTol = 1, cacheDir = NA)$settings$cacheDir)
+  expect_equal(length(list.files(pattern = "^nlmixr2CuiCache_")), .n)
 })

@@ -1,3 +1,6 @@
+# caches default to the working directory; keep them out of the package
+withr::local_dir(withr::local_tempdir())
+
 .cur <- loadNamespace("nlmixr2extra")
 
 # patients from CUI-MET (Zhang et al. 2025) Table 2 example 1 probabilities
@@ -177,4 +180,34 @@ test_that("the seed helper removes a new .Random.seed and restores after errors"
   set.seed(5)
   expect_error(.cur$.cuiWithSeed(1, stop("inside")), "inside")
   expect_equal(stats::runif(1), .want)
+})
+
+test_that("bootstrap draws are cached with a seed and resume", {
+  .d <- .cuimetData(20)
+  .eps <- list(cuiBinary(tox, model = "logitLinear", direction = "lower"), cuiBinary(eff))
+  .calls <- 0
+  .real <- .cur$.cuiDrFit
+  local_mocked_bindings(.cuiDrFit = function(...) {
+    .calls <<- .calls + 1
+    .real(...)
+  })
+  .a <- cuiDoseResponse(.d, .eps, dose = dose, nBoot = 5, seed = 3)
+  expect_equal(.calls, 6)
+  expect_true(dir.exists(.a$settings$cacheDir))
+  .calls <- 0
+  .b <- cuiDoseResponse(.d, .eps, dose = dose, nBoot = 5, seed = 3)
+  expect_equal(.calls, 0)
+  expect_equal(.a$cui, .b$cui)
+  .calls <- 0
+  .c <- cuiDoseResponse(.d, .eps, dose = dose, nBoot = 8, seed = 3)
+  expect_equal(.calls, 3)
+  expect_equal(.c$cui, cuiDoseResponse(.d, .eps, dose = dose, nBoot = 8, seed = 3, cacheDir = NA)$cui)
+  .calls <- 0
+  cuiDoseResponse(.d, .eps, dose = dose, nBoot = 5, seed = 3, restart = TRUE)
+  expect_equal(.calls, 6)
+  # no seed: nothing to reuse, so nothing is cached
+  .n <- length(list.files(pattern = "^nlmixr2CuiCache_"))
+  .x <- cuiDoseResponse(.d, .eps, dose = dose, nBoot = 2)
+  expect_null(.x$settings$cacheDir)
+  expect_equal(length(list.files(pattern = "^nlmixr2CuiCache_")), .n)
 })

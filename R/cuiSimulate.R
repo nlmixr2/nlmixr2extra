@@ -489,9 +489,12 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
 #' from `nBatch` batches of subjects; a warning suggests a larger
 #' population when its standard error exceeds `mcTol`.
 #'
-#' Draws can be cached to `cacheDir` so an interrupted run resumes and a
-#' larger `nDraw` only simulates the new draws; give a `seed` so reruns
-#' match the cache.
+#' With a `seed`, every draw is cached (by default under
+#' `nlmixr2CuiCache_<md5>` in the working directory), so a rerun loads the
+#' simulations, an interrupted run resumes and a larger `nDraw` only
+#' simulates the new draws.  The result itself keeps the simulated endpoint
+#' values: `update()` re-weights, [cuiSensitivity()] and `plot()` work from
+#' them without simulating again.
 #'
 #' @param endpoints List of [cuiEndpoint()] objects, each with a `fit`
 #'   (an `nlmixr2` fit, or an `rxUi` with `uncertainty = "none"`) and a
@@ -521,9 +524,10 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
 #'   difference between the two best regimens exceeds this.
 #' @param seed Seed, or `NULL` to take one from the current random stream.
 #' @param minSuccess Minimum fraction of draws that must simulate.
-#' @param cacheDir Directory caching each draw; `NA` (default) caches
-#'   nothing and `NULL` uses `nlmixr2CuiCache_<md5>` from the simulation's
-#'   inputs.
+#' @param cacheDir Directory caching each draw.  `NULL` (default) uses
+#'   `nlmixr2CuiCache_<md5>` from the simulation's inputs when a `seed` is
+#'   given (without a seed the draws cannot be reproduced, so nothing is
+#'   cached); `NA` caches nothing.
 #' @param restart Discard the cache and simulate every draw again.
 #' @inheritParams cuiFromValues
 #' @return An `nlmixr2Cui` object.
@@ -560,8 +564,10 @@ cui <- function(endpoints, regimens, population, times = NULL, weights = NULL,
                 combine = c("additive", "geometric"), eligible = NULL,
                 uncertainty = "none", nDraw = 0L, mode = c("expectation", "trial"),
                 nSub = NULL, exposure = NULL, cmt = NULL, nBatch = 10L, mcTol = 0.01,
-                seed = NULL, minSuccess = 0.9, cacheDir = NA, restart = FALSE,
+                seed = NULL, minSuccess = 0.9, cacheDir = NULL, restart = FALSE,
                 level = 0.95, tieTol = sqrt(.Machine$double.eps)) {
+  # a cache is only useful for draws that can be reproduced
+  if (is.null(seed) && is.null(cacheDir)) cacheDir <- NA
   .boot <- NULL
   if (inherits(uncertainty, "cuiBootstrap")) {
     .boot <- uncertainty

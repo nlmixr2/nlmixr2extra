@@ -22,7 +22,7 @@ cui(
   mcTol = 0.01,
   seed = NULL,
   minSuccess = 0.9,
-  cacheDir = NA,
+  cacheDir = NULL,
   restart = FALSE,
   level = 0.95,
   tieTol = sqrt(.Machine$double.eps)
@@ -84,9 +84,10 @@ difference between the two best regimens exceeds this.}
 
 \item{minSuccess}{Minimum fraction of draws that must simulate.}
 
-\item{cacheDir}{Directory caching each draw; \code{NA} (default) caches
-nothing and \code{NULL} uses \verb{nlmixr2CuiCache_<md5>} from the simulation's
-inputs.}
+\item{cacheDir}{Directory caching each draw.  \code{NULL} (default) uses
+\verb{nlmixr2CuiCache_<md5>} from the simulation's inputs when a \code{seed} is
+given (without a seed the draws cannot be reproduced, so nothing is
+cached); \code{NA} caches nothing.}
 
 \item{restart}{Discard the cache and simulate every draw again.}
 
@@ -129,9 +130,12 @@ precision of the comparison between the two best regimens is estimated
 from \code{nBatch} batches of subjects; a warning suggests a larger
 population when its standard error exceeds \code{mcTol}.
 
-Draws can be cached to \code{cacheDir} so an interrupted run resumes and a
-larger \code{nDraw} only simulates the new draws; give a \code{seed} so reruns
-match the cache.
+With a \code{seed}, every draw is cached (by default under
+\verb{nlmixr2CuiCache_<md5>} in the working directory), so a rerun loads the
+simulations, an interrupted run resumes and a larger \code{nDraw} only
+simulates the new draws.  The result itself keeps the simulated endpoint
+values: \code{update()} re-weights, \code{\link[=cuiSensitivity]{cuiSensitivity()}} and \code{plot()} work from
+them without simulating again.
 }
 \examples{
 \dontrun{

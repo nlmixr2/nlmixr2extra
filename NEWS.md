@@ -28,7 +28,12 @@
   Monte Carlo standard error flags populations that are too small.
   `cuiExposure()` chains a per-subject exposure (such as Cavg) from a PK
   model into exposure-response models, `cuiBootstrap()` uses bootstrap
-  refits as parameter draws, and `cacheDir` caches draws so a run resumes.
+  refits as parameter draws.  With a `seed`, `cui()` and
+  `cuiDoseResponse()` cache every simulation or bootstrap draw (by
+  default in `nlmixr2CuiCache_<md5>/`), so reruns load them, interrupted
+  runs resume and a larger `nDraw`/`nBoot` only computes the new draws;
+  `update()`, `cuiSensitivity()` and `plot()` reuse the stored endpoint
+  values without simulating.
 
 - `plot()` of a CUI shows the CUI per regimen with its interval, the
   endpoint utilities, how often each regimen is selected, or (for

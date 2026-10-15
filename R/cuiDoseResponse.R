@@ -178,14 +178,23 @@ print.cuiBinary <- function(x, ...) {
 #'   resampled rows.
 #' @return List with `values` (long table) and `draws` (manifest).
 #' @noRd
-.cuiDrRun <- function(y, dose, doses, endpoints, nBoot, fitFun) {
+.cuiDrRun <- function(y, dose, doses, endpoints, nBoot, fitFun, cache = NULL) {
+  # a cached draw is used only for the same resampled rows
+  .fitCached <- function(b, idx, fun) {
+    .check <- digest::digest(idx)
+    .hit <- .cuiCacheRead(cache, b, .check)
+    if (!is.null(.hit)) return(.hit$p)
+    .p <- fun()
+    .cuiCacheWrite(cache, b, list(ok = TRUE, check = .check, p = .p))
+    .p
+  }
   .epNames <- vapply(endpoints, `[[`, character(1), "name")
   .long <- function(p, draw) {
     data.frame(regimen = rep(.cuiNumLabel(doses), times = ncol(p)),
                endpoint = rep(.epNames, each = nrow(p)),
                draw = draw, value = as.vector(p), stringsAsFactors = FALSE)
   }
-  .p0 <- fitFun(y, dose, NULL)
+  .p0 <- .fitCached(0L, "original", function() fitFun(y, dose, NULL))
   .fits0 <- attr(.p0, "fits")
   .vals <- list(.long(.p0, 0L))
   .status <- rep("ok", nBoot + 1L)
@@ -195,7 +204,9 @@ print.cuiBinary <- function(x, ...) {
   for (.b in seq_len(nBoot)) {
     .idx <- unlist(lapply(.rowsByDose, function(.r) .r[sample.int(length(.r), replace = TRUE)]),
                    use.names = FALSE)
-    .p <- tryCatch(fitFun(y[.idx, , drop = FALSE], dose[.idx], .idx),
+    # the resample is always drawn, so the random stream matches with or
+    # without a cache; only the refit is skipped
+    .p <- tryCatch(.fitCached(.b, .idx, function() fitFun(y[.idx, , drop = FALSE], dose[.idx], .idx)),
                    error = function(e) conditionMessage(e))
     if (is.character(.p)) {
       .status[.b + 1L] <- "failed"
@@ -230,6 +241,11 @@ print.cuiBinary <- function(x, ...) {
 #' @param seed Seed for the bootstrap, or `NULL` to use the current random
 #'   stream; the caller's stream is restored afterwards.
 #' @param minSuccess Minimum fraction of bootstrap draws that must succeed.
+#' @param cacheDir Directory caching each bootstrap draw, so a rerun loads
+#'   the refits and a larger `nBoot` only fits the new draws.  `NULL`
+#'   (default) uses `nlmixr2CuiCache_<md5>` from the inputs when a `seed`
+#'   is given (otherwise nothing is cached); `NA` caches nothing.
+#' @param restart Discard the cache and refit every draw.
 #' @param .dose,.id Column names as strings, for programmatic use instead
 #'   of `dose` and `id`.
 #' @inheritParams cuiFromValues
@@ -250,14 +266,15 @@ print.cuiBinary <- function(x, ...) {
 #' d <- p[rep(1:5, each = 30), ]
 #' d$id <- seq_len(nrow(d))
 #' for (v in c("tox", "eff", "tol")) d[[v]] <- rbinom(nrow(d), 1, d[[v]])
-#' res <- cuiDoseResponse(d, dose = dose, id = id,
+#' res <- cuiDoseResponse(d, dose = dose, id = id, cacheDir = NA,
 #'   endpoints = list(cuiBinary(tox, direction = "lower"),
 #'                    cuiBinary(eff), cuiBinary(tol)),
 #'   weights = c(tox = 0.2, eff = 0.5, tol = 0.3), nBoot = 200, seed = 1)
 #' res
 cuiDoseResponse <- function(data, endpoints, dose, id, weights = NULL,
                             combine = c("additive", "geometric"), eligible = NULL,
-                            nBoot = 1000L, seed = NULL, minSuccess = 0.9, level = 0.95,
+                            nBoot = 1000L, seed = NULL, minSuccess = 0.9, cacheDir = NULL,
+                            restart = FALSE, level = 0.95,
                             tieTol = sqrt(.Machine$double.eps), .dose = NULL, .id = NULL) {
   checkmate::assertDataFrame(data, min.rows = 1)
   .doseCol <- .cuiCaptureName(substitute(dose), missing(dose), .dose, "dose")
@@ -317,7 +334,15 @@ cuiDoseResponse <- function(data, endpoints, dose, id, weights = NULL,
     .cuiDrFit(y, dose, .doses, endpoints, if (is.null(rows)) data else data[rows, , drop = FALSE],
               .doseCol, refit = !is.null(rows))
   }
-  .run <- .cuiWithSeed(seed, .cuiDrRun(.y, .doseVal, .doses, endpoints, nBoot, .fitFun))
+  checkmate::assertFlag(restart)
+  if (is.null(seed) && is.null(cacheDir)) cacheDir <- NA
+  # nBoot is left out of the key so a larger nBoot resumes
+  .cache <- .cuiCacheSetup(cacheDir, restart, list(
+    "doseResponse", data, .doseCol, lapply(endpoints, function(e) {
+      list(e$name, e$model, e$direction, e$monotone, e$penalty, e$boundary, e$backend,
+           if (!is.null(e$fitModel)) digest::digest(e$fitModel))
+    }), seed, as.character(utils::packageVersion("nlmixr2extra"))))
+  .run <- .cuiWithSeed(seed, .cuiDrRun(.y, .doseVal, .doses, endpoints, nBoot, .fitFun, .cache))
   .nOk <- sum(.run$draws$status[-1] == "ok")
   if (nBoot > 0 && .nOk / nBoot < minSuccess) {
     stop(sprintf("only %d of %d bootstrap draws succeeded (minSuccess = %g); first error: %s",
@@ -328,7 +353,7 @@ cuiDoseResponse <- function(data, endpoints, dose, id, weights = NULL,
                   regimens = cuiRegimens(dose = .doses), weights = weights,
                   combine = match.arg(combine), eligible = eligible, level = level,
                   tieTol = tieTol, draws = .run$draws,
-                  settings = list(source = "doseResponse", nBoot = nBoot, seed = seed,
+                  settings = list(source = "doseResponse", nBoot = nBoot, seed = seed, cacheDir = .cache,
                                   models = setNames(.models, .epNames),
                                   description = sprintf("Dose-response: %s; patient bootstrap within dose",
                                                         paste(unique(.models), collapse = ", "))))
