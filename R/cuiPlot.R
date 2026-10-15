@@ -198,14 +198,16 @@ plot.nlmixr2Cui <- function(x, type = c("cui", "endpoints", "selection", "doseRe
                       stringsAsFactors = FALSE)
   .d <- rbind(.line, .peak)
   .d$x <- unname(.rx$x[.d$regimen])
-  .ref <- .cuiReference(x, reference, .rx, assessments)
-  if (!is.null(.ref)) {
-    .d <- rbind(.d, do.call(rbind, lapply(assessments, function(a) {
-      data.frame(layer = "ref", assessment = a, regimen = NA_character_, series = NA_character_,
-                 value = NA_real_, lower = NA_real_, upper = NA_real_, eligible = TRUE,
-                 label = .ref$label, x = .ref$x, stringsAsFactors = FALSE)
-    })))
-  }
+  # default reference lines are each panel's own eligible regimens
+  .refs <- lapply(assessments, function(a) {
+    .r <- .cuiReference(x, reference, .rx, a)
+    if (is.null(.r)) return(NULL)
+    data.frame(layer = "ref", assessment = a, regimen = NA_character_, series = NA_character_,
+               value = NA_real_, lower = NA_real_, upper = NA_real_, eligible = TRUE,
+               label = .r$label, x = .r$x, stringsAsFactors = FALSE)
+  })
+  .ref <- do.call(rbind, .refs)
+  if (!is.null(.ref)) .d <- rbind(.d, .ref)
   .lv <- c(if (endpoints) .epNames, "CUI", "Peak")
   .d$series <- factor(.d$series, levels = .lv)
   .d$assessment <- factor(.d$assessment, levels = assessments)
@@ -471,10 +473,16 @@ plot.nlmixr2CuiSensitivity <- function(x, ...) {
   .cur <- attr(x, "current")
   .d <- as.data.frame(unclass(x), stringsAsFactors = FALSE)
   .d$endpoint <- factor(.d$endpoint, levels = rev(unique(.d$endpoint)))
-  .d$current <- abs(.d$weight - .cur[as.character(.d$endpoint)]) < 1e-12
   .numeric <- .cuiRegimenX(.reg)$numeric
   if (.numeric) .d$dose <- .reg$dose[match(.d$regimen, .reg$label)]
   .step <- min(diff(sort(unique(.d$weight))))
+  # the current weights as their own rows, so the ring shows off the grid too
+  .d$current <- FALSE
+  .now <- data.frame(endpoint = factor(names(.cur), levels = levels(.d$endpoint)),
+                     weight = unname(.cur), regimen = NA_character_, cui = NA_real_,
+                     current = TRUE, stringsAsFactors = FALSE)
+  if (.numeric) .now$dose <- NA_real_
+  .d <- rbind(.d, .now)
   .plotData(.cuiSensitivityFigure(.numeric, attr(x, "assessment"), .step,
                                   if (.numeric) NULL else sort(unique(stats::na.omit(.d$regimen)))),
             .d)
@@ -489,7 +497,8 @@ plot.nlmixr2CuiSensitivity <- function(x, ...) {
                                values = setNames(rep_len(.cuiSeriesColors, length(levels)), levels))
   }
   ggplot2::ggplot(mapping = ggplot2::aes(x = .data$weight, y = .data$endpoint)) +
-    ggplot2::geom_tile(ggplot2::aes(fill = if (numeric) .data$dose else .data$regimen),
+    ggplot2::geom_tile(data = function(d) d[!d$current, , drop = FALSE],
+                       ggplot2::aes(fill = if (numeric) .data$dose else .data$regimen),
                        width = step, height = 0.8, color = "white", linewidth = 0.4) +
     ggplot2::geom_point(data = function(d) d[d$current, , drop = FALSE], shape = 21, size = 3.5,
                         stroke = 1, color = .cuiNavy, fill = "white") +

@@ -131,3 +131,19 @@ test_that("lines carry percentile bands for the CUI and every endpoint", {
                           function(l) inherits(l$geom, "GeomLinerange"), logical(1))))
   expect_identical(.figureHeldData(.ep), character(0))
 })
+
+test_that("default reference lines follow each panel and the current weight is ringed", {
+  .two <- cuiFromValues(rbind(cbind(.cuiPlotValues(), assessment = "A"),
+                              cbind(.cuiPlotValues(), assessment = "B")), .cuiPlotEps(),
+                        eligible = data.frame(assessment = c("A", "A", "B", "B", "B"),
+                                              regimen = c("1", "2", "3", "4", "5")))
+  .ref <- plot(.two)$data
+  .ref <- .ref[.ref$layer == "ref", ]
+  expect_equal(.ref$x[.ref$assessment == "A"], 1:2)
+  expect_equal(.ref$x[.ref$assessment == "B"], 3:5)
+  .r <- cuiFromValues(.cuiPlotValues(), .cuiPlotEps(), weights = c(tox = 0.2, eff = 0.5, tol = 0.3))
+  .p <- plot(cuiSensitivity(.r))
+  .cur <- .p$data[.p$data$current, ]
+  expect_equal(sort(.cur$weight), c(0.2, 0.3, 0.5))
+  expect_identical(.figureHeldData(.p), character(0))
+})
