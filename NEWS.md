@@ -16,6 +16,14 @@
   `cuiBinary()` and a bootstrap that resamples whole patients within each
   dose.
 
+- New `cui()` simulates a CUI from nlmixr2 fits: every endpoint is
+  simulated for each candidate regimen in one target population from
+  `cuiPopulation()` and summarized with `cuiProb()`, `cuiMean()`,
+  `cuiAuc()` or `cuiThreshold()`.  Parameter uncertainty comes from the
+  fits' covariance (`uncertainty = "cov"`) or simulated trials
+  (`mode = "trial"`); all regimens share the same virtual subjects, and a
+  Monte Carlo standard error flags populations that are too small.
+
 ## Bug fixes
 
 - The figures from `bootplot()` (also shown by `plot()` of a bootstrapped

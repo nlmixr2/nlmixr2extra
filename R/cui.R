@@ -239,11 +239,14 @@ cuiFromValues <- function(values, endpoints = NULL, regimens = NULL, weights = N
 #' @param draws Optional draw manifest `(draw, status, source, message)`;
 #'   failed draws must have no values.
 #' @param settings List of provenance entries.
+#' @param batch Optional draw-0 endpoint values per subject batch
+#'   `(assessment, regimen, endpoint, batch, value)` for the Monte Carlo
+#'   standard error.
 #' @inheritParams cuiFromValues
 #' @return An `nlmixr2Cui` object.
 #' @noRd
 .cuiNew <- function(values, endpoints, regimens, weights, combine, eligible,
-                    level, tieTol, draws, settings) {
+                    level, tieTol, draws, settings, batch = NULL) {
   checkmate::assertDataFrame(values, min.rows = 1)
   if (!all(c("endpoint", "regimen", "value") %in% names(values))) {
     stop("'values' needs columns 'endpoint', 'regimen' and 'value'", call. = FALSE)
@@ -342,7 +345,8 @@ cuiFromValues <- function(values, endpoints = NULL, regimens = NULL, weights = N
   .obj <- structure(list(
     schema = 1L,
     endpoints = lapply(endpoints, function(e) {
-      list(name = e$name, utility = e$utility, direction = e$direction)
+      list(name = e$name, utility = e$utility, direction = e$direction,
+           summary = if (inherits(e$summary, "cuiSummary")) format(e$summary))
     }),
     regimens = regimens,
     assessments = .assess,
@@ -353,7 +357,8 @@ cuiFromValues <- function(values, endpoints = NULL, regimens = NULL, weights = N
     eligibleSpec = eligible,
     level = level,
     tieTol = tieTol,
-    settings = c(settings, list(version = as.character(utils::packageVersion("nlmixr2extra"))))
+    settings = c(settings, list(version = as.character(utils::packageVersion("nlmixr2extra")))),
+    batch = batch
   ), class = "nlmixr2Cui")
   .cuiCompute(.obj)
 }
@@ -442,7 +447,43 @@ cuiFromValues <- function(values, endpoints = NULL, regimens = NULL, weights = N
   obj$utility <- .v
   obj$cui <- .cui
   obj$summary <- .sum
+  obj$mcse <- .cuiMcse(obj, .w, .sum)
   obj
+}
+
+#' Monte Carlo standard error of the CUI difference of the two best regimens
+#'
+#' Uses the draw-0 endpoint values per subject batch; batches hold the same
+#' subjects for every regimen, so the difference is paired.
+#'
+#' @return Data frame `(assessment, first, second, diff, se)` or `NULL`.
+#' @noRd
+.cuiMcse <- function(obj, w, sum) {
+  .b <- obj$batch
+  if (is.null(.b) || nrow(.b) == 0) return(NULL)
+  .epNames <- names(w)
+  .u <- numeric(nrow(.b))
+  for (.ep in obj$endpoints) {
+    .sel <- .b$endpoint == .ep$name
+    .u[.sel] <- .cuiApplyUtility(.ep$utility, .ep$direction, .b$value[.sel], .ep$name)
+  }
+  .ret <- lapply(obj$assessments, function(.a) {
+    .s <- sum[sum$assessment == .a & sum$eligible, ]
+    if (nrow(.s) < 2) return(NULL)
+    .top <- .s$regimen[order(-.s$est)][1:2]
+    .cuiB <- lapply(.top, function(.r) {
+      .sel <- .b$assessment == .a & .b$regimen == .r
+      .m <- tapply(.u[.sel], list(.b$batch[.sel], .b$endpoint[.sel]), identity)
+      .cuiCombine(.m[, .epNames, drop = FALSE], w, obj$combine)
+    })
+    .d <- .cuiB[[1]] - .cuiB[[2]]
+    data.frame(assessment = .a, first = .top[1], second = .top[2], diff = mean(.d),
+               se = stats::sd(.d) / sqrt(length(.d)), stringsAsFactors = FALSE)
+  })
+  .ret <- do.call(rbind, .ret)
+  if (is.null(.ret)) return(NULL)
+  rownames(.ret) <- NULL
+  .ret
 }
 
 #' Re-weight or re-restrict a clinical utility index
@@ -480,7 +521,8 @@ print.nlmixr2Cui <- function(x, ..., n = 10L) {
   cat("Clinical utility index (", x$combine, ")\n", sep = "")
   if (!is.null(x$settings$description)) cat(x$settings$description, "\n", sep = "")
   .ep <- vapply(x$endpoints, function(e) {
-    sprintf("%s [%s%s] %.3g", e$name, format(e$utility),
+    sprintf("%s%s [%s%s] %.3g", e$name,
+            if (is.null(e$summary)) "" else paste0(" = ", e$summary), format(e$utility),
             ifelse(e$direction == "lower", ", lower is better", ""),
             x$weightsNorm[[e$name]])
   }, character(1))
@@ -507,6 +549,10 @@ print.nlmixr2Cui <- function(x, ..., n = 10L) {
     if (!all(.show$eligible)) .tab$eligible <- .show$eligible
     print(.tab, row.names = FALSE)
     cat("Recommended (highest CUI): ", paste(.s$regimen[.s$best], collapse = ", "), "\n", sep = "")
+    .mc <- x$mcse[!is.null(x$mcse) & x$mcse$assessment == .a, , drop = FALSE]
+    if (!is.null(.mc) && nrow(.mc) == 1) {
+      cat(sprintf("Monte Carlo SE of CUI(%s) - CUI(%s): %.2g\n", .mc$first, .mc$second, .mc$se))
+    }
     if (.nOk > 0) {
       cat("Most frequently selected: ",
           paste(.s$regimen[!is.na(.s$mostSelected) & .s$mostSelected], collapse = ", "),

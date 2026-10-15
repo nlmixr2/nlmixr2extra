@@ -42,10 +42,13 @@ cuiStep(-1, "above")
 }
 \seealso{
 Other Clinical utility:
+\code{\link[=cui]{cui()}},
 \code{\link[=cuiBinary]{cuiBinary()}},
 \code{\link[=cuiDoseResponse]{cuiDoseResponse()}},
 \code{\link[=cuiEndpoint]{cuiEndpoint()}},
 \code{\link[=cuiFromValues]{cuiFromValues()}},
+\code{\link[=cuiPopulation]{cuiPopulation()}},
+\code{\link[=cuiProb]{cuiProb()}},
 \code{\link[=cuiRegimens]{cuiRegimens()}},
 \code{\link[=update.nlmixr2Cui]{update.nlmixr2Cui()}}
 }
