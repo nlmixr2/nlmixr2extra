@@ -50,6 +50,8 @@ cuiEndpoint(.name = nm, utility = cuiLinear(0, 50))
 }
 \seealso{
 Other Clinical utility:
+\code{\link[=cuiBinary]{cuiBinary()}},
+\code{\link[=cuiDoseResponse]{cuiDoseResponse()}},
 \code{\link[=cuiFromValues]{cuiFromValues()}},
 \code{\link[=cuiIdentity]{cuiIdentity()}},
 \code{\link[=cuiRegimens]{cuiRegimens()}},

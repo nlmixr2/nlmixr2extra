@@ -478,6 +478,7 @@ print.nlmixr2Cui <- function(x, ..., n = 10L) {
   .nOk <- sum(x$draws$status == "ok" & x$draws$draw > 0)
   .nFail <- sum(x$draws$status != "ok")
   cat("Clinical utility index (", x$combine, ")\n", sep = "")
+  if (!is.null(x$settings$description)) cat(x$settings$description, "\n", sep = "")
   .ep <- vapply(x$endpoints, function(e) {
     sprintf("%s [%s%s] %.3g", e$name, format(e$utility),
             ifelse(e$direction == "lower", ", lower is better", ""),
@@ -518,16 +519,15 @@ print.nlmixr2Cui <- function(x, ..., n = 10L) {
 #' @param x An `nlmixr2Cui` object.
 #' @param row.names,optional Not used.
 #' @param type `"summary"` (one row per assessment and regimen),
-#'   `"cui"` (CUI per draw) or `"utility"` (endpoint values and utilities
-#'   per draw).
+#'   `"cui"` (CUI per draw), `"utility"` (endpoint values and utilities
+#'   per draw) or `"observed"` (observed rates, from [cuiDoseResponse()]).
 #' @rdname update.nlmixr2Cui
 #' @export
 as.data.frame.nlmixr2Cui <- function(x, row.names = NULL, optional = FALSE, ...,
-                                     type = c("summary", "cui", "utility")) {
+                                     type = c("summary", "cui", "utility", "observed")) {
   type <- match.arg(type)
-  switch(type,
-    summary = x$summary,
-    cui = x$cui,
-    utility = x$utility
-  )
+  if (type == "observed" && is.null(x$observed)) {
+    stop("no observed data; only cuiDoseResponse() results have them", call. = FALSE)
+  }
+  x[[type]]
 }

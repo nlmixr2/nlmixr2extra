@@ -79,6 +79,8 @@ update(res, weights = c(tox = 0.3, eff = 0.2, tol = 0.5))
 }
 \seealso{
 Other Clinical utility:
+\code{\link[=cuiBinary]{cuiBinary()}},
+\code{\link[=cuiDoseResponse]{cuiDoseResponse()}},
 \code{\link[=cuiEndpoint]{cuiEndpoint()}},
 \code{\link[=cuiIdentity]{cuiIdentity()}},
 \code{\link[=cuiRegimens]{cuiRegimens()}},

@@ -12,7 +12,7 @@
   row.names = NULL,
   optional = FALSE,
   ...,
-  type = c("summary", "cui", "utility")
+  type = c("summary", "cui", "utility", "observed")
 )
 }
 \arguments{
@@ -29,8 +29,8 @@ equal weights).}
 \item{row.names, optional}{Not used.}
 
 \item{type}{\code{"summary"} (one row per assessment and regimen),
-\code{"cui"} (CUI per draw) or \code{"utility"} (endpoint values and utilities
-per draw).}
+\code{"cui"} (CUI per draw), \code{"utility"} (endpoint values and utilities
+per draw) or \code{"observed"} (observed rates, from \code{\link[=cuiDoseResponse]{cuiDoseResponse()}}).}
 }
 \value{
 The updated \code{nlmixr2Cui} object.
@@ -41,6 +41,8 @@ the stored endpoint values; nothing is simulated or refit.
 }
 \seealso{
 Other Clinical utility:
+\code{\link[=cuiBinary]{cuiBinary()}},
+\code{\link[=cuiDoseResponse]{cuiDoseResponse()}},
 \code{\link[=cuiEndpoint]{cuiEndpoint()}},
 \code{\link[=cuiFromValues]{cuiFromValues()}},
 \code{\link[=cuiIdentity]{cuiIdentity()}},

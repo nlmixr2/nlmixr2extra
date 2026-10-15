@@ -11,6 +11,11 @@
   `update()` re-weights or restricts the eligible regimens without
   recomputing endpoints.
 
+- New `cuiDoseResponse()` computes a CUI from binary endpoints of a
+  multiple-dose trial (CUI-MET, Zhang et al. 2025), with endpoints from
+  `cuiBinary()` and a bootstrap that resamples whole patients within each
+  dose.
+
 ## Bug fixes
 
 - The figures from `bootplot()` (also shown by `plot()` of a bootstrapped
