@@ -1,11 +1,26 @@
-# Categorical slots in fixed order (validated: adjacent CVD and normal-vision
-# separation pass); the CUI itself is drawn in neutral ink
+# Visual grammar shared with the ACoP 2026 CUI workshop app: the CUI is a
+# thick navy line, its peak a rust point labeled "max at ...", benefit
+# endpoints are solid and safety endpoints dashed or dotted, and reference
+# regimens are dashed vertical lines.  Endpoint hues are the validated
+# categorical slots in fixed order (the linetypes are a second encoding);
+# `colors` in plot() can replace them.
 .cuiSeriesColors <- c("#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300",
                       "#6250d6", "#e34948")
-.cuiInk <- "#0b0b0b"
+.cuiNavy <- "#0B1F3A"
+.cuiPeakCol <- "#B4532A"
 .cuiMuted <- "#9b9a95"
-# ordinal blue ramp: discrete tiles start at step 250 so the lightest stays visible
-.cuiSeqRamp <- c("#86b6ef", "#3987e5", "#1c5cab", "#0d366b")
+.cuiSafetyLty <- c("dashed", "dotted", "dotdash", "longdash", "twodash")
+# ordinal ramp ending in the CUI navy: discrete tiles start light but visible
+.cuiSeqRamp <- c("#86b6ef", "#3987e5", "#1c5cab", "#0B1F3A")
+
+.cuiTheme <- function() {
+  ggplot2::theme_bw(base_size = 13) +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(face = "bold", color = .cuiNavy),
+      plot.subtitle = ggplot2::element_text(color = "#4A4A4A", size = 11),
+      legend.position = "bottom"
+    )
+}
 
 #' Regimen positions for plotting: dose when every regimen has a distinct
 #' dose, otherwise the regimen order
@@ -39,10 +54,11 @@
 #' Plot a clinical utility index
 #'
 #' - `"cui"`: the CUI of each regimen (point estimate, with its percentile
-#'   interval when there are uncertainty draws); the recommended regimen is
-#'   ringed and ineligible regimens are grey.
+#'   interval when there are uncertainty draws); the peak (recommended
+#'   regimen) is marked and ineligible regimens are grey.
 #' - `"endpoints"`: each endpoint's utility (after its utility function and
-#'   direction) and the CUI, at the point estimate.
+#'   direction) with the CUI, at the point estimate; endpoints with
+#'   `direction = "lower"` are dashed or dotted.
 #' - `"selection"`: how often each eligible regimen has the highest CUI
 #'   across uncertainty draws.
 #' - `"doseResponse"`: for [cuiDoseResponse()] results, the observed rate of
@@ -50,11 +66,19 @@
 #'   percentile interval.
 #'
 #' Regimens are placed by dose when every regimen has a distinct dose,
-#' otherwise in their order.  Several assessments are shown as panels.
+#' otherwise in their order.  Several assessments are shown as panels.  The
+#' figures follow the style of the ACoP 2026 CUI workshop app.
 #'
 #' @param x An `nlmixr2Cui` object.
 #' @param type Which plot, as described above.
 #' @param assessment Assessments to show; `NULL` shows all.
+#' @param reference Regimens marked with dashed vertical lines, as regimen
+#'   labels or a named numeric vector of positions (names are the line
+#'   labels, for example `c("150 QD" = 150, "200 BID" = 400)`).  By default
+#'   the eligible regimens when eligibility is restricted.  `character(0)`
+#'   draws none.
+#' @param colors Optional named colors replacing the defaults, by endpoint
+#'   name and `"CUI"` / `"Peak"`.
 #' @param ... Not used.
 #' @return A ggplot object.
 #' @family Clinical utility
@@ -72,119 +96,178 @@
 #'                    cuiEndpoint(eff), cuiEndpoint(tol)),
 #'   weights = c(tox = 0.2, eff = 0.5, tol = 0.3))
 #' plot(res)
-#' plot(res, "endpoints")
+#' plot(res, "endpoints", reference = c("low" = 2, "high" = 4))
 plot.nlmixr2Cui <- function(x, type = c("cui", "endpoints", "selection", "doseResponse"),
-                            assessment = NULL, ...) {
+                            assessment = NULL, reference = NULL, colors = NULL, ...) {
   type <- match.arg(type)
   .a <- .cuiPickAssessment(x, assessment)
+  .cols <- .cuiPlotColors(x, colors)
   switch(type,
-    cui = .cuiPlotCui(x, .a),
-    endpoints = .cuiPlotEndpoints(x, .a),
+    cui = .cuiPlotLines(x, .a, reference, .cols, endpoints = FALSE),
+    endpoints = .cuiPlotLines(x, .a, reference, .cols, endpoints = TRUE),
     selection = .cuiPlotSelection(x, .a),
-    doseResponse = .cuiPlotDoseResponse(x)
+    doseResponse = .cuiPlotDoseResponse(x, .cols)
   )
 }
 
 .cuiNOk <- function(x) sum(x$draws$status == "ok" & x$draws$draw > 0)
 
-.cuiPlotCui <- function(x, assessments) {
-  .rx <- .cuiRegimenX(x$regimens)
-  .d <- x$summary[x$summary$assessment %in% assessments, , drop = FALSE]
-  .d$x <- unname(.rx$x[.d$regimen])
-  .d$assessment <- factor(.d$assessment, levels = assessments)
-  .best <- vapply(assessments, function(a) {
-    paste(.d$regimen[.d$assessment == a & .d$best], collapse = ", ")
-  }, character(1))
-  .sub <- paste0("Recommended: ", paste(if (length(assessments) > 1) {
-    paste0(assessments, " ", .best)
-  } else {
-    .best
-  }, collapse = "; "))
-  .hasCi <- .cuiNOk(x) > 0
-  if (.hasCi) .sub <- paste0(.sub, "; band: ", 100 * x$level, "% percentile interval")
-  .plotData(.cuiCuiFigure(.rx, .hasCi, any(!.d$eligible), .sub, length(assessments)), .d)
+#' Endpoint, CUI and peak colors, with user overrides
+#' @noRd
+.cuiPlotColors <- function(x, colors) {
+  .epNames <- vapply(x$endpoints, `[[`, character(1), "name")
+  .cols <- c(setNames(rep_len(.cuiSeriesColors, length(.epNames)), .epNames),
+             CUI = .cuiNavy, Peak = .cuiPeakCol)
+  if (!is.null(colors)) {
+    checkmate::assertCharacter(colors, names = "unique", any.missing = FALSE)
+    .bad <- setdiff(names(colors), names(.cols))
+    if (length(.bad) > 0) {
+      stop(sprintf("unknown name(s) in 'colors': %s", paste(.bad, collapse = ", ")), call. = FALSE)
+    }
+    .cols[names(colors)] <- colors
+  }
+  .cols
 }
 
-.cuiCuiFigure <- function(rx, hasCi, anyIneligible, subtitle, nAssess) {
-  # force every argument: an unevaluated promise would keep the caller's frame
-  invisible(list(rx, hasCi, anyIneligible, subtitle, nAssess))
-  ggplot2::ggplot(mapping = ggplot2::aes(x = .data$x, y = .data$est, group = .data$assessment)) +
-    (if (hasCi) {
-      ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$lower, ymax = .data$upper),
-                           fill = .cuiSeriesColors[1], alpha = 0.18)
-    }) +
-    ggplot2::geom_line(color = .cuiSeriesColors[1], linewidth = 0.7) +
-    ggplot2::geom_point(data = function(d) d[d$eligible, , drop = FALSE],
-                        color = .cuiSeriesColors[1], size = 2.5) +
-    (if (anyIneligible) {
-      ggplot2::geom_point(data = function(d) d[!d$eligible, , drop = FALSE],
-                          color = .cuiMuted, size = 2.5)
-    }) +
-    ggplot2::geom_point(data = function(d) d[d$best, , drop = FALSE], shape = 21, size = 5,
-                        stroke = 0.9, color = .cuiInk, fill = NA) +
-    .cuiXScale(rx) +
-    ggplot2::ylab("Clinical utility index") +
-    ggplot2::labs(title = "Clinical utility index", subtitle = subtitle) +
-    (.cuiFacet(nAssess)) +
-    rxode2::rxTheme()
+#' Reference lines: positions and labels on the plotting axis
+#' @noRd
+.cuiReference <- function(x, reference, rx, assessments) {
+  if (is.null(reference)) {
+    .el <- x$eligible[x$eligible$assessment %in% assessments, , drop = FALSE]
+    if (all(.el$eligible)) return(NULL)
+    reference <- unique(.el$regimen[.el$eligible])
+  }
+  if (length(reference) == 0) return(NULL)
+  if (is.numeric(reference)) {
+    if (is.null(names(reference))) names(reference) <- .cuiNumLabel(reference)
+    return(data.frame(x = unname(reference), label = names(reference), stringsAsFactors = FALSE))
+  }
+  .bad <- setdiff(reference, names(rx$x))
+  if (length(.bad) > 0) {
+    stop(sprintf("unknown regimen(s) in 'reference': %s", paste(.bad, collapse = ", ")),
+         call. = FALSE)
+  }
+  data.frame(x = unname(rx$x[reference]), label = reference, stringsAsFactors = FALSE)
 }
 
-.cuiPlotEndpoints <- function(x, assessments) {
+#' CUI (and optionally endpoint) lines with the peak and reference regimens
+#' @noRd
+.cuiPlotLines <- function(x, assessments, reference, cols, endpoints) {
   .rx <- .cuiRegimenX(x$regimens)
   .epNames <- vapply(x$endpoints, `[[`, character(1), "name")
-  .u <- x$utility[x$utility$draw == 0 & x$utility$assessment %in% assessments, , drop = FALSE]
-  .c <- x$summary[x$summary$assessment %in% assessments, , drop = FALSE]
-  .d <- rbind(data.frame(assessment = .u$assessment, regimen = .u$regimen,
-                         series = .u$endpoint, value = .u$utility, stringsAsFactors = FALSE),
-              data.frame(assessment = .c$assessment, regimen = .c$regimen,
-                         series = "CUI", value = .c$est, stringsAsFactors = FALSE))
-  .d$x <- unname(.rx$x[.d$regimen])
-  .d$series <- factor(.d$series, levels = c(.epNames, "CUI"))
-  .d$assessment <- factor(.d$assessment, levels = assessments)
-  # label each line at its last regimen, beside the legend, so identity is
-  # never color alone
-  .d$last <- .d$x == max(.d$x)
-  .d$labY <- .d$value
-  for (.a in assessments) {
-    .i <- which(.d$last & .d$assessment == .a)
-    .d$labY[.i] <- .cuiSpreadLabels(.d$value[.i], 0.045)
+  .dir <- vapply(x$endpoints, `[[`, character(1), "direction")
+  .s <- x$summary[x$summary$assessment %in% assessments, , drop = FALSE]
+  .hasCi <- .cuiNOk(x) > 0
+  .line <- data.frame(layer = "line", assessment = .s$assessment, regimen = .s$regimen,
+                      series = "CUI", value = .s$est,
+                      lower = if (.hasCi) .s$lower else NA_real_,
+                      upper = if (.hasCi) .s$upper else NA_real_,
+                      eligible = .s$eligible, label = NA_character_, stringsAsFactors = FALSE)
+  if (endpoints) {
+    .u <- x$utility[x$utility$draw == 0 & x$utility$assessment %in% assessments, , drop = FALSE]
+    .line <- rbind(data.frame(layer = "line", assessment = .u$assessment, regimen = .u$regimen,
+                              series = .u$endpoint, value = .u$utility, lower = NA_real_,
+                              upper = NA_real_, eligible = TRUE, label = NA_character_,
+                              stringsAsFactors = FALSE), .line)
   }
-  .cols <- c(setNames(rep_len(.cuiSeriesColors, length(.epNames)), .epNames), CUI = .cuiInk)
-  .sub <- paste0("Weights: ", paste(sprintf("%s %.2f", .epNames, x$weightsNorm), collapse = ", "))
-  .plotData(.cuiEndpointsFigure(.rx, .cols, .sub, length(assessments)), .d)
+  .units <- x$regimens$units[match(.s$regimen, x$regimens$label)]
+  .pk <- .s[.s$best, , drop = FALSE]
+  .pkUnits <- .units[.s$best]
+  .peak <- data.frame(layer = "peak", assessment = .pk$assessment, regimen = .pk$regimen,
+                      series = "Peak", value = .pk$est, lower = NA_real_, upper = NA_real_,
+                      eligible = TRUE,
+                      label = paste0("max at ", .pk$regimen,
+                                     ifelse(is.na(.pkUnits), "", paste0(" ", .pkUnits))),
+                      stringsAsFactors = FALSE)
+  .d <- rbind(.line, .peak)
+  .d$x <- unname(.rx$x[.d$regimen])
+  .ref <- .cuiReference(x, reference, .rx, assessments)
+  if (!is.null(.ref)) {
+    .d <- rbind(.d, do.call(rbind, lapply(assessments, function(a) {
+      data.frame(layer = "ref", assessment = a, regimen = NA_character_, series = NA_character_,
+                 value = NA_real_, lower = NA_real_, upper = NA_real_, eligible = TRUE,
+                 label = .ref$label, x = .ref$x, stringsAsFactors = FALSE)
+    })))
+  }
+  .lv <- c(if (endpoints) .epNames, "CUI", "Peak")
+  .d$series <- factor(.d$series, levels = .lv)
+  .d$assessment <- factor(.d$assessment, levels = assessments)
+  .lty <- setNames(rep("solid", length(.epNames)), .epNames)
+  .safe <- which(.dir == "lower")
+  .lty[.safe] <- rep_len(.cuiSafetyLty, length(.safe))
+  .lty <- c(if (endpoints) .lty, CUI = "solid", Peak = "blank")
+  .lwd <- c(if (endpoints) setNames(rep(1.05, length(.epNames)), .epNames), CUI = 1.4, Peak = 0)
+  .sub <- if (endpoints) {
+    paste0("Weights: ", paste(sprintf("%s %.2f", .epNames, x$weightsNorm), collapse = ", "))
+  } else {
+    ""
+  }
+  if (.hasCi && !endpoints) .sub <- sprintf("Band: %g%% percentile interval", 100 * x$level)
+  .plotData(.cuiLinesFigure(.rx, cols[.lv], .lty, .lwd, .hasCi && !endpoints,
+                            any(!.s$eligible), !is.null(.ref), .sub,
+                            if (endpoints) "Desirability / CUI" else "CUI",
+                            if (endpoints) "Endpoint utilities and clinical utility index"
+                            else "Clinical utility index", length(assessments)), .d)
 }
 
-.cuiEndpointsFigure <- function(rx, cols, subtitle, nAssess) {
-  invisible(list(rx, cols, subtitle, nAssess))
-  ggplot2::ggplot(mapping = ggplot2::aes(x = .data$x, y = .data$value, color = .data$series,
-                                         group = .data$series)) +
-    ggplot2::geom_line(ggplot2::aes(linewidth = .data$series == "CUI")) +
-    ggplot2::geom_point(size = 2) +
-    ggplot2::geom_text(data = function(d) d[d$last, , drop = FALSE],
-                       ggplot2::aes(y = .data$labY, label = .data$series), hjust = -0.2,
-                       size = 3.2, show.legend = FALSE) +
-    ggplot2::scale_color_manual(name = NULL, values = cols) +
-    ggplot2::scale_linewidth_manual(values = c(`FALSE` = 0.6, `TRUE` = 1.1), guide = "none") +
+.cuiLinesFigure <- function(rx, cols, lty, lwd, hasCi, anyIneligible, hasRef, subtitle, ylab,
+                            title, nAssess) {
+  # force every argument: an unevaluated promise would keep the caller's frame
+  invisible(list(rx, cols, lty, lwd, hasCi, anyIneligible, hasRef, subtitle, ylab, title, nAssess))
+  .lineRows <- function(d) d[d$layer == "line", , drop = FALSE]
+  ggplot2::ggplot(mapping = ggplot2::aes(x = .data$x, y = .data$value)) +
+    (if (hasRef) {
+      list(
+        ggplot2::geom_vline(data = function(d) d[d$layer == "ref", , drop = FALSE],
+                            ggplot2::aes(xintercept = .data$x), linetype = "dashed",
+                            color = "grey50"),
+        ggplot2::geom_text(data = function(d) d[d$layer == "ref", , drop = FALSE],
+                           ggplot2::aes(x = .data$x, y = 1, label = .data$label), vjust = -0.4,
+                           size = 3, color = "#5C5C5C")
+      )
+    }) +
+    (if (hasCi) {
+      ggplot2::geom_ribbon(data = function(d) d[d$layer == "line" & d$series == "CUI", , drop = FALSE],
+                           ggplot2::aes(ymin = .data$lower, ymax = .data$upper,
+                                        group = .data$assessment),
+                           fill = cols[["CUI"]], alpha = 0.15)
+    }) +
+    ggplot2::geom_line(data = .lineRows,
+                       ggplot2::aes(color = .data$series, linetype = .data$series,
+                                    linewidth = .data$series,
+                                    group = interaction(.data$series, .data$assessment))) +
+    ggplot2::geom_point(data = function(d) d[d$layer == "line" & d$series == "CUI" & d$eligible, ,
+                                            drop = FALSE],
+                        color = cols[["CUI"]], size = 1.1, show.legend = FALSE) +
+    (if (anyIneligible) {
+      ggplot2::geom_point(data = function(d) d[d$layer == "line" & d$series == "CUI" & !d$eligible, ,
+                                              drop = FALSE],
+                          color = .cuiMuted, size = 2, show.legend = FALSE)
+    }) +
+    ggplot2::geom_point(data = function(d) d[d$layer == "peak", , drop = FALSE],
+                        ggplot2::aes(color = .data$series), size = 3.2) +
+    ggplot2::geom_text(data = function(d) d[d$layer == "peak", , drop = FALSE],
+                       ggplot2::aes(y = pmin(1, .data$value + 0.04), label = .data$label),
+                       color = cols[["Peak"]], fontface = "bold", size = 3.5) +
+    # the legend guide lives on the scale: `+ guides()` keeps the plot frames
+    ggplot2::scale_color_manual(
+      values = cols, breaks = names(cols), name = NULL, drop = FALSE,
+      guide = ggplot2::guide_legend(
+        nrow = 1,
+        override.aes = list(linetype = unname(lty),
+                            shape = c(rep(NA, length(cols) - 1L), 16),
+                            linewidth = c(unname(lwd)[-length(lwd)], 0.8))
+      )
+    ) +
+    ggplot2::scale_linetype_manual(values = lty, breaks = names(cols), guide = "none") +
+    ggplot2::scale_linewidth_manual(values = lwd, guide = "none") +
     .cuiXScale(rx) +
-    ggplot2::scale_y_continuous(name = "Utility (higher is better)", limits = c(0, 1)) +
-    ggplot2::coord_cartesian(clip = "off") +
-    ggplot2::labs(title = "Endpoint utilities and clinical utility index", subtitle = subtitle) +
+    ggplot2::scale_y_continuous(name = ylab, limits = c(0, 1),
+                                expand = ggplot2::expansion(mult = c(0.02, 0.08))) +
+    ggplot2::coord_cartesian(ylim = c(0, 1), clip = "off") +
+    ggplot2::labs(title = title, subtitle = if (nzchar(subtitle)) subtitle) +
     (.cuiFacet(nAssess)) +
-    rxode2::rxTheme() +
-    ggplot2::theme(legend.position = "bottom", plot.margin = ggplot2::margin(5, 40, 5, 5))
-}
-
-#' Spread label positions so neighbors are at least `gap` apart
-#' @noRd
-.cuiSpreadLabels <- function(y, gap) {
-  .o <- order(y)
-  .s <- y[.o]
-  for (.i in seq_along(.s)[-1]) .s[.i] <- max(.s[.i], .s[.i - 1] + gap)
-  # center the shift so labels stay near their lines
-  .s <- .s - (mean(.s) - mean(y[.o]))
-  .ret <- y
-  .ret[.o] <- .s
-  .ret
+    .cuiTheme()
 }
 
 .cuiPlotSelection <- function(x, assessments) {
@@ -201,19 +284,19 @@ plot.nlmixr2Cui <- function(x, type = c("cui", "endpoints", "selection", "doseRe
 .cuiSelectionFigure <- function(subtitle, nAssess, xlab) {
   invisible(list(subtitle, nAssess, xlab))
   ggplot2::ggplot(mapping = ggplot2::aes(x = .data$regimen, y = .data$selFreq)) +
-    ggplot2::geom_col(fill = .cuiSeriesColors[1], width = 0.6) +
+    ggplot2::geom_col(fill = .cuiNavy, width = 0.6) +
     ggplot2::geom_text(data = function(d) d[d$selFreq > 0, , drop = FALSE],
                        ggplot2::aes(label = sprintf("%.0f%%", 100 * .data$selFreq)),
-                       vjust = -0.4, size = 3.2, color = .cuiInk) +
+                       vjust = -0.4, size = 3.2, color = .cuiNavy) +
     ggplot2::scale_y_continuous(name = "Selection frequency", limits = c(0, 1),
                                 expand = ggplot2::expansion(mult = c(0, 0.02))) +
     ggplot2::xlab(xlab) +
     ggplot2::labs(title = "How often each regimen is selected", subtitle = subtitle) +
     (.cuiFacet(nAssess)) +
-    rxode2::rxTheme()
+    .cuiTheme()
 }
 
-.cuiPlotDoseResponse <- function(x) {
+.cuiPlotDoseResponse <- function(x, cols) {
   if (is.null(x$observed)) {
     stop("dose-response plots need a cuiDoseResponse() result", call. = FALSE)
   }
@@ -251,26 +334,29 @@ plot.nlmixr2Cui <- function(x, type = c("cui", "endpoints", "selection", "doseRe
   .d$endpoint <- factor(.d$endpoint, levels = .epNames)
   .sub <- paste0("Points: observed rate; line: fitted model",
                  if (!is.null(.ci)) sprintf("; bars: %g%% bootstrap interval", 100 * x$level) else "")
-  .plotData(.cuiDoseResponseFigure(.sub, !is.null(.ci)), .d)
+  .plotData(.cuiDoseResponseFigure(.sub, !is.null(.ci), cols[.epNames]), .d)
 }
 
-.cuiDoseResponseFigure <- function(subtitle, hasCi) {
-  invisible(list(subtitle, hasCi))
+.cuiDoseResponseFigure <- function(subtitle, hasCi, cols) {
+  invisible(list(subtitle, hasCi, cols))
   ggplot2::ggplot(mapping = ggplot2::aes(x = .data$dose)) +
     (if (hasCi) {
       ggplot2::geom_linerange(data = function(d) d[d$layer == "interval", , drop = FALSE],
-                              ggplot2::aes(ymin = .data$lower, ymax = .data$upper),
-                              color = .cuiSeriesColors[1], alpha = 0.5, linewidth = 0.8)
+                              ggplot2::aes(ymin = .data$lower, ymax = .data$upper,
+                                           color = .data$endpoint), alpha = 0.5,
+                              linewidth = 0.8, show.legend = FALSE)
     }) +
     ggplot2::geom_line(data = function(d) d[d$layer == "fit", , drop = FALSE],
-                       ggplot2::aes(y = .data$value), color = .cuiSeriesColors[1], linewidth = 0.7) +
+                       ggplot2::aes(y = .data$value, color = .data$endpoint), linewidth = 1.05,
+                       show.legend = FALSE) +
     ggplot2::geom_point(data = function(d) d[d$layer == "observed", , drop = FALSE],
-                        ggplot2::aes(y = .data$value), color = .cuiInk, size = 2) +
+                        ggplot2::aes(y = .data$value), color = .cuiNavy, size = 2) +
+    ggplot2::scale_color_manual(values = cols) +
     ggplot2::facet_wrap("endpoint") +
     ggplot2::scale_y_continuous(name = "Probability of the event", limits = c(0, 1)) +
     ggplot2::xlab("Dose") +
     ggplot2::labs(title = "Dose-response of each endpoint", subtitle = subtitle) +
-    rxode2::rxTheme()
+    .cuiTheme()
 }
 
 #' Sensitivity of the recommended regimen to the endpoint weights
@@ -381,14 +467,14 @@ plot.nlmixr2CuiSensitivity <- function(x, ...) {
   }
   ggplot2::ggplot(mapping = ggplot2::aes(x = .data$weight, y = .data$endpoint)) +
     ggplot2::geom_tile(ggplot2::aes(fill = if (numeric) .data$dose else .data$regimen),
-                       width = step, height = 0.8, color = "#fcfcfb", linewidth = 0.4) +
+                       width = step, height = 0.8, color = "white", linewidth = 0.4) +
     ggplot2::geom_point(data = function(d) d[d$current, , drop = FALSE], shape = 21, size = 3.5,
-                        stroke = 1, color = .cuiInk, fill = "#fcfcfb") +
+                        stroke = 1, color = .cuiNavy, fill = "white") +
     .fill +
     ggplot2::xlab("Weight of the endpoint (others unchanged)") +
     ggplot2::ylab(NULL) +
     ggplot2::labs(title = "Sensitivity of the recommendation to the weights",
                   subtitle = sprintf("Assessment %s; ring: current weight", assessment)) +
-    rxode2::rxTheme() +
+    .cuiTheme() +
     ggplot2::theme(legend.position = "bottom")
 }

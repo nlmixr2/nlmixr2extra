@@ -8,6 +8,8 @@
   x,
   type = c("cui", "endpoints", "selection", "doseResponse"),
   assessment = NULL,
+  reference = NULL,
+  colors = NULL,
   ...
 )
 }
@@ -18,6 +20,15 @@
 
 \item{assessment}{Assessments to show; \code{NULL} shows all.}
 
+\item{reference}{Regimens marked with dashed vertical lines, as regimen
+labels or a named numeric vector of positions (names are the line
+labels, for example \code{c("150 QD" = 150, "200 BID" = 400)}).  By default
+the eligible regimens when eligibility is restricted.  \code{character(0)}
+draws none.}
+
+\item{colors}{Optional named colors replacing the defaults, by endpoint
+name and \code{"CUI"} / \code{"Peak"}.}
+
 \item{...}{Not used.}
 }
 \value{
@@ -26,10 +37,11 @@ A ggplot object.
 \description{
 \itemize{
 \item \code{"cui"}: the CUI of each regimen (point estimate, with its percentile
-interval when there are uncertainty draws); the recommended regimen is
-ringed and ineligible regimens are grey.
+interval when there are uncertainty draws); the peak (recommended
+regimen) is marked and ineligible regimens are grey.
 \item \code{"endpoints"}: each endpoint's utility (after its utility function and
-direction) and the CUI, at the point estimate.
+direction) with the CUI, at the point estimate; endpoints with
+\code{direction = "lower"} are dashed or dotted.
 \item \code{"selection"}: how often each eligible regimen has the highest CUI
 across uncertainty draws.
 \item \code{"doseResponse"}: for \code{\link[=cuiDoseResponse]{cuiDoseResponse()}} results, the observed rate of
@@ -39,7 +51,8 @@ percentile interval.
 }
 \details{
 Regimens are placed by dose when every regimen has a distinct dose,
-otherwise in their order.  Several assessments are shown as panels.
+otherwise in their order.  Several assessments are shown as panels.  The
+figures follow the style of the ACoP 2026 CUI workshop app.
 }
 \examples{
 p <- data.frame(dose = 1:5,
@@ -54,7 +67,7 @@ res <- cuiFromValues(values,
                    cuiEndpoint(eff), cuiEndpoint(tol)),
   weights = c(tox = 0.2, eff = 0.5, tol = 0.3))
 plot(res)
-plot(res, "endpoints")
+plot(res, "endpoints", reference = c("low" = 2, "high" = 4))
 }
 \seealso{
 Other Clinical utility:

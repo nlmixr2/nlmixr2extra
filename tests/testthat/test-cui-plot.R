@@ -45,31 +45,45 @@ test_that("every plot type builds and keeps no caller frame or extra data", {
 test_that("plot data reflect the CUI, eligibility and assessments", {
   .r <- cuiFromValues(.cuiPlotValues(), .cuiPlotEps(), weights = c(tox = 0.2, eff = 0.5, tol = 0.3))
   .p <- plot(.r)
-  expect_equal(.p$data$est, .r$summary$est)
-  expect_equal(.p$data$x, 1:5)
-  expect_match(.p$labels$subtitle, "Recommended: 5")
+  .line <- .p$data[.p$data$layer == "line", ]
+  expect_equal(.line$value, .r$summary$est)
+  expect_equal(.line$x, 1:5)
+  expect_equal(.p$data$label[.p$data$layer == "peak"], "max at 5")
+  expect_false(any(.p$data$layer == "ref"))
+  # restricted eligibility: the peak moves and eligible regimens get reference lines
   .e <- plot(update(.r, eligible = c("1", "2", "3", "4")))
-  expect_match(.e$labels$subtitle, "Recommended: 4")
-  expect_equal(nrow(ggplot2::layer_data(.e, 2)), 4)
+  expect_equal(.e$data$label[.e$data$layer == "peak"], "max at 4")
+  expect_equal(.e$data$x[.e$data$layer == "ref"], 1:4)
+  .ref <- plot(.r, reference = c("150 QD" = 2, "200 BID" = 4))
+  expect_equal(.ref$data$label[.ref$data$layer == "ref"], c("150 QD", "200 BID"))
+  expect_false(any(plot(update(.r, eligible = c("1", "2")), reference = character(0))$data$layer == "ref"))
+  expect_error(plot(.r, reference = "nope"), "unknown regimen")
   .ep <- plot(.r, "endpoints")
-  expect_equal(levels(.ep$data$series), c("tox", "eff", "tol", "CUI"))
-  expect_equal(.ep$data$value[.ep$data$series == "tox"], 1 - .cuiPlotValues()$value[1:5])
+  expect_equal(levels(.ep$data$series), c("tox", "eff", "tol", "CUI", "Peak"))
+  expect_equal(.ep$data$value[.ep$data$series %in% "tox"], 1 - .cuiPlotValues()$value[1:5])
+  # safety endpoints dashed, benefit solid, CUI navy; colors can be replaced
+  .sc <- .ep$scales$get_scales("linetype")
+  expect_equal(unname(.sc$palette(5)), c("dashed", "solid", "solid", "solid", "blank"))
+  .cc <- plot(.r, "endpoints", colors = c(eff = "#1B9E77", CUI = "#000000"))
+  .pal <- .cc$scales$get_scales("colour")$palette(5)
+  expect_equal(unname(.pal[c(2, 4)]), c("#1B9E77", "#000000"))
+  expect_error(plot(.r, colors = c(nope = "red")), "unknown name")
+  # units label the peak
+  .u <- cuiFromValues(.cuiPlotValues(), .cuiPlotEps(),
+                      regimens = cuiRegimens(dose = 1:5, units = "mg", label = as.character(1:5)))
+  expect_equal(plot(.u)$data$label[plot(.u)$data$layer == "peak"], "max at 4 mg")
   # non-numeric regimens are placed in order
   .lab <- cuiFromValues(transform(.cuiPlotValues(), regimen = letters[regimen]), .cuiPlotEps())
-  expect_equal(plot(.lab)$data$x, 1:5)
+  .lp <- plot(.lab)
+  expect_equal(.lp$data$x[.lp$data$layer == "line"], 1:5)
   expect_error(plot(.r, "selection"), "uncertainty draws")
   expect_error(plot(.r, "doseResponse"), "cuiDoseResponse")
   .two <- cuiFromValues(rbind(cbind(.cuiPlotValues(), assessment = "m3"),
                               cbind(.cuiPlotValues(), assessment = "m6")), .cuiPlotEps())
   expect_equal(levels(plot(.two)$data$assessment), c("m3", "m6"))
+  expect_equal(sum(plot(.two)$data$layer == "peak"), 2)
   expect_equal(levels(plot(.two, assessment = "m6")$data$assessment), "m6")
   expect_error(plot(.two, assessment = "m9"), "unknown assessment")
-})
-
-test_that("end labels are spread apart", {
-  .y <- .cur$.cuiSpreadLabels(c(0.62, 0.63, 0.30, 0.80), 0.045)
-  expect_true(all(diff(sort(.y)) >= 0.045 - 1e-12))
-  expect_equal(.y[3], 0.30, tolerance = 0.05)
 })
 
 test_that("sensitivity agrees with the recommendation at the current weights", {
