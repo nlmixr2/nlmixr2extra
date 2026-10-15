@@ -95,7 +95,9 @@ Multiple-Outcome Randomized Trial Designs.  arXiv:2505.03633.
 Other Clinical utility:
 \code{\link[=cui]{cui()}},
 \code{\link[=cuiBinary]{cuiBinary()}},
+\code{\link[=cuiBootstrap]{cuiBootstrap()}},
 \code{\link[=cuiEndpoint]{cuiEndpoint()}},
+\code{\link[=cuiExposure]{cuiExposure()}},
 \code{\link[=cuiFromValues]{cuiFromValues()}},
 \code{\link[=cuiIdentity]{cuiIdentity()}},
 \code{\link[=cuiPopulation]{cuiPopulation()}},

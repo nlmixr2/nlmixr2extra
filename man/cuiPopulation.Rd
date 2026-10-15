@@ -34,8 +34,10 @@ head(pop)
 Other Clinical utility:
 \code{\link[=cui]{cui()}},
 \code{\link[=cuiBinary]{cuiBinary()}},
+\code{\link[=cuiBootstrap]{cuiBootstrap()}},
 \code{\link[=cuiDoseResponse]{cuiDoseResponse()}},
 \code{\link[=cuiEndpoint]{cuiEndpoint()}},
+\code{\link[=cuiExposure]{cuiExposure()}},
 \code{\link[=cuiFromValues]{cuiFromValues()}},
 \code{\link[=cuiIdentity]{cuiIdentity()}},
 \code{\link[=cuiProb]{cuiProb()}},

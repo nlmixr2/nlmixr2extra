@@ -23,6 +23,13 @@
   fits' covariance (`uncertainty = "cov"`) or simulated trials
   (`mode = "trial"`); all regimens share the same virtual subjects, and a
   Monte Carlo standard error flags populations that are too small.
+  `cuiExposure()` chains a per-subject exposure (such as Cavg) from a PK
+  model into exposure-response models, `cuiBootstrap()` uses bootstrap
+  refits as parameter draws, and `cacheDir` caches draws so a run resumes.
+
+- Bootstrap refits from `bootstrapFit()` now record which original subjects
+  they were estimated on (`fit$bootstrapResample`), so refits of different
+  models on the same resamples can be paired.
 
 ## Bug fixes
 

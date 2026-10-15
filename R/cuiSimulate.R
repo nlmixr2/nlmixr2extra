@@ -53,14 +53,16 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
   strtoi(substr(digest::digest(list(seed, ...), algo = "xxhash32"), 1, 7), 16L)
 }
 
+
 #' Build the per-model simulation pieces for a group of endpoints
 #'
-#' @param fit The endpoints' fit (an `nlmixr2` fit or an `rxUi`).
+#' @param fit The group's fit (an `nlmixr2` fit or an `rxUi`).
 #' @param eps Endpoints sharing this fit.
+#' @param exposures Named exposure summaries computed from this fit.
 #' @param group Group number (keys its random streams).
 #' @return List with the simulation model, resolved summaries and parameters.
 #' @noRd
-.cuiModelGroup <- function(fit, eps, group) {
+.cuiModelGroup <- function(fit, eps, group, exposures = list()) {
   .isFit <- inherits(fit, "nlmixr2FitCore")
   .ui <- if (.isFit) fit$finalUi else rxode2::assertRxUi(fit)
   .ini <- .ui$iniDf
@@ -73,8 +75,8 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
   .mv <- rxode2::rxModelVars(.ui)
   .cols <- unique(c(.mv$lhs, .mv$state, .mv$params, "time"))
   .lines <- list()
-  .sums <- lapply(eps, function(.ep) {
-    .s <- .cuiResolveSummary(.ep$summary, .cols, .ep$name)
+  .resolve <- function(s, nm) {
+    .s <- .cuiResolveSummary(s, .cols, nm)
     if (!is.null(.s$window)) {
       .state <- paste0("cuiInt", length(.lines) + 1L)
       while (.state %in% .cols) .state <- paste0(.state, "x")
@@ -82,15 +84,19 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
       .s$state <- .state
     }
     .s
-  })
+  }
+  .sums <- lapply(eps, function(.ep) .resolve(.ep$summary, .ep$name))
   names(.sums) <- vapply(eps, `[[`, character(1), "name")
+  .expo <- lapply(names(exposures), function(.n) .resolve(exposures[[.n]], .n))
+  names(.expo) <- names(exposures)
   .sim <- .ui
   for (.l in .lines) {
     .sim <- suppressMessages(eval(bquote(rxode2::model(.(.sim), .(.l), append = TRUE))))
   }
   list(group = group, fit = fit, isFit = .isFit, ui = .sim, theta = .theta, struct = .struct,
        lower = setNames(.ini$lower, .ini$name), upper = setNames(.ini$upper, .ini$name),
-       omega = .omega, covs = .ui$allCovs, summaries = .sums)
+       omega = .omega, covs = .ui$allCovs, summaries = .sums, exposures = .expo,
+       md5 = if (.isFit) fit$bootstrapMd5 else NULL)
 }
 
 #' Cholesky factor of omega, with zero-variance etas held at zero
@@ -120,7 +126,7 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
 
 #' Event records for every regimen x subject
 #' @noRd
-.cuiEvents <- function(regimens, nSub, obsTimes, cmt) {
+.cuiEvents <- function(regimens, nSub, obsTimes, cmt, dose = TRUE) {
   .maxT <- max(obsTimes)
   .ev <- lapply(seq_len(nrow(regimens)), function(.r) {
     .ids <- (.r - 1L) * nSub + seq_len(nSub)
@@ -128,7 +134,7 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
     .obs <- data.frame(id = rep(.ids, each = length(obsTimes)),
                        time = rep(obsTimes, times = nSub),
                        amt = 0, evid = 0L, ii = 0, addl = 0L)
-    if (.reg$dose == 0) return(.obs)
+    if (!dose || .reg$dose == 0) return(.obs)
     .ii <- if (is.na(.reg$ii)) 0 else .reg$ii
     .addl <- 0L
     if (.ii > 0) {
@@ -148,9 +154,11 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
 
 #' Simulate one draw of one model group for all regimens
 #'
+#' @param extra Optional data frame with one row per regimen x subject
+#'   (regimen-major), such as chained exposures.
 #' @return Data frame of simulated rows with `.reg` and `.sub` columns.
 #' @noRd
-.cuiSolveDraw <- function(mg, theta, eta, cov, regimens, obsTimes, cmt) {
+.cuiSolveDraw <- function(mg, theta, eta, cov, regimens, obsTimes, cmt, extra = NULL) {
   .nSub <- nrow(eta)
   .nReg <- nrow(regimens)
   .p <- as.data.frame(matrix(rep(theta, each = .nSub * .nReg), nrow = .nSub * .nReg,
@@ -158,11 +166,20 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
   if (ncol(eta) > 0) {
     .p <- cbind(.p, eta[rep(seq_len(.nSub), times = .nReg), , drop = FALSE])
   }
-  if (length(mg$covs) > 0) {
-    .p <- cbind(.p, cov[rep(seq_len(.nSub), times = .nReg), mg$covs, drop = FALSE])
+  .popCovs <- setdiff(mg$covs, names(extra))
+  if (length(.popCovs) > 0) {
+    .p <- cbind(.p, cov[rep(seq_len(.nSub), times = .nReg), .popCovs, drop = FALSE])
   }
+  if (!is.null(extra)) .p <- cbind(.p, extra)
   rownames(.p) <- NULL
-  .ev <- .cuiEvents(regimens, .nSub, obsTimes, cmt)
+  # rxode2 would quietly fill in (or sample) anything missing here
+  .missing <- setdiff(rxode2::rxModelVars(mg$ui)$params, names(.p))
+  if (length(.missing) > 0) {
+    stop(sprintf("internal error: no value for model parameter(s) %s",
+                 paste(.missing, collapse = ", ")), call. = FALSE)
+  }
+  # a model driven by a chained exposure gets the exposure, not the doses
+  .ev <- .cuiEvents(regimens, .nSub, obsTimes, cmt, dose = is.null(extra))
   .s <- suppressMessages(rxode2::rxSolve(mg$ui, params = .p, events = .ev, nStud = 1,
                                          thetaMat = NULL, simVariability = FALSE, sigma = NA,
                                          returnType = "data.frame"))
@@ -173,11 +190,9 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
   .s
 }
 
-#' Evaluate one summary at one time for every regimen (and batch)
-#'
-#' @return List with `value` (per regimen) and `batch` (regimen x batch).
+#' Per-subject values of one summary at one time, ordered by regimen then subject
 #' @noRd
-.cuiEvalSummary <- function(s, sim, time, nReg, nSub, batch, ep) {
+.cuiSubjectValues <- function(s, sim, time, nReg, nSub, ep) {
   .at <- function(t) {
     .rows <- sim[abs(sim$time - t) <= 1e-8 * max(1, abs(t)), , drop = FALSE]
     if (nrow(.rows) != nReg * nSub) {
@@ -189,30 +204,178 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
   if (!is.null(s$window)) {
     .v <- .at(s$window[2])[[s$state]] - .at(s$window[1])[[s$state]]
     if (s$type == "mean") .v <- .v / (s$window[2] - s$window[1])
-  } else {
-    .rows <- .at(time)
-    .v <- eval(s$expr, .rows, globalenv())
-    if (length(.v) == 1L) .v <- rep(.v, nrow(.rows))
-    if (length(.v) != nrow(.rows)) {
-      stop(sprintf("endpoint '%s' must give one value per subject", ep), call. = FALSE)
-    }
-    if (s$type == "threshold") {
-      if (!is.logical(.v) || anyNA(.v)) {
-        stop(sprintf("endpoint '%s': cuiThreshold() needs a TRUE/FALSE condition", ep), call. = FALSE)
-      }
-      .v <- as.numeric(.v)
-    } else if (!is.numeric(.v) || anyNA(.v)) {
-      stop(sprintf("endpoint '%s' must give numeric values without NA", ep), call. = FALSE)
-    } else if (s$type == "prob" && any(.v < 0 | .v > 1)) {
-      stop(sprintf("endpoint '%s': cuiProb() values must be in [0, 1]", ep), call. = FALSE)
-    }
+    return(.v)
   }
-  .m <- matrix(.v, nrow = nSub, ncol = nReg)
+  .rows <- .at(time)
+  .v <- eval(s$expr, .rows, globalenv())
+  if (length(.v) == 1L) .v <- rep(.v, nrow(.rows))
+  if (length(.v) != nrow(.rows)) {
+    stop(sprintf("endpoint '%s' must give one value per subject", ep), call. = FALSE)
+  }
+  if (s$type == "threshold") {
+    if (!is.logical(.v) || anyNA(.v)) {
+      stop(sprintf("endpoint '%s': cuiThreshold() needs a TRUE/FALSE condition", ep), call. = FALSE)
+    }
+    return(as.numeric(.v))
+  }
+  if (!is.numeric(.v) || anyNA(.v)) {
+    stop(sprintf("endpoint '%s' must give numeric values without NA", ep), call. = FALSE)
+  }
+  if (s$type == "prob" && any(.v < 0 | .v > 1)) {
+    stop(sprintf("endpoint '%s': cuiProb() values must be in [0, 1]", ep), call. = FALSE)
+  }
+  .v
+}
+
+#' Evaluate one summary at one time for every regimen (and batch)
+#'
+#' @return List with `value` (per regimen) and `batch` (regimen x batch).
+#' @noRd
+.cuiEvalSummary <- function(s, sim, time, nReg, nSub, batch, ep) {
+  .m <- matrix(.cuiSubjectValues(s, sim, time, nReg, nSub, ep), nrow = nSub, ncol = nReg)
   .ret <- list(value = colMeans(.m))
   if (!is.null(batch)) {
     .ret$batch <- rowsum(.m, batch, reorder = TRUE) / as.vector(table(batch))
   }
   .ret
+}
+
+#' Group endpoint and exposure fits; endpoints sharing a fit share a group
+#'
+#' @return List of model groups, providers of exposures first, and the
+#'   group index of every endpoint.
+#' @noRd
+.cuiGroups <- function(endpoints, exposure) {
+  .fits <- c(lapply(endpoints, `[[`, "fit"), lapply(exposure, `[[`, "fit"))
+  .key <- lapply(.fits, function(f) if (inherits(f, "nlmixr2FitCore")) f$env else f)
+  .grp <- integer(length(.fits))
+  for (.i in seq_along(.fits)) {
+    .grp[.i] <- .i
+    for (.j in seq_len(.i - 1L)) {
+      if (identical(.key[[.i]], .key[[.j]])) {
+        .grp[.i] <- .grp[.j]
+        break
+      }
+    }
+  }
+  .nEp <- length(endpoints)
+  .epGrp <- .grp[seq_len(.nEp)]
+  .exGrp <- .grp[.nEp + seq_along(exposure)]
+  .ids <- unique(.grp)
+  .groups <- lapply(seq_along(.ids), function(.k) {
+    .g <- .ids[.k]
+    .exps <- list()
+    for (.x in which(.exGrp == .g)) .exps <- c(.exps, exposure[[.x]]$summaries)
+    if (anyDuplicated(names(.exps)) != 0L) {
+      stop("exposure names must be unique", call. = FALSE)
+    }
+    .cuiModelGroup(.fits[[.g]], endpoints[.epGrp == .g], .k, .exps)
+  })
+  .exNames <- unlist(lapply(.groups, function(mg) names(mg$exposures)))
+  if (anyDuplicated(.exNames) != 0L) stop("exposure names must be unique", call. = FALSE)
+  for (mg in .groups) {
+    if (length(mg$exposures) > 0 && any(mg$covs %in% .exNames)) {
+      stop("an exposure model cannot itself use a chained exposure", call. = FALSE)
+    }
+  }
+  .provider <- vapply(.groups, function(mg) length(mg$exposures) > 0, logical(1))
+  .ord <- c(which(.provider), which(!.provider))
+  list(groups = .groups[.ord], epGroup = match(match(.epGrp, .ids), .ord), exposures = .exNames)
+}
+
+#' Simulate and summarize one draw for every model group
+#'
+#' @param params Per-group list of `theta` and `omega` for this draw.
+#' @param rows Population rows of this draw's subjects.
+#' @param etaDraw Draw key of the standardized random effects.
+#' @return List of per-endpoint value (and draw-0 batch) tables.
+#' @noRd
+.cuiRunDraw <- function(d, groups, params, rows, etaDraw, population, regimens, times,
+                        obsTimes, cmt, bt, seed) {
+  .n <- length(rows)
+  .nReg <- nrow(regimens)
+  .extra <- NULL
+  .out <- list()
+  for (.k in seq_along(groups)) {
+    .mg <- groups[[.k]]
+    # params follow the order of groups; .mg$group only keys random streams
+    .p <- params[[.k]]
+    .eta <- if (is.null(.p$omega) || nrow(.p$omega) == 0) {
+      matrix(numeric(0), nrow = .n, ncol = 0)
+    } else {
+      .z <- .cuiWithSeed(.cuiStreamSeed(seed, "eta", .mg$group, etaDraw),
+                         matrix(stats::rnorm(.n * nrow(.p$omega)), nrow = .n))
+      .e <- .z %*% .cuiOmegaFactor(.p$omega)
+      colnames(.e) <- rownames(.p$omega)
+      .e
+    }
+    .need <- intersect(.mg$covs, names(.extra))
+    .sim <- .cuiSolveDraw(.mg, .p$theta, .eta, population[rows, , drop = FALSE], regimens,
+                          obsTimes, cmt, if (length(.need) > 0) .extra[, .need, drop = FALSE])
+    for (.x in names(.mg$exposures)) {
+      .s <- .mg$exposures[[.x]]
+      .v <- .cuiSubjectValues(.s, .sim, .s$time, .nReg, .n, .x)
+      .extra <- if (is.null(.extra)) setNames(data.frame(.v), .x) else cbind(.extra, setNames(data.frame(.v), .x))
+    }
+    for (.ep in names(.mg$summaries)) {
+      .s <- .mg$summaries[[.ep]]
+      for (.a in names(times)) {
+        .t <- if (!is.null(.s$time)) .s$time else times[[.a]]
+        .r <- .cuiEvalSummary(.s, .sim, .t, .nReg, .n, bt, .ep)
+        .out[[length(.out) + 1L]] <- list(
+          value = data.frame(assessment = .a, regimen = regimens$label, draw = d,
+                             endpoint = .ep, value = .r$value, stringsAsFactors = FALSE),
+          batch = if (!is.null(.r$batch)) {
+            data.frame(assessment = .a, regimen = rep(regimens$label, each = nrow(.r$batch)),
+                       endpoint = .ep, batch = rep(seq_len(nrow(.r$batch)), .nReg),
+                       value = as.vector(.r$batch), stringsAsFactors = FALSE)
+          })
+      }
+    }
+  }
+  .out
+}
+
+#' Set up the draw cache directory
+#'
+#' `NA` disables caching, `NULL` derives `nlmixr2CuiCache_<md5>` from `key`.
+#' @noRd
+.cuiCacheSetup <- function(cacheDir, restart, key) {
+  if (length(cacheDir) == 1L && is.na(cacheDir)) return(NULL)
+  if (is.null(cacheDir)) cacheDir <- paste0("nlmixr2CuiCache_", digest::digest(key))
+  checkmate::assertString(cacheDir, min.chars = 1, .var.name = "cacheDir")
+  if (dir.exists(cacheDir) && restart) unlink(cacheDir, recursive = TRUE, force = TRUE)
+  if (!dir.exists(cacheDir)) dir.create(cacheDir, recursive = TRUE)
+  .keyFile <- file.path(cacheDir, "key.rds")
+  .k <- digest::digest(key)
+  if (file.exists(.keyFile)) {
+    if (!identical(readRDS(.keyFile), .k)) {
+      stop(sprintf("cache '%s' belongs to a different simulation; use restart = TRUE or another cacheDir",
+                   cacheDir), call. = FALSE)
+    }
+  } else {
+    saveRDS(.k, .keyFile)
+  }
+  cacheDir
+}
+
+.cuiCacheFile <- function(dir, d) file.path(dir, sprintf("draw_%05d.rds", d))
+
+.cuiCacheRead <- function(dir, d) {
+  if (is.null(dir)) return(NULL)
+  .f <- .cuiCacheFile(dir, d)
+  if (!file.exists(.f)) return(NULL)
+  .ret <- try(readRDS(.f), silent = TRUE)
+  if (inherits(.ret, "try-error")) NULL else .ret
+}
+
+.cuiCacheWrite <- function(dir, d, value) {
+  if (is.null(dir)) return(invisible(NULL))
+  # write then rename, so an interrupted write never leaves a partial draw
+  .tmp <- tempfile("draw", tmpdir = dir, fileext = ".tmp")
+  saveRDS(value, .tmp)
+  file.rename(.tmp, .cuiCacheFile(dir, d))
+  invisible(NULL)
 }
 
 #' Simulated clinical utility index from nlmixr2 models
@@ -221,22 +384,33 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
 #' target population, summarizes the endpoints per regimen, and combines
 #' them into a clinical utility index (CUI) as in [cuiFromValues()].
 #'
-#' The point estimate (draw 0) uses the fits' estimates.  With
-#' `uncertainty = "cov"`, draws `1..nDraw` sample the structural thetas
-#' from each fit's covariance (residual-error and fixed parameters, and
-#' omega, stay at their estimates), giving intervals for the expected CUI
-#' and selection frequencies.  Every regimen and every draw sees the same
-#' virtual subjects (covariates and standardized random effects), so
-#' regimen comparisons are not blurred by simulation noise.  With
-#' `mode = "trial"` (as in Winzenborg et al. 2021), parameters stay at
-#' their estimates and each draw is a new trial of `nSub` subjects
-#' resampled from the population, so the intervals describe trial-to-trial
-#' variation.
+#' The point estimate (draw 0) uses the fits' estimates.  Parameter
+#' uncertainty gives intervals for the expected CUI and selection
+#' frequencies:
+#' - `uncertainty = "cov"` samples the structural thetas from each fit's
+#'   covariance (residual-error and fixed parameters, and omega, stay at
+#'   their estimates);
+#' - `uncertainty = cuiBootstrap(...)` uses every parameter of bootstrap
+#'   refits, pairing models refit on the same resamples.
+#'
+#' Every regimen and every draw sees the same virtual subjects (covariates
+#' and standardized random effects), so regimen comparisons are not blurred
+#' by simulation noise.  With `mode = "trial"` (as in Winzenborg et al.
+#' 2021), parameters stay at their estimates and each draw is a new trial of
+#' `nSub` subjects resampled from the population, so the intervals describe
+#' trial-to-trial variation.
+#'
+#' Exposure-response endpoints can take a per-subject exposure from a PK
+#' model with `exposure = cuiExposure(...)`.
 #'
 #' Simulations use model predictions (no residual error).  The Monte Carlo
 #' precision of the comparison between the two best regimens is estimated
 #' from `nBatch` batches of subjects; a warning suggests a larger
 #' population when its standard error exceeds `mcTol`.
+#'
+#' Draws can be cached to `cacheDir` so an interrupted run resumes and a
+#' larger `nDraw` only simulates the new draws; give a `seed` so reruns
+#' match the cache.
 #'
 #' @param endpoints List of [cuiEndpoint()] objects, each with a `fit`
 #'   (an `nlmixr2` fit, or an `rxUi` with `uncertainty = "none"`) and a
@@ -249,14 +423,16 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
 #' @param times Named assessment times (model time units), for example
 #'   `c(m3 = 2016, m6 = 4032)` in hours; summaries without their own time
 #'   are evaluated at each.  `NULL` uses the regimens' common `duration`.
-#' @param uncertainty `"none"` or `"cov"` (parameter uncertainty from the
-#'   fits' covariance).
-#' @param nDraw Number of uncertainty draws (`"cov"`) or simulated trials
-#'   (`mode = "trial"`).
+#' @param uncertainty `"none"`, `"cov"` (parameter uncertainty from the
+#'   fits' covariance) or a [cuiBootstrap()] object.
+#' @param nDraw Number of uncertainty draws or simulated trials (with a
+#'   bootstrap, 0 uses every available draw).
 #' @param mode `"expectation"` (expected endpoints in the population) or
 #'   `"trial"` (finite simulated trials).
 #' @param nSub Subjects per simulated trial in `mode = "trial"`; defaults
 #'   to the population size.
+#' @param exposure A [cuiExposure()] or a list of them.  Models that use a
+#'   chained exposure receive it as a covariate and no dose records.
 #' @param cmt Dosing compartment, or `NULL` for the model default.
 #' @param nBatch Number of subject batches for the Monte Carlo standard
 #'   error.
@@ -264,6 +440,10 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
 #'   difference between the two best regimens exceeds this.
 #' @param seed Seed, or `NULL` to take one from the current random stream.
 #' @param minSuccess Minimum fraction of draws that must simulate.
+#' @param cacheDir Directory caching each draw; `NA` (default) caches
+#'   nothing and `NULL` uses `nlmixr2CuiCache_<md5>` from the simulation's
+#'   inputs.
+#' @param restart Discard the cache and simulate every draw again.
 #' @inheritParams cuiFromValues
 #' @return An `nlmixr2Cui` object.
 #' @references Winzenborg I, Soliman AM, Shebley M (2021).  A Personalized
@@ -297,18 +477,26 @@ cuiPopulation <- function(data, n = NULL, covs = NULL, id = "ID", seed = NULL) {
 #' }
 cui <- function(endpoints, regimens, population, times = NULL, weights = NULL,
                 combine = c("additive", "geometric"), eligible = NULL,
-                uncertainty = c("none", "cov"), nDraw = 0L, mode = c("expectation", "trial"),
-                nSub = NULL, cmt = NULL, nBatch = 10L, mcTol = 0.01, seed = NULL,
-                minSuccess = 0.9, level = 0.95, tieTol = sqrt(.Machine$double.eps)) {
-  uncertainty <- match.arg(uncertainty)
+                uncertainty = "none", nDraw = 0L, mode = c("expectation", "trial"),
+                nSub = NULL, exposure = NULL, cmt = NULL, nBatch = 10L, mcTol = 0.01,
+                seed = NULL, minSuccess = 0.9, cacheDir = NA, restart = FALSE,
+                level = 0.95, tieTol = sqrt(.Machine$double.eps)) {
+  .boot <- NULL
+  if (inherits(uncertainty, "cuiBootstrap")) {
+    .boot <- uncertainty
+    uncertainty <- "bootstrap"
+  } else {
+    uncertainty <- match.arg(uncertainty, c("none", "cov"))
+  }
   mode <- match.arg(mode)
+  combine <- match.arg(combine)
   # one base seed from the current stream; every keyed stream derives from it
   if (is.null(seed)) seed <- sample.int(.Machine$integer.max, 1L)
-  combine <- match.arg(combine)
   checkmate::assertCount(nDraw)
   checkmate::assertCount(nBatch)
   checkmate::assertNumber(mcTol, lower = 0)
   checkmate::assertNumber(minSuccess, lower = 0, upper = 1)
+  checkmate::assertFlag(restart)
   if (inherits(endpoints, "cuiEndpoint")) endpoints <- list(endpoints)
   if (!all(vapply(endpoints, function(e) {
     inherits(e, "cuiEndpoint") && inherits(e$summary, "cuiSummary") &&
@@ -317,7 +505,10 @@ cui <- function(endpoints, regimens, population, times = NULL, weights = NULL,
     stop("each endpoint needs cuiEndpoint(name, fit, summary) with an nlmixr2 fit or rxUi ",
          "and a cuiProb()/cuiMean()/cuiAuc()/cuiThreshold() summary", call. = FALSE)
   }
-  .epNames <- vapply(endpoints, `[[`, character(1), "name")
+  if (inherits(exposure, "cuiExposure")) exposure <- list(exposure)
+  if (!all(vapply(exposure, inherits, logical(1), what = "cuiExposure"))) {
+    stop("'exposure' must be a cuiExposure() or a list of them", call. = FALSE)
+  }
   if (!inherits(regimens, "cuiRegimens")) stop("'regimens' must come from cuiRegimens()", call. = FALSE)
   if (anyNA(regimens$dose) || any(regimens$dose < 0)) {
     stop("regimen doses must be nonnegative numbers", call. = FALSE)
@@ -336,7 +527,7 @@ cui <- function(endpoints, regimens, population, times = NULL, weights = NULL,
     if (is.null(nSub)) nSub <- nrow(population)
     checkmate::assertCount(nSub, positive = TRUE)
   } else if (uncertainty == "none" && nDraw > 0) {
-    stop("nDraw > 0 needs uncertainty = \"cov\" or mode = \"trial\"", call. = FALSE)
+    stop("nDraw > 0 needs uncertainty = \"cov\", a cuiBootstrap() or mode = \"trial\"", call. = FALSE)
   } else if (uncertainty == "cov" && nDraw < 1) {
     stop("uncertainty = \"cov\" needs nDraw >= 1", call. = FALSE)
   }
@@ -356,26 +547,20 @@ cui <- function(endpoints, regimens, population, times = NULL, weights = NULL,
     if (is.null(names(times))) names(times) <- .cuiNumLabel(times)
     if (anyDuplicated(names(times)) != 0L) stop("assessment names must be unique", call. = FALSE)
   }
-  # model groups: endpoints sharing a fit are simulated together
-  .key <- lapply(endpoints, function(e) if (inherits(e$fit, "nlmixr2FitCore")) e$fit$env else e$fit)
-  .grp <- integer(length(endpoints))
-  for (.i in seq_along(endpoints)) {
-    .grp[.i] <- .i
-    for (.j in seq_len(.i - 1L)) {
-      if (identical(.key[[.i]], .key[[.j]])) {
-        .grp[.i] <- .grp[.j]
-        break
-      }
-    }
+  # model groups, providers of chained exposures first
+  .g <- .cuiGroups(endpoints, exposure)
+  .groups <- .g$groups
+  .clash <- intersect(.g$exposures, names(population))
+  if (length(.clash) > 0) {
+    stop(sprintf("exposure name(s) also in 'population': %s", paste(.clash, collapse = ", ")),
+         call. = FALSE)
   }
-  .groups <- lapply(unique(.grp), function(g) {
-    .cuiModelGroup(endpoints[[which(.grp == g)[1]]]$fit, endpoints[.grp == g], g)
-  })
-  .miss <- setdiff(unlist(lapply(.groups, `[[`, "covs")), names(population))
+  .miss <- setdiff(unlist(lapply(.groups, `[[`, "covs")), c(names(population), .g$exposures))
   if (length(.miss) > 0) {
     stop(sprintf("model covariate(s) not in 'population': %s", paste(.miss, collapse = ", ")),
          call. = FALSE)
   }
+  # parameter draws per group
   .covChol <- lapply(.groups, function(mg) {
     if (uncertainty != "cov") return(NULL)
     if (!mg$isFit || is.null(mg$fit$cov)) {
@@ -388,76 +573,110 @@ cui <- function(endpoints, regimens, population, times = NULL, weights = NULL,
     tryCatch(chol(.cov[mg$struct, mg$struct, drop = FALSE]),
              error = function(e) stop("the fit covariance is not positive definite", call. = FALSE))
   })
+  .bootDraws <- NULL
+  .bootGroup <- rep(NA_integer_, length(.groups))
+  .bootNote <- ""
+  if (uncertainty == "bootstrap") {
+    .ens <- .boot$ensembles
+    .gMd5 <- lapply(.groups, `[[`, "md5")
+    for (.i in seq_along(.ens)) {
+      .m <- which(vapply(.gMd5, function(m) identical(m, .ens[[.i]]$parentMd5), logical(1)))
+      if (length(.m) == 0 && is.na(.ens[[.i]]$parentMd5) && length(.ens) == 1L &&
+        length(.groups) == 1L) {
+        .m <- 1L
+      }
+      if (length(.m) != 1L) {
+        stop(sprintf(paste0("bootstrap ensemble %d does not belong to an endpoint or exposure fit ",
+                            "(refit it with bootstrapFit() on that fit)"), .i), call. = FALSE)
+      }
+      if (!is.na(.bootGroup[.m])) stop("two bootstrap ensembles for the same fit", call. = FALSE)
+      .it <- .ens[[.i]]$items[[1]]
+      if (!setequal(names(.it$theta), names(.groups[[.m]]$theta)) ||
+        !setequal(rownames(.it$omega), rownames(.groups[[.m]]$omega))) {
+        stop(sprintf("bootstrap ensemble %d has different parameters than its fit", .i), call. = FALSE)
+      }
+      .bootGroup[.m] <- .i
+    }
+    if (anyNA(.bootGroup)) {
+      warning("models without a bootstrap ensemble keep their estimated parameters", call. = FALSE)
+    }
+    .pair <- .cuiBootPair(.ens)
+    .bootDraws <- .pair$draws
+    if (nDraw == 0) nDraw <- nrow(.bootDraws)
+    if (nDraw > nrow(.bootDraws)) {
+      stop(sprintf("nDraw = %d but only %d bootstrap draws are available", nDraw, nrow(.bootDraws)),
+           call. = FALSE)
+    }
+    .bootNote <- if (length(.ens) > 1L) {
+      if (.pair$paired) "; ensembles paired by resample" else "; independent ensembles"
+    } else {
+      ""
+    }
+  }
+  .params <- function(d) {
+    lapply(seq_along(.groups), function(.k) {
+      .mg <- .groups[[.k]]
+      if (d > 0 && uncertainty == "cov") {
+        return(list(theta = .cuiDrawTheta(.mg, .covChol[[.k]], seed, d), omega = .mg$omega))
+      }
+      if (d > 0 && uncertainty == "bootstrap" && !is.na(.bootGroup[.k])) {
+        .it <- .boot$ensembles[[.bootGroup[.k]]]$items[[.bootDraws[d, .bootGroup[.k]]]]
+        return(list(theta = .it$theta[names(.mg$theta)],
+                    omega = .it$omega[rownames(.mg$omega), rownames(.mg$omega), drop = FALSE]))
+      }
+      list(theta = .mg$theta, omega = .mg$omega)
+    })
+  }
   # observation times: assessments, fixed summary times and window ends
   .obsTimes <- times[!is.na(times)]
-  for (.mg in .groups) for (.s in .mg$summaries) {
+  for (.mg in .groups) for (.s in c(.mg$summaries, .mg$exposures)) {
     .obsTimes <- c(.obsTimes, .s$time, .s$window)
   }
   .obsTimes <- sort(unique(unname(.obsTimes)))
+  # cache keyed on everything that changes what a draw is; nDraw is left out
+  # so a larger nDraw resumes
+  .cache <- .cuiCacheSetup(cacheDir, restart, list(
+    lapply(.groups, function(mg) {
+      list(mg$ui$iniDf, mg$ui$lstExpr,
+           lapply(c(mg$summaries, mg$exposures), function(s) s[c("type", "expr", "time", "window")]))
+    }),
+    as.data.frame(population), as.data.frame(regimens), times, mode, nSub, uncertainty,
+    .covChol, if (!is.null(.boot)) lapply(seq_len(nrow(.bootDraws)), .params), cmt, nBatch, seed,
+    as.character(utils::packageVersion("rxode2")),
+    as.character(utils::packageVersion("nlmixr2extra"))))
   # draws
   .nPop <- nrow(population)
-  .etaZ <- function(mg, draw, n) {
-    .nEta <- if (is.null(mg$omega)) 0L else nrow(mg$omega)
-    if (.nEta == 0L) return(matrix(numeric(0), nrow = n, ncol = 0))
-    .z <- .cuiWithSeed(.cuiStreamSeed(seed, "eta", mg$group, draw),
-                       matrix(stats::rnorm(n * .nEta), nrow = n))
-    .e <- .z %*% .cuiOmegaFactor(mg$omega)
-    colnames(.e) <- rownames(mg$omega)
-    .e
-  }
   .vals <- list()
   .batch <- NULL
   .status <- rep("ok", nDraw + 1L)
   .msg <- rep("", nDraw + 1L)
   for (.d in 0:nDraw) {
-    .trial <- mode == "trial" && .d > 0
-    .rows <- if (.trial) {
-      .cuiWithSeed(.cuiStreamSeed(seed, "population", .d), sample.int(.nPop, nSub, replace = TRUE))
-    } else {
-      seq_len(.nPop)
-    }
-    .n <- length(.rows)
-    .bt <- if (.d == 0 && nBatch >= 2 && .n >= 2 * nBatch) (seq_len(.n) - 1L) %% nBatch + 1L else NULL
-    .res <- tryCatch({
-      .out <- list()
-      for (.gi in seq_along(.groups)) {
-        .mg <- .groups[[.gi]]
-        .theta <- if (uncertainty == "cov" && .d > 0) {
-          .cuiDrawTheta(.mg, .covChol[[.gi]], seed, .d)
-        } else {
-          .mg$theta
-        }
-        .eta <- .etaZ(.mg, if (.trial) .d else 0L, .n)
-        .sim <- .cuiSolveDraw(.mg, .theta, .eta, population[.rows, , drop = FALSE],
-                              regimens, .obsTimes, cmt)
-        for (.ep in names(.mg$summaries)) {
-          .s <- .mg$summaries[[.ep]]
-          for (.a in names(times)) {
-            .t <- if (!is.null(.s$time)) .s$time else times[[.a]]
-            .r <- .cuiEvalSummary(.s, .sim, .t, nrow(regimens), .n, .bt, .ep)
-            .out[[length(.out) + 1L]] <- list(
-              value = data.frame(assessment = .a, regimen = regimens$label, draw = .d,
-                                 endpoint = .ep, value = .r$value, stringsAsFactors = FALSE),
-              batch = if (!is.null(.r$batch)) {
-                data.frame(assessment = .a, regimen = rep(regimens$label, each = nrow(.r$batch)),
-                           endpoint = .ep, batch = rep(seq_len(nrow(.r$batch)), nrow(regimens)),
-                           value = as.vector(.r$batch), stringsAsFactors = FALSE)
-              })
-          }
-        }
+    .res <- .cuiCacheRead(.cache, .d)
+    if (is.null(.res)) {
+      .trial <- mode == "trial" && .d > 0
+      .rows <- if (.trial) {
+        .cuiWithSeed(.cuiStreamSeed(seed, "population", .d), sample.int(.nPop, nSub, replace = TRUE))
+      } else {
+        seq_len(.nPop)
       }
-      .out
-    }, error = function(e) {
-      if (.d == 0) stop(e)
-      conditionMessage(e)
-    })
-    if (is.character(.res)) {
+      .n <- length(.rows)
+      .bt <- if (.d == 0 && nBatch >= 2 && .n >= 2 * nBatch) (seq_len(.n) - 1L) %% nBatch + 1L else NULL
+      .res <- tryCatch(
+        list(ok = TRUE, out = .cuiRunDraw(.d, .groups, .params(.d), .rows, if (.trial) .d else 0L,
+                                          population, regimens, times, .obsTimes, cmt, .bt, seed)),
+        error = function(e) {
+          if (.d == 0) stop(e)
+          list(ok = FALSE, message = conditionMessage(e))
+        })
+      .cuiCacheWrite(.cache, .d, .res)
+    }
+    if (!.res$ok) {
       .status[.d + 1L] <- "failed"
-      .msg[.d + 1L] <- .res
+      .msg[.d + 1L] <- .res$message
       next
     }
-    .vals <- c(.vals, lapply(.res, `[[`, "value"))
-    if (.d == 0) .batch <- do.call(rbind, lapply(.res, `[[`, "batch"))
+    .vals <- c(.vals, lapply(.res$out, `[[`, "value"))
+    if (.d == 0) .batch <- do.call(rbind, lapply(.res$out, `[[`, "batch"))
   }
   .nOk <- sum(.status[-1] == "ok")
   if (nDraw > 0 && .nOk / nDraw < minSuccess) {
@@ -465,16 +684,14 @@ cui <- function(endpoints, regimens, population, times = NULL, weights = NULL,
                  .nOk, nDraw, minSuccess, .msg[.status != "ok"][1]), call. = FALSE)
   }
   .desc <- sprintf("Simulated: %d subjects x %d regimens; %s", .nPop, nrow(regimens),
-                   if (mode == "trial") {
-                     sprintf("%d simulated trials of %d subjects", nDraw, nSub)
-                   } else if (uncertainty == "cov") {
-                     sprintf("%d parameter draws from the fit covariance", nDraw)
-                   } else {
-                     "no parameter uncertainty"
-                   })
+                   switch(if (mode == "trial") "trial" else uncertainty,
+                          trial = sprintf("%d simulated trials of %d subjects", nDraw, nSub),
+                          cov = sprintf("%d parameter draws from the fit covariance", nDraw),
+                          bootstrap = sprintf("%d bootstrap parameter draws%s", nDraw, .bootNote),
+                          none = "no parameter uncertainty"))
   .ret <- .cuiNew(values = do.call(rbind, .vals), endpoints = lapply(seq_along(endpoints), function(i) {
     .e <- endpoints[[i]]
-    .e$summary <- .groups[[match(.grp[i], unique(.grp))]]$summaries[[.e$name]]
+    .e$summary <- .groups[[.g$epGroup[i]]]$summaries[[.e$name]]
     .e
   }), regimens = regimens, weights = weights, combine = combine, eligible = eligible,
   level = level, tieTol = tieTol,
@@ -483,7 +700,8 @@ cui <- function(endpoints, regimens, population, times = NULL, weights = NULL,
                      message = .msg, stringsAsFactors = FALSE),
   settings = list(source = "simulation", mode = mode, uncertainty = uncertainty,
                   nDraw = nDraw, nPopulation = .nPop, nSub = nSub, seed = seed,
-                  times = times, description = .desc),
+                  times = times, exposures = .g$exposures, cacheDir = .cache,
+                  description = .desc),
   batch = .batch)
   if (!is.null(.ret$mcse) && any(.ret$mcse$se > mcTol)) {
     warning(sprintf(paste0("Monte Carlo standard error of the difference between the two best ",

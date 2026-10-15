@@ -81,8 +81,10 @@ update(res, weights = c(tox = 0.3, eff = 0.2, tol = 0.5))
 Other Clinical utility:
 \code{\link[=cui]{cui()}},
 \code{\link[=cuiBinary]{cuiBinary()}},
+\code{\link[=cuiBootstrap]{cuiBootstrap()}},
 \code{\link[=cuiDoseResponse]{cuiDoseResponse()}},
 \code{\link[=cuiEndpoint]{cuiEndpoint()}},
+\code{\link[=cuiExposure]{cuiExposure()}},
 \code{\link[=cuiIdentity]{cuiIdentity()}},
 \code{\link[=cuiPopulation]{cuiPopulation()}},
 \code{\link[=cuiProb]{cuiProb()}},

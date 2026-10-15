@@ -12,15 +12,18 @@ cui(
   weights = NULL,
   combine = c("additive", "geometric"),
   eligible = NULL,
-  uncertainty = c("none", "cov"),
+  uncertainty = "none",
   nDraw = 0L,
   mode = c("expectation", "trial"),
   nSub = NULL,
+  exposure = NULL,
   cmt = NULL,
   nBatch = 10L,
   mcTol = 0.01,
   seed = NULL,
   minSuccess = 0.9,
+  cacheDir = NA,
+  restart = FALSE,
   level = 0.95,
   tieTol = sqrt(.Machine$double.eps)
 )
@@ -54,17 +57,20 @@ regimen, or a data frame listing eligible \code{regimen} and \code{assessment}
 pairs (with an optional logical \code{eligible} column, as in the
 \code{eligible} element of the result).}
 
-\item{uncertainty}{\code{"none"} or \code{"cov"} (parameter uncertainty from the
-fits' covariance).}
+\item{uncertainty}{\code{"none"}, \code{"cov"} (parameter uncertainty from the
+fits' covariance) or a \code{\link[=cuiBootstrap]{cuiBootstrap()}} object.}
 
-\item{nDraw}{Number of uncertainty draws (\code{"cov"}) or simulated trials
-(\code{mode = "trial"}).}
+\item{nDraw}{Number of uncertainty draws or simulated trials (with a
+bootstrap, 0 uses every available draw).}
 
 \item{mode}{\code{"expectation"} (expected endpoints in the population) or
 \code{"trial"} (finite simulated trials).}
 
 \item{nSub}{Subjects per simulated trial in \code{mode = "trial"}; defaults
 to the population size.}
+
+\item{exposure}{A \code{\link[=cuiExposure]{cuiExposure()}} or a list of them.  Models that use a
+chained exposure receive it as a covariate and no dose records.}
 
 \item{cmt}{Dosing compartment, or \code{NULL} for the model default.}
 
@@ -77,6 +83,12 @@ difference between the two best regimens exceeds this.}
 \item{seed}{Seed, or \code{NULL} to take one from the current random stream.}
 
 \item{minSuccess}{Minimum fraction of draws that must simulate.}
+
+\item{cacheDir}{Directory caching each draw; \code{NA} (default) caches
+nothing and \code{NULL} uses \verb{nlmixr2CuiCache_<md5>} from the simulation's
+inputs.}
+
+\item{restart}{Discard the cache and simulate every draw again.}
 
 \item{level}{Confidence level of the percentile intervals.}
 
@@ -91,22 +103,35 @@ target population, summarizes the endpoints per regimen, and combines
 them into a clinical utility index (CUI) as in \code{\link[=cuiFromValues]{cuiFromValues()}}.
 }
 \details{
-The point estimate (draw 0) uses the fits' estimates.  With
-\code{uncertainty = "cov"}, draws \verb{1..nDraw} sample the structural thetas
-from each fit's covariance (residual-error and fixed parameters, and
-omega, stay at their estimates), giving intervals for the expected CUI
-and selection frequencies.  Every regimen and every draw sees the same
-virtual subjects (covariates and standardized random effects), so
-regimen comparisons are not blurred by simulation noise.  With
-\code{mode = "trial"} (as in Winzenborg et al. 2021), parameters stay at
-their estimates and each draw is a new trial of \code{nSub} subjects
-resampled from the population, so the intervals describe trial-to-trial
-variation.
+The point estimate (draw 0) uses the fits' estimates.  Parameter
+uncertainty gives intervals for the expected CUI and selection
+frequencies:
+\itemize{
+\item \code{uncertainty = "cov"} samples the structural thetas from each fit's
+covariance (residual-error and fixed parameters, and omega, stay at
+their estimates);
+\item \code{uncertainty = cuiBootstrap(...)} uses every parameter of bootstrap
+refits, pairing models refit on the same resamples.
+}
+
+Every regimen and every draw sees the same virtual subjects (covariates
+and standardized random effects), so regimen comparisons are not blurred
+by simulation noise.  With \code{mode = "trial"} (as in Winzenborg et al.
+2021), parameters stay at their estimates and each draw is a new trial of
+\code{nSub} subjects resampled from the population, so the intervals describe
+trial-to-trial variation.
+
+Exposure-response endpoints can take a per-subject exposure from a PK
+model with \code{exposure = cuiExposure(...)}.
 
 Simulations use model predictions (no residual error).  The Monte Carlo
 precision of the comparison between the two best regimens is estimated
 from \code{nBatch} batches of subjects; a warning suggests a larger
 population when its standard error exceeds \code{mcTol}.
+
+Draws can be cached to \code{cacheDir} so an interrupted run resumes and a
+larger \code{nDraw} only simulates the new draws; give a \code{seed} so reruns
+match the cache.
 }
 \examples{
 \dontrun{
@@ -141,8 +166,10 @@ Syst Pharmacol 10:40-47.
 \seealso{
 Other Clinical utility:
 \code{\link[=cuiBinary]{cuiBinary()}},
+\code{\link[=cuiBootstrap]{cuiBootstrap()}},
 \code{\link[=cuiDoseResponse]{cuiDoseResponse()}},
 \code{\link[=cuiEndpoint]{cuiEndpoint()}},
+\code{\link[=cuiExposure]{cuiExposure()}},
 \code{\link[=cuiFromValues]{cuiFromValues()}},
 \code{\link[=cuiIdentity]{cuiIdentity()}},
 \code{\link[=cuiPopulation]{cuiPopulation()}},

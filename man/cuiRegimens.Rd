@@ -38,8 +38,10 @@ cuiRegimens(dose = c(150, 200), ii = c(24, 12), units = "mg")
 Other Clinical utility:
 \code{\link[=cui]{cui()}},
 \code{\link[=cuiBinary]{cuiBinary()}},
+\code{\link[=cuiBootstrap]{cuiBootstrap()}},
 \code{\link[=cuiDoseResponse]{cuiDoseResponse()}},
 \code{\link[=cuiEndpoint]{cuiEndpoint()}},
+\code{\link[=cuiExposure]{cuiExposure()}},
 \code{\link[=cuiFromValues]{cuiFromValues()}},
 \code{\link[=cuiIdentity]{cuiIdentity()}},
 \code{\link[=cuiPopulation]{cuiPopulation()}},
