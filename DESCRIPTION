@@ -35,6 +35,7 @@ Imports:
     digest,
     dplyr,
     ggplot2,
+    grDevices,
     knitr,
     lotri,
     methods,

@@ -75,7 +75,12 @@ cuiApp <- function(x, mode = c("explorer", "desk"), eligible = NULL, presets = N
   if (max(c(unlist(.start), unlist(.presets))) > maxWeight) {
     stop("a starting or preset weight exceeds 'maxWeight'", call. = FALSE)
   }
+  # start on the preset that matches the starting weights, if any
+  .match <- Filter(function(p) {
+    isTRUE(all.equal(cuiGroupWeights(x, p$group, p$within), cuiGroupWeights(x, .start$group, .start$within)))
+  }, .presets)
   list(epNames = .epNames, grp = .grp, groups = .groups,
+       startPreset = if (length(.match) > 0) names(.match)[1] else "custom",
        groupId = setNames(paste0("cuiGroup", seq_along(.groups)), .groups),
        epId = setNames(paste0("cuiWithin", seq_along(.epNames)), .epNames),
        start = .start, presets = .presets, maxWeight = maxWeight)
@@ -116,7 +121,7 @@ cuiApp <- function(x, mode = c("explorer", "desk"), eligible = NULL, presets = N
         class = "cui-within",
         lapply(.eps, function(e) {
           shiny::sliderInput(spec$epId[[e]], e, 0, spec$maxWeight,
-                             unname(spec$start$within[[e]]), step = 0.05)
+                             unname(spec$start$within[[e]]), step = 0.05, ticks = FALSE)
         })
       )
     )
@@ -156,7 +161,8 @@ cuiApp <- function(x, mode = c("explorer", "desk"), eligible = NULL, presets = N
   bslib::page_sidebar(
     title = title,
     fillable = FALSE,
-    theme = bslib::bs_theme(version = 5, bootswatch = "flatly", primary = "#1B365D"),
+    theme = bslib::bs_theme(version = 5, bootswatch = "flatly", primary = "#1B365D",
+                            "navbar-bg" = "#1B365D"),
     sidebar = bslib::sidebar(
       width = 320,
       shiny::tags$style(shiny::HTML(paste(
@@ -167,7 +173,7 @@ cuiApp <- function(x, mode = c("explorer", "desk"), eligible = NULL, presets = N
       if (length(spec$presets) > 0) {
         shiny::selectInput("preset", "Weight preset",
                            choices = c(names(spec$presets), "Custom" = "custom"),
-                           selected = "custom")
+                           selected = spec$startPreset)
       },
       shiny::radioButtons("combine", "CUI form",
                           choices = c(Additive = "additive", Geometric = "geometric"),

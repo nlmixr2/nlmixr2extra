@@ -48,6 +48,12 @@ test_that("presets map exactly onto group and within-group sliders", {
   expect_equal(cuiGroupWeights(.r, .p$group, .p$within),
                c(dysm = 1.48, nmpp = 1.49, hf = 3.62, bmd = 0.49))
   expect_equal(unname(.spec$presets$hier$group), c(3, 1))
+  # the starting weights (all 1) match no preset here; a matching preset is selected
+  expect_equal(.spec$startPreset, "custom")
+  .r2 <- .appRes(weights = c(dysm = 1.48, nmpp = 1.49, hf = 3.62, bmd = 0.49))
+  expect_equal(.cur$.cuiAppSpec(.r2, list(a = c(dysm = 1), dce = c(dysm = 1.48, nmpp = 1.49,
+                                                                    hf = 3.62, bmd = 0.49)), 5)$startPreset,
+               "dce")
   expect_error(.cur$.cuiAppSpec(.r, list(c(dysm = 1)), 5), "named list")
   expect_error(.cur$.cuiAppSpec(.r, list(a = c(nope = 1)), 5), "unknown endpoint")
   expect_error(.cur$.cuiAppSpec(.r, list(a = c(dysm = 9)), 5), "maxWeight")

@@ -41,6 +41,16 @@
   `cuiSensitivity()` shows how the recommendation changes as each endpoint
   weight varies.
 
+- New `cuiApp()` desk tool (Shiny, modeled on the ACoP 2026 CUI workshop
+  app) re-weights a CUI result interactively with hierarchical weights:
+  one slider per endpoint group (efficacy, safety, ...) and indented
+  within-group sliders, presets, the package's plots with lines and
+  bands, selection, sensitivity and dose-response tabs, and CSV downloads;
+  `mode = "desk"` recommends eligible regimens only.  `cuiAppExport()`
+  writes a deployable app.  Endpoints take a `group`, and
+  `cuiGroupWeights()` turns group and within-group weights into endpoint
+  weights.
+
 - Fitted regression models can be CUI endpoints: `cuiBinary(tox, model =
   fit)` in `cuiDoseResponse()` (averaged over the patients and refit in
   each bootstrap draw) and `cuiEndpoint(eff, fit, cuiResponse(dose =

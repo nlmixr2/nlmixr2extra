@@ -474,35 +474,38 @@ plot.nlmixr2CuiSensitivity <- function(x, ...) {
   .d <- as.data.frame(unclass(x), stringsAsFactors = FALSE)
   .d$endpoint <- factor(.d$endpoint, levels = rev(unique(.d$endpoint)))
   .numeric <- .cuiRegimenX(.reg)$numeric
-  if (.numeric) .d$dose <- .reg$dose[match(.d$regimen, .reg$label)]
+  # recommended regimens in regimen (dose) order: a discrete, ordered legend
+  .shown <- .reg$label[.reg$label %in% .d$regimen]
+  if (.numeric) .shown <- .shown[order(.reg$dose[match(.shown, .reg$label)])]
+  .d$regimen <- factor(.d$regimen, levels = .shown)
   .step <- min(diff(sort(unique(.d$weight))))
   # the current weights as their own rows, so the ring shows off the grid too
   .d$current <- FALSE
   .now <- data.frame(endpoint = factor(names(.cur), levels = levels(.d$endpoint)),
-                     weight = unname(.cur), regimen = NA_character_, cui = NA_real_,
-                     current = TRUE, stringsAsFactors = FALSE)
-  if (.numeric) .now$dose <- NA_real_
+                     weight = unname(.cur), regimen = factor(NA, levels = .shown),
+                     cui = NA_real_, current = TRUE)
   .d <- rbind(.d, .now)
-  .plotData(.cuiSensitivityFigure(.numeric, attr(x, "assessment"), .step,
-                                  if (.numeric) NULL else sort(unique(stats::na.omit(.d$regimen)))),
+  .fills <- if (.numeric) {
+    # ordinal shades of the ramp for doses
+    grDevices::colorRampPalette(.cuiSeqRamp)(max(length(.shown), 2))[
+      if (length(.shown) == 1) 2 else seq_along(.shown)]
+  } else {
+    rep_len(.cuiSeriesColors, length(.shown))
+  }
+  .plotData(.cuiSensitivityFigure(attr(x, "assessment"), .step, setNames(.fills, .shown),
+                                  if (.numeric) "Recommended dose" else "Recommended regimen"),
             .d)
 }
 
-.cuiSensitivityFigure <- function(numeric, assessment, step, levels) {
-  invisible(list(numeric, assessment, step, levels))
-  .fill <- if (numeric) {
-    ggplot2::scale_fill_gradientn(name = "Recommended dose", colours = .cuiSeqRamp)
-  } else {
-    ggplot2::scale_fill_manual(name = "Recommended regimen",
-                               values = setNames(rep_len(.cuiSeriesColors, length(levels)), levels))
-  }
+.cuiSensitivityFigure <- function(assessment, step, fills, legend) {
+  invisible(list(assessment, step, fills, legend))
   ggplot2::ggplot(mapping = ggplot2::aes(x = .data$weight, y = .data$endpoint)) +
     ggplot2::geom_tile(data = function(d) d[!d$current, , drop = FALSE],
-                       ggplot2::aes(fill = if (numeric) .data$dose else .data$regimen),
+                       ggplot2::aes(fill = .data$regimen),
                        width = step, height = 0.8, color = "white", linewidth = 0.4) +
     ggplot2::geom_point(data = function(d) d[d$current, , drop = FALSE], shape = 21, size = 3.5,
                         stroke = 1, color = .cuiNavy, fill = "white") +
-    .fill +
+    ggplot2::scale_fill_manual(name = legend, values = fills, na.value = "grey90") +
     ggplot2::xlab("Weight of the endpoint (others unchanged)") +
     ggplot2::ylab(NULL) +
     ggplot2::labs(title = "Sensitivity of the recommendation to the weights",
