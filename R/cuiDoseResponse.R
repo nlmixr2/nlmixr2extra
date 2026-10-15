@@ -237,6 +237,17 @@ cuiDoseResponse <- function(data, endpoints, dose, id, weights = NULL,
     stop(sprintf("dose column '%s' has distinct values that agree to 15 digits; round it",
                  .doseCol), call. = FALSE)
   }
+  .models <- vapply(endpoints, `[[`, character(1), "model")
+  .need <- c(empirical = 1, logitLinear = 2, logitQuadratic = 3, emax = 2, exponential = 2)
+  .few <- .need[.models] > length(.doses)
+  if (any(.few)) {
+    stop(sprintf("endpoint(s) %s need more dose levels than the %d in the data",
+                 paste(sprintf("'%s' (%s)", .epNames[.few], .models[.few]), collapse = ", "),
+                 length(.doses)), call. = FALSE)
+  }
+  if (any(.models %in% c("emax", "exponential")) && any(.doses < 0)) {
+    stop("emax and exponential models need nonnegative doses", call. = FALSE)
+  }
   .fitFun <- function(y, dose) .cuiDrFit(y, dose, .doses, endpoints)
   .run <- .cuiWithSeed(seed, .cuiDrRun(.y, .doseVal, .doses, endpoints, nBoot, .fitFun))
   .nOk <- sum(.run$draws$status[-1] == "ok")
@@ -245,7 +256,6 @@ cuiDoseResponse <- function(data, endpoints, dose, id, weights = NULL,
                  .nOk, nBoot, minSuccess,
                  .run$draws$message[.run$draws$status != "ok"][1]), call. = FALSE)
   }
-  .models <- vapply(endpoints, `[[`, character(1), "model")
   .ret <- .cuiNew(values = .run$values, endpoints = endpoints,
                   regimens = cuiRegimens(dose = .doses), weights = weights,
                   combine = match.arg(combine), eligible = eligible, level = level,

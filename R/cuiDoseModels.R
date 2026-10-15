@@ -35,6 +35,8 @@
     return(fit$p[match(dose, fit$doses)])
   }
   .d <- dose / fit$scale
+  # logit models are fit on a centered dose
+  if (!is.null(fit$center)) .d <- (.d - fit$center) / fit$spread
   .b <- fit$coef
   .eta <- switch(fit$model,
     logitLinear = .b[1] + .b[2] * .d,
@@ -61,6 +63,11 @@
 #' @noRd
 .cuiDrLogit <- function(x, n, d, quadratic, monotone, penalty) {
   .sgn <- switch(monotone, none = 0, increasing = 1, decreasing = -1)
+  # center and scale the dose to [-1, 1], so the coefficient bounds never
+  # bind for doses far from 0; this keeps the sign of the slope
+  .center <- (min(d) + max(d)) / 2
+  .spread <- (max(d) - min(d)) / 2
+  d <- (d - .center) / .spread
   .lo <- min(d)
   .hi <- max(d)
   .big <- 50
@@ -104,13 +111,14 @@
     # constrained fit, which is feasible
     .b <- .cuiDrLogit(x, n, d, quadratic, monotone, penalty = FALSE)$coef
     .o <- stats::optim(.b, .obj, method = "Nelder-Mead", control = list(maxit = 5000))
-    return(list(model = "logitQuadratic", coef = .o$par))
+    return(list(model = "logitQuadratic", coef = .o$par, center = .center, spread = .spread))
   }
   .o <- stats::optim(.start, .obj, method = "L-BFGS-B", lower = .lower, upper = .upper)
   if (.o$convergence > 1) {
     stop(sprintf("dose-response fit did not converge: %s", .o$message), call. = FALSE)
   }
-  list(model = if (quadratic) "logitQuadratic" else "logitLinear", coef = .coef(.o$par))
+  list(model = if (quadratic) "logitQuadratic" else "logitLinear", coef = .coef(.o$par),
+       center = .center, spread = .spread)
 }
 
 #' Two-stage Emax or exponential fit (generalized MCP-Mod fitting step)

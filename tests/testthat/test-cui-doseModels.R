@@ -136,3 +136,34 @@ test_that("CUI-MET example 1 recommendations with modeled endpoints and a bootst
   expect_equal(sum(.small$draws$status == "ok"), 51)
   expect_equal(sum(.small$summary$selFreq), 1)
 })
+
+test_that("logit fits match glm() for doses far from 0", {
+  .n100 <- rep(100, 3)
+  for (.dd in list(c(80, 90, 100), c(200, 250, 300))) {
+    .x <- c(10, 40, 15)
+    .d <- data.frame(dose = .dd, x = .x, n = .n100)
+    .quad <- stats::glm(cbind(x, n - x) ~ dose + I(dose^2), binomial, data = .d)
+    .f <- .cur$.cuiDrModel(cuiBinary(e, model = "logitQuadratic"), .x, .n100, .dd)
+    expect_equal(.f$p, unname(stats::fitted(.quad)), tolerance = 1e-5)
+    expect_equal(.cur$.cuiDrPredict(.f$fit, .dd), .f$p)
+  }
+  .dd <- c(98, 99, 100)
+  .x <- c(10, 30, 60)
+  .lin <- stats::glm(cbind(x, n - x) ~ dose, binomial,
+                     data = data.frame(dose = .dd, x = .x, n = .n100))
+  expect_equal(.cur$.cuiDrModel(cuiBinary(e, model = "logitLinear"), .x, .n100, .dd)$p,
+               unname(stats::fitted(.lin)), tolerance = 1e-5)
+})
+
+test_that("too few dose levels and negative doses are errors", {
+  .one <- data.frame(dose = 5, eff = c(0, 1, 1))
+  expect_equal(cuiDoseResponse(.one, cuiBinary(eff), dose = dose, nBoot = 0)$summary$est, 2 / 3)
+  expect_error(cuiDoseResponse(.one, cuiBinary(eff, model = "logitLinear"), dose = dose,
+                               nBoot = 0), "more dose levels")
+  .two <- data.frame(dose = rep(c(1, 2), each = 3), eff = c(0, 1, 1, 1, 1, 0))
+  expect_error(cuiDoseResponse(.two, cuiBinary(eff, model = "logitQuadratic", monotone = "increasing"),
+                               dose = dose, nBoot = 0), "logitQuadratic")
+  .neg <- data.frame(dose = rep(c(-1, 0, 1), each = 3), eff = rep(c(0, 1, 1), 3))
+  expect_error(cuiDoseResponse(.neg, cuiBinary(eff, model = "emax"), dose = dose, nBoot = 0),
+               "nonnegative")
+})
