@@ -6,8 +6,12 @@
 \usage{
 cuiBinary(
   name,
-  model = "empirical",
+  model = c("empirical", "logitLinear", "logitQuadratic", "emax", "exponential"),
   direction = c("higher", "lower"),
+  monotone = c("none", "increasing", "decreasing"),
+  penalty = FALSE,
+  boundary = c("glm", "correction", "error"),
+  backend = c("internal", "DoseFinding"),
   ...,
   .name = NULL
 )
@@ -17,10 +21,29 @@ cuiBinary(
 (\code{tox}) or a string (\code{"tox"}); also the endpoint name.}
 
 \item{model}{How the probability of \code{1} at each dose is estimated:
-\code{"empirical"} uses the observed rate at each dose.}
+\code{"empirical"} (observed rate), \code{"logitLinear"}, \code{"logitQuadratic"}
+(logistic regression on dose), \code{"emax"} or \code{"exponential"} (curve fit
+to the per-dose log-odds, the generalized MCP-Mod fitting step).}
 
 \item{direction}{\code{"higher"} when a \code{1} is desirable, \code{"lower"} when it is
 not (for example toxicity), giving utility \code{1 - p}.}
+
+\item{monotone}{Constrain the probability of \code{1} to be \code{"increasing"} or
+\code{"decreasing"} in dose (flat allowed), or \code{"none"}; this is about the
+raw response, separate from \code{direction}.  Not used by \code{"empirical"}.}
+
+\item{penalty}{For logit models with \code{monotone}, use the CUI-MET
+formulation (exponentiated slope, or a penalty on derivative
+violations at the observed doses) instead of exact bounds.}
+
+\item{boundary}{For \code{"emax"} and \code{"exponential"}, how dose groups with
+all or no events are handled: \code{"glm"} keeps the binomial GLM estimate,
+whose large variance gives the group almost no weight (as DoseFinding
+does); \code{"correction"} adds 0.5 to the counts; \code{"error"} stops.}
+
+\item{backend}{\code{"internal"} or \code{"DoseFinding"} (uses
+\code{DoseFinding::fitMod()}, without \code{monotone}) for \code{"emax"} and
+\code{"exponential"}.}
 
 \item{...}{Not used.}
 
@@ -34,8 +57,8 @@ A \code{cuiBinary} endpoint for \code{\link[=cuiDoseResponse]{cuiDoseResponse()}
 Binary endpoint for a dose-response clinical utility index
 }
 \examples{
-cuiBinary(tox, direction = "lower")
-cuiBinary("eff")
+cuiBinary(tox, model = "exponential", direction = "lower")
+cuiBinary("eff", model = "logitQuadratic", monotone = "increasing")
 }
 \seealso{
 Other Clinical utility:

@@ -61,12 +61,15 @@ of \code{dose} and \code{id}.}
 }
 \value{
 An \code{nlmixr2Cui} object; \code{observed} holds the number of patients,
-events and observed rate per dose and endpoint.
+events and observed rate per dose and endpoint, and \code{doseResponse} the
+fitted model of each endpoint.
 }
 \description{
 Estimates the probability of each binary endpoint at each dose level and
 combines them into a clinical utility index (CUI), following CUI-MET
-(Zhang et al. 2025).  Uncertainty comes from a bootstrap that resamples
+(Zhang et al. 2025).  Each endpoint uses its own \code{\link[=cuiBinary]{cuiBinary()}} model:
+the observed rate, a logit-linear or logit-quadratic regression, or an
+Emax or exponential curve, optionally monotone in dose.  Uncertainty comes from a bootstrap that resamples
 whole patients within each dose (so the endpoints of a patient stay
 together), giving percentile intervals and how often each dose has the
 highest CUI.

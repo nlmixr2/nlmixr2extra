@@ -46,6 +46,7 @@ Imports:
     stats,
     utils
 Suggests:
+    DoseFinding,
     brms,
     nlmixr2data,
     nlmixr2save (>= 0.2.0),

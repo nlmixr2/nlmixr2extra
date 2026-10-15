@@ -114,7 +114,6 @@ test_that("inputs are validated", {
   .lgl$eff <- .lgl$eff == 1
   expect_equal(cuiDoseResponse(.lgl, cuiBinary(eff), dose = dose, nBoot = 0)$summary,
                cuiDoseResponse(.d, cuiBinary(eff), dose = dose, nBoot = 0)$summary)
-  expect_error(cuiBinary(eff, model = "emax"))
 })
 
 test_that("failed draws are recorded and minSuccess is enforced", {

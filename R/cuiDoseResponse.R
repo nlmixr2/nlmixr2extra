@@ -3,9 +3,24 @@
 #' @param name Column of the data holding the 0/1 endpoint, as a bare name
 #'   (`tox`) or a string (`"tox"`); also the endpoint name.
 #' @param model How the probability of `1` at each dose is estimated:
-#'   `"empirical"` uses the observed rate at each dose.
+#'   `"empirical"` (observed rate), `"logitLinear"`, `"logitQuadratic"`
+#'   (logistic regression on dose), `"emax"` or `"exponential"` (curve fit
+#'   to the per-dose log-odds, the generalized MCP-Mod fitting step).
 #' @param direction `"higher"` when a `1` is desirable, `"lower"` when it is
 #'   not (for example toxicity), giving utility `1 - p`.
+#' @param monotone Constrain the probability of `1` to be `"increasing"` or
+#'   `"decreasing"` in dose (flat allowed), or `"none"`; this is about the
+#'   raw response, separate from `direction`.  Not used by `"empirical"`.
+#' @param penalty For logit models with `monotone`, use the CUI-MET
+#'   formulation (exponentiated slope, or a penalty on derivative
+#'   violations at the observed doses) instead of exact bounds.
+#' @param boundary For `"emax"` and `"exponential"`, how dose groups with
+#'   all or no events are handled: `"glm"` keeps the binomial GLM estimate,
+#'   whose large variance gives the group almost no weight (as DoseFinding
+#'   does); `"correction"` adds 0.5 to the counts; `"error"` stops.
+#' @param backend `"internal"` or `"DoseFinding"` (uses
+#'   `DoseFinding::fitMod()`, without `monotone`) for `"emax"` and
+#'   `"exponential"`.
 #' @param ... Not used.
 #' @param .name Column name as a string, for programmatic use instead of
 #'   `name`.
@@ -13,21 +28,37 @@
 #' @family Clinical utility
 #' @export
 #' @examples
-#' cuiBinary(tox, direction = "lower")
-#' cuiBinary("eff")
-cuiBinary <- function(name, model = "empirical", direction = c("higher", "lower"), ...,
-                      .name = NULL) {
+#' cuiBinary(tox, model = "exponential", direction = "lower")
+#' cuiBinary("eff", model = "logitQuadratic", monotone = "increasing")
+cuiBinary <- function(name, model = c("empirical", "logitLinear", "logitQuadratic", "emax",
+                                      "exponential"),
+                      direction = c("higher", "lower"),
+                      monotone = c("none", "increasing", "decreasing"), penalty = FALSE,
+                      boundary = c("glm", "correction", "error"),
+                      backend = c("internal", "DoseFinding"), ..., .name = NULL) {
   .name <- .cuiCaptureName(substitute(name), missing(name), .name, "name")
   model <- match.arg(model)
+  monotone <- match.arg(monotone)
+  boundary <- match.arg(boundary)
+  backend <- match.arg(backend)
+  checkmate::assertFlag(penalty)
+  if (backend == "DoseFinding" && monotone != "none") {
+    stop("backend = \"DoseFinding\" does not support 'monotone'", call. = FALSE)
+  }
   .ret <- cuiEndpoint(.name = .name, utility = cuiIdentity(), direction = match.arg(direction))
   .ret$model <- model
+  .ret$monotone <- monotone
+  .ret$penalty <- penalty
+  .ret$boundary <- boundary
+  .ret$backend <- backend
   class(.ret) <- c("cuiBinary", class(.ret))
   .ret
 }
 
 #' @export
 print.cuiBinary <- function(x, ...) {
-  cat(sprintf("cuiBinary '%s': %s model, %s is better\n", x$name, x$model, x$direction))
+  cat(sprintf("cuiBinary '%s': %s model%s, %s is better\n", x$name, x$model,
+              if (x$monotone == "none") "" else paste0(" (", x$monotone, ")"), x$direction))
   invisible(x)
 }
 
@@ -59,18 +90,22 @@ print.cuiBinary <- function(x, ...) {
 #' @param dose Dose of each row.
 #' @param doses Sorted unique doses.
 #' @param endpoints List of `cuiBinary` endpoints matching the columns.
-#' @return Matrix of probabilities, doses x endpoints.
+#' @return Matrix of probabilities, doses x endpoints, with the fits as
+#'   attribute `fits`.
 #' @noRd
 .cuiDrFit <- function(y, dose, doses, endpoints) {
   .g <- match(dose, doses)
   .n <- tabulate(.g, nbins = length(doses))
-  .p <- rowsum(y, .g, reorder = TRUE) / .n
+  .x <- rowsum(y, .g, reorder = TRUE)
+  .fits <- vector("list", length(endpoints))
+  .p <- .x / .n
   for (.k in seq_along(endpoints)) {
-    .model <- endpoints[[.k]]$model
-    if (.model != "empirical") {
-      stop(sprintf("unknown dose-response model '%s'", .model), call. = FALSE)
-    }
+    .f <- .cuiDrModel(endpoints[[.k]], .x[, .k], .n, doses)
+    .p[, .k] <- .f$p
+    .fits[[.k]] <- .f$fit
   }
+  names(.fits) <- colnames(y)
+  attr(.p, "fits") <- .fits
   .p
 }
 
@@ -87,6 +122,7 @@ print.cuiBinary <- function(x, ...) {
                draw = draw, value = as.vector(p), stringsAsFactors = FALSE)
   }
   .p0 <- fitFun(y, dose)
+  .fits0 <- attr(.p0, "fits")
   .vals <- list(.long(.p0, 0L))
   .status <- rep("ok", nBoot + 1L)
   .msg <- rep("", nBoot + 1L)
@@ -104,7 +140,7 @@ print.cuiBinary <- function(x, ...) {
       .vals[[length(.vals) + 1L]] <- .long(.p, .b)
     }
   }
-  list(values = do.call(rbind, .vals),
+  list(values = do.call(rbind, .vals), fits = .fits0,
        draws = data.frame(draw = 0:nBoot, status = .status, source = "bootstrap",
                           message = .msg, stringsAsFactors = FALSE))
 }
@@ -113,7 +149,9 @@ print.cuiBinary <- function(x, ...) {
 #'
 #' Estimates the probability of each binary endpoint at each dose level and
 #' combines them into a clinical utility index (CUI), following CUI-MET
-#' (Zhang et al. 2025).  Uncertainty comes from a bootstrap that resamples
+#' (Zhang et al. 2025).  Each endpoint uses its own [cuiBinary()] model:
+#' the observed rate, a logit-linear or logit-quadratic regression, or an
+#' Emax or exponential curve, optionally monotone in dose.  Uncertainty comes from a bootstrap that resamples
 #' whole patients within each dose (so the endpoints of a patient stay
 #' together), giving percentile intervals and how often each dose has the
 #' highest CUI.
@@ -132,7 +170,8 @@ print.cuiBinary <- function(x, ...) {
 #'   of `dose` and `id`.
 #' @inheritParams cuiFromValues
 #' @return An `nlmixr2Cui` object; `observed` holds the number of patients,
-#'   events and observed rate per dose and endpoint.
+#'   events and observed rate per dose and endpoint, and `doseResponse` the
+#'   fitted model of each endpoint.
 #' @references Zhang F, Broglio K, Sweeting M, D'Angelo G (2025).  CUI-MET:
 #'   Clinical Utility Index Dose Optimization Approach for Multiple-Dose,
 #'   Multiple-Outcome Randomized Trial Designs.  arXiv:2505.03633.
@@ -217,6 +256,7 @@ cuiDoseResponse <- function(data, endpoints, dose, id, weights = NULL,
                                                         paste(unique(.models), collapse = ", "))))
   .n <- tabulate(match(.doseVal, .doses), nbins = length(.doses))
   .events <- rowsum(.y, match(.doseVal, .doses), reorder = TRUE)
+  .ret$doseResponse <- .run$fits
   .ret$observed <- data.frame(regimen = rep(.cuiNumLabel(.doses), times = length(.epNames)),
                               endpoint = rep(.epNames, each = length(.doses)),
                               n = rep(.n, times = length(.epNames)),

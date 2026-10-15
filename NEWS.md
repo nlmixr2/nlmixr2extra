@@ -14,6 +14,9 @@
 - New `cuiDoseResponse()` computes a CUI from binary endpoints of a
   multiple-dose trial (CUI-MET, Zhang et al. 2025), with endpoints from
   `cuiBinary()` and a bootstrap that resamples whole patients within each
+  dose.  Endpoints use the observed rate, logit-linear or logit-quadratic
+  regression, or an Emax or exponential curve (generalized MCP-Mod fitting
+  step, optionally through 'DoseFinding'), each optionally monotone in
   dose.
 
 - New `cui()` simulates a CUI from nlmixr2 fits: every endpoint is
