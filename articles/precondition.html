@@ -69,7 +69,7 @@
                         <h4 data-toc-skip class="author">Matthew
 Fidler</h4>
             
-            <h4 data-toc-skip class="date">2026-09-30</h4>
+            <h4 data-toc-skip class="date">2026-10-23</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/nlmixr2/nlmixr2extra/blob/main/vignettes/articles/precondition.Rmd" class="external-link"><code>vignettes/articles/precondition.Rmd</code></a></small>
       <div class="d-none name"><code>precondition.Rmd</code></div>
@@ -186,7 +186,7 @@ preconditioning:</p>
 <span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> done</span></span>
 <span><span class="co">#&gt; → compiling events FD model...</span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> done</span></span>
-<span><span class="co">#&gt; rxode2 5.1.8 using 2 threads (see ?getRxThreads)</span></span>
+<span><span class="co">#&gt; rxode2 5.1.8.9000 using 2 threads (see ?getRxThreads)</span></span>
 <span><span class="co">#&gt;   no cache: create with `rxCreateCache()`</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Attaching package: 'rxode2'</span></span>
@@ -579,12 +579,12 @@ preconditioning:</p>
 <span><span class="co">#&gt; |    X|               |     12.82 |    -6.754 |     1573. |     219.2 |</span></span>
 <span><span class="co">#&gt; <span style="text-decoration: underline;">|.....................|     1.258 |     1.952 |     2.687 |...........|</span></span></span>
 <span><span class="co">#&gt; calculating covariance matrix</span></span>
-<span><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00 </span></span>
+<span><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:01 </span></span>
 <span><span class="co">#&gt; done</span></span>
 <span><span class="co">#&gt; → loading into <span style="color: #0000BB;">symengine</span> environment...</span></span>
 <span><span class="co">#&gt; → pruning branches (`if`/`else`) of full model...</span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> done</span></span>
-<span><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00</span></span>
+<span><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====</span></span>
 <span><span class="co">#&gt; → calculate sensitivities</span></span>
 <span><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00</span></span>
 <span><span class="co">#&gt; → calculate ∂(f)/∂(η)</span></span>
@@ -723,10 +723,10 @@ selected covariance.</p>
 <span>  row.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">dfBefore</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt;        SE_before            SE_after              row.names</span></span>
-<span><span class="co">#&gt; tka    "0.23191882512431"   "0.0216417252282623"  "tka"    </span></span>
-<span><span class="co">#&gt; tcl    "0.169047370259566"  "0.009228606428201"   "tcl"    </span></span>
-<span><span class="co">#&gt; tv     "0.0405121558563634" "0.00923909311815786" "tv"     </span></span>
-<span><span class="co">#&gt; add.sd "0.0730247302042821" "0.0820970850815736"  "add.sd"</span></span></code></pre></div>
+<span><span class="co">#&gt; tka    "0.23191882512431"   "0.0208559999405177"  "tka"    </span></span>
+<span><span class="co">#&gt; tcl    "0.169047370259566"  "0.00922914761266995" "tcl"    </span></span>
+<span><span class="co">#&gt; tv     "0.0405121558563634" "0.00896362513113529" "tv"     </span></span>
+<span><span class="co">#&gt; add.sd "0.0730247302042821" "0.0855799633646997"  "add.sd"</span></span></code></pre></div>
 <p>The point estimates (<code>Estimate</code>,
 <code>Back-transformed</code>) and the random-effects summaries
 (<code>BSV(CV%)</code>, <code>Shrink(SD)%</code>) are identical before

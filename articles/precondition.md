@@ -109,7 +109,7 @@ invisible(preconditionFit(fit))
 #> ✔ done
 #> → compiling events FD model...
 #> ✔ done
-#> rxode2 5.1.8 using 2 threads (see ?getRxThreads)
+#> rxode2 5.1.8.9000 using 2 threads (see ?getRxThreads)
 #>   no cache: create with `rxCreateCache()`
 #> 
 #> Attaching package: 'rxode2'
@@ -502,12 +502,12 @@ invisible(preconditionFit(fit))
 #> |    X|               |     12.82 |    -6.754 |     1573. |     219.2 |
 #> |.....................|     1.258 |     1.952 |     2.687 |...........|
 #> calculating covariance matrix
-#> [====|====|====|====|====|====|====|====|====|====] 0:00:00 
+#> [====|====|====|====|====|====|====|====|====|====] 0:00:01 
 #> done
 #> → loading into symengine environment...
 #> → pruning branches (`if`/`else`) of full model...
 #> ✔ done
-#> [====|====|====|====|====|====|====|====|====|====] 0:00:00
+#> [====|====|====|====|====|====|====|====|====|====
 #> → calculate sensitivities
 #> [====|====|====|====|====|====|====|====|====|====] 0:00:00
 #> → calculate ∂(f)/∂(η)
@@ -638,10 +638,10 @@ cbind(
   row.names = rownames(dfBefore)
 )
 #>        SE_before            SE_after              row.names
-#> tka    "0.23191882512431"   "0.0216417252282623"  "tka"    
-#> tcl    "0.169047370259566"  "0.009228606428201"   "tcl"    
-#> tv     "0.0405121558563634" "0.00923909311815786" "tv"     
-#> add.sd "0.0730247302042821" "0.0820970850815736"  "add.sd"
+#> tka    "0.23191882512431"   "0.0208559999405177"  "tka"    
+#> tcl    "0.169047370259566"  "0.00922914761266995" "tcl"    
+#> tv     "0.0405121558563634" "0.00896362513113529" "tv"     
+#> add.sd "0.0730247302042821" "0.0855799633646997"  "add.sd"
 ```
 
 The point estimates (`Estimate`, `Back-transformed`) and the
