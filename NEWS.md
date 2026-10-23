@@ -2,6 +2,13 @@
 
 ## Bug fixes
 
+- `resSearch()` and `iivSearch()` on a linearized fit scale the residual
+  thetas like `linearize()` does, so a refit no longer drives a small
+  residual sd to 0 and ends at a worse OFV.  `iivSearch()` no longer caps
+  the residual thetas at twice their estimate.  The `scaleC` vector skips
+  fixed thetas, which FOCEi drops before it reads `scaleC`, so a residual
+  sd added after them no longer gets another parameter's scale (#133).
+
 - The figures from `bootplot()` (also shown by `plot()` of a bootstrapped
   fit), `plot()` of a `multistart()` result and `linearizePlot()` no longer
   carry the fit, the multistart or linearized object, the full plotting
