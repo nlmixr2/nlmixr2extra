@@ -4,6 +4,20 @@
 
 ### Bug fixes
 
+- [`resSearch()`](https://nlmixr2.github.io/nlmixr2extra/reference/resSearch.md)
+  and
+  [`iivSearch()`](https://nlmixr2.github.io/nlmixr2extra/reference/iivSearch.md)
+  on a linearized fit scale the residual thetas like
+  [`linearize()`](https://nlmixr2.github.io/nlmixr2extra/reference/linearize.md)
+  does, so a refit no longer drives a small residual sd to 0 and ends at
+  a worse OFV.
+  [`iivSearch()`](https://nlmixr2.github.io/nlmixr2extra/reference/iivSearch.md)
+  no longer caps the residual thetas at twice their estimate. The
+  `scaleC` vector skips fixed thetas, which FOCEi drops before it reads
+  `scaleC`, so a residual sd added after them no longer gets another
+  parameter’s scale
+  ([\#133](https://github.com/nlmixr2/nlmixr2extra/issues/133)).
+
 - The figures from
   [`bootplot()`](https://nlmixr2.github.io/nlmixr2extra/reference/bootplot.md)
   (also shown by
