@@ -2,6 +2,8 @@
 
 ### All vignettes
 
+- [nlmixr2extra
+  events](https://nlmixr2.github.io/nlmixr2extra/articles/events.md):
 - [Likelihood Profiling for NLME
   Models](https://nlmixr2.github.io/nlmixr2extra/articles/likelihood-profiling.md):
 - [Model Linearization for IIV and Residual Error

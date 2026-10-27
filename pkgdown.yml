@@ -2,13 +2,14 @@ pandoc: 3.8.3
 pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
+  events: events.html
   articles/likelihood-profiling: likelihood-profiling.html
   articles/model-linearization: model-linearization.html
   articles/multistart: multistart.html
   articles/nlmixrFormula: nlmixrFormula.html
   articles/precondition: precondition.html
   reporting-helpers: reporting-helpers.html
-last_built: 2026-10-27T12:29Z
+last_built: 2026-10-27T12:52Z
 urls:
   reference: https://nlmixr2.github.io/nlmixr2extra/reference
   article: https://nlmixr2.github.io/nlmixr2extra/articles

@@ -2,6 +2,38 @@
 
 ## nlmixr2extra (development version)
 
+- The fitting drivers
+  ([`bootstrapFit()`](https://nlmixr2.github.io/nlmixr2extra/reference/bootstrapFit.md),
+  [`preconditionFit()`](https://nlmixr2.github.io/nlmixr2extra/reference/preconditionFit.md),
+  [`multistart()`](https://nlmixr2.github.io/nlmixr2extra/reference/multistart.md),
+  [`covarSearchAuto()`](https://nlmixr2.github.io/nlmixr2extra/reference/covarSearchAuto.md),
+  [`resSearch()`](https://nlmixr2.github.io/nlmixr2extra/reference/resSearch.md),
+  [`iivSearch()`](https://nlmixr2.github.io/nlmixr2extra/reference/iivSearch.md),
+  [`rerunTopN()`](https://nlmixr2.github.io/nlmixr2extra/reference/rerunTopN.md),
+  [`linearize()`](https://nlmixr2.github.io/nlmixr2extra/reference/linearize.md),
+  [`profile()`](https://rdrr.io/r/stats/profile.html),
+  [`profileFixed()`](https://nlmixr2.github.io/nlmixr2extra/reference/profileFixed.md),
+  [`profileLlp()`](https://nlmixr2.github.io/nlmixr2extra/reference/profileLlp.md),
+  the lasso functions,
+  [`regularmodel()`](https://nlmixr2.github.io/nlmixr2extra/reference/regularmodel.md)
+  and
+  [`bootplot()`](https://nlmixr2.github.io/nlmixr2extra/reference/bootplot.md))
+  now run their internal fits silently on the rxode2 event bus (when
+  rxode2 has one) and emit one event per call: `fitUpdate` when the fit
+  is changed in place
+  ([`bootstrapFit()`](https://nlmixr2.github.io/nlmixr2extra/reference/bootstrapFit.md),
+  [`preconditionFit()`](https://nlmixr2.github.io/nlmixr2extra/reference/preconditionFit.md)),
+  `fitComplete` linked to the input fit when a new fit is returned
+  ([`linearize()`](https://nlmixr2.github.io/nlmixr2extra/reference/linearize.md),
+  [`regularmodel()`](https://nlmixr2.github.io/nlmixr2extra/reference/regularmodel.md)),
+  and otherwise one `fitResult` with a summary that contains no fits.
+  The best fit of a result
+  ([`multistart()`](https://nlmixr2.github.io/nlmixr2extra/reference/multistart.md)’s
+  `best`) is also announced, linked to the input fit, or on its own when
+  the driver started from a model. A logger such as nlmixr2log then
+  stores one entry per call instead of one run per internal fit. Nothing
+  changes without a listener.
+
 ### Bug fixes
 
 - [`resSearch()`](https://nlmixr2.github.io/nlmixr2extra/reference/resSearch.md)
