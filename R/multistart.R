@@ -231,6 +231,12 @@ rxUiDeparse.multistartControl <- function(object, var) {
 #' }
 #' @export
 multistart <- function(object, ...) {
+  ## event bus: internal fits are silent; one event on exit (see rxEvents.R)
+  force(object)
+  .evFit <- object # the input, even if the driver reassigns `object`
+  .extraEventEnter()
+  .evCall <- sys.call()
+  on.exit(.extraEventExit(returnValue(), .evFit, .evCall, "multistart", "multistart"), add = TRUE)
   UseMethod("multistart")
 }
 

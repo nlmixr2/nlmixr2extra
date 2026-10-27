@@ -67,6 +67,12 @@
 #' }
 #' @export
 profile.nlmixr2FitCore <- function(fitted, ..., which = NULL, method = c("llp", "fixed"), control = list()) {
+  ## event bus: internal fits are silent; one event on exit (see rxEvents.R)
+  force(fitted)
+  .evFit <- fitted # the input, even if the driver reassigns `fitted`
+  .extraEventEnter()
+  .evCall <- sys.call()
+  on.exit(.extraEventExit(returnValue(), .evFit, .evCall, "profile", "profile"), add = TRUE)
   method <- match.arg(method)
 
   if (method == "llp") {
@@ -136,6 +142,12 @@ profileNlmixr2FitCoreRet <- function(fitted, which, fixedVal) {
 #' @family Profiling
 #' @export
 profileFixed <- function(fitted, which, control = list()) {
+  ## event bus: internal fits are silent; one event on exit (see rxEvents.R)
+  force(fitted)
+  .evFit <- fitted # the input, even if the driver reassigns `fitted`
+  .extraEventEnter()
+  .evCall <- sys.call()
+  on.exit(.extraEventExit(returnValue(), .evFit, .evCall, "profile", "profileFixed"), add = TRUE)
   control <- do.call(fixedControl, control)
   checkmate::assert_data_frame(which, types = "numeric", any.missing = FALSE, min.rows = 1)
   dplyr::bind_rows(lapply(
@@ -214,6 +226,12 @@ fixedControl <- function() {
 #' @family Profiling
 #' @export
 profileLlp <- function(fitted, which, control) {
+  ## event bus: internal fits are silent; one event on exit (see rxEvents.R)
+  force(fitted)
+  .evFit <- fitted # the input, even if the driver reassigns `fitted`
+  .extraEventEnter()
+  .evCall <- sys.call()
+  on.exit(.extraEventExit(returnValue(), .evFit, .evCall, "profile", "profileLlp"), add = TRUE)
   # Validate inputs
   control <- do.call(llpControl, control)
 
