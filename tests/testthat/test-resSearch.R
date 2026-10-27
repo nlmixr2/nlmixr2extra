@@ -39,4 +39,54 @@ test_that("Test residual search on linearized models", {
     resRes$summary$OBJF[resRes$summary$search == "base fit"],
     resRes$summary$OBJF[resRes$summary$search == "prop"]
   )
+
+  # the refits scale only the thetas FOCEi estimates: prop.sd is added after
+  # the fixed theta.eta.* thetas, which literalFix drops (#133)
+  .orig <- linFit$env$originalFit
+  suppressMessages({
+    .prop <- linFit |> model(rxR2 <- (prop.sd^2 * OPRED^2)) |> ini(prop.sd <- 0.1)
+    .comb <- linFit |>
+      model(rxR2 <- (prop.sd^2 * OPRED^2 + add.sd^2)) |>
+      ini(prop.sd <- 0.1)
+  })
+  expect_equal(.linScaleC(.prop, .orig, c(prop.sd = "prop")), 0.05)
+  .addSd <- linFit$iniDf$est[linFit$iniDf$name == "add.sd"]
+  expect_equal(
+    .linScaleC(.comb, .orig, c(prop.sd = "prop")),
+    c(0.5 * abs(.addSd), 0.05)
+  )
+})
+
+test_that("resSearch refits scale the residuals like linearize() (#133)", {
+  skip_on_cran()
+  one.cmpt.comb1 <- function() {
+    ini({
+      tcl <- log(2.7)
+      tv <- log(30)
+      tka <- log(1.56)
+      eta.cl ~ 0.3
+      eta.v ~ 0.1
+      eta.ka ~ 0.6
+      add.sd <- 0.7
+      prop.sd <- 0.1
+    })
+    model({
+      ka <- exp(tka + eta.ka)
+      cl <- exp(tcl + eta.cl)
+      v <- exp(tv + eta.v)
+      d / dt(depot) <- -ka * depot
+      d / dt(center) <- ka * depot - cl / v * center
+      cp <- center / v
+      cp ~ add(add.sd) + prop(prop.sd) + combined1()
+    })
+  }
+  fit <- nlmixr(one.cmpt.comb1, nlmixr2data::theo_sd, est = "focei")
+  suppressWarnings({
+    linFit <- linearize(fit)
+    resRes <- resSearch(linFit)
+  })
+  .obj <- stats::setNames(resRes$summary$OBJF, resRes$summary$search)
+  # combined1 refits the base model's own error model, so it ends where the
+  # base fit is; with linear residual scaling it ended 8.3 above it (#133)
+  expect_lt(abs(.obj[["combined1"]] - .obj[["base fit"]]), 1)
 })
