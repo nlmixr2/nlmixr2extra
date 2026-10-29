@@ -64,7 +64,7 @@ PK is one-compartment with weight on clearance.  Pain response and moderate
 to severe hot flashes at week 12 both rise with the steady-state average
 concentration (Cavg).
 
-```{r simulate}
+```{r simulate, message = FALSE}
 truth <- function() {
   ini({
     tka <- log(1.2)
@@ -138,7 +138,7 @@ fitPK := nlmixr2(pkModel, pkData, "focei", control = foceiControl(print = 0))
 fitPK$parFixed
 ```
 
-```{r fitER}
+```{r fitER, message = FALSE}
 fitResp := glm(resp ~ CAVG, family = binomial, data = subjects)
 fitHF := glm(hf ~ CAVG, family = binomial, data = subjects)
 coef(fitResp)

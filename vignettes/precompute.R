@@ -2,7 +2,7 @@
 # fits and results with nlmixr2save's `:=`.
 #
 #   cd vignettes && Rscript precompute.R            # compute only what is missing
-#   cd vignettes && Rscript precompute.R --clean    # clear cache/ and recompute all
+#   cd vignettes && Rscript precompute.R --clean    # clear the caches and recompute
 #   cd vignettes && Rscript precompute.R articles/cui-met.Rmd   # selected articles
 #
 # Each article renders in its own fresh R process: building many rxode2
@@ -24,10 +24,6 @@ vignettes <- c(
 
 args <- commandArgs(trailingOnly = TRUE)
 if (!file.exists("precompute.R")) stop("run from the vignettes/ directory", call. = FALSE)
-if ("--clean" %in% args) {
-  unlink(list.files("cache", full.names = TRUE))
-  message("cleared cache/")
-}
 selected <- setdiff(args, "--clean")
 if (length(selected) > 0) {
   unknown <- setdiff(selected, vignettes)
@@ -35,6 +31,15 @@ if (length(selected) > 0) {
     stop("not a registered article: ", paste(unknown, collapse = ", "), call. = FALSE)
   }
   vignettes <- selected
+}
+if ("--clean" %in% args) {
+  # only the caches of the articles being rendered (prefix = file name)
+  for (v in vignettes) {
+    prefix <- paste0(sub("[.]Rmd$", "", basename(v)), "-")
+    old <- list.files("cache", pattern = paste0("^", prefix), full.names = TRUE)
+    unlink(old)
+    message("cleared ", length(old), " cache file(s) of ", v)
+  }
 }
 dir.create("cache", showWarnings = FALSE)
 
