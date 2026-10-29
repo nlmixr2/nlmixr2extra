@@ -1,0 +1,182 @@
+---
+title: "Dose optimization with a clinical utility index (CUI-MET)"
+author: "Matthew Fidler"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{Dose optimization with a clinical utility index (CUI-MET)}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4.5
+)
+library(nlmixr2save)
+## Cache the bootstrap results with `:=` (nlmixr2save) under
+## vignettes/cache/; see vignettes/precompute.R.
+options(nlmixr2save.dir = "../cache",
+        nlmixr2save.prefix = "cui-met-",
+        nlmixr2save.check = FALSE)
+```
+
+```{r libraries, message = FALSE}
+library(nlmixr2extra)
+```
+
+# The setting
+
+Early oncology trials increasingly randomize patients to several dose
+levels and look for the dose that balances efficacy, toxicity and
+tolerability rather than the maximum tolerated dose.  CUI-MET (Zhang,
+Broglio, Sweeting and D'Angelo 2025, arXiv:2505.03633) summarizes each
+binary endpoint by its probability at each dose, combines the
+probabilities with weights into a clinical utility index (CUI), and uses a
+bootstrap to show how sure the choice of dose is.  `cuiDoseResponse()`
+implements it.
+
+# A simulated trial
+
+Thirty patients at each of five dose levels, with the probabilities of the
+paper's example 1.  Toxicity is undesirable, so it enters the CUI as one
+minus its probability.
+
+```{r data}
+truth <- data.frame(dose = 1:5,
+                    tox = c(0.038, 0.058, 0.106, 0.232, 0.533),
+                    eff = c(0.022, 0.119, 0.343, 0.568, 0.681),
+                    tol = c(0.147, 0.206, 0.280, 0.368, 0.466))
+set.seed(2025)
+trial <- truth[rep(1:5, each = 30), ]
+trial$id <- seq_len(nrow(trial))
+for (v in c("tox", "eff", "tol")) trial[[v]] <- rbinom(nrow(trial), 1, trial[[v]])
+head(trial)
+```
+
+# Observed rates
+
+The simplest estimate is the observed rate at each dose.  The bootstrap
+resamples whole patients within each dose, so a patient's three outcomes
+stay together.
+
+```{r empirical}
+empirical := cuiDoseResponse(trial,
+  list(cuiBinary(tox, direction = "lower"), cuiBinary(eff), cuiBinary(tol)),
+  dose = dose, id = id, weights = c(tox = 0.2, eff = 0.5, tol = 0.3),
+  nBoot = 1000, seed = 1, cacheDir = NA)
+empirical
+```
+
+# Dose-response models
+
+Rates at neighboring doses inform each other when a dose-response model is
+fit.  As in the paper's table 1: an exponential model for toxicity, a
+logistic quadratic for efficacy and a logistic line for tolerability.  The
+models are refit in each of the 1000 bootstrap samples.
+
+```{r modeled}
+modeled := cuiDoseResponse(trial,
+  list(cuiBinary(tox, model = "exponential", direction = "lower"),
+       cuiBinary(eff, model = "logitQuadratic"),
+       cuiBinary(tol, model = "logitLinear")),
+  dose = dose, id = id, weights = c(tox = 0.2, eff = 0.5, tol = 0.3),
+  nBoot = 1000, seed = 1, cacheDir = NA)
+modeled
+```
+
+The fitted curves, with the observed rates and the bootstrap intervals of
+the fitted probabilities:
+
+```{r dose-response, fig.height = 3.8}
+plot(modeled, "doseResponse")
+```
+
+The CUI is the line, its 95% bootstrap interval the band, and the
+recommended dose is marked:
+
+```{r cui}
+plot(modeled)
+```
+
+The endpoints behind it, each as a desirability with its own band:
+
+```{r endpoints}
+plot(modeled, "endpoints")
+```
+
+How often each dose has the highest CUI across the bootstrap samples:
+
+```{r selection}
+plot(modeled, "selection")
+```
+
+# Another weighting scheme
+
+The weights express clinical priorities; the paper's second scheme gives
+tolerability the most weight.  Re-weighting reuses the bootstrap fits, so
+it is immediate:
+
+```{r scheme2}
+scheme2 <- update(modeled, weights = c(tox = 0.3, eff = 0.2, tol = 0.5))
+scheme2$summary[, c("regimen", "est", "lower", "upper", "selFreq", "best")]
+plot(scheme2, "endpoints")
+```
+
+`cuiSensitivity()` shows how far each weight can move before the
+recommended dose changes:
+
+```{r sensitivity}
+plot(cuiSensitivity(modeled))
+```
+
+# Monotone fits
+
+When biology says a probability can only rise (or fall) with dose, the
+logistic models can be constrained.  `monotone` is about the raw
+response, separately from `direction`; a flat fit is allowed:
+
+```{r monotone}
+monotone := cuiDoseResponse(trial,
+  list(cuiBinary(tox, model = "exponential", direction = "lower", monotone = "increasing"),
+       cuiBinary(eff, model = "logitQuadratic", monotone = "increasing"),
+       cuiBinary(tol, model = "logitLinear", monotone = "increasing")),
+  dose = dose, id = id, weights = c(tox = 0.2, eff = 0.5, tol = 0.3),
+  nBoot = 1000, seed = 1, cacheDir = NA)
+plot(monotone, "doseResponse")
+```
+
+# Your own model
+
+Any fitted model of an endpoint works, for example a logistic regression
+with a covariate.  It is averaged over the patients at each dose and refit
+in every bootstrap sample.  `lme4`, `glmmTMB` and `brms` fits work the same
+way, and other classes can be added with `cuiModelPredict()` methods.
+
+```{r own-model}
+trial$age <- round(runif(nrow(trial), 30, 75))
+effGlm <- glm(eff ~ dose + I(dose^2) + age, family = binomial, data = trial)
+own := cuiDoseResponse(trial,
+  list(cuiBinary(tox, model = "exponential", direction = "lower"),
+       cuiBinary(eff, model = effGlm),
+       cuiBinary(tol, model = "logitLinear")),
+  dose = dose, id = id, weights = c(tox = 0.2, eff = 0.5, tol = 0.3),
+  nBoot = 1000, seed = 1, cacheDir = NA)
+own$summary[, c("regimen", "est", "lower", "upper", "selFreq")]
+```
+
+# Interactive use
+
+The same result opens in the desk tool, with weight sliders grouped into
+efficacy and safety:
+
+```{r app, eval = FALSE}
+cuiApp(modeled, presets = list("Scheme 1" = c(tox = 0.2, eff = 0.5, tol = 0.3),
+                               "Scheme 2" = c(tox = 0.3, eff = 0.2, tol = 0.5)))
+```
