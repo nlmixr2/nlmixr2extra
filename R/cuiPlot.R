@@ -34,8 +34,11 @@
 }
 
 .cuiXScale <- function(rx) {
-  if (rx$numeric) return(ggplot2::scale_x_continuous(name = rx$lab))
-  ggplot2::scale_x_continuous(name = rx$lab, breaks = unname(rx$x), labels = names(rx$x))
+  # extra room on the right for a peak label at the last regimen
+  .exp <- ggplot2::expansion(mult = c(0.04, 0.1))
+  if (rx$numeric) return(ggplot2::scale_x_continuous(name = rx$lab, expand = .exp))
+  ggplot2::scale_x_continuous(name = rx$lab, breaks = unname(rx$x), labels = names(rx$x),
+                              expand = .exp)
 }
 
 .cuiFacet <- function(n, var = "assessment") {
