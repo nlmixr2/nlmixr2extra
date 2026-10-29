@@ -51,6 +51,12 @@
   `cuiGroupWeights()` turns group and within-group weights into endpoint
   weights.
 
+- Two new articles: "Clinical utility index from nlmixr2 models" (a
+  simulated trial, PK and exposure-response fits, uncertainty,
+  preferences, eligible doses and the desk tool) and "Dose optimization
+  with a clinical utility index (CUI-MET)".  `vignettes/precompute.R`
+  refreshes the cached results of every article.
+
 - Fitted regression models can be CUI endpoints: `cuiBinary(tox, model =
   fit)` in `cuiDoseResponse()` (averaged over the patients and refit in
   each bootstrap draw) and `cuiEndpoint(eff, fit, cuiResponse(dose =
