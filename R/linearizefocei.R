@@ -236,18 +236,23 @@ linModGen <- function(ui, focei = TRUE, derivFct = FALSE) {
 #'
 #' @param linMod linearized `rxUi` from `linModGen()`
 #' @param fit the nonlinear fit being linearized
-#' @return numeric `scaleC` vector, one entry per linearized theta
+#' @param errType named error types for residual thetas that `fit` does
+#'   not have (like a `prop.sd` added by `resSearch()`)
+#' @return numeric `scaleC` vector, one entry per estimated (not fixed)
+#'   linearized theta
 #' @noRd
 #' @author Matthew L. Fidler
-.linScaleC <- function(linMod, fit) {
+.linScaleC <- function(linMod, fit, errType = NULL) {
   .ini <- linMod$iniDf
   .th <- .ini[!is.na(.ini$ntheta), , drop = FALSE]
   .th <- .th[order(.th$ntheta), , drop = FALSE]
+  # literalFix drops the fixed thetas before FOCEi reads scaleC by position
+  .th <- .th[!.th$fix, , drop = FALSE]
   if (nrow(.th) == 0L) {
     return(NULL)
   }
   .fi <- fit$iniDf[!is.na(fit$iniDf$err), c("name", "err"), drop = FALSE]
-  .errType <- stats::setNames(.fi$err, .fi$name)
+  .errType <- c(stats::setNames(.fi$err, .fi$name), errType)
   .sdLike <- c(
     "prop",
     "propT",
@@ -332,6 +337,12 @@ linearize <- function(
   plot = FALSE,
   est = "focei"
 ) {
+  ## event bus: internal fits are silent; one event on exit (see rxEvents.R)
+  force(fit)
+  .evFit <- fit # the input, even if the driver reassigns `fit`
+  .extraEventEnter()
+  .evCall <- sys.call()
+  on.exit(.extraEventExit(returnValue(), .evFit, .evCall, "linearize", "linearize"), add = TRUE)
   checkmate::assertIntegerish(mceta, lower = -1, upper = 2000, unique = TRUE)
   checkmate::assertNumeric(relTol, lower = 0, upper = 1.0)
   checkmate::assertLogical(plot)

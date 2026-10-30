@@ -70,7 +70,28 @@
   they were estimated on (`fit$bootstrapResample`), so refits of different
   models on the same resamples can be paired.
 
+- The fitting drivers (`bootstrapFit()`, `preconditionFit()`,
+  `multistart()`, `covarSearchAuto()`, `resSearch()`, `iivSearch()`,
+  `rerunTopN()`, `linearize()`, `profile()`, `profileFixed()`,
+  `profileLlp()`, the lasso functions, `regularmodel()` and `bootplot()`)
+  now run their internal fits silently on the rxode2 event bus (when rxode2
+  has one) and emit one event per call: `fitUpdate` when the fit is changed
+  in place (`bootstrapFit()`, `preconditionFit()`), `fitComplete` linked to
+  the input fit when a new fit is returned (`linearize()`, `regularmodel()`),
+  and otherwise one `fitResult` with a summary that contains no fits.  The
+  best fit of a result (`multistart()`'s `best`) is also announced, linked to
+  the input fit, or on its own when the driver started from a model.  A
+  logger such as nlmixr2log then stores one entry per call instead of one
+  run per internal fit.  Nothing changes without a listener.
+
 ## Bug fixes
+
+- `resSearch()` and `iivSearch()` on a linearized fit scale the residual
+  thetas like `linearize()` does, so a refit no longer drives a small
+  residual sd to 0 and ends at a worse OFV.  `iivSearch()` no longer caps
+  the residual thetas at twice their estimate.  The `scaleC` vector skips
+  fixed thetas, which FOCEi drops before it reads `scaleC`, so a residual
+  sd added after them no longer gets another parameter's scale (#133).
 
 - The figures from `bootplot()` (also shown by `plot()` of a bootstrapped
   fit), `plot()` of a `multistart()` result and `linearizePlot()` no longer

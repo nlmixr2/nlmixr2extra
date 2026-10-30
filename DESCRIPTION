@@ -72,4 +72,4 @@ Encoding: UTF-8
 NeedsCompilation: yes
 Roxygen: list(markdown = TRUE)
 LazyData: true
-Config/roxygen2/version: 8.1.0
+Config/roxygen2/version: 8.1.1

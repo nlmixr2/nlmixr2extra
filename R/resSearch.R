@@ -4,6 +4,12 @@
 #' @author Omar I. Elashkar
 #' @export
 resSearch <- function(fit) {
+  ## event bus: internal fits are silent; one event on exit (see rxEvents.R)
+  force(fit)
+  .evFit <- fit # the input, even if the driver reassigns `fit`
+  .extraEventEnter()
+  .evCall <- sys.call()
+  on.exit(.extraEventExit(returnValue(), .evFit, .evCall, "resSearch", "resSearch"), add = TRUE)
   UseMethod("resSearch")
 }
 
@@ -24,22 +30,38 @@ resSearch.nlmixr2Linearize <- function(fit) {
   add.sd <- NULL
   prop.sd <- NULL
 
+  # scale the residual thetas like residuals, as linearize() does (#133)
+  refit <- function(mod) {
+    nlmixr(
+      mod,
+      nlme::getData(fit),
+      est = "focei",
+      control = nlmixr2est::foceiControl(
+        scaleC = .linScaleC(
+          mod,
+          fit$env$originalFit,
+          c(prop.sd = "prop", add.sd = "add")
+        )
+      )
+    )
+  }
+
   linFit.prop <- fit |>
     model(rxR2 <- (prop.sd^2 * OPRED^2)) |>
     ini(prop.sd <- 0.1) |>
-    nlmixr(nlme::getData(fit), est = "focei")
+    refit()
   linFit.prop <- getobjDf(linFit.prop, "prop")
 
   linFit.combined2 <- fit |>
     model(rxR2 <- (prop.sd^2 * OPRED^2 + add.sd^2)) |>
     ini(prop.sd <- 0.1) |>
-    nlmixr(nlme::getData(fit), est = "focei")
+    refit()
   linFit.combined2 <- getobjDf(linFit.combined2, "combined2")
 
   linFit.combined1 <- fit |>
     model(rxR2 <- (prop.sd * OPRED + add.sd)^2) |>
     ini(prop.sd <- 0.1) |>
-    nlmixr(nlme::getData(fit), est = "focei")
+    refit()
   linFit.combined1 <- getobjDf(linFit.combined1, "combined1")
 
   # time-varying

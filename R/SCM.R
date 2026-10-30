@@ -132,6 +132,12 @@ covarSearchAuto <- function(
   searchType = c("scm", "forward", "backward"),
   restart = FALSE
 ) {
+  ## event bus: internal fits are silent; one event on exit (see rxEvents.R)
+  force(fit)
+  .evFit <- fit # the input, even if the driver reassigns `fit`
+  .extraEventEnter()
+  .evCall <- sys.call()
+  on.exit(.extraEventExit(returnValue(), .evFit, .evCall, "covarSearch", "covarSearchAuto"), add = TRUE)
   if (!is.numeric(AIC(fit))) {
     cli::cli_alert_danger("the 'fit' object needs to have an objective functions value associated with it")
     cli::cli_alert_info("try computing 'AIC(fitobject)' in console to compute and store the corresponding OBJF value")
