@@ -35,6 +35,7 @@ Imports:
     digest,
     dplyr,
     ggplot2,
+    grDevices,
     knitr,
     lotri,
     methods,
@@ -46,12 +47,17 @@ Imports:
     stats,
     utils
 Suggests:
+    DoseFinding,
     brms,
     nlmixr2data,
     nlmixr2save (>= 0.2.0),
     pander,
     rmarkdown,
+    shiny,
+    bslib,
     ggtext,
+    glmmTMB,
+    lme4,
     tidyr,
     nlmixr2lib,
     testthat (>= 3.0.0),
@@ -66,4 +72,4 @@ Encoding: UTF-8
 NeedsCompilation: yes
 Roxygen: list(markdown = TRUE)
 LazyData: true
-Config/roxygen2/version: 8.1.0
+Config/roxygen2/version: 8.1.1

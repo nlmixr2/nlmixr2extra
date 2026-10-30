@@ -1,0 +1,279 @@
+---
+title: "Clinical utility index from nlmixr2 models"
+author: "Matthew Fidler"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{Clinical utility index from nlmixr2 models}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4.5
+)
+library(nlmixr2save)
+## A cached fit is restored by sourcing the R code nlmixr2save saved with it,
+## and that code calls `lotri()` and `foceiControl()` unqualified -- so both
+## packages must be attached before any `:=` loads from the cache.
+library(lotri)
+library(nlmixr2est)
+## Cache every fit and CUI result with `:=` (nlmixr2save) under
+## vignettes/cache/; see vignettes/precompute.R.
+options(nlmixr2save.dir = "../cache",
+        nlmixr2save.prefix = "clinical-utility-index-",
+        nlmixr2save.check = FALSE)
+```
+
+```{r libraries, message = FALSE}
+library(nlmixr2extra)
+library(rxode2)
+```
+
+# What a clinical utility index is
+
+A clinical utility index (CUI) puts the benefit and the risk of each
+candidate regimen on one scale.  Every endpoint is turned into a
+desirability between 0 and 1 (higher is better, so the probability of an
+adverse event enters as one minus that probability), and the CUI is the
+weighted mean of the desirabilities:
+
+$$
+\mathrm{CUI}(d) = \sum_k \tilde w_k \, u_k\!\left(EP_k(d)\right),
+\qquad \tilde w_k = w_k \Big/ \sum_j w_j .
+$$
+
+Winzenborg, Soliman and Shebley (CPT Pharmacometrics Syst Pharmacol 2021)
+computed the endpoints from exposure-response models simulated over a dose
+grid, and let patient preference weights choose the dose.  `cui()` does the
+same from nlmixr2 fits and other fitted models, with parameter uncertainty,
+so every recommendation comes with an interval and with how often each
+regimen would be chosen.
+
+# A simulated trial
+
+A once-daily oral drug is studied at 50, 100, 200 and 400 mg for 12 weeks.
+PK is one-compartment with weight on clearance.  Pain response and moderate
+to severe hot flashes at week 12 both rise with the steady-state average
+concentration (Cavg).
+
+```{r simulate, message = FALSE}
+truth <- function() {
+  ini({
+    tka <- log(1.2)
+    tcl <- log(8)
+    tv <- log(60)
+    eta.cl ~ 0.09
+    eta.v ~ 0.04
+    prop.sd <- 0.15
+  })
+  model({
+    ka <- exp(tka)
+    cl <- exp(tcl + eta.cl) * (WT / 70)^0.75
+    v <- exp(tv + eta.v)
+    cp <- linCmt()
+    cp ~ prop(prop.sd)
+  })
+}
+
+set.seed(2026)
+# the whole trial is cached: rxSolve() advances the random stream
+trial := local({
+  n <- 60
+  subjects <- data.frame(ID = seq_len(4 * n), dose = rep(c(50, 100, 200, 400), each = n),
+                         WT = round(rlnorm(4 * n, log(70), 0.2)))
+  # sparse PK at steady state on day 84
+  pkEvents <- do.call(rbind, lapply(seq_len(nrow(subjects)), function(i) {
+    s <- subjects[i, ]
+    rbind(data.frame(ID = s$ID, TIME = 0, AMT = s$dose, EVID = 1, II = 24, ADDL = 83, DV = NA,
+                     WT = s$WT),
+          data.frame(ID = s$ID, TIME = 24 * 83 + c(1, 3, 8, 24), AMT = 0, EVID = 0, II = 0,
+                     ADDL = 0, DV = NA, WT = s$WT))
+  }))
+  sim <- as.data.frame(rxSolve(truth, events = pkEvents, keep = "WT"))
+  # the simulated observations (with residual error) fill DV of the PK records
+  pkData <- pkEvents
+  obs <- pkData$EVID == 0
+  pkData$DV[obs] <- sim$sim[match(paste(pkData$ID[obs], pkData$TIME[obs]),
+                                  paste(sim$id, sim$time))]
+  # true steady-state Cavg drives the week-12 outcomes
+  subjects$CAVG <- subjects$dose / (exp(log(8)) * (subjects$WT / 70)^0.75 *
+                                      exp(rnorm(nrow(subjects), 0, 0.3)) * 24)
+  subjects$resp <- rbinom(nrow(subjects), 1, plogis(-1.2 + 1.6 * subjects$CAVG))
+  subjects$hf <- rbinom(nrow(subjects), 1, plogis(-3.0 + 1.4 * subjects$CAVG))
+  list(pkData = pkData, subjects = subjects)
+})
+pkData <- trial$pkData
+subjects <- trial$subjects
+head(pkData)
+```
+
+# The models
+
+The PK model is fit with nlmixr2; the two week-12 binary outcomes are
+logistic regressions on Cavg.  Any fitted model that has
+`cuiModelPredict()` methods can be an endpoint (`glm`, `lme4`, `glmmTMB`
+and `brms` fits work out of the box).
+
+```{r fitPK, message = FALSE, warning = FALSE}
+pkModel <- function() {
+  ini({
+    tka <- log(1)
+    tcl <- log(6)
+    tv <- log(50)
+    eta.cl ~ 0.1
+    eta.v ~ 0.1
+    prop.sd <- 0.2
+  })
+  model({
+    ka <- exp(tka)
+    cl <- exp(tcl + eta.cl) * (WT / 70)^0.75
+    v <- exp(tv + eta.v)
+    cp <- linCmt()
+    cp ~ prop(prop.sd)
+  })
+}
+fitPK := nlmixr2(pkModel, pkData, "focei", control = foceiControl(print = 0))
+fitPK$parFixed
+```
+
+```{r fitER, message = FALSE}
+fitResp := glm(resp ~ CAVG, family = binomial, data = subjects)
+fitHF := glm(hf ~ CAVG, family = binomial, data = subjects)
+coef(fitResp)
+coef(fitHF)
+```
+
+# Simulating the clinical utility index
+
+Each endpoint names its model and how it is summarized for each regimen:
+
+- pain response and hot flashes are the mean predicted probability of the
+  logistic models (`cuiResponse()`), driven per virtual subject by the
+  week-12 Cavg simulated from the PK fit (`cuiExposure()`);
+- trough attainment is the fraction of subjects whose trough at week 12 is
+  above 0.5 mg/L, straight from the PK model (`cuiThreshold()`).
+
+Every regimen is simulated in the same target population, resampled from
+the trial with its weights, and with the same virtual subjects, so the
+comparison between regimens is not blurred by simulation noise.
+
+```{r define}
+endpoints <- list(
+  cuiEndpoint(resp, fitResp, cuiResponse()),
+  cuiEndpoint(trough, fitPK, cuiThreshold(cp > 0.5, time = 24 * 84)),
+  cuiEndpoint(hotFlash, fitHF, cuiResponse(), direction = "lower")
+)
+doses <- seq(0, 600, by = 50)
+regimens <- cuiRegimens(dose = doses, ii = 24, duration = 24 * 84, units = "mg",
+                        label = as.character(doses))
+exposure <- cuiExposure(fitPK, CAVG = cuiMean(cp, window = c(24 * 83, 24 * 84)))
+population <- cuiPopulation(subjects, n = 400, covs = "WT", seed = 1)
+```
+
+Parameter uncertainty comes from each fit's covariance (`uncertainty =
+"cov"`): structural thetas of the PK fit and the coefficients of the
+logistic fits are drawn 200 times.  Draw 0 is the point estimate.
+
+```{r cui, message = FALSE}
+res := cui(endpoints, regimens, population, exposure = exposure,
+           weights = c(resp = 2, trough = 1, hotFlash = 1),
+           uncertainty = "cov", nDraw = 200, seed = 1, cacheDir = NA)
+res
+```
+
+The CUI line with its band, and the endpoints behind it:
+
+```{r plot-cui}
+plot(res)
+```
+
+```{r plot-endpoints}
+plot(res, "endpoints")
+```
+
+Pain response and trough attainment climb with dose while freedom from hot
+flashes falls.  With these weights the benefit keeps paying for the risk,
+but less and less: the CUI flattens from about 400 mg on and its bands
+overlap there, so the highest dose wins only narrowly.  How often each dose
+is the best across the parameter draws shows how soft that choice is:
+
+```{r plot-selection}
+plot(res, "selection")
+```
+
+# Patient preferences
+
+The weights are the clinical judgment.  Re-weighting only recombines the
+stored endpoint values, so it is instant -- nothing is simulated again.  For
+a patient for whom hot flashes matter most, the CUI now has a clear peak at
+a moderate dose:
+
+```{r reweight}
+hfAverse <- update(res, weights = c(resp = 1.5, trough = 0.5, hotFlash = 3.6))
+plot(hfAverse, "endpoints")
+```
+
+Weights can also be set by endpoint group (`group` in `cuiEndpoint()`,
+efficacy and safety by default): each group gets a weight and its endpoints
+share it.
+
+```{r groups}
+w <- cuiGroupWeights(res, group = c(efficacy = 1, safety = 1),
+                     within = c(resp = 3, trough = 1))
+w
+update(res, weights = w)$summary[, c("regimen", "est", "best")]
+```
+
+How far a preference has to move before the recommendation changes:
+
+```{r sensitivity}
+s <- cuiSensitivity(res)
+s
+plot(s)
+```
+
+# Restricting to available regimens
+
+A recommendation for a patient has to be a dose that exists.  With the
+eligible regimens restricted, the recommendation and the selection
+frequencies are worked out among them only, and the plot marks them:
+
+```{r eligible}
+approved <- update(res, eligible = c("100", "300"))
+plot(approved)
+approved$summary[approved$summary$eligible, c("regimen", "est", "lower", "upper", "selFreq")]
+```
+
+# An interactive desk tool
+
+`cuiApp()` opens the result in a Shiny app with one slider per endpoint
+group and, under it, one per endpoint; `mode = "desk"` keeps the
+recommendation to the eligible regimens.  `cuiAppExport()` writes a
+deployable copy.
+
+```{r app, eval = FALSE}
+cuiApp(approved, mode = "desk",
+       presets = list("Trial-like" = c(resp = 2, trough = 1, hotFlash = 1),
+                      "Hot-flash averse" = c(resp = 1.5, trough = 0.5, hotFlash = 3.6)))
+cuiAppExport(approved, "cuiDeskTool", mode = "desk")
+```
+
+# Other sources of uncertainty
+
+- `uncertainty = cuiBootstrap(bootstrapFit(fitPK, nboot = 200,
+  returnType = "fitList"))` uses bootstrap refits as the parameter draws.
+- `mode = "trial"` keeps the parameters at their estimates and simulates
+  finite trials of `nSub` subjects instead, so the bands describe
+  trial-to-trial variation.
+
+With a `seed`, `cui()` caches every draw (in `nlmixr2CuiCache_<md5>/` unless
+`cacheDir` says otherwise), so a long simulation resumes where it stopped
+and a larger `nDraw` only simulates the new draws.
