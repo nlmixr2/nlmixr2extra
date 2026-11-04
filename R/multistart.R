@@ -12,7 +12,8 @@
 #'   candidate is always the unperturbed starting point, so `n = 1` reproduces
 #'   the original fit.
 #' @param nFit Number of candidates to fully estimate after screening.  `NULL`
-#'   (the default) estimates every candidate.  Ignored when `screen = "none"`.
+#'   (the default) estimates every candidate.  Ignored (with a warning when
+#'   smaller than `n`) when `screen = "none"`, which estimates every candidate.
 #' @param sampling How the starting points are drawn around the initial
 #'   estimates: `"uniform"` (the default) draws uniformly within `spread`, `"lhs"`
 #'   uses a Latin hypercube over the same interval so the range is covered more
@@ -115,6 +116,9 @@ multistartControl <- function(
       restart = checkmate::assert_logical(restart, len = 1, any.missing = FALSE, null.ok = FALSE)
     )
   if (is.null(ret$nFit)) {
+    ret$nFit <- ret$n
+  } else if (ret$screen == "none" && ret$nFit < ret$n) {
+    warning("'nFit' is ignored when screen = \"none\"; estimating all n = ", ret$n, " candidates", call. = FALSE)
     ret$nFit <- ret$n
   } else if (ret$nFit > ret$n) {
     warning("'nFit' is larger than 'n'; using nFit = ", ret$n, call. = FALSE)
@@ -745,7 +749,7 @@ multistart.default <- function(object, ...) {
     screenOfv <- vapply(scr, function(x) as.numeric(x)[1], numeric(1))
     toFit <- order(screenOfv)[seq_len(control$nFit)]
   } else {
-    toFit <- seq_len(min(control$nFit, n))
+    toFit <- seq_len(n)
   }
   toFit <- sort(toFit)
 
