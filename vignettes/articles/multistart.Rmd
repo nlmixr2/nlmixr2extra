@@ -192,9 +192,10 @@ ms <- multistart(fit, control = list(n = 10))   # estimates 10
 ms <- multistart(fit, control = list(n = 30))   # estimates the 20 new ones
 ```
 
-Anything that changes what a starting point *is* -- `sampling`, `spread`,
-`which`, `perturbOmega`, `omegaFold` or `seed` -- gives the run its own cache,
-so a cached estimation is never reported against a start it did not come from.
+Changing the model, the data, `est`, `estControl`, or anything that changes
+what a starting point *is* -- `sampling`, `spread`, `which`, `perturbOmega`,
+`omegaFold` or `seed` -- gives the run its own cache, so a cached estimation is
+never reported against a start, data set or control it did not come from.
 Pass `restart = TRUE` to discard the cache, or `cacheDir = NA` to never write
 one.
 
