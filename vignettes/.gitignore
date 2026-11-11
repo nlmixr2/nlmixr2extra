@@ -1,3 +1,6 @@
 *.html
 # Ignored as R files will typically go in the R/ directory within the package.
 *.R
+
+# the cache precompute script is part of the package sources
+!precompute.R

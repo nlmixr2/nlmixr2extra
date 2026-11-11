@@ -1,6 +1,76 @@
 # nlmixr2extra (development version)
 
-* The fitting drivers (`bootstrapFit()`, `preconditionFit()`,
+## New features
+
+- New clinical utility index (CUI) tools.  `cuiFromValues()` combines
+  endpoint summaries per regimen (and optional uncertainty draws) into a
+  weighted CUI with percentile intervals, the recommended regimen and how
+  often each regimen is selected across draws.  Endpoints are defined with
+  `cuiEndpoint()` and mapped to `[0, 1]` with `cuiIdentity()`,
+  `cuiLinear()` or `cuiStep()`; candidates come from `cuiRegimens()`.
+  `update()` re-weights or restricts the eligible regimens without
+  recomputing endpoints.
+
+- New `cuiDoseResponse()` computes a CUI from binary endpoints of a
+  multiple-dose trial (CUI-MET, Zhang et al. 2025), with endpoints from
+  `cuiBinary()` and a bootstrap that resamples whole patients within each
+  dose.  Endpoints use the observed rate, logit-linear or logit-quadratic
+  regression, or an Emax or exponential curve (generalized MCP-Mod fitting
+  step, optionally through 'DoseFinding'), each optionally monotone in
+  dose.
+
+- New `cui()` simulates a CUI from nlmixr2 fits: every endpoint is
+  simulated for each candidate regimen in one target population from
+  `cuiPopulation()` and summarized with `cuiProb()`, `cuiMean()`,
+  `cuiAuc()` or `cuiThreshold()`.  Parameter uncertainty comes from the
+  fits' covariance (`uncertainty = "cov"`) or simulated trials
+  (`mode = "trial"`); all regimens share the same virtual subjects, and a
+  Monte Carlo standard error flags populations that are too small.
+  `cuiExposure()` chains a per-subject exposure (such as Cavg) from a PK
+  model into exposure-response models, `cuiBootstrap()` uses bootstrap
+  refits as parameter draws.  With a `seed`, `cui()` and
+  `cuiDoseResponse()` cache every simulation or bootstrap draw (by
+  default in `nlmixr2CuiCache_<md5>/`), so reruns load them, interrupted
+  runs resume and a larger `nDraw`/`nBoot` only computes the new draws;
+  `update()`, `cuiSensitivity()` and `plot()` reuse the stored endpoint
+  values without simulating.
+
+- `plot()` of a CUI shows the CUI per regimen with its interval, the
+  endpoint utilities, how often each regimen is selected, or (for
+  `cuiDoseResponse()`) the observed rates with the fitted dose-response;
+  `cuiSensitivity()` shows how the recommendation changes as each endpoint
+  weight varies.
+
+- New `cuiApp()` desk tool (Shiny, modeled on the ACoP 2026 CUI workshop
+  app) re-weights a CUI result interactively with hierarchical weights:
+  one slider per endpoint group (efficacy, safety, ...) and indented
+  within-group sliders, presets, the package's plots with lines and
+  bands, selection, sensitivity and dose-response tabs, and CSV downloads;
+  `mode = "desk"` recommends eligible regimens only.  `cuiAppExport()`
+  writes a deployable app.  Endpoints take a `group`, and
+  `cuiGroupWeights()` turns group and within-group weights into endpoint
+  weights.
+
+- Two new articles: "Clinical utility index from nlmixr2 models" (a
+  simulated trial, PK and exposure-response fits, uncertainty,
+  preferences, eligible doses and the desk tool) and "Dose optimization
+  with a clinical utility index (CUI-MET)".  `vignettes/precompute.R`
+  refreshes the cached results of every article.
+
+- Fitted regression models can be CUI endpoints: `cuiBinary(tox, model =
+  fit)` in `cuiDoseResponse()` (averaged over the patients and refit in
+  each bootstrap draw) and `cuiEndpoint(eff, fit, cuiResponse(dose =
+  DOSE))` in `cui()` (averaged over the population, optionally driven by a
+  chained exposure).  Models are used through the generics
+  `cuiModelPredict()`, `cuiModelDraws()`, `cuiModelRefit()` and
+  `cuiModelVars()`, with methods for `lm`/`glm`, lme4, glmmTMB and brms; any
+  other class works once it has methods.
+
+- Bootstrap refits from `bootstrapFit()` now record which original subjects
+  they were estimated on (`fit$bootstrapResample`), so refits of different
+  models on the same resamples can be paired.
+
+- The fitting drivers (`bootstrapFit()`, `preconditionFit()`,
   `multistart()`, `covarSearchAuto()`, `resSearch()`, `iivSearch()`,
   `rerunTopN()`, `linearize()`, `profile()`, `profileFixed()`,
   `profileLlp()`, the lasso functions, `regularmodel()` and `bootplot()`)
