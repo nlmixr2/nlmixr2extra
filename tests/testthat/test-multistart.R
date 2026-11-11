@@ -63,6 +63,12 @@ test_that("multistartControl() validates and defaults", {
   expect_warning(ctl <- multistartControl(n = 3, nFit = 10), "larger than")
   expect_equal(ctl$nFit, 3L)
 
+  # screen = "none" estimates every candidate, so a smaller nFit is ignored (#142)
+  expect_warning(ctl <- multistartControl(n = 6, nFit = 3, screen = "none"), "ignored")
+  expect_equal(ctl$nFit, 6L)
+  expect_no_warning(ctl <- multistartControl(n = 6, nFit = 6, screen = "none"))
+  expect_equal(ctl$nFit, 6L)
+
   dep <- rxode2::rxUiDeparse(multistartControl(n = 3), "x")
   expect_match(deparse1(dep), "^x <- multistartControl\\(")
 })
@@ -276,6 +282,19 @@ test_that("multistart() works from a model and data", {
   expect_s3_class(ms, "nlmixr2Multistart")
   expect_equal(nrow(ms$summary), 2L)
   expect_null(ms$origFit)
+})
+
+test_that("multistart() with screen = \"none\" estimates every start despite nFit (#142)", {
+  expect_warning(
+    ms <- multistart(
+      .msTestModel(),
+      nlmixr2data::theo_sd,
+      control = list(n = 3, nFit = 2, screen = "none", cacheDir = NA, refitBest = FALSE)
+    ),
+    "ignored"
+  )
+  expect_true(all(ms$starts$fitted))
+  expect_equal(nrow(ms$summary), 3L)
 })
 
 test_that("multistart() rejects things that are not models", {

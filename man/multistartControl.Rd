@@ -29,7 +29,8 @@ candidate is always the unperturbed starting point, so \code{n = 1} reproduces
 the original fit.}
 
 \item{nFit}{Number of candidates to fully estimate after screening.  \code{NULL}
-(the default) estimates every candidate.  Ignored when \code{screen = "none"}.}
+(the default) estimates every candidate.  Ignored (with a warning when
+smaller than \code{n}) when \code{screen = "none"}, which estimates every candidate.}
 
 \item{sampling}{How the starting points are drawn around the initial
 estimates: \code{"uniform"} (the default) draws uniformly within \code{spread}, \code{"lhs"}
