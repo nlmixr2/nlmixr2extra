@@ -79,7 +79,7 @@ the fastest choice; see the "Parallel estimation" section of
 
 \item{cacheDir}{Directory used to cache the individual starts so that an
 interrupted run can be resumed.  \code{NULL} (the default) derives a name from
-the model; \code{NA} disables caching.}
+the model, data and control; \code{NA} disables caching.}
 
 \item{restart}{Discard any cached results and start over.}
 }
