@@ -1,5 +1,7 @@
 skip_on_cran()
 
+.cur <- loadNamespace("nlmixr2extra")
+
 # A small, fast model used by every test that needs a real fit.  linCmt() keeps
 # each start to about a second.
 .msTestModel <- function() {
@@ -318,6 +320,45 @@ test_that("multistart() drops a cached start that no longer matches", {
     expect_false(isTRUE(all.equal(m1$starts[2, keep], m2$starts[2, keep], check.attributes = FALSE)))
     # and it was re-estimated rather than reported against the wrong start
     expect_equal(nrow(m2$summary), 4L)
+  })
+})
+
+test_that("the multistart cache key covers the data and the estimation control (#141)", {
+  ui <- .msTestUi()
+  ctl <- multistartControl()
+  d1 <- nlmixr2data::theo_sd
+  d2 <- d1
+  d2$DV <- d2$DV * 2
+  k <- function(data = d1, estControl = nlmixr2est::foceiControl()) {
+    .cur$.msCacheKey(ctl, ui, data, "focei", estControl)
+  }
+  # reproducible, including the function-valued settings of foceiControl()
+  expect_equal(k(), k())
+  expect_false(k() == k(data = d2))
+  expect_false(k() == k(estControl = nlmixr2est::foceiControl(maxOuterIterations = 0)))
+  # the per-start seed and etaMat are replaced before estimation
+  expect_equal(k(), k(estControl = nlmixr2est::foceiControl(seed = 1)))
+})
+
+test_that("multistart() does not re-use a cache made with other data (#141)", {
+  withr::with_tempdir({
+    d2 <- nlmixr2data::theo_sd
+    d2$DV <- d2$DV * 2
+    args <- list(n = 2, spread = 0.3, screen = "none", refitBest = FALSE)
+    m1 <- multistart(.msTestModel, nlmixr2data::theo_sd, control = args)
+    m2 <- multistart(.msTestModel, d2, control = args)
+    expect_false(m1$cacheDir == m2$cacheDir)
+    expect_gt(min(m2$summary$OBJF), max(m1$summary$OBJF) + 50)
+
+    # a named directory holding another run is discarded, not re-used
+    named <- c(args, list(cacheDir = "msCache"))
+    m3 <- multistart(.msTestModel, nlmixr2data::theo_sd, control = named)
+    expect_warning(
+      m4 <- multistart(.msTestModel, d2, control = named),
+      "different model, data or control"
+    )
+    expect_equal(sort(m4$summary$OBJF), sort(m2$summary$OBJF), tolerance = 1e-4)
+    expect_no_warning(multistart(.msTestModel, d2, control = named))
   })
 })
 

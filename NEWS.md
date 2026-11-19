@@ -16,6 +16,12 @@
 
 ## Bug fixes
 
+- `multistart()` now keys its cache on the data and the estimation control as
+  well as the model and starting points, so rerunning it with other data or
+  another `estControl` no longer reports the earlier run's cached fits.  A
+  named `cacheDir` holding a run with other inputs is discarded with a
+  warning (#141).
+
 - `resSearch()` and `iivSearch()` on a linearized fit scale the residual
   thetas like `linearize()` does, so a refit no longer drives a small
   residual sd to 0 and ends at a worse OFV.  `iivSearch()` no longer caps

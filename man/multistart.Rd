@@ -92,10 +92,12 @@ resumes where it left off.  Increasing \code{n} on a later call re-uses the star
 already estimated and only estimates the new ones.  Pass \code{restart = TRUE} to
 discard the cache, or \code{cacheDir = NA} to never write one.
 
-Changing anything that alters what a starting point \emph{is} (\code{sampling},
-\code{spread}, \code{which}, \code{perturbOmega}, \code{omegaFold} or \code{seed}) gives the run its
-own cache, so a cached estimation is never re-used for a start it did not
-come from.  A Latin hypercube is a design over all \code{n} candidates at once, so
+Changing the model, the data, \code{est}, \code{estControl}, or anything that alters
+what a starting point \emph{is} (\code{sampling}, \code{spread}, \code{which}, \code{perturbOmega},
+\code{omegaFold} or \code{seed}) gives the run its own cache, so a cached estimation
+is never re-used for a start, data set or control it did not come from.  A
+\code{cacheDir} holding a run with other inputs is discarded with a warning.
+A Latin hypercube is a design over all \code{n} candidates at once, so
 growing an \code{"lhs"} run moves its earlier starting points; those starts are
 detected and re-estimated rather than reported against the wrong starting
 point.

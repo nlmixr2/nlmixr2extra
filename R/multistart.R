@@ -49,7 +49,7 @@
 #'   [multistart()].
 #' @param cacheDir Directory used to cache the individual starts so that an
 #'   interrupted run can be resumed.  `NULL` (the default) derives a name from
-#'   the model; `NA` disables caching.
+#'   the model, data and control; `NA` disables caching.
 #' @param restart Discard any cached results and start over.
 #'
 #' @returns A validated list of control options for [multistart()]
@@ -189,10 +189,12 @@ rxUiDeparse.multistartControl <- function(object, var) {
 #' already estimated and only estimates the new ones.  Pass `restart = TRUE` to
 #' discard the cache, or `cacheDir = NA` to never write one.
 #'
-#' Changing anything that alters what a starting point *is* (`sampling`,
-#' `spread`, `which`, `perturbOmega`, `omegaFold` or `seed`) gives the run its
-#' own cache, so a cached estimation is never re-used for a start it did not
-#' come from.  A Latin hypercube is a design over all `n` candidates at once, so
+#' Changing the model, the data, `est`, `estControl`, or anything that alters
+#' what a starting point *is* (`sampling`, `spread`, `which`, `perturbOmega`,
+#' `omegaFold` or `seed`) gives the run its own cache, so a cached estimation
+#' is never re-used for a start, data set or control it did not come from.  A
+#' `cacheDir` holding a run with other inputs is discarded with a warning.
+#' A Latin hypercube is a design over all `n` candidates at once, so
 #' growing an `"lhs"` run moves its earlier starting points; those starts are
 #' detected and re-estimated rather than reported against the wrong starting
 #' point.
@@ -631,23 +633,53 @@ multistart.default <- function(object, ...) {
   file.path(dir, sprintf("%s_%04d.rds", what, index))
 }
 
-.msCacheSetup <- function(control, ui, est, origFit) {
+# Strip what does not serialize reproducibly (environments; functions, whose
+# byte-compiled state changes) so the cache key only depends on the settings.
+.msStableValue <- function(x) {
+  if (is.function(x)) {
+    return(deparse(x))
+  }
+  if (is.environment(x)) {
+    return(NULL)
+  }
+  if (is.list(x) && !is.data.frame(x)) {
+    return(lapply(unclass(x), .msStableValue))
+  }
+  x
+}
+
+# The estimation control as each start actually sees it (`seed` and `etaMat`
+# are replaced per start in `.msRunOne()`).
+.msStableControl <- function(estControl) {
+  ctl <- .msQuietControl(estControl)
+  if (is.list(ctl)) {
+    ctl <- ctl[setdiff(names(ctl), c("seed", "etaMat"))]
+  }
+  list(class(estControl), .msStableValue(ctl))
+}
+
+# Everything that changes what a start *is* or how it is estimated.  `n`,
+# `nFit` and the run-time options are left out: varying those is what resuming
+# a cached run means.
+.msCacheKey <- function(control, ui, data, est, estControl) {
+  digest::digest(list(
+    ui$iniDf,
+    ui$lstExpr,
+    est,
+    control[c("sampling", "spread", "which", "perturbOmega", "omegaFold", "seed")],
+    as.data.frame(data),
+    .msStableControl(estControl)
+  ))
+}
+
+.msCacheSetup <- function(control, ui, data, est, estControl) {
   if (length(control$cacheDir) == 1L && is.na(control$cacheDir)) {
     return(NULL)
   }
+  key <- .msCacheKey(control, ui, data, est, estControl)
   dir <- control$cacheDir
   if (is.null(dir)) {
-    # Everything that changes what a start *is* goes into the key, so changing
-    # the spread or the sampling method cannot silently re-use stale fits.  `n`,
-    # `nFit` and the run-time options are deliberately left out: varying those
-    # is exactly what resuming a cached run means.
-    md5 <- digest::digest(list(
-      ui$iniDf,
-      ui$lstExpr,
-      est,
-      control[c("sampling", "spread", "which", "perturbOmega", "omegaFold", "seed")]
-    ))
-    dir <- paste0("nlmixr2MultistartCache_", md5)
+    dir <- paste0("nlmixr2MultistartCache_", key)
   }
   if (dir.exists(dir) && control$restart) {
     unlink(dir, recursive = TRUE, force = TRUE)
@@ -655,6 +687,20 @@ multistart.default <- function(object, ...) {
   if (!dir.exists(dir)) {
     dir.create(dir, recursive = TRUE)
   }
+  # a user-named directory can hold a run with other inputs; never re-use it
+  keyFile <- file.path(dir, "key.rds")
+  oldKey <- if (file.exists(keyFile)) try(readRDS(keyFile), silent = TRUE) else NULL
+  stale <- list.files(dir, pattern = "^(start|screen|fit)_[0-9]+[.]rds$", full.names = TRUE)
+  if (length(stale) > 0L && !identical(oldKey, key)) {
+    warning(
+      "multistart cache '",
+      dir,
+      "' was made with a different model, data or control; discarding it",
+      call. = FALSE
+    )
+    unlink(stale, force = TRUE)
+  }
+  saveRDS(key, file = keyFile)
   dir
 }
 
@@ -698,7 +744,7 @@ multistart.default <- function(object, ...) {
 .multistartRun <- function(ui, data, est, estControl, control, origFit) {
   checkmate::assert_data_frame(data, min.rows = 1)
   iniDf <- ui$iniDf
-  cacheDir <- .msCacheSetup(control, ui, est, origFit)
+  cacheDir <- .msCacheSetup(control, ui, data, est, estControl)
   quietControl <- .msQuietControl(estControl)
 
   # everything random happens inside one seeded block, so a run is reproducible
