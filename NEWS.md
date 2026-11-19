@@ -16,6 +16,10 @@
 
 ## Bug fixes
 
+- `multistart()` with `screen = "none"` now estimates every candidate, as
+  documented, instead of only the first `nFit`; a smaller `nFit` is ignored
+  with a warning (#142).
+
 - `resSearch()` and `iivSearch()` on a linearized fit scale the residual
   thetas like `linearize()` does, so a refit no longer drives a small
   residual sd to 0 and ends at a worse OFV.  `iivSearch()` no longer caps
