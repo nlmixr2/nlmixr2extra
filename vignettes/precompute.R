@@ -23,7 +23,9 @@ vignettes <- c(
 )
 
 args <- commandArgs(trailingOnly = TRUE)
-if (!file.exists("precompute.R")) stop("run from the vignettes/ directory", call. = FALSE)
+if (!file.exists("precompute.R")) {
+  stop("run from the vignettes/ directory", call. = FALSE)
+}
 selected <- setdiff(args, "--clean")
 if (length(selected) > 0) {
   unknown <- setdiff(selected, vignettes)
@@ -46,10 +48,13 @@ dir.create("cache", showWarnings = FALSE)
 rscript <- file.path(R.home("bin"), "Rscript")
 for (v in vignettes) {
   message("rendering ", v)
-  code <- sprintf(paste0(
-    "if (requireNamespace('pkgload', quietly = TRUE)) pkgload::load_all('..', quiet = TRUE); ",
-    "rmarkdown::render('%s', output_dir = tempdir(), quiet = TRUE)"
-  ), v)
+  code <- sprintf(
+    paste0(
+      "if (requireNamespace('pkgload', quietly = TRUE)) pkgload::load_all('..', quiet = TRUE); ",
+      "rmarkdown::render('%s', output_dir = tempdir(), quiet = TRUE)"
+    ),
+    v
+  )
   status <- system2(rscript, c("-e", shQuote(code)))
   if (status != 0) stop("rendering ", v, " failed", call. = FALSE)
 }

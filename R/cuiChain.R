@@ -25,16 +25,16 @@ cuiExposure <- function(fit, ...) {
     stop("'fit' must be an nlmixr2 fit or an rxUi", call. = FALSE)
   }
   .sums <- list(...)
-  if (length(.sums) == 0 || is.null(names(.sums)) || any(names(.sums) == "") ||
-    anyDuplicated(names(.sums)) != 0L) {
-    stop("give exposures as uniquely named summaries, for example CAVG = cuiMean(cp, window = c(0, 24))",
-         call. = FALSE)
+  if (length(.sums) == 0 || is.null(names(.sums)) || any(names(.sums) == "") || anyDuplicated(names(.sums)) != 0L) {
+    stop("give exposures as uniquely named summaries, for example CAVG = cuiMean(cp, window = c(0, 24))", call. = FALSE)
   }
   for (.n in names(.sums)) {
     .s <- .sums[[.n]]
     if (!inherits(.s, "cuiSummary")) {
-      stop(sprintf("exposure '%s' must be a cuiMean(), cuiAuc(), cuiProb() or cuiThreshold() summary", .n),
-           call. = FALSE)
+      stop(
+        sprintf("exposure '%s' must be a cuiMean(), cuiAuc(), cuiProb() or cuiThreshold() summary", .n),
+        call. = FALSE
+      )
     }
     if (is.null(.s$time) && is.null(.s$window)) {
       stop(sprintf("exposure '%s' needs an explicit 'time' or 'window'", .n), call. = FALSE)
@@ -46,7 +46,9 @@ cuiExposure <- function(fit, ...) {
 #' @export
 print.cuiExposure <- function(x, ...) {
   cat("cuiExposure:\n")
-  for (.n in names(x$summaries)) cat("  ", .n, " = ", format(x$summaries[[.n]]), "\n", sep = "")
+  for (.n in names(x$summaries)) {
+    cat("  ", .n, " = ", format(x$summaries[[.n]]), "\n", sep = "")
+  }
   invisible(x)
 }
 
@@ -76,7 +78,9 @@ print.cuiExposure <- function(x, ...) {
 cuiBootstrap <- function(..., minSuccess = 0.9) {
   checkmate::assertNumber(minSuccess, lower = 0, upper = 1)
   .ens <- list(...)
-  if (length(.ens) == 0) stop("give at least one bootstrap ensemble", call. = FALSE)
+  if (length(.ens) == 0) {
+    stop("give at least one bootstrap ensemble", call. = FALSE)
+  }
   .ens <- lapply(seq_along(.ens), function(.i) {
     .e <- .ens[[.i]]
     if (inherits(.e, "nlmixr2FitCore")) {
@@ -88,8 +92,16 @@ cuiBootstrap <- function(..., minSuccess = 0.9) {
     .items <- lapply(.e, .cuiBootItem)
     .ok <- vapply(.items, `[[`, logical(1), "ok")
     if (mean(.ok) < minSuccess) {
-      stop(sprintf("only %d of %d refits of bootstrap ensemble %d succeeded (minSuccess = %g)",
-                   sum(.ok), length(.ok), .i, minSuccess), call. = FALSE)
+      stop(
+        sprintf(
+          "only %d of %d refits of bootstrap ensemble %d succeeded (minSuccess = %g)",
+          sum(.ok),
+          length(.ok),
+          .i,
+          minSuccess
+        ),
+        call. = FALSE
+      )
     }
     .md5 <- unique(stats::na.omit(vapply(.items[.ok], `[[`, character(1), "parentMd5")))
     if (length(.md5) > 1L) {
@@ -97,9 +109,15 @@ cuiBootstrap <- function(..., minSuccess = 0.9) {
     }
     .items <- .items[.ok]
     .idx <- vapply(.items, `[[`, numeric(1), "index")
-    if (!anyNA(.idx)) .items <- .items[order(.idx)]
-    list(parentMd5 = if (length(.md5) == 1L) .md5 else NA_character_, items = .items,
-         nFit = length(.ok), nFailed = sum(!.ok))
+    if (!anyNA(.idx)) {
+      .items <- .items[order(.idx)]
+    }
+    list(
+      parentMd5 = if (length(.md5) == 1L) .md5 else NA_character_,
+      items = .items,
+      nFit = length(.ok),
+      nFailed = sum(!.ok)
+    )
   })
   structure(list(ensembles = .ens, minSuccess = minSuccess), class = "cuiBootstrap")
 }
@@ -120,10 +138,14 @@ print.cuiBootstrap <- function(x, ...) {
     return(list(ok = FALSE, parentMd5 = NA_character_, index = NA_real_))
   }
   .info <- f$bootstrapResample
-  list(ok = TRUE, theta = f$theta, omega = f$omega,
-       parentMd5 = if (is.null(.info$parentMd5)) NA_character_ else as.character(.info$parentMd5),
-       index = if (is.null(.info$index)) NA_real_ else as.numeric(.info$index),
-       resample = if (is.null(.info$ids)) NA_character_ else digest::digest(.info$ids))
+  list(
+    ok = TRUE,
+    theta = f$theta,
+    omega = f$omega,
+    parentMd5 = if (is.null(.info$parentMd5)) NA_character_ else as.character(.info$parentMd5),
+    index = if (is.null(.info$index)) NA_real_ else as.numeric(.info$index),
+    resample = if (is.null(.info$ids)) NA_character_ else digest::digest(.info$ids)
+  )
 }
 
 #' Pair the refits of several bootstrap ensembles into draws

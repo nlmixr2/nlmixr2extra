@@ -1048,9 +1048,11 @@ modelBootstrap <- function(
         {
           fit <- suppressWarnings(nlmixr2(ui, boot_data, est = fitMeth, control = .ctl))
           # which original subjects this fit was estimated on, and of which fit
-          assign("bootstrapResample",
-                 list(parentMd5 = .parentMd5, index = modIdx, ids = attr(boot_data, "bootIds")),
-                 envir = fit$env)
+          assign(
+            "bootstrapResample",
+            list(parentMd5 = .parentMd5, index = modIdx, ids = attr(boot_data, "bootIds")),
+            envir = fit$env
+          )
 
           .env$multipleFits <- list(
             # objf = fit$OBJF,

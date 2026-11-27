@@ -55,20 +55,24 @@ withr::local_dir(withr::local_tempdir())
 
 test_that("supplied thetas, etas and covariates reproduce the analytic solution", {
   .mg <- .cur$.cuiModelGroup(.ui, list(cuiEndpoint(eff, .ui, cuiProb(peff, time = 4))), 1L)
-  .eta <- matrix(c(0, 0.5, -0.3, 0, 0.2, -0.2, 0, 0.1, 0), nrow = 3,
-                 dimnames = list(NULL, c("eta.ka", "eta.cl", "eta.v")))
+  .eta <- matrix(
+    c(0, 0.5, -0.3, 0, 0.2, -0.2, 0, 0.1, 0),
+    nrow = 3,
+    dimnames = list(NULL, c("eta.ka", "eta.cl", "eta.v"))
+  )
   # a discrete covariate would make rxode2 regroup subjects if passed as iCov
   .cov <- data.frame(WT = c(70, 50, 70))
   .reg <- cuiRegimens(dose = c(100, 300))
   .sim <- .cur$.cuiSolveDraw(.mg, .mg$theta, .eta, .cov, .reg, c(2, 4), NULL)
   .th <- .mg$theta
-  for (.r in 1:2) for (.i in 1:3) {
-    .ka <- exp(.th[["tka"]] + .eta[.i, 1])
-    .cl <- exp(.th[["tcl"]] + .eta[.i, 2]) * (.cov$WT[.i] / 70)^0.75
-    .v <- exp(.th[["tv"]] + .eta[.i, 3])
-    .row <- .sim[.sim$.reg == .r & .sim$.sub == .i & .sim$time == 4, ]
-    expect_equal(.row$cp, .conc(4, .reg$dose[.r], .ka, .cl / .v, .v), tolerance = 1e-6,
-                 ignore_attr = TRUE)
+  for (.r in 1:2) {
+    for (.i in 1:3) {
+      .ka <- exp(.th[["tka"]] + .eta[.i, 1])
+      .cl <- exp(.th[["tcl"]] + .eta[.i, 2]) * (.cov$WT[.i] / 70)^0.75
+      .v <- exp(.th[["tv"]] + .eta[.i, 3])
+      .row <- .sim[.sim$.reg == .r & .sim$.sub == .i & .sim$time == 4, ]
+      expect_equal(.row$cp, .conc(4, .reg$dose[.r], .ka, .cl / .v, .v), tolerance = 1e-6, ignore_attr = TRUE)
+    }
   }
 })
 
@@ -77,10 +81,15 @@ test_that("window averages and integrals match the analytic multiple-dose soluti
   .k <- 3 / 30
   .doseTimes <- c(0, 12, 24, 36)
   .aucTo <- function(T) sum(.auc(pmax(T - .doseTimes, 0), 100, .ka, .k, 30))
-  .r <- cui(list(cuiEndpoint(cavg, .uiFixed, cuiMean(cp, window = c(0, 48)), utility = cuiLinear(0, 100)),
-                 cuiEndpoint(auc, .uiFixed, cuiAuc(cp, window = c(12, 36)), utility = cuiLinear(0, 1e4)),
-                 cuiEndpoint(c0, .uiFixed, cuiMean(cp, time = 0), utility = cuiLinear(0, 100))),
-            regimens = cuiRegimens(dose = 100, ii = 12, duration = 48), population = 3)
+  .r <- cui(
+    list(
+      cuiEndpoint(cavg, .uiFixed, cuiMean(cp, window = c(0, 48)), utility = cuiLinear(0, 100)),
+      cuiEndpoint(auc, .uiFixed, cuiAuc(cp, window = c(12, 36)), utility = cuiLinear(0, 1e4)),
+      cuiEndpoint(c0, .uiFixed, cuiMean(cp, time = 0), utility = cuiLinear(0, 100))
+    ),
+    regimens = cuiRegimens(dose = 100, ii = 12, duration = 48),
+    population = 3
+  )
   .v <- .r$values
   expect_equal(.v$value[.v$endpoint == "cavg"], .aucTo(48) / 48, tolerance = 1e-4)
   expect_equal(.v$value[.v$endpoint == "auc"], .aucTo(36) - .aucTo(12), tolerance = 1e-4)
@@ -134,17 +143,26 @@ test_that("summaries take names, strings, expressions and constants", {
 
 test_that("every regimen and run sees the same virtual subjects", {
   .eps <- list(cuiEndpoint(e, .ui, cuiProb(peff, time = 4)))
-  .a <- cui(.eps, regimens = cuiRegimens(dose = c(100, 100, 400), label = c("x", "y", "z")),
-            population = .pop, seed = 3, mcTol = 1)
+  .a <- cui(
+    .eps,
+    regimens = cuiRegimens(dose = c(100, 100, 400), label = c("x", "y", "z")),
+    population = .pop,
+    seed = 3,
+    mcTol = 1
+  )
   .s <- .a$summary
   expect_equal(.s$est[.s$regimen == "x"], .s$est[.s$regimen == "y"])
   # regimens do not change each other's subjects
-  .b <- cui(.eps, regimens = cuiRegimens(dose = c(400, 100), label = c("z", "x")),
-            population = .pop, seed = 3, mcTol = 1)
+  .b <- cui(
+    .eps,
+    regimens = cuiRegimens(dose = c(400, 100), label = c("z", "x")),
+    population = .pop,
+    seed = 3,
+    mcTol = 1
+  )
   expect_equal(.b$summary$est[.b$summary$regimen == "x"], .s$est[.s$regimen == "x"])
   # identical regimens give a zero Monte Carlo difference
-  .c <- cui(.eps, regimens = cuiRegimens(dose = c(100, 100), label = c("x", "y")),
-            population = .pop, seed = 3)
+  .c <- cui(.eps, regimens = cuiRegimens(dose = c(100, 100), label = c("x", "y")), population = .pop, seed = 3)
   expect_equal(.c$mcse$se, 0)
 })
 
@@ -156,26 +174,33 @@ test_that("endpoints sharing a fit are simulated once per draw", {
     .calls <<- .calls + 1
     .real(...)
   })
-  .r <- cui(list(cuiEndpoint(a, .ui, cuiProb(peff, time = 4)),
-                 cuiEndpoint(b, .ui, cuiProb(pae, time = 2), direction = "lower"),
-                 cuiEndpoint(c, .ui2, cuiMean(cp, time = 2), utility = cuiLinear(0, 10))),
-            regimens = cuiRegimens(dose = c(100, 400)), population = .pop, seed = 1, mcTol = 1)
+  .r <- cui(
+    list(
+      cuiEndpoint(a, .ui, cuiProb(peff, time = 4)),
+      cuiEndpoint(b, .ui, cuiProb(pae, time = 2), direction = "lower"),
+      cuiEndpoint(c, .ui2, cuiMean(cp, time = 2), utility = cuiLinear(0, 10))
+    ),
+    regimens = cuiRegimens(dose = c(100, 400)),
+    population = .pop,
+    seed = 1,
+    mcTol = 1
+  )
   expect_equal(.calls, 2)
 })
 
 test_that("trial mode resamples subjects per trial around the expected point estimate", {
-  .eps <- list(cuiEndpoint(eff, .ui, cuiProb(peff, time = 4)),
-               cuiEndpoint(ae, .ui, cuiProb(pae, time = 2), direction = "lower"))
+  .eps <- list(
+    cuiEndpoint(eff, .ui, cuiProb(peff, time = 4)),
+    cuiEndpoint(ae, .ui, cuiProb(pae, time = 2), direction = "lower")
+  )
   .reg <- cuiRegimens(dose = c(100, 200, 400, 800))
-  .t <- cui(.eps, regimens = .reg, population = .pop, mode = "trial", nDraw = 10, nSub = 30,
-            seed = 1, mcTol = 1)
+  .t <- cui(.eps, regimens = .reg, population = .pop, mode = "trial", nDraw = 10, nSub = 30, seed = 1, mcTol = 1)
   .e <- cui(.eps, regimens = .reg, population = .pop, seed = 1, mcTol = 1)
   expect_equal(.t$summary$est, .e$summary$est)
   expect_equal(sum(.t$summary$selFreq), 1)
   expect_equal(sort(unique(.t$cui$draw)), 0:10)
   expect_output(print(.t), "10 simulated trials of 30 subjects")
-  .t2 <- cui(.eps, regimens = .reg, population = .pop, mode = "trial", nDraw = 10, nSub = 30,
-             seed = 1, mcTol = 1)
+  .t2 <- cui(.eps, regimens = .reg, population = .pop, mode = "trial", nDraw = 10, nSub = 30, seed = 1, mcTol = 1)
   expect_equal(.t$summary, .t2$summary)
 })
 
@@ -186,20 +211,42 @@ test_that("failed draws are recorded and the Monte Carlo warning fires", {
   .real <- .cur$.cuiSolveDraw
   local_mocked_bindings(.cuiSolveDraw = function(...) {
     .calls <<- .calls + 1
-    if (.calls == 3) stop("solver failed")
+    if (.calls == 3) {
+      stop("solver failed")
+    }
     .real(...)
   })
-  .t <- cui(.eps, regimens = .reg, population = .pop, mode = "trial", nDraw = 10, nSub = 30,
-            seed = 1, mcTol = 1, cacheDir = NA)
+  .t <- cui(
+    .eps,
+    regimens = .reg,
+    population = .pop,
+    mode = "trial",
+    nDraw = 10,
+    nSub = 30,
+    seed = 1,
+    mcTol = 1,
+    cacheDir = NA
+  )
   expect_equal(.t$draws$status[3], "failed")
   expect_equal(.t$draws$message[3], "solver failed")
   expect_equal(sum(.t$summary$selFreq), 1)
   .calls <- 0
-  expect_error(cui(.eps, regimens = .reg, population = .pop, mode = "trial", nDraw = 4,
-                   nSub = 30, seed = 1, mcTol = 1, cacheDir = NA), "only 3 of 4 draws")
+  expect_error(
+    cui(
+      .eps,
+      regimens = .reg,
+      population = .pop,
+      mode = "trial",
+      nDraw = 4,
+      nSub = 30,
+      seed = 1,
+      mcTol = 1,
+      cacheDir = NA
+    ),
+    "only 3 of 4 draws"
+  )
   .calls <- -100
-  expect_warning(cui(.eps, regimens = .reg, population = .pop, seed = 1, mcTol = 1e-12),
-                 "Monte Carlo standard error")
+  expect_warning(cui(.eps, regimens = .reg, population = .pop, seed = 1, mcTol = 1e-12), "Monte Carlo standard error")
 })
 
 test_that("inputs are validated", {
@@ -221,28 +268,45 @@ test_that("inputs are validated", {
 
 test_that("assessment times and the result object", {
   .reg <- cuiRegimens(dose = c(100, 400), duration = 24)
-  .r <- cui(list(cuiEndpoint(eff, .ui, cuiProb(peff)),
-                 cuiEndpoint(ae, .ui, cuiProb(pae, time = 2), direction = "lower")),
-            regimens = .reg, population = .pop, times = c(early = 2, late = 12), seed = 1,
-            mcTol = 1)
+  .r <- cui(
+    list(cuiEndpoint(eff, .ui, cuiProb(peff)), cuiEndpoint(ae, .ui, cuiProb(pae, time = 2), direction = "lower")),
+    regimens = .reg,
+    population = .pop,
+    times = c(early = 2, late = 12),
+    seed = 1,
+    mcTol = 1
+  )
   expect_equal(.r$assessments, c("early", "late"))
   .v <- .r$values
   # a summary with its own time is the same at every assessment
-  expect_equal(.v$value[.v$endpoint == "ae" & .v$assessment == "early"],
-               .v$value[.v$endpoint == "ae" & .v$assessment == "late"])
-  expect_false(isTRUE(all.equal(.v$value[.v$endpoint == "eff" & .v$assessment == "early"],
-                                .v$value[.v$endpoint == "eff" & .v$assessment == "late"])))
+  expect_equal(
+    .v$value[.v$endpoint == "ae" & .v$assessment == "early"],
+    .v$value[.v$endpoint == "ae" & .v$assessment == "late"]
+  )
+  expect_false(isTRUE(all.equal(
+    .v$value[.v$endpoint == "eff" & .v$assessment == "early"],
+    .v$value[.v$endpoint == "eff" & .v$assessment == "late"]
+  )))
   # without times, the common duration is the assessment
-  .d <- cui(cuiEndpoint(eff, .ui, cuiProb(peff)), regimens = .reg, population = .pop,
-            seed = 1, mcTol = 1)
-  .d24 <- cui(cuiEndpoint(eff, .ui, cuiProb(peff)), regimens = .reg, population = .pop,
-              times = c(all = 24), seed = 1, mcTol = 1)
+  .d <- cui(cuiEndpoint(eff, .ui, cuiProb(peff)), regimens = .reg, population = .pop, seed = 1, mcTol = 1)
+  .d24 <- cui(
+    cuiEndpoint(eff, .ui, cuiProb(peff)),
+    regimens = .reg,
+    population = .pop,
+    times = c(all = 24),
+    seed = 1,
+    mcTol = 1
+  )
   expect_equal(.d$values, .d24$values)
   expect_output(print(.r), "prob\\(peff\\)")
   # no environments or fits are kept
   .envs <- function(x) {
-    if (is.environment(x)) return(TRUE)
-    if (is.list(x)) return(any(vapply(x, .envs, logical(1))))
+    if (is.environment(x)) {
+      return(TRUE)
+    }
+    if (is.list(x)) {
+      return(any(vapply(x, .envs, logical(1))))
+    }
     FALSE
   }
   expect_false(.envs(unclass(.r)))
@@ -270,15 +334,19 @@ test_that("parameter uncertainty from a fit's covariance", {
     })
   }
   # tableControl(keep =) must not leak into the simulation
-  .fit <- suppressMessages(nlmixr2est::nlmixr2(.fitModel, nlmixr2data::theo_sd, "focei",
-                                               control = nlmixr2est::foceiControl(print = 0),
-                                               table = nlmixr2est::tableControl(keep = "WT")))
-  .eps <- list(cuiEndpoint(eff, .fit, cuiProb(peff, time = 4)),
-               cuiEndpoint(c2, .fit, cuiMean(cp, time = 2), utility = cuiLinear(0, 15),
-                           direction = "lower"))
+  .fit <- suppressMessages(nlmixr2est::nlmixr2(
+    .fitModel,
+    nlmixr2data::theo_sd,
+    "focei",
+    control = nlmixr2est::foceiControl(print = 0),
+    table = nlmixr2est::tableControl(keep = "WT")
+  ))
+  .eps <- list(
+    cuiEndpoint(eff, .fit, cuiProb(peff, time = 4)),
+    cuiEndpoint(c2, .fit, cuiMean(cp, time = 2), utility = cuiLinear(0, 15), direction = "lower")
+  )
   .reg <- cuiRegimens(dose = c(100, 300, 600))
-  expect_no_warning(.u <- cui(.eps, .reg, population = 200, uncertainty = "cov", nDraw = 20,
-                              seed = 1, mcTol = 1))
+  expect_no_warning(.u <- cui(.eps, .reg, population = 200, uncertainty = "cov", nDraw = 20, seed = 1, mcTol = 1))
   .n <- cui(.eps, .reg, population = 200, seed = 1, mcTol = 1)
   expect_equal(.u$summary$est, .n$summary$est)
   expect_equal(sum(.u$draws$status == "ok"), 21)
@@ -308,8 +376,11 @@ test_that("seed = NULL follows the current random stream", {
 })
 
 test_that("one subject and one regimen, and zero-variance etas", {
-  .r <- cui(cuiEndpoint(c1, .uiFixed, cuiMean(cp, time = 4), utility = cuiLinear(0, 20)),
-            regimens = cuiRegimens(dose = 100), population = 1)
+  .r <- cui(
+    cuiEndpoint(c1, .uiFixed, cuiMean(cp, time = 4), utility = cuiLinear(0, 20)),
+    regimens = cuiRegimens(dose = 100),
+    population = 1
+  )
   expect_equal(nrow(.r$summary), 1)
   .zero <- function() {
     ini({
@@ -328,8 +399,13 @@ test_that("one subject and one regimen, and zero-variance etas", {
   }
   .uz <- suppressMessages(rxode2::rxode2(.zero))
   expect_equal(.cur$.cuiOmegaFactor(.uz$omega)[2, ], c(0, 0))
-  .z <- cui(cuiEndpoint(v, .uz, cuiMean(v, time = 1), utility = cuiLinear(0, 100)),
-            regimens = cuiRegimens(dose = 100), population = 20, seed = 1, mcTol = 1)
+  .z <- cui(
+    cuiEndpoint(v, .uz, cuiMean(v, time = 1), utility = cuiLinear(0, 100)),
+    regimens = cuiRegimens(dose = 100),
+    population = 20,
+    seed = 1,
+    mcTol = 1
+  )
   expect_equal(.z$summary$est, 30 / 100)
 })
 

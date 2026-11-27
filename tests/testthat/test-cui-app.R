@@ -4,16 +4,24 @@ withr::local_dir(withr::local_tempdir())
 .cur <- loadNamespace("nlmixr2extra")
 
 .appValues <- function() {
-  data.frame(regimen = rep(c(0, 150, 400), 4),
-             endpoint = rep(c("dysm", "nmpp", "hf", "bmd"), each = 3),
-             value = c(0.21, 0.45, 0.74, 0.365, 0.50, 0.56, 0.07, 0.24, 0.42, 0.10, 0.12, 0.40))
+  data.frame(
+    regimen = rep(c(0, 150, 400), 4),
+    endpoint = rep(c("dysm", "nmpp", "hf", "bmd"), each = 3),
+    value = c(0.21, 0.45, 0.74, 0.365, 0.50, 0.56, 0.07, 0.24, 0.42, 0.10, 0.12, 0.40)
+  )
 }
 .appRes <- function(...) {
-  cuiFromValues(.appValues(),
-                list(cuiEndpoint(dysm), cuiEndpoint(nmpp),
-                     cuiEndpoint(hf, direction = "lower"), cuiEndpoint(bmd, direction = "lower")),
-                regimens = cuiRegimens(dose = c(0, 150, 400), units = "mg",
-                                       label = c("0", "150", "400")), ...)
+  cuiFromValues(
+    .appValues(),
+    list(
+      cuiEndpoint(dysm),
+      cuiEndpoint(nmpp),
+      cuiEndpoint(hf, direction = "lower"),
+      cuiEndpoint(bmd, direction = "lower")
+    ),
+    regimens = cuiRegimens(dose = c(0, 150, 400), units = "mg", label = c("0", "150", "400")),
+    ...
+  )
 }
 
 # the app's page as HTML
@@ -42,24 +50,33 @@ test_that("endpoint groups and hierarchical weights", {
 
 test_that("presets map exactly onto group and within-group sliders", {
   .r <- .appRes()
-  .spec <- .cur$.cuiAppSpec(.r, list(dce = c(dysm = 1.48, nmpp = 1.49, hf = 3.62, bmd = 0.49),
-                                      hier = list(group = c(efficacy = 3), within = c(hf = 2))), 5)
+  .spec <- .cur$.cuiAppSpec(
+    .r,
+    list(
+      dce = c(dysm = 1.48, nmpp = 1.49, hf = 3.62, bmd = 0.49),
+      hier = list(group = c(efficacy = 3), within = c(hf = 2))
+    ),
+    5
+  )
   .p <- .spec$presets$dce
-  expect_equal(cuiGroupWeights(.r, .p$group, .p$within),
-               c(dysm = 1.48, nmpp = 1.49, hf = 3.62, bmd = 0.49))
+  expect_equal(cuiGroupWeights(.r, .p$group, .p$within), c(dysm = 1.48, nmpp = 1.49, hf = 3.62, bmd = 0.49))
   expect_equal(unname(.spec$presets$hier$group), c(3, 1))
   # the starting weights (all 1) match no preset here; a matching preset is selected
   expect_equal(.spec$startPreset, "custom")
   .r2 <- .appRes(weights = c(dysm = 1.48, nmpp = 1.49, hf = 3.62, bmd = 0.49))
-  expect_equal(.cur$.cuiAppSpec(.r2, list(a = c(dysm = 1), dce = c(dysm = 1.48, nmpp = 1.49,
-                                                                    hf = 3.62, bmd = 0.49)), 5)$startPreset,
-               "dce")
+  expect_equal(
+    .cur$.cuiAppSpec(
+      .r2,
+      list(a = c(dysm = 1), dce = c(dysm = 1.48, nmpp = 1.49, hf = 3.62, bmd = 0.49)),
+      5
+    )$startPreset,
+    "dce"
+  )
   expect_error(.cur$.cuiAppSpec(.r, list(c(dysm = 1)), 5), "named list")
   expect_error(.cur$.cuiAppSpec(.r, list(a = c(nope = 1)), 5), "unknown endpoint")
   # sliders are widened for large weights or group totals instead of refusing
   expect_equal(.cur$.cuiAppSpec(.r, list(a = c(dysm = 9)), 5)$maxWeight, 10)
-  .six <- cuiFromValues(data.frame(regimen = rep(1:2, 6), endpoint = rep(letters[1:6], each = 2),
-                                   value = 0.5))
+  .six <- cuiFromValues(data.frame(regimen = rep(1:2, 6), endpoint = rep(letters[1:6], each = 2), value = 0.5))
   expect_equal(.cur$.cuiAppSpec(.six, NULL, 5)$maxWeight, 6)
   expect_s3_class(cuiApp(.six), "shiny.appobj")
 })
@@ -71,8 +88,18 @@ test_that("the app builds its sliders and tabs", {
   .pre <- list(trial = c(dysm = 1, nmpp = 1, hf = 1, bmd = 1))
   expect_s3_class(cuiApp(.res, presets = .pre), "shiny.appobj")
   .html <- .uiHtml(.res, presets = .pre)
-  for (.id in c("cuiGroup1", "cuiGroup2", "cuiWithin1", "cuiWithin4", "preset", "combine",
-                "mainPlot", "regimenTable", "sensitivityPlot", "downloadWeights")) {
+  for (.id in c(
+    "cuiGroup1",
+    "cuiGroup2",
+    "cuiWithin1",
+    "cuiWithin4",
+    "preset",
+    "combine",
+    "mainPlot",
+    "regimenTable",
+    "sensitivityPlot",
+    "downloadWeights"
+  )) {
     expect_match(.html, .id, fixed = TRUE)
   }
   expect_match(.html, "Efficacy weight", fixed = TRUE)
@@ -88,9 +115,18 @@ test_that("the server re-weights, restricts eligibility and downloads", {
   skip_if_not_installed("bslib")
   .r <- .appRes(eligible = c("150", "400"))
   shiny::testServer(cuiApp(.r), {
-    session$setInputs(cuiGroup1 = 2, cuiGroup2 = 1, cuiWithin1 = 3, cuiWithin2 = 1,
-                      cuiWithin3 = 1, cuiWithin4 = 1, combine = "additive",
-                      showEndpoints = TRUE, bands = TRUE, eligibleOnly = FALSE)
+    session$setInputs(
+      cuiGroup1 = 2,
+      cuiGroup2 = 1,
+      cuiWithin1 = 3,
+      cuiWithin2 = 1,
+      cuiWithin3 = 1,
+      cuiWithin4 = 1,
+      combine = "additive",
+      showEndpoints = TRUE,
+      bands = TRUE,
+      eligibleOnly = FALSE
+    )
     session$elapse(500)
     .w <- cuiGroupWeights(.r, c(efficacy = 2, safety = 1), c(dysm = 3, nmpp = 1, hf = 1, bmd = 1))
     expect_equal(result()$weightsNorm, .w / sum(.w))
@@ -99,8 +135,10 @@ test_that("the server re-weights, restricts eligibility and downloads", {
     expect_equal(nrow(regimenTable()), 3)
     session$setInputs(eligibleOnly = TRUE)
     expect_equal(regimenTable()$Regimen, c("150", "400"))
-    expect_equal(mainPlot()$data$label[mainPlot()$data$layer == "peak"],
-                 paste0("max at ", result()$summary$regimen[result()$summary$best], " mg"))
+    expect_equal(
+      mainPlot()$data$label[mainPlot()$data$layer == "peak"],
+      paste0("max at ", result()$summary$regimen[result()$summary$best], " mg")
+    )
     session$setInputs(combine = "geometric")
     expect_equal(result()$combine, "geometric")
     .f <- output$downloadWeights
@@ -117,8 +155,15 @@ test_that("the server re-weights, restricts eligibility and downloads", {
   })
   # desk mode always restricts
   shiny::testServer(cuiApp(.r, mode = "desk"), {
-    session$setInputs(cuiGroup1 = 1, cuiGroup2 = 1, cuiWithin1 = 1, cuiWithin2 = 1,
-                      cuiWithin3 = 1, cuiWithin4 = 1, combine = "additive")
+    session$setInputs(
+      cuiGroup1 = 1,
+      cuiGroup2 = 1,
+      cuiWithin1 = 1,
+      cuiWithin2 = 1,
+      cuiWithin3 = 1,
+      cuiWithin4 = 1,
+      combine = "additive"
+    )
     session$elapse(500)
     expect_equal(regimenTable()$Regimen, c("150", "400"))
   })
@@ -133,8 +178,13 @@ test_that("draws and dose-response data add their tabs", {
     .d$tox <- stats::rbinom(60, 1, 0.05 + 0.002 * .d$dose)
     .d
   })
-  .r <- cuiDoseResponse(.d, list(cuiBinary(eff), cuiBinary(tox, direction = "lower")),
-                        dose = dose, nBoot = 20, seed = 1)
+  .r <- cuiDoseResponse(
+    .d,
+    list(cuiBinary(eff), cuiBinary(tox, direction = "lower")),
+    dose = dose,
+    nBoot = 20,
+    seed = 1
+  )
   .html <- .uiHtml(.r)
   expect_match(.html, "selectionPlot", fixed = TRUE)
   expect_match(.html, "doseResponsePlot", fixed = TRUE)
@@ -160,8 +210,11 @@ test_that("cuiAppExport() writes a runnable app", {
 test_that("endpoints named like table columns keep their own column", {
   skip_if_not_installed("shiny")
   skip_if_not_installed("bslib")
-  .r <- cuiFromValues(data.frame(regimen = rep(1:2, 2), endpoint = rep(c("CUI", "Recommended"), each = 2),
-                                 value = c(0.2, 0.6, 0.3, 0.4)))
+  .r <- cuiFromValues(data.frame(
+    regimen = rep(1:2, 2),
+    endpoint = rep(c("CUI", "Recommended"), each = 2),
+    value = c(0.2, 0.6, 0.3, 0.4)
+  ))
   shiny::testServer(cuiApp(.r), {
     session$setInputs(cuiGroup1 = 1, cuiWithin1 = 1, cuiWithin2 = 1, combine = "additive")
     session$elapse(500)

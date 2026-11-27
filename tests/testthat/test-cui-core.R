@@ -38,13 +38,10 @@ withr::local_dir(withr::local_tempdir())
   )
 )
 
-.cuimetEndpoints <- list(cuiEndpoint(tox, direction = "lower"),
-                         cuiEndpoint(eff), cuiEndpoint(tol))
+.cuimetEndpoints <- list(cuiEndpoint(tox, direction = "lower"), cuiEndpoint(eff), cuiEndpoint(tol))
 
 .cuimetValues <- function(ex) {
-  data.frame(regimen = rep(1:5, 3),
-             endpoint = rep(c("tox", "eff", "tol"), each = 5),
-             value = c(ex$tox, ex$eff, ex$tol))
+  data.frame(regimen = rep(1:5, 3), endpoint = rep(c("tox", "eff", "tol"), each = 5), value = c(ex$tox, ex$eff, ex$tol))
 }
 
 test_that("CUI-MET Table 2 UM and UWM are reproduced", {
@@ -71,8 +68,7 @@ test_that("weights are normalized and validated", {
   expect_equal(unname(.a$weightsNorm), c(0.2, 0.5, 0.3))
   expect_error(cuiFromValues(.v, .cuimetEndpoints, weights = c(tox = 1, eff = 1)), "exactly")
   expect_error(cuiFromValues(.v, .cuimetEndpoints, weights = c(1, 1, 1)), "exactly")
-  expect_error(cuiFromValues(.v, .cuimetEndpoints, weights = c(tox = 0, eff = 0, tol = 0)),
-               "positive total")
+  expect_error(cuiFromValues(.v, .cuimetEndpoints, weights = c(tox = 0, eff = 0, tol = 0)), "positive total")
   expect_error(cuiFromValues(.v, .cuimetEndpoints, weights = c(tox = -1, eff = 1, tol = 1)))
   expect_error(cuiFromValues(.v, .cuimetEndpoints, weights = c(tox = NA, eff = 1, tol = 1)))
   # a zero weight drops the endpoint
@@ -82,11 +78,9 @@ test_that("weights are normalized and validated", {
 
 test_that("utilities and direction", {
   .lin <- cuiLinear(0, 50)
-  expect_equal(.cur$.cuiApplyUtility(.lin, "higher", c(-10, 0, 25, 50, 80), "x"),
-               c(0, 0, 0.5, 1, 1))
+  expect_equal(.cur$.cuiApplyUtility(.lin, "higher", c(-10, 0, 25, 50, 80), "x"), c(0, 0, 0.5, 1, 1))
   # direction is applied after clamping
-  expect_equal(.cur$.cuiApplyUtility(.lin, "lower", c(-10, 0, 25, 50, 80), "x"),
-               c(1, 1, 0.5, 0, 0))
+  expect_equal(.cur$.cuiApplyUtility(.lin, "lower", c(-10, 0, 25, 50, 80), "x"), c(1, 1, 0.5, 0, 0))
   expect_equal(.cur$.cuiApplyUtility(cuiStep(-1), "higher", c(-2, -1, 0), "x"), c(0, 1, 1))
   expect_equal(.cur$.cuiApplyUtility(cuiStep(-1, "below"), "higher", c(-2, -1, 0), "x"), c(1, 1, 0))
   expect_equal(.cur$.cuiApplyUtility(cuiStep(-1, "below"), "lower", c(-2, -1, 0), "x"), c(0, 0, 1))
@@ -113,9 +107,11 @@ test_that("cuiEndpoint takes a symbol, a string or .name", {
 })
 
 test_that("geometric combine handles zero utilities and zero weights", {
-  .v <- data.frame(regimen = rep(c("a", "b", "c"), 2),
-                   endpoint = rep(c("e1", "e2"), each = 3),
-                   value = c(0.5, 0, 0.8, 0.5, 0.9, 0))
+  .v <- data.frame(
+    regimen = rep(c("a", "b", "c"), 2),
+    endpoint = rep(c("e1", "e2"), each = 3),
+    value = c(0.5, 0, 0.8, 0.5, 0.9, 0)
+  )
   .g <- cuiFromValues(.v, combine = "geometric")
   expect_equal(.g$summary$est, c(0.5, 0, 0))
   expect_false(anyNA(.g$summary$est))
@@ -129,19 +125,19 @@ test_that("geometric combine handles zero utilities and zero weights", {
 
 # a small dataset with uncertainty draws
 .drawValues <- function() {
-  .d <- expand.grid(regimen = c("lo", "mid", "hi"), draw = 0:4,
-                    endpoint = c("e1", "e2"), stringsAsFactors = FALSE)
+  .d <- expand.grid(regimen = c("lo", "mid", "hi"), draw = 0:4, endpoint = c("e1", "e2"), stringsAsFactors = FALSE)
   .base <- c(lo = 0.2, mid = 0.5, hi = 0.8)
   .shift <- c(0, 0.3, -0.3, 0.1, -0.1)
-  .d$value <- ifelse(.d$endpoint == "e1",
-                     .base[.d$regimen] + 0.1 * .shift[.d$draw + 1],
-                     1 - .base[.d$regimen])
+  .d$value <- ifelse(.d$endpoint == "e1", .base[.d$regimen] + 0.1 * .shift[.d$draw + 1], 1 - .base[.d$regimen])
   .d
 }
 
 test_that("point estimate, intervals and selection frequencies", {
-  .r <- cuiFromValues(.drawValues(), regimens = cuiRegimens(dose = 1:3, label = c("lo", "mid", "hi")),
-                      weights = c(e1 = 2, e2 = 1))
+  .r <- cuiFromValues(
+    .drawValues(),
+    regimens = cuiRegimens(dose = 1:3, label = c("lo", "mid", "hi")),
+    weights = c(e1 = 2, e2 = 1)
+  )
   .s <- .r$summary
   expect_equal(.s$regimen, c("lo", "mid", "hi"))
   expect_equal(.s$est, c(2 * 0.2 + 0.8, 2 * 0.5 + 0.5, 2 * 0.8 + 0.2) / 3)
@@ -161,8 +157,12 @@ test_that("point estimate, intervals and selection frequencies", {
 })
 
 test_that("ties split a draw equally", {
-  .v <- data.frame(regimen = rep(c("a", "b", "c"), 2), draw = rep(c(0L, 1L), each = 3),
-                   endpoint = "e", value = c(0.5, 0.5, 0.1, 0.7, 0.7, 0.2))
+  .v <- data.frame(
+    regimen = rep(c("a", "b", "c"), 2),
+    draw = rep(c(0L, 1L), each = 3),
+    endpoint = "e",
+    value = c(0.5, 0.5, 0.1, 0.7, 0.7, 0.2)
+  )
   .r <- cuiFromValues(.v)
   expect_equal(.r$summary$selFreq, c(0.5, 0.5, 0))
   expect_equal(.r$summary$best, c(TRUE, TRUE, FALSE))
@@ -184,11 +184,12 @@ test_that("eligibility restricts the recommendation and recomputes selection", {
 })
 
 test_that("assessments with eligibility per assessment", {
-  .v <- rbind(cbind(.drawValues(), assessment = "m3"),
-              cbind(.drawValues(), assessment = "m6"))
-  .r <- cuiFromValues(.v, weights = c(e1 = 2, e2 = 1),
-                      eligible = data.frame(regimen = c("lo", "mid", "hi", "lo", "mid"),
-                                            assessment = c("m3", "m3", "m3", "m6", "m6")))
+  .v <- rbind(cbind(.drawValues(), assessment = "m3"), cbind(.drawValues(), assessment = "m6"))
+  .r <- cuiFromValues(
+    .v,
+    weights = c(e1 = 2, e2 = 1),
+    eligible = data.frame(regimen = c("lo", "mid", "hi", "lo", "mid"), assessment = c("m3", "m3", "m3", "m6", "m6"))
+  )
   .s <- .r$summary
   expect_equal(.s$regimen[.s$best & .s$assessment == "m3"], "hi")
   expect_equal(.s$regimen[.s$best & .s$assessment == "m6"], "mid")
@@ -204,8 +205,7 @@ test_that("incomplete or duplicated grids are errors", {
   .na$value[3] <- NA
   expect_error(cuiFromValues(.na), "missing")
   expect_error(cuiFromValues(.v, endpoints = list(cuiEndpoint(e1))), "do not match")
-  expect_error(cuiFromValues(.v, regimens = cuiRegimens(dose = 1:2, label = c("lo", "mid"))),
-               "not in 'regimens'")
+  expect_error(cuiFromValues(.v, regimens = cuiRegimens(dose = 1:2, label = c("lo", "mid"))), "not in 'regimens'")
   # an assessment missing a draw is incomplete
   .a <- rbind(cbind(.v, assessment = "m3"), cbind(.v[.v$draw != 4, ], assessment = "m6"))
   expect_error(cuiFromValues(.a), "incomplete")
@@ -214,17 +214,30 @@ test_that("incomplete or duplicated grids are errors", {
 test_that("failed draws are excluded from the selection denominator", {
   .v <- .drawValues()
   .v <- .v[.v$draw != 4, ]
-  .draws <- data.frame(draw = 0:4, status = c(rep("ok", 4), "failed"),
-                       source = "test", message = "", stringsAsFactors = FALSE)
-  .r <- .cur$.cuiNew(.v, endpoints = NULL, regimens = NULL, weights = c(e1 = 2, e2 = 1),
-                combine = "additive", eligible = NULL, level = 0.95,
-                tieTol = sqrt(.Machine$double.eps), draws = .draws, settings = list())
+  .draws <- data.frame(
+    draw = 0:4,
+    status = c(rep("ok", 4), "failed"),
+    source = "test",
+    message = "",
+    stringsAsFactors = FALSE
+  )
+  .r <- .cur$.cuiNew(
+    .v,
+    endpoints = NULL,
+    regimens = NULL,
+    weights = c(e1 = 2, e2 = 1),
+    combine = "additive",
+    eligible = NULL,
+    level = 0.95,
+    tieTol = sqrt(.Machine$double.eps),
+    draws = .draws,
+    settings = list()
+  )
   expect_equal(sum(.r$summary$selFreq), 1)
   expect_output(print(.r), "3 ok, 1 failed")
   .bad <- .draws
   .bad$status[2] <- "failed"
-  expect_error(.cur$.cuiNew(.v, NULL, NULL, NULL, "additive", NULL, 0.95, 1e-8, .bad, list()),
-               "must not have values")
+  expect_error(.cur$.cuiNew(.v, NULL, NULL, NULL, "additive", NULL, 0.95, 1e-8, .bad, list()), "must not have values")
 })
 
 test_that("update() equals building from scratch and keeps unchanged settings", {
@@ -259,13 +272,19 @@ test_that("regimens, printing and data frames", {
 
 # draws where the winner changes, so misaligned draws or regimens show up
 .varyValues <- function() {
-  .cui <- rbind(c(0.5, 0.6, 0.4),  # draw 0: mid
-                c(0.7, 0.6, 0.4),  # draw 1: lo
-                c(0.5, 0.6, 0.4),  # draw 2: mid
-                c(0.5, 0.6, 0.9),  # draw 3: hi
-                c(0.5, 0.8, 0.4))  # draw 4: mid
-  data.frame(regimen = rep(c("lo", "mid", "hi"), 5), draw = rep(0:4, each = 3),
-             endpoint = "e", value = as.vector(t(.cui)))
+  .cui <- rbind(
+    c(0.5, 0.6, 0.4), # draw 0: mid
+    c(0.7, 0.6, 0.4), # draw 1: lo
+    c(0.5, 0.6, 0.4), # draw 2: mid
+    c(0.5, 0.6, 0.9), # draw 3: hi
+    c(0.5, 0.8, 0.4)
+  ) # draw 4: mid
+  data.frame(
+    regimen = rep(c("lo", "mid", "hi"), 5),
+    draw = rep(0:4, each = 3),
+    endpoint = "e",
+    value = as.vector(t(.cui))
+  )
 }
 
 test_that("selection follows the winner of each draw", {
@@ -274,14 +293,15 @@ test_that("selection follows the winner of each draw", {
   expect_equal(.r$summary$selFreq, c(0.25, 0.5, 0.25))
   expect_equal(.r$summary$mean, c(0.55, 0.65, 0.525))
   # regimens given in another order than the values give the same answer
-  .rev <- cuiFromValues(.varyValues()[15:1, ],
-                        regimens = cuiRegimens(dose = 3:1, label = c("hi", "mid", "lo")))
+  .rev <- cuiFromValues(.varyValues()[15:1, ], regimens = cuiRegimens(dose = 3:1, label = c("hi", "mid", "lo")))
   .m <- match(.r$summary$regimen, .rev$summary$regimen)
   expect_equal(.rev$summary$selFreq[.m], .r$summary$selFreq)
   expect_equal(.rev$summary$lower[.m], .r$summary$lower)
   # per-assessment selection and intervals
-  .two <- rbind(cbind(.varyValues(), assessment = "a1"),
-                cbind(.varyValues()[c(3:1, 6:4, 9:7, 12:10, 15:13), ], assessment = "a2"))
+  .two <- rbind(
+    cbind(.varyValues(), assessment = "a1"),
+    cbind(.varyValues()[c(3:1, 6:4, 9:7, 12:10, 15:13), ], assessment = "a2")
+  )
   .two$value[.two$assessment == "a2"] <- rev(.two$value[.two$assessment == "a2"])
   .t <- cuiFromValues(.two, regimens = .reg)
   .s1 <- .t$summary[.t$summary$assessment == "a1", ]
@@ -291,40 +311,38 @@ test_that("selection follows the winner of each draw", {
 
 test_that("an eligible data frame honors its eligible column and the object's own format", {
   .r <- cuiFromValues(.drawValues(), weights = c(e1 = 2, e2 = 1))
-  .df <- data.frame(regimen = c("lo", "mid", "hi"), assessment = "all",
-                    eligible = c(TRUE, TRUE, FALSE))
+  .df <- data.frame(regimen = c("lo", "mid", "hi"), assessment = "all", eligible = c(TRUE, TRUE, FALSE))
   .e <- update(.r, eligible = .df)
   expect_equal(.e$eligible$eligible, c(TRUE, TRUE, FALSE))
   expect_equal(.e$summary$regimen[.e$summary$best], "mid")
   # feeding back the result's own eligibility table keeps it
   expect_equal(update(.e, eligible = .e$eligible)$summary, .e$summary)
-  expect_error(update(.r, eligible = data.frame(regimen = "lo", assessment = "All")),
-               "unknown assessment")
+  expect_error(update(.r, eligible = data.frame(regimen = "lo", assessment = "All")), "unknown assessment")
   expect_error(update(.r, eligible = transform(.df, eligible = c(1, 1, 0))), "TRUE/FALSE")
 })
 
 test_that("update() equals building from scratch for every setting", {
   .v <- .varyValues()
   .r <- cuiFromValues(.v)
-  expect_equal(update(.r, eligible = c("lo", "hi"))$summary,
-               cuiFromValues(.v, eligible = c("lo", "hi"))$summary)
-  expect_equal(update(.r, combine = "geometric")$summary,
-               cuiFromValues(.v, combine = "geometric")$summary)
+  expect_equal(update(.r, eligible = c("lo", "hi"))$summary, cuiFromValues(.v, eligible = c("lo", "hi"))$summary)
+  expect_equal(update(.r, combine = "geometric")$summary, cuiFromValues(.v, combine = "geometric")$summary)
   expect_equal(update(.r, tieTol = 0.15)$summary, cuiFromValues(.v, tieTol = 0.15)$summary)
   expect_equal(update(.r, level = 0.5)$summary, cuiFromValues(.v, level = 0.5)$summary)
 })
 
 test_that("numeric regimens match cuiRegimens() labels and inputs are validated", {
-  .v <- data.frame(regimen = rep(c(2.5, 10), 2), draw = rep(0:1, each = 2),
-                   endpoint = "e", value = c(0.1, 0.2, 0.3, 0.1))
+  .v <- data.frame(
+    regimen = rep(c(2.5, 10), 2),
+    draw = rep(0:1, each = 2),
+    endpoint = "e",
+    value = c(0.1, 0.2, 0.3, 0.1)
+  )
   .r <- cuiFromValues(.v, regimens = cuiRegimens(dose = c(2.5, 10)))
   expect_equal(.r$summary$regimen, c("2.5", "10"))
   expect_equal(.r$summary$selFreq, c(1, 0))
   .big <- data.frame(regimen = c(1e5, 1.5e5), endpoint = "e", value = c(0.1, 0.2))
-  expect_equal(cuiFromValues(.big, regimens = cuiRegimens(dose = c(1e5, 1.5e5)))$summary$est,
-               c(0.1, 0.2))
-  expect_error(cuiFromValues(data.frame(regimen = 1:2, endpoint = "e",
-                                        value = factor(c("90", "10")))), "numeric")
+  expect_equal(cuiFromValues(.big, regimens = cuiRegimens(dose = c(1e5, 1.5e5)))$summary$est, c(0.1, 0.2))
+  expect_error(cuiFromValues(data.frame(regimen = 1:2, endpoint = "e", value = factor(c("90", "10")))), "numeric")
   expect_error(cuiFromValues(transform(.v, draw = draw + 0.5)), "whole numbers")
   # a 'draws' column is not partially matched as 'draw'
   .p <- data.frame(regimen = c(1, 2), endpoint = "e", value = c(0.1, 0.2), draws = c(3, 4))

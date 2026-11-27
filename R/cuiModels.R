@@ -72,7 +72,9 @@ cuiModelVars <- function(fit, ...) {
 #' @rdname cuiModelPredict
 #' @export
 cuiModelPredict.default <- function(fit, newdata, draw = NULL, ...) {
-  if (!is.null(draw)) .cuiNoDraws(fit)
+  if (!is.null(draw)) {
+    .cuiNoDraws(fit)
+  }
   as.numeric(stats::predict(fit, newdata = newdata, type = "response"))
 }
 
@@ -107,13 +109,20 @@ cuiModelRefit.default <- function(fit, data, ...) {
 #' @export
 cuiModelVars.default <- function(fit, ...) {
   # an offset given as an argument is not part of the terms
-  unique(c(all.vars(stats::delete.response(stats::terms(fit))),
-           if (is.call(fit$call)) all.vars(fit$call$offset)))
+  unique(c(all.vars(stats::delete.response(stats::terms(fit))), if (is.call(fit$call)) all.vars(fit$call$offset)))
 }
 
 .cuiNoDraws <- function(fit) {
-  stop(sprintf(paste0("no parameter draws for a model of class '%s'; write cuiModelDraws() ",
-                      "and cuiModelPredict() methods for it"), class(fit)[1]), call. = FALSE)
+  stop(
+    sprintf(
+      paste0(
+        "no parameter draws for a model of class '%s'; write cuiModelDraws() ",
+        "and cuiModelPredict() methods for it"
+      ),
+      class(fit)[1]
+    ),
+    call. = FALSE
+  )
 }
 
 #' Multivariate normal draws of fixed effects
@@ -141,13 +150,14 @@ cuiModelVars.default <- function(fit, ...) {
     stop("models with an offset are not supported for parameter draws", call. = FALSE)
   }
   # only factors of these terms (not, say, random-effect grouping variables)
-  if (!is.null(xlev)) xlev <- xlev[intersect(names(xlev), all.vars(tt))]
+  if (!is.null(xlev)) {
+    xlev <- xlev[intersect(names(xlev), all.vars(tt))]
+  }
   .mf <- stats::model.frame(tt, newdata, xlev = xlev, na.action = stats::na.pass)
   .x <- stats::model.matrix(tt, .mf, contrasts.arg = contrasts)
   .miss <- setdiff(names(beta), colnames(.x))
   if (length(.miss) > 0) {
-    stop(sprintf("design matrix lacks coefficient(s) %s", paste(.miss, collapse = ", ")),
-         call. = FALSE)
+    stop(sprintf("design matrix lacks coefficient(s) %s", paste(.miss, collapse = ", ")), call. = FALSE)
   }
   as.numeric(linkinv(drop(.x[, names(beta), drop = FALSE] %*% beta)))
 }
@@ -161,8 +171,14 @@ cuiModelPredict.lm <- function(fit, newdata, draw = NULL, ...) {
   if (is.call(fit$call) && !is.null(fit$call$offset)) {
     stop("models with an offset are not supported for parameter draws", call. = FALSE)
   }
-  .cuiLinkPredict(stats::terms(fit), newdata, draw, stats::family(fit)$linkinv,
-                  xlev = fit$xlevels, contrasts = fit$contrasts)
+  .cuiLinkPredict(
+    stats::terms(fit),
+    newdata,
+    draw,
+    stats::family(fit)$linkinv,
+    xlev = fit$xlevels,
+    contrasts = fit$contrasts
+  )
 }
 
 #' @rdname cuiModelPredict
@@ -177,15 +193,22 @@ cuiModelPredict.merMod <- function(fit, newdata, draw = NULL, ...) {
   if (is.null(draw)) {
     return(as.numeric(stats::predict(fit, newdata = newdata, type = "response", re.form = NA)))
   }
-  .cuiLinkPredict(stats::terms(fit, fixed.only = TRUE), newdata, draw,
-                  stats::family(fit)$linkinv, xlev = .cuiFrameLevels(fit@frame),
-                  contrasts = attr(lme4::getME(fit, "X"), "contrasts"))
+  .cuiLinkPredict(
+    stats::terms(fit, fixed.only = TRUE),
+    newdata,
+    draw,
+    stats::family(fit)$linkinv,
+    xlev = .cuiFrameLevels(fit@frame),
+    contrasts = attr(lme4::getME(fit, "X"), "contrasts")
+  )
 }
 
 #' @rdname cuiModelPredict
 #' @export
 cuiModelDraws.merMod <- function(fit, n, ...) {
-  if (!requireNamespace("lme4", quietly = TRUE)) stop("needs the 'lme4' package", call. = FALSE)
+  if (!requireNamespace("lme4", quietly = TRUE)) {
+    stop("needs the 'lme4' package", call. = FALSE)
+  }
   .cuiCoefDraws(lme4::fixef(fit), stats::vcov(fit), n)
 }
 
@@ -202,15 +225,22 @@ cuiModelPredict.glmmTMB <- function(fit, newdata, draw = NULL, ...) {
     return(as.numeric(stats::predict(fit, newdata = newdata, type = "response", re.form = NA)))
   }
   # these terms keep predvars, so poly() and scale() use the training basis
-  .cuiLinkPredict(fit$modelInfo$terms$cond$fixed, newdata, draw, stats::family(fit)$linkinv,
-                  xlev = .cuiFrameLevels(fit$frame),
-                  contrasts = attr(glmmTMB::getME(fit, "X"), "contrasts"))
+  .cuiLinkPredict(
+    fit$modelInfo$terms$cond$fixed,
+    newdata,
+    draw,
+    stats::family(fit)$linkinv,
+    xlev = .cuiFrameLevels(fit$frame),
+    contrasts = attr(glmmTMB::getME(fit, "X"), "contrasts")
+  )
 }
 
 #' @rdname cuiModelPredict
 #' @export
 cuiModelDraws.glmmTMB <- function(fit, n, ...) {
-  if (!requireNamespace("glmmTMB", quietly = TRUE)) stop("needs the 'glmmTMB' package", call. = FALSE)
+  if (!requireNamespace("glmmTMB", quietly = TRUE)) {
+    stop("needs the 'glmmTMB' package", call. = FALSE)
+  }
   .zi <- fit$modelInfo$allForm$ziformula
   if (!is.null(.zi) && !identical(deparse(.zi), "~0")) {
     stop("parameter draws for glmmTMB need a model without zero inflation", call. = FALSE)
@@ -227,7 +257,9 @@ cuiModelVars.glmmTMB <- function(fit, ...) {
 #' @rdname cuiModelPredict
 #' @export
 cuiModelPredict.brmsfit <- function(fit, newdata, draw = NULL, ...) {
-  if (!requireNamespace("brms", quietly = TRUE)) stop("needs the 'brms' package", call. = FALSE)
+  if (!requireNamespace("brms", quietly = TRUE)) {
+    stop("needs the 'brms' package", call. = FALSE)
+  }
   if (is.null(draw)) {
     return(colMeans(brms::posterior_epred(fit, newdata = newdata, re_formula = NA)))
   }
@@ -237,7 +269,9 @@ cuiModelPredict.brmsfit <- function(fit, newdata, draw = NULL, ...) {
 #' @rdname cuiModelPredict
 #' @export
 cuiModelDraws.brmsfit <- function(fit, n, ...) {
-  if (!requireNamespace("brms", quietly = TRUE)) stop("needs the 'brms' package", call. = FALSE)
+  if (!requireNamespace("brms", quietly = TRUE)) {
+    stop("needs the 'brms' package", call. = FALSE)
+  }
   .nd <- brms::ndraws(fit)
   as.list(sample.int(.nd, n, replace = n > .nd))
 }
@@ -258,19 +292,29 @@ cuiModelVars.brmsfit <- function(fit, ...) {
 #' @noRd
 .cuiNoBars <- function(f) {
   .bar <- function(e) {
-    if (is.call(e) && identical(e[[1]], as.name("("))) return(.bar(e[[2]]))
+    if (is.call(e) && identical(e[[1]], as.name("("))) {
+      return(.bar(e[[2]]))
+    }
     is.call(e) && (identical(e[[1]], as.name("|")) || identical(e[[1]], as.name("||")))
   }
   .drop <- function(e) {
-    if (!is.call(e) || !identical(e[[1]], as.name("+"))) return(if (.bar(e)) NULL else e)
+    if (!is.call(e) || !identical(e[[1]], as.name("+"))) {
+      return(if (.bar(e)) NULL else e)
+    }
     .l <- .drop(e[[2]])
     .r <- if (length(e) > 2) .drop(e[[3]]) else NULL
-    if (is.null(.l)) return(.r)
-    if (is.null(.r)) return(.l)
+    if (is.null(.l)) {
+      return(.r)
+    }
+    if (is.null(.r)) {
+      return(.l)
+    }
     call("+", .l, .r)
   }
   .rhs <- .drop(f[[length(f)]])
-  if (is.null(.rhs)) .rhs <- 1
+  if (is.null(.rhs)) {
+    .rhs <- 1
+  }
   f[[length(f)]] <- .rhs
   f
 }

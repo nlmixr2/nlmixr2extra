@@ -43,8 +43,12 @@
 #' cuiThreshold(bmdchg > .env$cut)
 cuiProb <- function(x, ..., time = NULL, .x = NULL) {
   .cuiNoDots(...)
-  .cuiSummaryNew("prob", .cuiCaptureExpr(substitute(x), missing(x), .x, parent.frame(), "x"),
-                 parent.frame(), time = time)
+  .cuiSummaryNew(
+    "prob",
+    .cuiCaptureExpr(substitute(x), missing(x), .x, parent.frame(), "x"),
+    parent.frame(),
+    time = time
+  )
 }
 
 #' @rdname cuiProb
@@ -54,17 +58,28 @@ cuiMean <- function(x, ..., time = NULL, window = NULL, .x = NULL) {
   if (!is.null(time) && !is.null(window)) {
     stop("give 'time' or 'window', not both", call. = FALSE)
   }
-  .cuiSummaryNew("mean", .cuiCaptureExpr(substitute(x), missing(x), .x, parent.frame(), "x"),
-                 parent.frame(), time = time, window = window)
+  .cuiSummaryNew(
+    "mean",
+    .cuiCaptureExpr(substitute(x), missing(x), .x, parent.frame(), "x"),
+    parent.frame(),
+    time = time,
+    window = window
+  )
 }
 
 #' @rdname cuiProb
 #' @export
 cuiAuc <- function(x, ..., window, .x = NULL) {
   .cuiNoDots(...)
-  if (missing(window)) stop("'window' is required", call. = FALSE)
-  .cuiSummaryNew("auc", .cuiCaptureExpr(substitute(x), missing(x), .x, parent.frame(), "x"),
-                 parent.frame(), window = window)
+  if (missing(window)) {
+    stop("'window' is required", call. = FALSE)
+  }
+  .cuiSummaryNew(
+    "auc",
+    .cuiCaptureExpr(substitute(x), missing(x), .x, parent.frame(), "x"),
+    parent.frame(),
+    window = window
+  )
 }
 
 #' @rdname cuiProb
@@ -91,9 +106,12 @@ cuiResponse <- function(dose, ..., .dose = NULL) {
 #' @export
 cuiThreshold <- function(cond, ..., time = NULL, .cond = NULL) {
   .cuiNoDots(...)
-  .cuiSummaryNew("threshold",
-                 .cuiCaptureExpr(substitute(cond), missing(cond), .cond, parent.frame(), "cond"),
-                 parent.frame(), time = time)
+  .cuiSummaryNew(
+    "threshold",
+    .cuiCaptureExpr(substitute(cond), missing(cond), .cond, parent.frame(), "cond"),
+    parent.frame(),
+    time = time
+  )
 }
 
 .cuiNoDots <- function(...) {
@@ -103,14 +121,14 @@ cuiThreshold <- function(cond, ..., time = NULL, .cond = NULL) {
 }
 
 .cuiSummaryNew <- function(type, expr, env, time = NULL, window = NULL) {
-  if (!is.null(time)) checkmate::assertNumber(time, finite = TRUE, .var.name = "time")
+  if (!is.null(time)) {
+    checkmate::assertNumber(time, finite = TRUE, .var.name = "time")
+  }
   if (!is.null(window)) {
-    checkmate::assertNumeric(window, len = 2, finite = TRUE, any.missing = FALSE,
-                             .var.name = "window")
+    checkmate::assertNumeric(window, len = 2, finite = TRUE, any.missing = FALSE, .var.name = "window")
     if (window[1] >= window[2]) stop("'window' must be c(from, to) with from < to", call. = FALSE)
   }
-  structure(list(type = type, expr = expr, env = env, time = time, window = window),
-            class = "cuiSummary")
+  structure(list(type = type, expr = expr, env = env, time = time, window = window), class = "cuiSummary")
 }
 
 #' @export
@@ -138,10 +156,20 @@ print.cuiSummary <- function(x, ...) {
 #' Check a value substituted for a name is a single constant
 #' @noRd
 .cuiCheckConst <- function(val, nm, ep = NULL) {
-  if (is.function(val) || !is.atomic(val) || length(val) != 1L ||
-    !(is.numeric(val) || is.character(val) || is.logical(val))) {
-    stop(sprintf("'%s'%s must be a model column or a single numeric, character or logical constant",
-                 nm, if (is.null(ep)) "" else sprintf(" in endpoint '%s'", ep)), call. = FALSE)
+  if (
+    is.function(val) ||
+      !is.atomic(val) ||
+      length(val) != 1L ||
+      !(is.numeric(val) || is.character(val) || is.logical(val))
+  ) {
+    stop(
+      sprintf(
+        "'%s'%s must be a model column or a single numeric, character or logical constant",
+        nm,
+        if (is.null(ep)) "" else sprintf(" in endpoint '%s'", ep)
+      ),
+      call. = FALSE
+    )
   }
   val
 }
@@ -149,9 +177,13 @@ print.cuiSummary <- function(x, ...) {
 #' Apply a function to the arguments of a call, skipping empty arguments
 #' @noRd
 .cuiMapArgs <- function(e, f) {
-  if (length(e) < 2L) return(e)
+  if (length(e) < 2L) {
+    return(e)
+  }
   for (.i in 2:length(e)) {
-    if (identical(e[[.i]], quote(expr = ))) next
+    if (identical(e[[.i]], quote(expr = ))) {
+      next
+    }
     .new <- f(e[[.i]])
     if (!identical(.new, e[[.i]])) e[[.i]] <- .new
   }
@@ -191,7 +223,9 @@ print.cuiSummary <- function(x, ...) {
     .nm <- as.character(e[[3]])
     return(.cuiCheckConst(get0(.nm, envir = env, inherits = TRUE), .nm))
   }
-  if (is.call(e)) e <- .cuiMapArgs(e, function(a) .cuiFreezeEnv(a, env))
+  if (is.call(e)) {
+    e <- .cuiMapArgs(e, function(a) .cuiFreezeEnv(a, env))
+  }
   e
 }
 
@@ -209,8 +243,15 @@ print.cuiSummary <- function(x, ...) {
     .e <- .cuiFreezeEnv(.e, s$env)
   }
   if (s$type %in% c("prob", "mean", "auc") && is.symbol(.e) && !(as.character(.e) %in% cols)) {
-    stop(sprintf("'%s' in endpoint '%s' is not a model column; columns: %s",
-                 as.character(.e), ep, paste(cols, collapse = ", ")), call. = FALSE)
+    stop(
+      sprintf(
+        "'%s' in endpoint '%s' is not a model column; columns: %s",
+        as.character(.e),
+        ep,
+        paste(cols, collapse = ", ")
+      ),
+      call. = FALSE
+    )
   }
   s$expr <- .cuiResolveSyms(.e, cols, s$env, ep)
   s$env <- NULL
@@ -223,15 +264,31 @@ print.cuiSummary <- function(x, ...) {
     .val <- if (is.null(env)) NULL else get0(.nm, envir = env, inherits = TRUE)
     if (.nm %in% cols) {
       if (!is.null(.val) && !is.function(.val)) {
-        warning(sprintf(paste0("'%s' in endpoint '%s' is a model column and also a variable; ",
-                               "using the column (write .env$%s for the variable)"),
-                        .nm, ep, .nm), call. = FALSE)
+        warning(
+          sprintf(
+            paste0(
+              "'%s' in endpoint '%s' is a model column and also a variable; ",
+              "using the column (write .env$%s for the variable)"
+            ),
+            .nm,
+            ep,
+            .nm
+          ),
+          call. = FALSE
+        )
       }
       return(e)
     }
     if (is.null(.val)) {
-      stop(sprintf("'%s' in endpoint '%s' is not a model column or a constant; columns: %s",
-                   .nm, ep, paste(cols, collapse = ", ")), call. = FALSE)
+      stop(
+        sprintf(
+          "'%s' in endpoint '%s' is not a model column or a constant; columns: %s",
+          .nm,
+          ep,
+          paste(cols, collapse = ", ")
+        ),
+        call. = FALSE
+      )
     }
     return(.cuiCheckConst(.val, .nm, ep))
   }
@@ -242,6 +299,8 @@ print.cuiSummary <- function(x, ...) {
     }
     return(as.name(.nm))
   }
-  if (is.call(e)) e <- .cuiMapArgs(e, function(a) .cuiResolveSyms(a, cols, env, ep))
+  if (is.call(e)) {
+    e <- .cuiMapArgs(e, function(a) .cuiResolveSyms(a, cols, env, ep))
+  }
   e
 }

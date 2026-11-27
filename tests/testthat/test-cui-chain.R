@@ -60,12 +60,18 @@ test_that("a chained exposure drives exposure-response models per subject", {
     .calls <<- .calls + 1
     .real(...)
   })
-  .r <- cui(list(cuiEndpoint(lin, .er, cuiMean(lin, time = 1), utility = cuiLinear(0, 50)),
-                 cuiEndpoint(eff, .er, cuiProb(peff, time = 1)),
-                 cuiEndpoint(cavg, .pk, cuiMean(cp, window = c(0, 24)), utility = cuiLinear(0, 50))),
-            regimens = cuiRegimens(dose = c(200, 400), ii = 12),
-            population = 200, exposure = cuiExposure(.pk, CAVG = cuiMean(cp, window = c(0, 24))),
-            seed = 1, mcTol = 1)
+  .r <- cui(
+    list(
+      cuiEndpoint(lin, .er, cuiMean(lin, time = 1), utility = cuiLinear(0, 50)),
+      cuiEndpoint(eff, .er, cuiProb(peff, time = 1)),
+      cuiEndpoint(cavg, .pk, cuiMean(cp, window = c(0, 24)), utility = cuiLinear(0, 50))
+    ),
+    regimens = cuiRegimens(dose = c(200, 400), ii = 12),
+    population = 200,
+    exposure = cuiExposure(.pk, CAVG = cuiMean(cp, window = c(0, 24))),
+    seed = 1,
+    mcTol = 1
+  )
   # the PK model is simulated once and feeds both its own endpoint and the exposure
   expect_equal(.calls, 2)
   .v <- .r$values
@@ -134,12 +140,17 @@ test_that("bootstrap refits give the parameter draws", {
       cp ~ add(add.sd)
     })
   }
-  .fit <- suppressMessages(nlmixr2est::nlmixr2(.mod, nlmixr2data::theo_sd, "focei",
-                                               control = nlmixr2est::foceiControl(print = 0)))
+  .fit <- suppressMessages(nlmixr2est::nlmixr2(
+    .mod,
+    nlmixr2data::theo_sd,
+    "focei",
+    control = nlmixr2est::foceiControl(print = 0)
+  ))
   # a copy saved before bootstrapping, as nlmixr2save or readRDS() give back
   saveRDS(.fit, "fit.rds")
   .boot <- suppressMessages(suppressWarnings(
-    withr::with_seed(1, bootstrapFit(.fit, nboot = 3, returnType = "fitList"))))
+    withr::with_seed(1, bootstrapFit(.fit, nboot = 3, returnType = "fitList"))
+  ))
   for (.i in 1:3) {
     .info <- .boot[[.i]]$bootstrapResample
     expect_equal(.info$parentMd5, .fit$bootstrapMd5)
@@ -153,31 +164,41 @@ test_that("bootstrap refits give the parameter draws", {
   expect_output(print(.b), "3 bootstrap parameter draws")
   # draw b simulates with bootstrap fit b (same virtual subjects)
   .ord <- order(vapply(.boot, function(f) f$bootstrapResample$index, numeric(1)))
-  .b2 <- cui(list(cuiEndpoint(eff, .boot[[.ord[2]]], cuiProb(peff, time = 4))), .reg, 100,
-             seed = 1, mcTol = 1)
+  .b2 <- cui(list(cuiEndpoint(eff, .boot[[.ord[2]]], cuiProb(peff, time = 4))), .reg, 100, seed = 1, mcTol = 1)
   expect_equal(.b$values$value[.b$values$draw == 2], .b2$values$value)
   # point estimate unchanged by the uncertainty source
   .n <- cui(.eps, .reg, 100, seed = 1, mcTol = 1)
   expect_equal(.b$summary$est, .n$summary$est)
-  expect_equal(nrow(cui(.eps, .reg, 100, uncertainty = cuiBootstrap(.boot), nDraw = 2,
-                        seed = 1, mcTol = 1)$draws), 3)
-  expect_error(cui(.eps, .reg, 100, uncertainty = cuiBootstrap(.boot), nDraw = 9, seed = 1),
-               "only 3 bootstrap draws")
+  expect_equal(nrow(cui(.eps, .reg, 100, uncertainty = cuiBootstrap(.boot), nDraw = 2, seed = 1, mcTol = 1)$draws), 3)
+  expect_error(cui(.eps, .reg, 100, uncertainty = cuiBootstrap(.boot), nDraw = 9, seed = 1), "only 3 bootstrap draws")
   # failed refits, the wrong return type, and ensembles of other fits
   expect_error(cuiBootstrap(c(.boot, list(NA, NA))), "only 3 of 5")
   expect_equal(cuiBootstrap(c(.boot, list(NA)), minSuccess = 0.5)$ensembles[[1]]$nFailed, 1)
   expect_error(cuiBootstrap(.fit), "returnType")
-  expect_error(cui(.eps, .reg, 100, uncertainty = cuiBootstrap(.boot, .boot), seed = 1),
-               "same fit")
+  expect_error(cui(.eps, .reg, 100, uncertainty = cuiBootstrap(.boot, .boot), seed = 1), "same fit")
   .other <- suppressMessages(rxode2::rxode2(.mod))
-  expect_error(cui(list(cuiEndpoint(eff, .other, cuiProb(peff, time = 4))), .reg, 100,
-                   uncertainty = cuiBootstrap(.boot), seed = 1), "does not belong")
+  expect_error(
+    cui(
+      list(cuiEndpoint(eff, .other, cuiProb(peff, time = 4))),
+      .reg,
+      100,
+      uncertainty = cuiBootstrap(.boot),
+      seed = 1
+    ),
+    "does not belong"
+  )
   expect_output(print(cuiBootstrap(.boot)), "3 of 3 refits")
   # a reloaded fit (no bootstrapMd5 in memory) still matches its ensemble
   .reloaded <- readRDS("fit.rds")
   expect_null(.reloaded$bootstrapMd5)
-  .rl <- cui(list(cuiEndpoint(eff, .reloaded, cuiProb(peff, time = 4))), .reg, 100,
-             uncertainty = cuiBootstrap(.boot), seed = 1, mcTol = 1)
+  .rl <- cui(
+    list(cuiEndpoint(eff, .reloaded, cuiProb(peff, time = 4))),
+    .reg,
+    100,
+    uncertainty = cuiBootstrap(.boot),
+    seed = 1,
+    mcTol = 1
+  )
   expect_equal(.rl$summary, .b$summary)
   # adding refits resumes the cache and simulates only the new draws
   .calls <- 0
@@ -189,8 +210,7 @@ test_that("bootstrap refits give the parameter draws", {
   .two <- .boot[.ord[1:2]]
   cui(.eps, .reg, 100, uncertainty = cuiBootstrap(.two), seed = 1, mcTol = 1, cacheDir = "bc")
   .calls <- 0
-  .all <- cui(.eps, .reg, 100, uncertainty = cuiBootstrap(.boot), seed = 1, mcTol = 1,
-              cacheDir = "bc")
+  .all <- cui(.eps, .reg, 100, uncertainty = cuiBootstrap(.boot), seed = 1, mcTol = 1, cacheDir = "bc")
   expect_equal(.calls, 1)
   expect_equal(.all$summary, .b$summary)
 })
@@ -229,7 +249,9 @@ test_that("draws are cached, resumed and restarted", {
   .fail <- TRUE
   local_mocked_bindings(.cuiSolveDraw = function(...) {
     .calls <<- .calls + 1
-    if (.fail && .calls == 2) stop("transient")
+    if (.fail && .calls == 2) {
+      stop("transient")
+    }
     .real(...)
   })
   .calls <- 0
@@ -242,8 +264,10 @@ test_that("draws are cached, resumed and restarted", {
   expect_equal(.calls, 1)
   expect_equal(.f2$draws$status, rep("ok", 3))
   # a cache belongs to one simulation
-  expect_error(cui(.eps, .reg, 50, mode = "trial", nDraw = 2, nSub = 20, seed = 2,
-                   cacheDir = "cc"), "different simulation")
+  expect_error(
+    cui(.eps, .reg, 50, mode = "trial", nDraw = 2, nSub = 20, seed = 2, cacheDir = "cc"),
+    "different simulation"
+  )
   # NULL derives the directory name; NA (the default) writes nothing
   .run(1, cacheDir = NULL)
   expect_length(list.files(pattern = "^nlmixr2CuiCache_"), 1)

@@ -48,7 +48,8 @@ cuiStep <- function(cut, side = c("above", "below")) {
 
 #' @export
 format.cuiUtility <- function(x, ...) {
-  switch(x$type,
+  switch(
+    x$type,
     identity = "identity",
     linear = sprintf("linear(%s, %s)", format(x$lo), format(x$hi)),
     step = sprintf("step(%s %s)", ifelse(x$side == "above", ">=", "<="), format(x$cut))
@@ -70,13 +71,17 @@ print.cuiUtility <- function(x, ...) {
 #' @return Utilities in `[0, 1]`.
 #' @noRd
 .cuiApplyUtility <- function(utility, direction, x, endpoint) {
-  .u <- switch(utility$type,
+  .u <- switch(
+    utility$type,
     identity = {
       if (any(x < 0 | x > 1)) {
-        stop(sprintf(
-          "endpoint '%s' uses cuiIdentity() but has values outside [0, 1]; use cuiLinear() or cuiStep()",
-          endpoint
-        ), call. = FALSE)
+        stop(
+          sprintf(
+            "endpoint '%s' uses cuiIdentity() but has values outside [0, 1]; use cuiLinear() or cuiStep()",
+            endpoint
+          ),
+          call. = FALSE
+        )
       }
       x
     },
@@ -90,7 +95,9 @@ print.cuiUtility <- function(x, ...) {
     },
     stop(sprintf("unknown utility type '%s'", utility$type), call. = FALSE)
   )
-  if (direction == "lower") .u <- 1 - .u
+  if (direction == "lower") {
+    .u <- 1 - .u
+  }
   .u
 }
 
@@ -105,12 +112,14 @@ print.cuiUtility <- function(x, ...) {
     return(setNames(rep(1 / length(endpoints), length(endpoints)), endpoints))
   }
   checkmate::assertNumeric(weights, lower = 0, finite = TRUE, any.missing = FALSE, min.len = 1)
-  if (is.null(names(weights)) || !setequal(names(weights), endpoints) ||
-    anyDuplicated(names(weights)) != 0L) {
-    stop(sprintf(
-      "'weights' must be named with exactly the endpoints: %s",
-      paste(endpoints, collapse = ", ")
-    ), call. = FALSE)
+  if (is.null(names(weights)) || !setequal(names(weights), endpoints) || anyDuplicated(names(weights)) != 0L) {
+    stop(
+      sprintf(
+        "'weights' must be named with exactly the endpoints: %s",
+        paste(endpoints, collapse = ", ")
+      ),
+      call. = FALSE
+    )
   }
   .w <- weights[endpoints]
   if (sum(.w) <= 0) {

@@ -4,11 +4,11 @@ withr::local_dir(withr::local_tempdir())
 .cur <- loadNamespace("nlmixr2extra")
 
 .cuiPlotValues <- function() {
-  data.frame(regimen = rep(1:5, 3),
-             endpoint = rep(c("tox", "eff", "tol"), each = 5),
-             value = c(0.038, 0.058, 0.106, 0.232, 0.533,
-                       0.022, 0.119, 0.343, 0.568, 0.681,
-                       0.147, 0.206, 0.280, 0.368, 0.466))
+  data.frame(
+    regimen = rep(1:5, 3),
+    endpoint = rep(c("tox", "eff", "tol"), each = 5),
+    value = c(0.038, 0.058, 0.106, 0.232, 0.533, 0.022, 0.119, 0.343, 0.568, 0.681, 0.147, 0.206, 0.280, 0.368, 0.466)
+  )
 }
 .cuiPlotEps <- function() {
   list(cuiEndpoint(tox, direction = "lower"), cuiEndpoint(eff), cuiEndpoint(tol))
@@ -16,15 +16,24 @@ withr::local_dir(withr::local_tempdir())
 
 .cuiPlotDr <- function() {
   .d <- withr::with_seed(42, {
-    .p <- data.frame(dose = c(10, 25, 50, 100, 200), tox = c(0.04, 0.06, 0.11, 0.23, 0.53),
-                     eff = c(0.02, 0.12, 0.34, 0.57, 0.68))
+    .p <- data.frame(
+      dose = c(10, 25, 50, 100, 200),
+      tox = c(0.04, 0.06, 0.11, 0.23, 0.53),
+      eff = c(0.02, 0.12, 0.34, 0.57, 0.68)
+    )
     .d <- .p[rep(1:5, each = 30), ]
-    for (.v in c("tox", "eff")) .d[[.v]] <- stats::rbinom(nrow(.d), 1, .d[[.v]])
+    for (.v in c("tox", "eff")) {
+      .d[[.v]] <- stats::rbinom(nrow(.d), 1, .d[[.v]])
+    }
     .d
   })
-  cuiDoseResponse(.d, list(cuiBinary(tox, model = "exponential", direction = "lower"),
-                           cuiBinary(eff, model = "logitQuadratic")),
-                  dose = dose, nBoot = 30, seed = 1)
+  cuiDoseResponse(
+    .d,
+    list(cuiBinary(tox, model = "exponential", direction = "lower"), cuiBinary(eff, model = "logitQuadratic")),
+    dose = dose,
+    nBoot = 30,
+    seed = 1
+  )
 }
 
 test_that("every plot type builds and keeps no caller frame or extra data", {
@@ -72,8 +81,11 @@ test_that("plot data reflect the CUI, eligibility and assessments", {
   expect_equal(unname(.pal[c(2, 4)]), c("#1B9E77", "#000000"))
   expect_error(plot(.r, colors = c(nope = "red")), "unknown name")
   # units label the peak
-  .u <- cuiFromValues(.cuiPlotValues(), .cuiPlotEps(),
-                      regimens = cuiRegimens(dose = 1:5, units = "mg", label = as.character(1:5)))
+  .u <- cuiFromValues(
+    .cuiPlotValues(),
+    .cuiPlotEps(),
+    regimens = cuiRegimens(dose = 1:5, units = "mg", label = as.character(1:5))
+  )
   expect_equal(plot(.u)$data$label[plot(.u)$data$layer == "peak"], "max at 4 mg")
   # non-numeric regimens are placed in order
   .lab <- cuiFromValues(transform(.cuiPlotValues(), regimen = letters[regimen]), .cuiPlotEps())
@@ -81,8 +93,10 @@ test_that("plot data reflect the CUI, eligibility and assessments", {
   expect_equal(.lp$data$x[.lp$data$layer == "line"], 1:5)
   expect_error(plot(.r, "selection"), "uncertainty draws")
   expect_error(plot(.r, "doseResponse"), "cuiDoseResponse")
-  .two <- cuiFromValues(rbind(cbind(.cuiPlotValues(), assessment = "m3"),
-                              cbind(.cuiPlotValues(), assessment = "m6")), .cuiPlotEps())
+  .two <- cuiFromValues(
+    rbind(cbind(.cuiPlotValues(), assessment = "m3"), cbind(.cuiPlotValues(), assessment = "m6")),
+    .cuiPlotEps()
+  )
   expect_equal(levels(plot(.two)$data$assessment), c("m3", "m6"))
   expect_equal(sum(plot(.two)$data$layer == "peak"), 2)
   expect_equal(levels(plot(.two, assessment = "m6")$data$assessment), "m6")
@@ -121,22 +135,25 @@ test_that("lines carry percentile bands for the CUI and every endpoint", {
   expect_true(all(.line$lower <= .line$value + 1e-12 | .line$series != "CUI"))
   # endpoint bands are the utility percentiles over the draws
   .u <- .r$utility[.r$utility$draw > 0 & .r$utility$endpoint == "eff" & .r$utility$regimen == "100", ]
-  expect_equal(.line$upper[.line$series == "eff" & .line$regimen == "100"],
-               unname(stats::quantile(.u$utility, 0.975)))
+  expect_equal(.line$upper[.line$series == "eff" & .line$regimen == "100"], unname(stats::quantile(.u$utility, 0.975)))
   expect_true(any(vapply(.ep$layers, function(l) inherits(l$geom, "GeomRibbon"), logical(1))))
   .nb <- plot(.r, "endpoints", bands = FALSE)
   expect_false(any(vapply(.nb$layers, function(l) inherits(l$geom, "GeomRibbon"), logical(1))))
   expect_match(.ep$labels$subtitle, "bands: 95% percentile interval")
-  expect_false(any(vapply(plot(.r, "doseResponse", bands = FALSE)$layers,
-                          function(l) inherits(l$geom, "GeomLinerange"), logical(1))))
+  expect_false(any(vapply(
+    plot(.r, "doseResponse", bands = FALSE)$layers,
+    function(l) inherits(l$geom, "GeomLinerange"),
+    logical(1)
+  )))
   expect_identical(.figureHeldData(.ep), character(0))
 })
 
 test_that("default reference lines follow each panel and the current weight is ringed", {
-  .two <- cuiFromValues(rbind(cbind(.cuiPlotValues(), assessment = "A"),
-                              cbind(.cuiPlotValues(), assessment = "B")), .cuiPlotEps(),
-                        eligible = data.frame(assessment = c("A", "A", "B", "B", "B"),
-                                              regimen = c("1", "2", "3", "4", "5")))
+  .two <- cuiFromValues(
+    rbind(cbind(.cuiPlotValues(), assessment = "A"), cbind(.cuiPlotValues(), assessment = "B")),
+    .cuiPlotEps(),
+    eligible = data.frame(assessment = c("A", "A", "B", "B", "B"), regimen = c("1", "2", "3", "4", "5"))
+  )
   .ref <- plot(.two)$data
   .ref <- .ref[.ref$layer == "ref", ]
   expect_equal(.ref$x[.ref$assessment == "A"], 1:2)

@@ -54,18 +54,29 @@
 #' cuiEndpoint("eff")
 #' nm <- "tol"
 #' cuiEndpoint(.name = nm, utility = cuiLinear(0, 50))
-cuiEndpoint <- function(name, fit = NULL, summary = NULL, utility = cuiIdentity(),
-                        direction = c("higher", "lower"), group = NULL, ..., .name = NULL) {
+cuiEndpoint <- function(
+  name,
+  fit = NULL,
+  summary = NULL,
+  utility = cuiIdentity(),
+  direction = c("higher", "lower"),
+  group = NULL,
+  ...,
+  .name = NULL
+) {
   .name <- .cuiCaptureName(substitute(name), missing(name), .name, "name")
   if (!inherits(utility, "cuiUtility")) {
     stop("'utility' must come from cuiIdentity(), cuiLinear() or cuiStep()", call. = FALSE)
   }
   direction <- match.arg(direction)
-  if (is.null(group)) group <- if (direction == "lower") "safety" else "efficacy"
+  if (is.null(group)) {
+    group <- if (direction == "lower") "safety" else "efficacy"
+  }
   checkmate::assertString(group, min.chars = 1)
-  structure(list(name = .name, fit = fit, summary = summary,
-                 utility = utility, direction = direction, group = group),
-            class = "cuiEndpoint")
+  structure(
+    list(name = .name, fit = fit, summary = summary, utility = utility, direction = direction, group = group),
+    class = "cuiEndpoint"
+  )
 }
 
 #' Endpoint weights from group and within-group weights
@@ -95,15 +106,18 @@ cuiEndpoint <- function(name, fit = NULL, summary = NULL, utility = cuiIdentity(
 #' w
 #' update(res, weights = w)
 cuiGroupWeights <- function(x, group = NULL, within = NULL) {
-  if (!inherits(x, "nlmixr2Cui")) stop("'x' must be an nlmixr2Cui object", call. = FALSE)
+  if (!inherits(x, "nlmixr2Cui")) {
+    stop("'x' must be an nlmixr2Cui object", call. = FALSE)
+  }
   .epNames <- vapply(x$endpoints, `[[`, character(1), "name")
   .grp <- .cuiEndpointGroups(x)
   .g <- setNames(rep(1, length(unique(.grp))), unique(.grp))
   .w <- setNames(rep(1, length(.epNames)), .epNames)
   .set <- function(target, given, what) {
-    if (is.null(given)) return(target)
-    checkmate::assertNumeric(given, lower = 0, finite = TRUE, any.missing = FALSE,
-                             names = "unique", .var.name = what)
+    if (is.null(given)) {
+      return(target)
+    }
+    checkmate::assertNumeric(given, lower = 0, finite = TRUE, any.missing = FALSE, names = "unique", .var.name = what)
     .bad <- setdiff(names(given), names(target))
     if (length(.bad) > 0) {
       stop(sprintf("unknown name(s) in '%s': %s", what, paste(.bad, collapse = ", ")), call. = FALSE)
@@ -121,15 +135,24 @@ cuiGroupWeights <- function(x, group = NULL, within = NULL) {
 #' Group of each endpoint (objects made before groups existed use direction)
 #' @noRd
 .cuiEndpointGroups <- function(x) {
-  vapply(x$endpoints, function(e) {
-    if (!is.null(e$group)) e$group else if (e$direction == "lower") "safety" else "efficacy"
-  }, character(1))
+  vapply(
+    x$endpoints,
+    function(e) {
+      if (!is.null(e$group)) {
+        e$group
+      } else if (e$direction == "lower") {
+        "safety"
+      } else {
+        "efficacy"
+      }
+    },
+    character(1)
+  )
 }
 
 #' @export
 print.cuiEndpoint <- function(x, ...) {
-  cat(sprintf("cuiEndpoint '%s': %s utility, %s is better\n",
-              x$name, format(x$utility), x$direction))
+  cat(sprintf("cuiEndpoint '%s': %s utility, %s is better\n", x$name, format(x$utility), x$direction))
   invisible(x)
 }
 
@@ -147,11 +170,15 @@ print.cuiEndpoint <- function(x, ...) {
 #' @export
 #' @examples
 #' cuiRegimens(dose = c(150, 200), ii = c(24, 12), units = "mg")
-cuiRegimens <- function(dose, ii = NA_real_, duration = NA_real_,
-                        units = NA_character_, label = NULL) {
+cuiRegimens <- function(dose, ii = NA_real_, duration = NA_real_, units = NA_character_, label = NULL) {
   checkmate::assertNumeric(dose, min.len = 1)
-  .ret <- data.frame(dose = dose, ii = as.numeric(ii), duration = as.numeric(duration),
-                     units = as.character(units), stringsAsFactors = FALSE)
+  .ret <- data.frame(
+    dose = dose,
+    ii = as.numeric(ii),
+    duration = as.numeric(duration),
+    units = as.character(units),
+    stringsAsFactors = FALSE
+  )
   if (is.null(label)) {
     label <- .cuiNumLabel(.ret$dose)
     .hasIi <- !is.na(.ret$ii)
@@ -188,8 +215,10 @@ cuiRegimens <- function(dose, ii = NA_real_, duration = NA_real_,
 #' @return Data frame `(assessment, regimen, eligible)`.
 #' @noRd
 .cuiEligible <- function(eligible, regimens, assessments) {
-  .grid <- expand.grid(regimen = regimens, assessment = assessments,
-                       stringsAsFactors = FALSE)[, c("assessment", "regimen")]
+  .grid <- expand.grid(regimen = regimens, assessment = assessments, stringsAsFactors = FALSE)[, c(
+    "assessment",
+    "regimen"
+  )]
   if (is.null(eligible)) {
     .grid$eligible <- TRUE
   } else if (is.data.frame(eligible)) {
@@ -210,8 +239,7 @@ cuiRegimens <- function(dose, ii = NA_real_, duration = NA_real_,
     }
     .bad <- setdiff(.ass, assessments)
     if (length(.bad) > 0) {
-      stop(sprintf("unknown assessment(s) in 'eligible': %s", paste(.bad, collapse = ", ")),
-           call. = FALSE)
+      stop(sprintf("unknown assessment(s) in 'eligible': %s", paste(.bad, collapse = ", ")), call. = FALSE)
     }
     .key <- paste(.ass, .reg, sep = "\r")
     .grid$eligible <- paste(.grid$assessment, .grid$regimen, sep = "\r") %in% .key
@@ -231,8 +259,7 @@ cuiRegimens <- function(dose, ii = NA_real_, duration = NA_real_,
   }
   .none <- vapply(assessments, function(a) !any(.grid$eligible[.grid$assessment == a]), logical(1))
   if (any(.none)) {
-    stop(sprintf("no eligible regimen at assessment(s): %s",
-                 paste(assessments[.none], collapse = ", ")), call. = FALSE)
+    stop(sprintf("no eligible regimen at assessment(s): %s", paste(assessments[.none], collapse = ", ")), call. = FALSE)
   }
   .grid
 }
@@ -289,13 +316,28 @@ cuiRegimens <- function(dose, ii = NA_real_, duration = NA_real_,
 #'   weights = c(tox = 0.2, eff = 0.5, tol = 0.3))
 #' res
 #' update(res, weights = c(tox = 0.3, eff = 0.2, tol = 0.5))
-cuiFromValues <- function(values, endpoints = NULL, regimens = NULL, weights = NULL,
-                          combine = c("additive", "geometric"), eligible = NULL,
-                          level = 0.95, tieTol = sqrt(.Machine$double.eps)) {
-  .cuiNew(values = values, endpoints = endpoints, regimens = regimens,
-          weights = weights, combine = match.arg(combine), eligible = eligible,
-          level = level, tieTol = tieTol, draws = NULL,
-          settings = list(source = "values"))
+cuiFromValues <- function(
+  values,
+  endpoints = NULL,
+  regimens = NULL,
+  weights = NULL,
+  combine = c("additive", "geometric"),
+  eligible = NULL,
+  level = 0.95,
+  tieTol = sqrt(.Machine$double.eps)
+) {
+  .cuiNew(
+    values = values,
+    endpoints = endpoints,
+    regimens = regimens,
+    weights = weights,
+    combine = match.arg(combine),
+    eligible = eligible,
+    level = level,
+    tieTol = tieTol,
+    draws = NULL,
+    settings = list(source = "values")
+  )
 }
 
 #' Validate inputs and build an `nlmixr2Cui` object
@@ -309,8 +351,19 @@ cuiFromValues <- function(values, endpoints = NULL, regimens = NULL, weights = N
 #' @inheritParams cuiFromValues
 #' @return An `nlmixr2Cui` object.
 #' @noRd
-.cuiNew <- function(values, endpoints, regimens, weights, combine, eligible,
-                    level, tieTol, draws, settings, batch = NULL) {
+.cuiNew <- function(
+  values,
+  endpoints,
+  regimens,
+  weights,
+  combine,
+  eligible,
+  level,
+  tieTol,
+  draws,
+  settings,
+  batch = NULL
+) {
   checkmate::assertDataFrame(values, min.rows = 1)
   if (!all(c("endpoint", "regimen", "value") %in% names(values))) {
     stop("'values' needs columns 'endpoint', 'regimen' and 'value'", call. = FALSE)
@@ -345,7 +398,9 @@ cuiFromValues <- function(values, endpoints = NULL, regimens = NULL, weights = N
   if (is.null(endpoints)) {
     endpoints <- lapply(unique(.v$endpoint), function(e) cuiEndpoint(.name = e))
   }
-  if (inherits(endpoints, "cuiEndpoint")) endpoints <- list(endpoints)
+  if (inherits(endpoints, "cuiEndpoint")) {
+    endpoints <- list(endpoints)
+  }
   if (!all(vapply(endpoints, inherits, logical(1), what = "cuiEndpoint"))) {
     stop("'endpoints' must be a list of cuiEndpoint() objects", call. = FALSE)
   }
@@ -354,9 +409,14 @@ cuiFromValues <- function(values, endpoints = NULL, regimens = NULL, weights = N
     stop("endpoint names must be unique", call. = FALSE)
   }
   if (!setequal(.epNames, unique(.v$endpoint))) {
-    stop(sprintf("endpoints in 'values' (%s) do not match 'endpoints' (%s)",
-                 paste(unique(.v$endpoint), collapse = ", "),
-                 paste(.epNames, collapse = ", ")), call. = FALSE)
+    stop(
+      sprintf(
+        "endpoints in 'values' (%s) do not match 'endpoints' (%s)",
+        paste(unique(.v$endpoint), collapse = ", "),
+        paste(.epNames, collapse = ", ")
+      ),
+      call. = FALSE
+    )
   }
   # regimens
   if (is.null(regimens)) {
@@ -373,8 +433,7 @@ cuiFromValues <- function(values, endpoints = NULL, regimens = NULL, weights = N
   }
   .bad <- setdiff(unique(.v$regimen), regimens$label)
   if (length(.bad) > 0) {
-    stop(sprintf("regimen(s) in 'values' not in 'regimens': %s", paste(.bad, collapse = ", ")),
-         call. = FALSE)
+    stop(sprintf("regimen(s) in 'values' not in 'regimens': %s", paste(.bad, collapse = ", ")), call. = FALSE)
   }
   .assess <- unique(.v$assessment)
   if (is.factor(.assIn)) {
@@ -392,38 +451,54 @@ cuiFromValues <- function(values, endpoints = NULL, regimens = NULL, weights = N
   for (.a in .assess) {
     .va <- .v[.v$assessment == .a, ]
     if (nrow(.va) != .nExpect || !setequal(unique(.va$draw), .drawSet)) {
-      stop(sprintf(paste0("'values' is incomplete at assessment '%s': need every endpoint ",
-                          "x regimen x draw (%d values), found %d"),
-                   .a, .nExpect, nrow(.va)), call. = FALSE)
+      stop(
+        sprintf(
+          paste0(
+            "'values' is incomplete at assessment '%s': need every endpoint ",
+            "x regimen x draw (%d values), found %d"
+          ),
+          .a,
+          .nExpect,
+          nrow(.va)
+        ),
+        call. = FALSE
+      )
     }
   }
   # draw manifest
   if (is.null(draws)) {
-    draws <- data.frame(draw = .drawSet, status = "ok", source = "values",
-                        message = "", stringsAsFactors = FALSE)
+    draws <- data.frame(draw = .drawSet, status = "ok", source = "values", message = "", stringsAsFactors = FALSE)
   }
   .failed <- draws$draw[draws$status != "ok"]
   if (any(.failed %in% .drawSet)) {
     stop("failed draws must not have values", call. = FALSE)
   }
-  .obj <- structure(list(
-    schema = 1L,
-    endpoints = lapply(endpoints, function(e) {
-      list(name = e$name, utility = e$utility, direction = e$direction, group = e$group,
-           summary = if (inherits(e$summary, "cuiSummary")) format(e$summary))
-    }),
-    regimens = regimens,
-    assessments = .assess,
-    values = .v,
-    draws = draws,
-    weights = weights,
-    combine = combine,
-    eligibleSpec = eligible,
-    level = level,
-    tieTol = tieTol,
-    settings = c(settings, list(version = as.character(utils::packageVersion("nlmixr2extra")))),
-    batch = batch
-  ), class = "nlmixr2Cui")
+  .obj <- structure(
+    list(
+      schema = 1L,
+      endpoints = lapply(endpoints, function(e) {
+        list(
+          name = e$name,
+          utility = e$utility,
+          direction = e$direction,
+          group = e$group,
+          summary = if (inherits(e$summary, "cuiSummary")) format(e$summary)
+        )
+      }),
+      regimens = regimens,
+      assessments = .assess,
+      values = .v,
+      draws = draws,
+      weights = weights,
+      combine = combine,
+      eligibleSpec = eligible,
+      level = level,
+      tieTol = tieTol,
+      settings = c(settings, list(version = as.character(utils::packageVersion("nlmixr2extra")))),
+      batch = batch
+    ),
+    class = "nlmixr2Cui"
+  )
   .cuiCompute(.obj)
 }
 
@@ -446,8 +521,12 @@ cuiFromValues <- function(values, endpoints = NULL, regimens = NULL, weights = N
     .u[.sel] <- .cuiApplyUtility(.ep$utility, .ep$direction, .v$value[.sel], .ep$name)
   }
   # order so each block of K rows is one (assessment, draw, regimen)
-  .ord <- order(match(.v$assessment, obj$assessments), .v$draw,
-                match(.v$regimen, obj$regimens$label), match(.v$endpoint, .epNames))
+  .ord <- order(
+    match(.v$assessment, obj$assessments),
+    .v$draw,
+    match(.v$regimen, obj$regimens$label),
+    match(.v$endpoint, .epNames)
+  )
   .v <- .v[.ord, ]
   .v$utility <- .u[.ord]
   rownames(.v) <- NULL
@@ -456,8 +535,10 @@ cuiFromValues <- function(values, endpoints = NULL, regimens = NULL, weights = N
   .cui <- .v[seq(1, nrow(.v), by = .k), c("assessment", "regimen", "draw")]
   rownames(.cui) <- NULL
   .cui$cui <- .cuiCombine(.m, .w, obj$combine)
-  .cui$eligible <- .el$eligible[match(paste(.cui$assessment, .cui$regimen, sep = "\r"),
-                                      paste(.el$assessment, .el$regimen, sep = "\r"))]
+  .cui$eligible <- .el$eligible[match(
+    paste(.cui$assessment, .cui$regimen, sep = "\r"),
+    paste(.el$assessment, .el$regimen, sep = "\r")
+  )]
   # selection among eligible regimens in each uncertainty draw
   .tol <- obj$tieTol
   .nOk <- sum(obj$draws$status == "ok" & obj$draws$draw > 0)
@@ -471,8 +552,7 @@ cuiFromValues <- function(values, endpoints = NULL, regimens = NULL, weights = N
   }
   .alpha <- (1 - obj$level) / 2
   .sum <- .el
-  .sum <- .sum[order(match(.sum$assessment, obj$assessments),
-                     match(.sum$regimen, obj$regimens$label)), ]
+  .sum <- .sum[order(match(.sum$assessment, obj$assessments), match(.sum$regimen, obj$regimens$label)), ]
   .key <- paste(.sum$assessment, .sum$regimen, sep = "\r")
   .c0 <- .cui[.cui$draw == 0, ]
   .sum$est <- .c0$cui[match(.key, paste(.c0$assessment, .c0$regimen, sep = "\r"))]
@@ -484,13 +564,20 @@ cuiFromValues <- function(values, endpoints = NULL, regimens = NULL, weights = N
     .cd <- .cui[.cui$draw > 0, ]
     .cdKey <- paste(.cd$assessment, .cd$regimen, sep = "\r")
     .sum$mean <- vapply(.key, function(k) mean(.cd$cui[.cdKey == k]), numeric(1), USE.NAMES = FALSE)
-    .sum$lower <- vapply(.key, function(k) unname(stats::quantile(.cd$cui[.cdKey == k], .alpha)),
-                         numeric(1), USE.NAMES = FALSE)
-    .sum$upper <- vapply(.key, function(k) unname(stats::quantile(.cd$cui[.cdKey == k], 1 - .alpha)),
-                         numeric(1), USE.NAMES = FALSE)
+    .sum$lower <- vapply(
+      .key,
+      function(k) unname(stats::quantile(.cd$cui[.cdKey == k], .alpha)),
+      numeric(1),
+      USE.NAMES = FALSE
+    )
+    .sum$upper <- vapply(
+      .key,
+      function(k) unname(stats::quantile(.cd$cui[.cdKey == k], 1 - .alpha)),
+      numeric(1),
+      USE.NAMES = FALSE
+    )
     .dKey <- paste(.d$assessment, .d$regimen, sep = "\r")
-    .sum$selFreq <- vapply(.key, function(k) sum(.d$share[.dKey == k]) / .nOk,
-                           numeric(1), USE.NAMES = FALSE)
+    .sum$selFreq <- vapply(.key, function(k) sum(.d$share[.dKey == k]) / .nOk, numeric(1), USE.NAMES = FALSE)
     .sum$selFreq[!.sum$eligible] <- NA_real_
   }
   # recommended (best point estimate) and most frequently selected regimens
@@ -524,7 +611,9 @@ cuiFromValues <- function(values, endpoints = NULL, regimens = NULL, weights = N
 #' @noRd
 .cuiMcse <- function(obj, w, sum) {
   .b <- obj$batch
-  if (is.null(.b) || nrow(.b) == 0) return(NULL)
+  if (is.null(.b) || nrow(.b) == 0) {
+    return(NULL)
+  }
   .epNames <- names(w)
   .u <- numeric(nrow(.b))
   for (.ep in obj$endpoints) {
@@ -533,7 +622,9 @@ cuiFromValues <- function(values, endpoints = NULL, regimens = NULL, weights = N
   }
   .ret <- lapply(obj$assessments, function(.a) {
     .s <- sum[sum$assessment == .a & sum$eligible, ]
-    if (nrow(.s) < 2) return(NULL)
+    if (nrow(.s) < 2) {
+      return(NULL)
+    }
     .top <- .s$regimen[order(-.s$est)][1:2]
     .cuiB <- lapply(.top, function(.r) {
       .sel <- .b$assessment == .a & .b$regimen == .r
@@ -541,11 +632,19 @@ cuiFromValues <- function(values, endpoints = NULL, regimens = NULL, weights = N
       .cuiCombine(.m[, .epNames, drop = FALSE], w, obj$combine)
     })
     .d <- .cuiB[[1]] - .cuiB[[2]]
-    data.frame(assessment = .a, first = .top[1], second = .top[2], diff = mean(.d),
-               se = stats::sd(.d) / sqrt(length(.d)), stringsAsFactors = FALSE)
+    data.frame(
+      assessment = .a,
+      first = .top[1],
+      second = .top[2],
+      diff = mean(.d),
+      se = stats::sd(.d) / sqrt(length(.d)),
+      stringsAsFactors = FALSE
+    )
   })
   .ret <- do.call(rbind, .ret)
-  if (is.null(.ret)) return(NULL)
+  if (is.null(.ret)) {
+    return(NULL)
+  }
   rownames(.ret) <- NULL
   .ret
 }
@@ -564,9 +663,15 @@ cuiFromValues <- function(values, endpoints = NULL, regimens = NULL, weights = N
 #' @family Clinical utility
 #' @export
 update.nlmixr2Cui <- function(object, weights, combine, eligible, level, tieTol, ...) {
-  if (!missing(weights)) object["weights"] <- list(weights)
-  if (!missing(combine)) object$combine <- match.arg(combine, c("additive", "geometric"))
-  if (!missing(eligible)) object["eligibleSpec"] <- list(eligible)
+  if (!missing(weights)) {
+    object["weights"] <- list(weights)
+  }
+  if (!missing(combine)) {
+    object$combine <- match.arg(combine, c("additive", "geometric"))
+  }
+  if (!missing(eligible)) {
+    object["eligibleSpec"] <- list(eligible)
+  }
   if (!missing(level)) {
     checkmate::assertNumber(level, lower = 0, upper = 1)
     object$level <- level
@@ -583,34 +688,46 @@ print.nlmixr2Cui <- function(x, ..., n = 10L) {
   .nOk <- sum(x$draws$status == "ok" & x$draws$draw > 0)
   .nFail <- sum(x$draws$status != "ok")
   cat("Clinical utility index (", x$combine, ")\n", sep = "")
-  if (!is.null(x$settings$description)) cat(x$settings$description, "\n", sep = "")
-  .ep <- vapply(x$endpoints, function(e) {
-    sprintf("%s%s [%s%s] %.3g", e$name,
-            if (is.null(e$summary)) "" else paste0(" = ", e$summary), format(e$utility),
-            ifelse(e$direction == "lower", ", lower is better", ""),
-            x$weightsNorm[[e$name]])
-  }, character(1))
+  if (!is.null(x$settings$description)) {
+    cat(x$settings$description, "\n", sep = "")
+  }
+  .ep <- vapply(
+    x$endpoints,
+    function(e) {
+      sprintf(
+        "%s%s [%s%s] %.3g",
+        e$name,
+        if (is.null(e$summary)) "" else paste0(" = ", e$summary),
+        format(e$utility),
+        ifelse(e$direction == "lower", ", lower is better", ""),
+        x$weightsNorm[[e$name]]
+      )
+    },
+    character(1)
+  )
   cat("Endpoints [utility] weight:\n", paste0("  ", .ep, collapse = "\n"), "\n", sep = "")
   if (.nOk > 0 || .nFail > 0) {
-    cat(sprintf("Uncertainty draws: %d ok, %d failed; %g%% percentile intervals\n",
-                .nOk, .nFail, 100 * x$level))
+    cat(sprintf("Uncertainty draws: %d ok, %d failed; %g%% percentile intervals\n", .nOk, .nFail, 100 * x$level))
   }
   for (.a in x$assessments) {
     .s <- x$summary[x$summary$assessment == .a, ]
-    if (length(x$assessments) > 1) cat("\nAssessment: ", .a, "\n", sep = "")
+    if (length(x$assessments) > 1) {
+      cat("\nAssessment: ", .a, "\n", sep = "")
+    }
     .show <- .s
     if (nrow(.show) > n) {
       .show <- .show[order(-.show$est), ][seq_len(n), ]
       cat(sprintf("Top %d of %d regimens:\n", n, nrow(.s)))
     }
-    .tab <- data.frame(regimen = .show$regimen, cui = round(.show$est, 3),
-                       stringsAsFactors = FALSE)
+    .tab <- data.frame(regimen = .show$regimen, cui = round(.show$est, 3), stringsAsFactors = FALSE)
     if (.nOk > 0) {
       .tab$lower <- round(.show$lower, 3)
       .tab$upper <- round(.show$upper, 3)
       .tab$selFreq <- round(.show$selFreq, 3)
     }
-    if (!all(.show$eligible)) .tab$eligible <- .show$eligible
+    if (!all(.show$eligible)) {
+      .tab$eligible <- .show$eligible
+    }
     print(.tab, row.names = FALSE)
     cat("Recommended (highest CUI): ", paste(.s$regimen[.s$best], collapse = ", "), "\n", sep = "")
     .mc <- x$mcse[!is.null(x$mcse) & x$mcse$assessment == .a, , drop = FALSE]
@@ -618,9 +735,12 @@ print.nlmixr2Cui <- function(x, ..., n = 10L) {
       cat(sprintf("Monte Carlo SE of CUI(%s) - CUI(%s): %.2g\n", .mc$first, .mc$second, .mc$se))
     }
     if (.nOk > 0) {
-      cat("Most frequently selected: ",
-          paste(.s$regimen[!is.na(.s$mostSelected) & .s$mostSelected], collapse = ", "),
-          "\n", sep = "")
+      cat(
+        "Most frequently selected: ",
+        paste(.s$regimen[!is.na(.s$mostSelected) & .s$mostSelected], collapse = ", "),
+        "\n",
+        sep = ""
+      )
     }
   }
   invisible(x)
@@ -633,8 +753,13 @@ print.nlmixr2Cui <- function(x, ..., n = 10L) {
 #'   per draw) or `"observed"` (observed rates, from [cuiDoseResponse()]).
 #' @rdname update.nlmixr2Cui
 #' @export
-as.data.frame.nlmixr2Cui <- function(x, row.names = NULL, optional = FALSE, ...,
-                                     type = c("summary", "cui", "utility", "observed")) {
+as.data.frame.nlmixr2Cui <- function(
+  x,
+  row.names = NULL,
+  optional = FALSE,
+  ...,
+  type = c("summary", "cui", "utility", "observed")
+) {
   type <- match.arg(type)
   if (type == "observed" && is.null(x$observed)) {
     stop("no observed data; only cuiDoseResponse() results have them", call. = FALSE)

@@ -12,9 +12,12 @@
 #' @noRd
 .cuiDrModel <- function(ep, x, n, doses) {
   .s <- max(abs(doses))
-  if (.s == 0) .s <- 1
+  if (.s == 0) {
+    .s <- 1
+  }
   .d <- doses / .s
-  .fit <- switch(ep$model,
+  .fit <- switch(
+    ep$model,
     empirical = list(model = "empirical", p = x / n),
     logitLinear = .cuiDrLogit(x, n, .d, quadratic = FALSE, ep$monotone, ep$penalty),
     logitQuadratic = .cuiDrLogit(x, n, .d, quadratic = TRUE, ep$monotone, ep$penalty),
@@ -24,7 +27,9 @@
   )
   .fit$scale <- .s
   .fit$doses <- doses
-  if (is.null(.fit$p)) .fit$p <- .cuiDrPredict(.fit, doses)
+  if (is.null(.fit$p)) {
+    .fit$p <- .cuiDrPredict(.fit, doses)
+  }
   list(p = .fit$p, fit = .fit)
 }
 
@@ -36,9 +41,12 @@
   }
   .d <- dose / fit$scale
   # logit models are fit on a centered dose
-  if (!is.null(fit$center)) .d <- (.d - fit$center) / fit$spread
+  if (!is.null(fit$center)) {
+    .d <- (.d - fit$center) / fit$spread
+  }
   .b <- fit$coef
-  .eta <- switch(fit$model,
+  .eta <- switch(
+    fit$model,
     logitLinear = .b[1] + .b[2] * .d,
     logitQuadratic = .b[1] + .b[2] * .d + .b[3] * .d^2,
     emax = .b[1] + .b[2] * .d / (.b[3] + .d),
@@ -74,7 +82,9 @@
   # map optimizer parameters to (b0, b1[, b2])
   .coef <- function(th) {
     if (!quadratic) {
-      if (.sgn != 0 && penalty) return(c(th[1], .sgn * exp(th[2])))
+      if (.sgn != 0 && penalty) {
+        return(c(th[1], .sgn * exp(th[2])))
+      }
       return(th)
     }
     if (.sgn != 0 && !penalty) {
@@ -117,8 +127,12 @@
   if (.o$convergence > 1) {
     stop(sprintf("dose-response fit did not converge: %s", .o$message), call. = FALSE)
   }
-  list(model = if (quadratic) "logitQuadratic" else "logitLinear", coef = .coef(.o$par),
-       center = .center, spread = .spread)
+  list(
+    model = if (quadratic) "logitQuadratic" else "logitLinear",
+    coef = .coef(.o$par),
+    center = .center,
+    spread = .spread
+  )
 }
 
 #' Two-stage Emax or exponential fit (generalized MCP-Mod fitting step)
@@ -149,8 +163,7 @@
     if (monotone != "none") {
       stop("backend = \"DoseFinding\" does not support 'monotone'", call. = FALSE)
     }
-    .m <- DoseFinding::fitMod(d, .z, model = model, S = diag(.var, length(.var)),
-                              type = "general", bnds = .bnds)
+    .m <- DoseFinding::fitMod(d, .z, model = model, S = diag(.var, length(.var)), type = "general", bnds = .bnds)
     .cf <- unname(stats::coef(.m))
     return(list(model = model, coef = .cf))
   }
@@ -162,9 +175,12 @@
   .wls <- function(sh) {
     .b <- .basis(sh)
     .x <- cbind(1, .b)
-    .cf <- tryCatch(solve(crossprod(.x, .w * .x), crossprod(.x, .w * .z))[, 1],
-                    error = function(e) c(sum(.w * .z) / sum(.w), 0))
-    if (.sgn != 0 && .sgn * .cf[2] < 0) .cf <- c(sum(.w * .z) / sum(.w), 0)
+    .cf <- tryCatch(solve(crossprod(.x, .w * .x), crossprod(.x, .w * .z))[, 1], error = function(e) {
+      c(sum(.w * .z) / sum(.w), 0)
+    })
+    if (.sgn != 0 && .sgn * .cf[2] < 0) {
+      .cf <- c(sum(.w * .z) / sum(.w), 0)
+    }
     .r <- .z - (.cf[1] + .cf[2] * .b)
     list(coef = unname(.cf), rss = sum(.w * .r^2))
   }

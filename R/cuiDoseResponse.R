@@ -37,12 +37,18 @@
 #' @examples
 #' cuiBinary(tox, model = "exponential", direction = "lower")
 #' cuiBinary("eff", model = "logitQuadratic", monotone = "increasing")
-cuiBinary <- function(name, model = c("empirical", "logitLinear", "logitQuadratic", "emax",
-                                      "exponential"),
-                      direction = c("higher", "lower"),
-                      monotone = c("none", "increasing", "decreasing"), penalty = FALSE,
-                      boundary = c("glm", "correction", "error"),
-                      backend = c("internal", "DoseFinding"), group = NULL, ..., .name = NULL) {
+cuiBinary <- function(
+  name,
+  model = c("empirical", "logitLinear", "logitQuadratic", "emax", "exponential"),
+  direction = c("higher", "lower"),
+  monotone = c("none", "increasing", "decreasing"),
+  penalty = FALSE,
+  boundary = c("glm", "correction", "error"),
+  backend = c("internal", "DoseFinding"),
+  group = NULL,
+  ...,
+  .name = NULL
+) {
   .name <- .cuiCaptureName(substitute(name), missing(name), .name, "name")
   .fitModel <- NULL
   if (!is.character(model)) {
@@ -61,8 +67,7 @@ cuiBinary <- function(name, model = c("empirical", "logitLinear", "logitQuadrati
   if (model == "fitted" && monotone != "none") {
     stop("'monotone' applies to the built-in models, not a fitted model", call. = FALSE)
   }
-  .ret <- cuiEndpoint(.name = .name, utility = cuiIdentity(), direction = match.arg(direction),
-                      group = group)
+  .ret <- cuiEndpoint(.name = .name, utility = cuiIdentity(), direction = match.arg(direction), group = group)
   .ret$model <- model
   .ret$monotone <- monotone
   .ret$penalty <- penalty
@@ -76,8 +81,13 @@ cuiBinary <- function(name, model = c("empirical", "logitLinear", "logitQuadrati
 #' @export
 print.cuiBinary <- function(x, ...) {
   .m <- if (x$model == "fitted") paste0("fitted ", class(x$fitModel)[1]) else x$model
-  cat(sprintf("cuiBinary '%s': %s model%s, %s is better\n", x$name, .m,
-              if (x$monotone == "none") "" else paste0(" (", x$monotone, ")"), x$direction))
+  cat(sprintf(
+    "cuiBinary '%s': %s model%s, %s is better\n",
+    x$name,
+    .m,
+    if (x$monotone == "none") "" else paste0(" (", x$monotone, ")"),
+    x$direction
+  ))
   invisible(x)
 }
 
@@ -88,10 +98,14 @@ print.cuiBinary <- function(x, ...) {
 #' @return The value of `code`.
 #' @noRd
 .cuiWithSeed <- function(seed, code) {
-  if (is.null(seed)) return(code)
+  if (is.null(seed)) {
+    return(code)
+  }
   .env <- globalenv()
   .had <- exists(".Random.seed", envir = .env, inherits = FALSE)
-  if (.had) .old <- get(".Random.seed", envir = .env, inherits = FALSE)
+  if (.had) {
+    .old <- get(".Random.seed", envir = .env, inherits = FALSE)
+  }
   on.exit({
     if (.had) {
       assign(".Random.seed", .old, envir = .env)
@@ -145,8 +159,10 @@ print.cuiBinary <- function(x, ...) {
   .fit <- if (refit) cuiModelRefit(ep$fitModel, data) else ep$fitModel
   .vars <- cuiModelVars(.fit)
   if (!(doseCol %in% .vars)) {
-    stop(sprintf("the fitted model of endpoint '%s' does not use the dose column '%s'",
-                 ep$name, doseCol), call. = FALSE)
+    stop(
+      sprintf("the fitted model of endpoint '%s' does not use the dose column '%s'", ep$name, doseCol),
+      call. = FALSE
+    )
   }
   .other <- setdiff(.vars, doseCol)
   if (length(.other) == 0) {
@@ -154,24 +170,26 @@ print.cuiBinary <- function(x, ...) {
   } else {
     .miss <- setdiff(.other, names(data))
     if (length(.miss) > 0) {
-      stop(sprintf("the fitted model of endpoint '%s' needs column(s) %s", ep$name,
-                   paste(.miss, collapse = ", ")), call. = FALSE)
+      stop(
+        sprintf("the fitted model of endpoint '%s' needs column(s) %s", ep$name, paste(.miss, collapse = ", ")),
+        call. = FALSE
+      )
     }
     .nd <- data[rep(seq_len(nrow(data)), times = length(doses)), .other, drop = FALSE]
     .nd[[doseCol]] <- rep(doses, each = nrow(data))
     .pr <- cuiModelPredict(.fit, .nd)
     if (length(.pr) != nrow(.nd)) {
-      stop(sprintf("the fitted model of endpoint '%s' gave %d predictions for %d rows",
-                   ep$name, length(.pr), nrow(.nd)), call. = FALSE)
+      stop(
+        sprintf("the fitted model of endpoint '%s' gave %d predictions for %d rows", ep$name, length(.pr), nrow(.nd)),
+        call. = FALSE
+      )
     }
     .p <- colMeans(matrix(.pr, nrow = nrow(data)))
   }
   if (length(.p) != length(doses) || anyNA(.p) || any(.p < 0 | .p > 1)) {
-    stop(sprintf("the fitted model of endpoint '%s' must predict probabilities in [0, 1]",
-                 ep$name), call. = FALSE)
+    stop(sprintf("the fitted model of endpoint '%s' must predict probabilities in [0, 1]", ep$name), call. = FALSE)
   }
-  list(p = as.numeric(.p),
-       fit = list(model = "fitted", class = class(.fit)[1], p = as.numeric(.p), doses = doses))
+  list(p = as.numeric(.p), fit = list(model = "fitted", class = class(.fit)[1], p = as.numeric(.p), doses = doses))
 }
 
 #' Fit the original data and the stratified patient bootstrap draws
@@ -186,16 +204,22 @@ print.cuiBinary <- function(x, ...) {
   .fitCached <- function(b, idx, fun) {
     .check <- digest::digest(idx)
     .hit <- .cuiCacheRead(cache, b, .check)
-    if (!is.null(.hit)) return(.hit$p)
+    if (!is.null(.hit)) {
+      return(.hit$p)
+    }
     .p <- fun()
     .cuiCacheWrite(cache, b, list(ok = TRUE, check = .check, p = .p))
     .p
   }
   .epNames <- vapply(endpoints, `[[`, character(1), "name")
   .long <- function(p, draw) {
-    data.frame(regimen = rep(.cuiNumLabel(doses), times = ncol(p)),
-               endpoint = rep(.epNames, each = nrow(p)),
-               draw = draw, value = as.vector(p), stringsAsFactors = FALSE)
+    data.frame(
+      regimen = rep(.cuiNumLabel(doses), times = ncol(p)),
+      endpoint = rep(.epNames, each = nrow(p)),
+      draw = draw,
+      value = as.vector(p),
+      stringsAsFactors = FALSE
+    )
   }
   .p0 <- .fitCached(0L, "original", function() fitFun(y, dose, NULL))
   .fits0 <- attr(.p0, "fits")
@@ -205,12 +229,13 @@ print.cuiBinary <- function(x, ...) {
   # resample whole patients within each dose: every endpoint uses the same rows
   .rowsByDose <- split(seq_along(dose), match(dose, doses))
   for (.b in seq_len(nBoot)) {
-    .idx <- unlist(lapply(.rowsByDose, function(.r) .r[sample.int(length(.r), replace = TRUE)]),
-                   use.names = FALSE)
+    .idx <- unlist(lapply(.rowsByDose, function(.r) .r[sample.int(length(.r), replace = TRUE)]), use.names = FALSE)
     # the resample is always drawn, so the random stream matches with or
     # without a cache; only the refit is skipped
-    .p <- tryCatch(.fitCached(.b, .idx, function() fitFun(y[.idx, , drop = FALSE], dose[.idx], .idx)),
-                   error = function(e) conditionMessage(e))
+    .p <- tryCatch(
+      .fitCached(.b, .idx, function() fitFun(y[.idx, , drop = FALSE], dose[.idx], .idx)),
+      error = function(e) conditionMessage(e)
+    )
     if (is.character(.p)) {
       .status[.b + 1L] <- "failed"
       .msg[.b + 1L] <- .p
@@ -218,9 +243,11 @@ print.cuiBinary <- function(x, ...) {
       .vals[[length(.vals) + 1L]] <- .long(.p, .b)
     }
   }
-  list(values = do.call(rbind, .vals), fits = .fits0,
-       draws = data.frame(draw = 0:nBoot, status = .status, source = "bootstrap",
-                          message = .msg, stringsAsFactors = FALSE))
+  list(
+    values = do.call(rbind, .vals),
+    fits = .fits0,
+    draws = data.frame(draw = 0:nBoot, status = .status, source = "bootstrap", message = .msg, stringsAsFactors = FALSE)
+  )
 }
 
 #' Clinical utility index from binary endpoints in a multiple-dose trial
@@ -274,11 +301,24 @@ print.cuiBinary <- function(x, ...) {
 #'                    cuiBinary(eff), cuiBinary(tol)),
 #'   weights = c(tox = 0.2, eff = 0.5, tol = 0.3), nBoot = 200, seed = 1)
 #' res
-cuiDoseResponse <- function(data, endpoints, dose, id, weights = NULL,
-                            combine = c("additive", "geometric"), eligible = NULL,
-                            nBoot = 1000L, seed = NULL, minSuccess = 0.9, cacheDir = NULL,
-                            restart = FALSE, level = 0.95,
-                            tieTol = sqrt(.Machine$double.eps), .dose = NULL, .id = NULL) {
+cuiDoseResponse <- function(
+  data,
+  endpoints,
+  dose,
+  id,
+  weights = NULL,
+  combine = c("additive", "geometric"),
+  eligible = NULL,
+  nBoot = 1000L,
+  seed = NULL,
+  minSuccess = 0.9,
+  cacheDir = NULL,
+  restart = FALSE,
+  level = 0.95,
+  tieTol = sqrt(.Machine$double.eps),
+  .dose = NULL,
+  .id = NULL
+) {
   checkmate::assertDataFrame(data, min.rows = 1)
   .doseCol <- .cuiCaptureName(substitute(dose), missing(dose), .dose, "dose")
   .idCol <- NULL
@@ -287,87 +327,148 @@ cuiDoseResponse <- function(data, endpoints, dose, id, weights = NULL,
   }
   checkmate::assertCount(nBoot)
   checkmate::assertNumber(minSuccess, lower = 0, upper = 1)
-  if (inherits(endpoints, "cuiEndpoint")) endpoints <- list(endpoints)
+  if (inherits(endpoints, "cuiEndpoint")) {
+    endpoints <- list(endpoints)
+  }
   if (!all(vapply(endpoints, inherits, logical(1), what = "cuiBinary"))) {
     stop("'endpoints' must be a list of cuiBinary() endpoints", call. = FALSE)
   }
   .epNames <- vapply(endpoints, `[[`, character(1), "name")
   .missing <- setdiff(c(.doseCol, .idCol, .epNames), names(data))
   if (length(.missing) > 0) {
-    stop(sprintf("column(s) not in 'data': %s; available: %s",
-                 paste(.missing, collapse = ", "), paste(names(data), collapse = ", ")),
-         call. = FALSE)
+    stop(
+      sprintf(
+        "column(s) not in 'data': %s; available: %s",
+        paste(.missing, collapse = ", "),
+        paste(names(data), collapse = ", ")
+      ),
+      call. = FALSE
+    )
   }
   .doseVal <- data[[.doseCol]]
   if (!is.numeric(.doseVal) || anyNA(.doseVal)) {
-    stop(sprintf("dose column '%s' must be numeric without missing values", .doseCol),
-         call. = FALSE)
+    stop(sprintf("dose column '%s' must be numeric without missing values", .doseCol), call. = FALSE)
   }
   if (!is.null(.idCol) && anyDuplicated(data[[.idCol]]) != 0L) {
     stop(sprintf("id column '%s' must be unique (one row per patient)", .idCol), call. = FALSE)
   }
-  .y <- vapply(.epNames, function(.e) {
-    .v <- data[[.e]]
-    if (is.logical(.v)) .v <- as.numeric(.v)
-    if (!is.numeric(.v) || anyNA(.v) || !all(.v %in% c(0, 1))) {
-      stop(sprintf("endpoint column '%s' must be 0/1 or TRUE/FALSE without missing values", .e),
-           call. = FALSE)
-    }
-    as.numeric(.v)
-  }, numeric(nrow(data)))
+  .y <- vapply(
+    .epNames,
+    function(.e) {
+      .v <- data[[.e]]
+      if (is.logical(.v)) {
+        .v <- as.numeric(.v)
+      }
+      if (!is.numeric(.v) || anyNA(.v) || !all(.v %in% c(0, 1))) {
+        stop(sprintf("endpoint column '%s' must be 0/1 or TRUE/FALSE without missing values", .e), call. = FALSE)
+      }
+      as.numeric(.v)
+    },
+    numeric(nrow(data))
+  )
   .y <- matrix(.y, nrow = nrow(data), dimnames = list(NULL, .epNames))
   .doses <- sort(unique(.doseVal))
   if (anyDuplicated(.cuiNumLabel(.doses)) != 0L) {
-    stop(sprintf("dose column '%s' has distinct values that agree to 15 digits; round it",
-                 .doseCol), call. = FALSE)
+    stop(sprintf("dose column '%s' has distinct values that agree to 15 digits; round it", .doseCol), call. = FALSE)
   }
   .models <- vapply(endpoints, `[[`, character(1), "model")
-  .need <- c(empirical = 1, logitLinear = 2, logitQuadratic = 3, emax = 2, exponential = 2,
-             fitted = 1)
+  .need <- c(empirical = 1, logitLinear = 2, logitQuadratic = 3, emax = 2, exponential = 2, fitted = 1)
   .few <- .need[.models] > length(.doses)
   if (any(.few)) {
-    stop(sprintf("endpoint(s) %s need more dose levels than the %d in the data",
-                 paste(sprintf("'%s' (%s)", .epNames[.few], .models[.few]), collapse = ", "),
-                 length(.doses)), call. = FALSE)
+    stop(
+      sprintf(
+        "endpoint(s) %s need more dose levels than the %d in the data",
+        paste(sprintf("'%s' (%s)", .epNames[.few], .models[.few]), collapse = ", "),
+        length(.doses)
+      ),
+      call. = FALSE
+    )
   }
   if (any(.models %in% c("emax", "exponential")) && any(.doses < 0)) {
     stop("emax and exponential models need nonnegative doses", call. = FALSE)
   }
   .fitFun <- function(y, dose, rows) {
-    .cuiDrFit(y, dose, .doses, endpoints, if (is.null(rows)) data else data[rows, , drop = FALSE],
-              .doseCol, refit = !is.null(rows))
+    .cuiDrFit(
+      y,
+      dose,
+      .doses,
+      endpoints,
+      if (is.null(rows)) data else data[rows, , drop = FALSE],
+      .doseCol,
+      refit = !is.null(rows)
+    )
   }
   checkmate::assertFlag(restart)
-  if (is.null(seed) && is.null(cacheDir)) cacheDir <- NA
+  if (is.null(seed) && is.null(cacheDir)) {
+    cacheDir <- NA
+  }
   # nBoot is left out of the key so a larger nBoot resumes
-  .cache <- .cuiCacheSetup(cacheDir, restart, list(
-    "doseResponse", data, .doseCol, lapply(endpoints, function(e) {
-      list(e$name, e$model, e$direction, e$monotone, e$penalty, e$boundary, e$backend,
-           if (!is.null(e$fitModel)) digest::digest(e$fitModel))
-    }), seed, as.character(utils::packageVersion("nlmixr2extra"))))
+  .cache <- .cuiCacheSetup(
+    cacheDir,
+    restart,
+    list(
+      "doseResponse",
+      data,
+      .doseCol,
+      lapply(endpoints, function(e) {
+        list(
+          e$name,
+          e$model,
+          e$direction,
+          e$monotone,
+          e$penalty,
+          e$boundary,
+          e$backend,
+          if (!is.null(e$fitModel)) digest::digest(e$fitModel)
+        )
+      }),
+      seed,
+      as.character(utils::packageVersion("nlmixr2extra"))
+    )
+  )
   .run <- .cuiWithSeed(seed, .cuiDrRun(.y, .doseVal, .doses, endpoints, nBoot, .fitFun, .cache))
   .nOk <- sum(.run$draws$status[-1] == "ok")
   if (nBoot > 0 && .nOk / nBoot < minSuccess) {
-    stop(sprintf("only %d of %d bootstrap draws succeeded (minSuccess = %g); first error: %s",
-                 .nOk, nBoot, minSuccess,
-                 .run$draws$message[.run$draws$status != "ok"][1]), call. = FALSE)
+    stop(
+      sprintf(
+        "only %d of %d bootstrap draws succeeded (minSuccess = %g); first error: %s",
+        .nOk,
+        nBoot,
+        minSuccess,
+        .run$draws$message[.run$draws$status != "ok"][1]
+      ),
+      call. = FALSE
+    )
   }
-  .ret <- .cuiNew(values = .run$values, endpoints = endpoints,
-                  regimens = cuiRegimens(dose = .doses), weights = weights,
-                  combine = match.arg(combine), eligible = eligible, level = level,
-                  tieTol = tieTol, draws = .run$draws,
-                  settings = list(source = "doseResponse", nBoot = nBoot, seed = seed, cacheDir = .cache,
-                                  models = setNames(.models, .epNames),
-                                  description = sprintf("Dose-response: %s; patient bootstrap within dose",
-                                                        paste(unique(.models), collapse = ", "))))
+  .ret <- .cuiNew(
+    values = .run$values,
+    endpoints = endpoints,
+    regimens = cuiRegimens(dose = .doses),
+    weights = weights,
+    combine = match.arg(combine),
+    eligible = eligible,
+    level = level,
+    tieTol = tieTol,
+    draws = .run$draws,
+    settings = list(
+      source = "doseResponse",
+      nBoot = nBoot,
+      seed = seed,
+      cacheDir = .cache,
+      models = setNames(.models, .epNames),
+      description = sprintf("Dose-response: %s; patient bootstrap within dose", paste(unique(.models), collapse = ", "))
+    )
+  )
   .n <- tabulate(match(.doseVal, .doses), nbins = length(.doses))
   .events <- rowsum(.y, match(.doseVal, .doses), reorder = TRUE)
   .ret$doseResponse <- .run$fits
-  .ret$observed <- data.frame(regimen = rep(.cuiNumLabel(.doses), times = length(.epNames)),
-                              endpoint = rep(.epNames, each = length(.doses)),
-                              n = rep(.n, times = length(.epNames)),
-                              events = as.vector(.events),
-                              rate = as.vector(.events) / rep(.n, times = length(.epNames)),
-                              stringsAsFactors = FALSE)
+  .ret$observed <- data.frame(
+    regimen = rep(.cuiNumLabel(.doses), times = length(.epNames)),
+    endpoint = rep(.epNames, each = length(.doses)),
+    n = rep(.n, times = length(.epNames)),
+    events = as.vector(.events),
+    rate = as.vector(.events) / rep(.n, times = length(.epNames)),
+    stringsAsFactors = FALSE
+  )
   .ret
 }
