@@ -860,7 +860,7 @@ modelBootstrap <- function(
   colNames <- names(data)
   colNamesLower <- tolower(colNames)
   if ("id" %in% colNamesLower) {
-    uid_colname <- colNames[which("id" %in% colNamesLower)]
+    uid_colname <- colNames[match("id", colNamesLower)]
   } else {
     stop("cannot find the 'ID' column! aborting ...", call. = FALSE)
   }
