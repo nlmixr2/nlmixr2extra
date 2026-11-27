@@ -151,9 +151,31 @@ the `extractEqHelper` S3 walk over the model AST.
 `listModelsTested()`, `isBoundaryFit()` -- both selection helpers exclude
 boundary fits by default.
 
+**Clinical utility index** (`R/cui*.R`).  Every entry point builds the same
+environment-free `nlmixr2Cui` object through `.cuiNew()`: a long table of
+endpoint values per (assessment, regimen, draw), draw 0 being the point
+estimate.  `.cuiCompute()` derives utilities, the weighted CUI, percentile
+intervals and selection frequencies from those values only, so `update()`
+(re-weighting, eligibility), `cuiSensitivity()`, `plot()` and the
+`cuiApp()` desk tool never simulate.  The values come from:
+- `cuiFromValues()` (`R/cui.R`): supplied directly;
+- `cuiDoseResponse()` (`R/cuiDoseResponse.R`, `R/cuiDoseModels.R`): CUI-MET
+  binary endpoints per dose (observed rate, logit, Emax/exponential, or a
+  fitted model) with a patient bootstrap within dose;
+- `cui()` (`R/cuiSimulate.R`): simulation of nlmixr2 fits / `rxUi`
+  models (solved from `fit$finalUi` with thetas, etas and covariates as
+  `params` columns, never `iCov`) and of fitted regression models through
+  the `cuiModelPredict()` generics (`R/cuiModels.R`), with summaries from
+  `R/cuiSummary.R`, chained exposures and bootstrap ensembles from
+  `R/cuiChain.R`.  Random streams are keyed (`.cuiStreamSeed()`) so every
+  regimen and draw shares virtual subjects and resumed runs match.
+Plots (`R/cuiPlot.R`) follow the ACoP 2026 CUI workshop style; the app is
+`R/cuiApp.R`.
+
 ### Cache directories
 
-Bootstrap, covariate search and multistart all persist intermediate fits to a
+Bootstrap, covariate search, multistart and the CUI (`cui()` and
+`cuiDoseResponse()` with a `seed`) all persist intermediate results to a
 `nlmixr2*Cache_*` directory in the working directory, keyed by a digest of the
 inputs, and resume from it.  These are listed in `.gitignore` and
 `.Rbuildignore`; add any new cache prefix to both.
