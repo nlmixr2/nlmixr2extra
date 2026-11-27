@@ -244,6 +244,14 @@ test_that("Extract column corresponding to  Individual", {
   expect_equal(funstring1, funstring2)
 })
 
+test_that(".idColumn finds the ID column when it is not the first column", {
+  d <- nlmixr2data::theo_sd
+  d <- d[, c("TIME", setdiff(names(d), "TIME"))]
+  expect_equal(.idColumn(d), "ID")
+  names(d)[names(d) == "ID"] <- "id"
+  expect_equal(.idColumn(d), "id")
+})
+
 
 # ==== Build ui from the covariate
 
